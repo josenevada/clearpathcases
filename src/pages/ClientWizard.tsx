@@ -253,7 +253,14 @@ const ClientWizard = () => {
 
       <div className="flex-1 flex items-center justify-center px-6 pb-32">
         <AnimatePresence mode="wait">
-          {showMilestone !== null ? (
+          {showStepTransition !== null ? (
+            <StepTransition
+              key="step-transition"
+              completedStepIdx={showStepTransition}
+              caseData={caseData}
+              onContinue={handleStepTransitionContinue}
+            />
+          ) : showMilestone !== null ? (
             <motion.div key="milestone" {...pageTransition} className="max-w-md mx-auto text-center">
               <div className="text-6xl mb-6">{showMilestone === 100 ? '🎉' : showMilestone >= 75 ? '🚀' : showMilestone >= 50 ? '💪' : '⭐'}</div>
               <h2 className="font-display text-3xl font-bold text-foreground mb-4">
