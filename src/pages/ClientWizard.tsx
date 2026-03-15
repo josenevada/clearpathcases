@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
+import ProgressPill from '@/components/wizard/ProgressPill';
+import StepTransition from '@/components/wizard/StepTransition';
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type ChecklistItem } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -33,6 +35,7 @@ const ClientWizard = () => {
   const [showCheckpoint, setShowCheckpoint] = useState(false);
   const [checkpointConfirmed, setCheckpointConfirmed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
+  const [showStepTransition, setShowStepTransition] = useState<number | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -158,12 +161,19 @@ const ClientWizard = () => {
     if (currentItemIdx < categoryItems.length - 1) {
       setCurrentItemIdx(currentItemIdx + 1);
     } else if (currentCategoryIdx < CATEGORIES.length - 1) {
-      const nextCat = currentCategoryIdx + 1;
-      setCurrentCategoryIdx(nextCat);
-      setCurrentItemIdx(0);
-      updateCase(caseData.id, c => ({ ...c, wizardStep: nextCat }));
-      refreshCase();
+      // Show step transition card between categories
+      setShowStepTransition(currentCategoryIdx);
     }
+  };
+
+  const handleStepTransitionContinue = () => {
+    if (showStepTransition === null) return;
+    const nextCat = showStepTransition + 1;
+    setShowStepTransition(null);
+    setCurrentCategoryIdx(nextCat);
+    setCurrentItemIdx(0);
+    updateCase(caseData.id, c => ({ ...c, wizardStep: nextCat }));
+    refreshCase();
   };
 
   const goBack = () => {
@@ -243,7 +253,14 @@ const ClientWizard = () => {
 
       <div className="flex-1 flex items-center justify-center px-6 pb-32">
         <AnimatePresence mode="wait">
-          {showMilestone !== null ? (
+          {showStepTransition !== null ? (
+            <StepTransition
+              key="step-transition"
+              completedStepIdx={showStepTransition}
+              caseData={caseData}
+              onContinue={handleStepTransitionContinue}
+            />
+          ) : showMilestone !== null ? (
             <motion.div key="milestone" {...pageTransition} className="max-w-md mx-auto text-center">
               <div className="text-6xl mb-6">{showMilestone === 100 ? '🎉' : showMilestone >= 75 ? '🚀' : showMilestone >= 50 ? '💪' : '⭐'}</div>
               <h2 className="font-display text-3xl font-bold text-foreground mb-4">
@@ -365,8 +382,13 @@ const ClientWizard = () => {
         </AnimatePresence>
       </div>
 
+      {/* Progress pill */}
+      {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
+        <ProgressPill caseData={caseData} />
+      )}
+
       {/* Bottom buttons */}
-      {!showSuccess && !showMilestone && currentItem && (
+      {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-4">
           <div className="max-w-md mx-auto flex flex-col gap-3">
             {isCheckpointItem ? (
