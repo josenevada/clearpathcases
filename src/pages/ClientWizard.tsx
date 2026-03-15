@@ -161,12 +161,19 @@ const ClientWizard = () => {
     if (currentItemIdx < categoryItems.length - 1) {
       setCurrentItemIdx(currentItemIdx + 1);
     } else if (currentCategoryIdx < CATEGORIES.length - 1) {
-      const nextCat = currentCategoryIdx + 1;
-      setCurrentCategoryIdx(nextCat);
-      setCurrentItemIdx(0);
-      updateCase(caseData.id, c => ({ ...c, wizardStep: nextCat }));
-      refreshCase();
+      // Show step transition card between categories
+      setShowStepTransition(currentCategoryIdx);
     }
+  };
+
+  const handleStepTransitionContinue = () => {
+    if (showStepTransition === null) return;
+    const nextCat = showStepTransition + 1;
+    setShowStepTransition(null);
+    setCurrentCategoryIdx(nextCat);
+    setCurrentItemIdx(0);
+    updateCase(caseData.id, c => ({ ...c, wizardStep: nextCat }));
+    refreshCase();
   };
 
   const goBack = () => {
