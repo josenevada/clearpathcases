@@ -11,7 +11,7 @@ const pageTransition = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -10 },
-  transition: { duration: 0.2, ease: [0.2, 0, 0, 1] },
+  transition: { duration: 0.2, ease: [0.2, 0, 0, 1] as [number, number, number, number] },
 };
 
 const MILESTONE_THRESHOLDS = [25, 50, 75, 100];
