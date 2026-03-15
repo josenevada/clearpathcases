@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
+import ProgressPill from '@/components/wizard/ProgressPill';
+import StepTransition from '@/components/wizard/StepTransition';
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type ChecklistItem } from '@/lib/store';
 import { toast } from 'sonner';
 
