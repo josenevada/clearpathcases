@@ -382,8 +382,13 @@ const ClientWizard = () => {
         </AnimatePresence>
       </div>
 
+      {/* Progress pill */}
+      {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
+        <ProgressPill caseData={caseData} />
+      )}
+
       {/* Bottom buttons */}
-      {!showSuccess && !showMilestone && currentItem && (
+      {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-4">
           <div className="max-w-md mx-auto flex flex-col gap-3">
             {isCheckpointItem ? (
