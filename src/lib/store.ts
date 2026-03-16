@@ -177,7 +177,7 @@ export const saveIntakeQuestions = (questions: IntakeQuestion[]) => {
   localStorage.setItem(INTAKE_QUESTIONS_KEY, JSON.stringify(questions));
 };
 
-// Build checklist from templates (for new cases)
+// Build checklist from templates (for new cases — no intake filtering)
 export const buildChecklistFromTemplates = (): ChecklistItem[] => {
   const templates = getDocTemplates();
   return templates
@@ -194,6 +194,125 @@ export const buildChecklistFromTemplates = (): ChecklistItem[] => {
       flaggedForAttorney: false,
       completed: false,
     }));
+};
+
+// ─── Intake-Driven Checklist Builder ─────────────────────────────────
+export interface IntakeAnswers {
+  ownsRealEstate: boolean;
+  ownsVehicle: boolean;
+  selfEmployed: boolean;
+  hasRetirement: boolean;
+  hasStudentLoans: boolean;
+  filingJointly: boolean;
+}
+
+const conditionalItems: Record<string, { category: string; items: Omit<ChecklistItem, 'id' | 'category' | 'files' | 'flaggedForAttorney' | 'completed'>[] }> = {
+  ownsRealEstate: {
+    category: 'Assets & Property',
+    items: [
+      { label: 'Homeowners Insurance Declaration', description: 'Upload your current homeowners insurance declaration page.', whyWeNeedThis: 'Homeowners insurance is needed to determine the replacement value of your property for exemption purposes.', required: true },
+    ],
+  },
+  selfEmployed: {
+    category: 'Income & Employment',
+    items: [
+      { label: 'Profit & Loss Statement', description: 'Upload a profit and loss statement for your business for the current year.', whyWeNeedThis: 'The court requires business income documentation to assess your financial situation accurately.', required: true },
+      { label: 'Business Bank Statements (Last 6 Months)', description: 'Upload bank statements for all business accounts.', whyWeNeedThis: 'Business account activity must be disclosed separately from personal accounts in bankruptcy filings.', required: true },
+      { label: 'Business Tax Returns (Last 2 Years)', description: 'Upload your business tax returns from the last two years.', whyWeNeedThis: 'Business tax returns provide a comprehensive view of business income and expenses for the court.', required: true },
+    ],
+  },
+  hasRetirement: {
+    category: 'Bank & Financial Accounts',
+    items: [
+      { label: '401(k) Account Statement', description: 'Upload your most recent 401(k) statement.', whyWeNeedThis: 'Retirement account balances must be disclosed, though they are typically exempt from the bankruptcy estate.', required: true },
+      { label: 'IRA Account Statement', description: 'Upload your most recent IRA statement.', whyWeNeedThis: 'IRA balances must be disclosed and may be subject to different exemption limits.', required: false },
+    ],
+  },
+  hasStudentLoans: {
+    category: 'Debts & Credit',
+    items: [
+      { label: 'Student Loan Statements', description: 'Upload your most recent student loan statements showing current balances.', whyWeNeedThis: 'Student loan debts must be listed in your bankruptcy filing. They are typically non-dischargeable but must still be disclosed.', required: true },
+    ],
+  },
+};
+
+// Labels to EXCLUDE when an intake answer is "No"
+const exclusionMap: Record<string, string[]> = {
+  ownsRealEstate: ['Mortgage Statement or Lease', 'Property Deed'],
+  ownsVehicle: ['Vehicle Title or Registration'],
+  hasRetirement: ['Investment/Retirement Statements'],
+};
+
+export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] => {
+  const templates = getDocTemplates();
+  let items = templates
+    .filter(t => t.active)
+    .sort((a, b) => a.order - b.order);
+
+  // Exclude items based on "No" answers
+  const labelsToExclude = new Set<string>();
+  if (!answers.ownsRealEstate) exclusionMap.ownsRealEstate.forEach(l => labelsToExclude.add(l));
+  if (!answers.ownsVehicle) exclusionMap.ownsVehicle.forEach(l => labelsToExclude.add(l));
+  if (!answers.hasRetirement) exclusionMap.hasRetirement.forEach(l => labelsToExclude.add(l));
+
+  let checklist: ChecklistItem[] = items
+    .filter(t => !labelsToExclude.has(t.label))
+    .map(t => ({
+      id: uid(),
+      category: t.category,
+      label: t.label,
+      description: t.description,
+      whyWeNeedThis: t.whyWeNeedThis,
+      required: t.required,
+      files: [],
+      flaggedForAttorney: false,
+      completed: false,
+    }));
+
+  // Add conditional items for "Yes" answers
+  for (const [key, config] of Object.entries(conditionalItems)) {
+    if (answers[key as keyof IntakeAnswers]) {
+      const newItems: ChecklistItem[] = config.items.map(ci => ({
+        ...ci,
+        id: uid(),
+        category: config.category,
+        files: [],
+        flaggedForAttorney: false,
+        completed: false,
+      }));
+      // Insert after existing items in that category
+      const lastIdx = checklist.map(c => c.category).lastIndexOf(config.category);
+      if (lastIdx !== -1) {
+        checklist.splice(lastIdx + 1, 0, ...newItems);
+      } else {
+        checklist.push(...newItems);
+      }
+    }
+  }
+
+  // Joint filing: duplicate income & ID items for spouse
+  if (answers.filingJointly) {
+    const spouseItems: ChecklistItem[] = [];
+    checklist.forEach(ci => {
+      if (ci.category === 'Income & Employment' || ci.category === 'Personal Identification') {
+        spouseItems.push({
+          ...ci,
+          id: uid(),
+          label: `${ci.label} (Spouse)`,
+          description: `Spouse: ${ci.description}`,
+        });
+      }
+    });
+    // Insert spouse income items after income section, spouse ID after ID section
+    const lastIncomeIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+    const incomeSpouse = spouseItems.filter(s => s.category === 'Income & Employment');
+    const idSpouse = spouseItems.filter(s => s.category === 'Personal Identification');
+    if (lastIncomeIdx !== -1) checklist.splice(lastIncomeIdx + 1, 0, ...incomeSpouse);
+    const lastIdIdx = checklist.map(c => c.category).lastIndexOf('Personal Identification');
+    if (lastIdIdx !== -1) checklist.splice(lastIdIdx + 1, 0, ...idSpouse);
+  }
+
+  return checklist;
 };
 
 export const calculateUrgency = (c: Case): UrgencyLevel => {
@@ -230,12 +349,18 @@ export const saveCases = (cases: Case[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
 };
 
-export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'checklist' | 'activityLog' | 'notes' | 'checkpointsCompleted' | 'urgency' | 'readyToFile' | 'wizardStep'>): Case => {
+export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' | 'notes' | 'checkpointsCompleted' | 'urgency' | 'readyToFile' | 'wizardStep'> & { checklist?: ChecklistItem[] }): Case => {
   const newCase: Case = {
-    ...data,
+    clientName: data.clientName,
+    clientEmail: data.clientEmail,
+    clientPhone: data.clientPhone,
+    chapterType: data.chapterType,
+    assignedParalegal: data.assignedParalegal,
+    assignedAttorney: data.assignedAttorney,
+    filingDeadline: data.filingDeadline,
     id: uid(),
     createdAt: new Date().toISOString(),
-    checklist: buildChecklistFromTemplates(),
+    checklist: data.checklist || buildChecklistFromTemplates(),
     activityLog: [{
       id: uid(),
       eventType: 'case_created',
