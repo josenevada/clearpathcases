@@ -75,8 +75,126 @@ export interface Case {
 // ─── Helpers ─────────────────────────────────────────────────────────
 const STORAGE_KEY = 'cp_cases';
 const SEEDED_KEY = 'cp_seeded';
+const FIRM_SETTINGS_KEY = 'cp_firmSettings';
+const TEMPLATES_KEY = 'cp_docTemplates';
+const INTAKE_QUESTIONS_KEY = 'cp_intakeQuestions';
 
 const uid = () => Math.random().toString(36).substr(2, 9);
+
+// ─── Firm Settings ───────────────────────────────────────────────────
+export interface FirmSettings {
+  firmName: string;
+  primaryContactName: string;
+  primaryContactEmail: string;
+  phone: string;
+  defaultParalegal: string;
+  defaultAttorney: string;
+}
+
+export const getDefaultFirmSettings = (): FirmSettings => ({
+  firmName: '',
+  primaryContactName: '',
+  primaryContactEmail: '',
+  phone: '',
+  defaultParalegal: 'Sarah Johnson',
+  defaultAttorney: 'David Park',
+});
+
+export const getFirmSettings = (): FirmSettings => {
+  const raw = localStorage.getItem(FIRM_SETTINGS_KEY);
+  return raw ? JSON.parse(raw) : getDefaultFirmSettings();
+};
+
+export const saveFirmSettings = (settings: FirmSettings) => {
+  localStorage.setItem(FIRM_SETTINGS_KEY, JSON.stringify(settings));
+};
+
+// ─── Document Templates ─────────────────────────────────────────────
+export interface TemplateItem {
+  id: string;
+  category: string;
+  label: string;
+  description: string;
+  whyWeNeedThis: string;
+  required: boolean;
+  active: boolean;
+  isCustom: boolean;
+  order: number;
+}
+
+export const buildDefaultTemplates = (): TemplateItem[] => {
+  const items = buildDefaultChecklist();
+  return items.map((item, i) => ({
+    id: item.id,
+    category: item.category,
+    label: item.label,
+    description: item.description,
+    whyWeNeedThis: item.whyWeNeedThis,
+    required: item.required,
+    active: true,
+    isCustom: false,
+    order: i,
+  }));
+};
+
+export const getDocTemplates = (): TemplateItem[] => {
+  const raw = localStorage.getItem(TEMPLATES_KEY);
+  return raw ? JSON.parse(raw) : buildDefaultTemplates();
+};
+
+export const saveDocTemplates = (templates: TemplateItem[]) => {
+  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+};
+
+export const resetDocTemplates = () => {
+  localStorage.removeItem(TEMPLATES_KEY);
+};
+
+// ─── Intake Questions ───────────────────────────────────────────────
+export interface IntakeQuestion {
+  id: string;
+  question: string;
+  controlsItems: string[];
+  active: boolean;
+  order: number;
+}
+
+export const getDefaultIntakeQuestions = (): IntakeQuestion[] => [
+  { id: 'iq-1', question: 'Are you currently employed?', controlsItems: ['Pay Stubs (Last 2 Months)', 'Employer Name & Address'], active: true, order: 0 },
+  { id: 'iq-2', question: 'Do you have any bank accounts (checking or savings)?', controlsItems: ['Checking/Savings Statements (Last 6 Months)'], active: true, order: 1 },
+  { id: 'iq-3', question: 'Do you have any outstanding loans or credit card debt?', controlsItems: ['Credit Card Statements (Last 3 Months)', 'Loan Statements', 'Collection Notices'], active: true, order: 2 },
+  { id: 'iq-4', question: 'Do you own any real estate property?', controlsItems: ['Property Deed', 'Mortgage Statement or Lease'], active: true, order: 3 },
+  { id: 'iq-5', question: 'Do you own a vehicle?', controlsItems: ['Vehicle Title or Registration'], active: true, order: 4 },
+  { id: 'iq-6', question: 'Do you have any investment or retirement accounts?', controlsItems: ['Investment/Retirement Statements'], active: true, order: 5 },
+];
+
+export const getIntakeQuestions = (): IntakeQuestion[] => {
+  const raw = localStorage.getItem(INTAKE_QUESTIONS_KEY);
+  return raw ? JSON.parse(raw) : getDefaultIntakeQuestions();
+};
+
+export const saveIntakeQuestions = (questions: IntakeQuestion[]) => {
+  localStorage.setItem(INTAKE_QUESTIONS_KEY, JSON.stringify(questions));
+};
+
+// Build checklist from templates (for new cases)
+export const buildChecklistFromTemplates = (): ChecklistItem[] => {
+  const templates = getDocTemplates();
+  return templates
+    .filter(t => t.active)
+    .sort((a, b) => a.order - b.order)
+    .map(t => ({
+      id: uid(),
+      category: t.category,
+      label: t.label,
+      description: t.description,
+      whyWeNeedThis: t.whyWeNeedThis,
+      required: t.required,
+      files: [],
+      flaggedForAttorney: false,
+      completed: false,
+    }));
+};
 
 export const calculateUrgency = (c: Case): UrgencyLevel => {
   const daysLeft = differenceInDays(new Date(c.filingDeadline), new Date());

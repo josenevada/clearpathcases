@@ -30,6 +30,7 @@ const App = () => {
             <Route path="/client/:caseId" element={<ClientWizard />} />
             <Route path="/paralegal" element={<ParalegalDashboard />} />
             <Route path="/paralegal/case/:caseId" element={<CaseDetail />} />
+            <Route path="/paralegal/settings" element={<FirmSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
