@@ -475,6 +475,15 @@ const ClientWizard = () => {
               >
                 Continue →
               </Button>
+            ) : isMultiUpload ? (
+              <Button
+                onClick={handleContinueMultiUpload}
+                size="lg"
+                className="w-full"
+                disabled={currentItem.files.length === 0 && currentItem.required}
+              >
+                Continue →
+              </Button>
             ) : (
               <Button
                 onClick={advanceToNext}
