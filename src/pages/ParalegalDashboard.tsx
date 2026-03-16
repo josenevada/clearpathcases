@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, CheckCircle2, Clock, Send } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle2, Clock, Send, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,9 @@ const ParalegalDashboard = () => {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground hidden md:block">Sarah Johnson, Paralegal</span>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
+            <Settings className="w-4 h-4" />
+          </Button>
           <Button onClick={() => setShowNewCase(true)}>
             <Plus className="w-4 h-4 mr-1" /> New Case
           </Button>

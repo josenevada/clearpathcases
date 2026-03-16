@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import ClientWizard from "./pages/ClientWizard";
 import ParalegalDashboard from "./pages/ParalegalDashboard";
 import CaseDetail from "./pages/CaseDetail";
+import FirmSettings from "./pages/FirmSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/client/:caseId" element={<ClientWizard />} />
             <Route path="/paralegal" element={<ParalegalDashboard />} />
             <Route path="/paralegal/case/:caseId" element={<CaseDetail />} />
+            <Route path="/paralegal/settings" element={<FirmSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
