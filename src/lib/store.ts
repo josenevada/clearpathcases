@@ -235,7 +235,7 @@ export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'checklist' | '
     ...data,
     id: uid(),
     createdAt: new Date().toISOString(),
-    checklist: buildDefaultChecklist(),
+    checklist: buildChecklistFromTemplates(),
     activityLog: [{
       id: uid(),
       eventType: 'case_created',
