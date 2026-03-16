@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, CheckCircle2, Clock, Send } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle2, Clock, Send, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
