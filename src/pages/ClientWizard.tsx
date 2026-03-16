@@ -37,6 +37,7 @@ const ClientWizard = () => {
   const [checkpointConfirmed, setCheckpointConfirmed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
   const [showStepTransition, setShowStepTransition] = useState<number | null>(null);
+  const [showLowCountConfirm, setShowLowCountConfirm] = useState(false);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
