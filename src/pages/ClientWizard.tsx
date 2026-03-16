@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import ProgressPill from '@/components/wizard/ProgressPill';
 import StepTransition from '@/components/wizard/StepTransition';
+import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type ChecklistItem } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -36,6 +37,7 @@ const ClientWizard = () => {
   const [checkpointConfirmed, setCheckpointConfirmed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
   const [showStepTransition, setShowStepTransition] = useState<number | null>(null);
+  const [showLowCountConfirm, setShowLowCountConfirm] = useState(false);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,23 +79,30 @@ const ClientWizard = () => {
   const isCheckpointItem = currentItem && currentItem.category === 'Agreements & Confirmation' &&
     currentItem.label.includes('Confirmation');
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentItem) return;
+  const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
+  const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
 
+  const handleFileAdd = (file: File) => {
+    if (!currentItem) return;
     const reader = new FileReader();
     reader.onload = () => {
+      const newFile = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString(),
+        reviewStatus: 'pending' as const,
+        uploadedBy: 'client' as const,
+      };
+
       const updated = updateCase(caseData.id, c => {
         const item = c.checklist.find(i => i.id === currentItem.id);
         if (item) {
-          item.files = [{
-            id: Math.random().toString(36).substr(2, 9),
-            name: file.name,
-            dataUrl: reader.result as string,
-            uploadedAt: new Date().toISOString(),
-            reviewStatus: 'pending',
-            uploadedBy: 'client',
-          }];
+          if (isMultiUpload) {
+            item.files = [...item.files, newFile];
+          } else {
+            item.files = [newFile];
+          }
           item.completed = true;
         }
         c.lastClientActivity = new Date().toISOString();
@@ -104,21 +113,67 @@ const ClientWizard = () => {
         eventType: 'file_upload',
         actorRole: 'client',
         actorName: caseData.clientName,
-        description: `${caseData.clientName.split(' ')[0]} uploaded ${currentItem.label}`,
+        description: `${caseData.clientName.split(' ')[0]} uploaded ${file.name} for ${currentItem.label}`,
         itemId: currentItem.id,
       });
 
       if (updated) {
         setCaseData(updated);
-        setShowSuccess(true);
-        setTimeout(() => {
-          setShowSuccess(false);
-          checkMilestoneAndAdvance(updated);
-        }, 1500);
+        if (!isMultiUpload) {
+          setShowSuccess(true);
+          setTimeout(() => {
+            setShowSuccess(false);
+            checkMilestoneAndAdvance(updated);
+          }, 1500);
+        } else {
+          toast.success(`${file.name} added`, { duration: 1500 });
+        }
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileDelete = (fileId: string) => {
+    if (!currentItem) return;
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(i => i.id === currentItem.id);
+      if (item) {
+        item.files = item.files.filter(f => f.id !== fileId);
+        if (item.files.length === 0) item.completed = false;
+      }
+      return c;
+    });
+    if (updated) setCaseData(updated);
+  };
+
+  const handleSingleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileAdd(file);
     e.target.value = '';
+  };
+
+  const handleContinueMultiUpload = () => {
+    if (!currentItem || !multiConfig) return;
+    const fileCount = currentItem.files.length;
+    if (fileCount === 0) return;
+    if (fileCount < multiConfig.minRecommended && !showLowCountConfirm) {
+      setShowLowCountConfirm(true);
+      return;
+    }
+    setShowLowCountConfirm(false);
+    checkMilestoneAndAdvance(caseData);
+  };
+
+  const handleLowCountConfirm = () => {
+    setShowLowCountConfirm(false);
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} confirmed single ${multiConfig?.singularLabel} upload`,
+      itemId: currentItem?.id,
+    });
+    checkMilestoneAndAdvance(caseData);
   };
 
   const handleCheckpointConfirm = () => {
@@ -343,8 +398,28 @@ const ClientWizard = () => {
                     </span>
                   </label>
                 </div>
+              ) : isMultiUpload && multiConfig ? (
+                /* Multi-upload zone */
+                <div className="space-y-4">
+                  <MultiUploadZone
+                    files={currentItem.files}
+                    config={multiConfig}
+                    onFileAdd={handleFileAdd}
+                    onFileDelete={handleFileDelete}
+                  />
+                  <AnimatePresence>
+                    {showLowCountConfirm && (
+                      <LowCountConfirmation
+                        config={multiConfig}
+                        fileCount={currentItem.files.length}
+                        onConfirm={handleLowCountConfirm}
+                        onAddMore={() => setShowLowCountConfirm(false)}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
-                /* Already uploaded */
+                /* Already uploaded (single) */
                 <div className="surface-card glow-success p-6 flex items-center gap-4">
                   <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -357,10 +432,10 @@ const ClientWizard = () => {
                   >
                     Replace
                   </button>
-                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
+                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
                 </div>
               ) : (
-                /* Upload zone */
+                /* Upload zone (single) */
                 <div
                   className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
                   onClick={() => fileInputRef.current?.click()}
@@ -373,7 +448,7 @@ const ClientWizard = () => {
                     type="file"
                     className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileUpload}
+                    onChange={handleSingleFileUpload}
                   />
                 </div>
               )}
@@ -397,6 +472,15 @@ const ClientWizard = () => {
                 size="lg"
                 className="w-full"
                 disabled={!checkpointConfirmed}
+              >
+                Continue →
+              </Button>
+            ) : isMultiUpload ? (
+              <Button
+                onClick={handleContinueMultiUpload}
+                size="lg"
+                className="w-full"
+                disabled={currentItem.files.length === 0 && currentItem.required}
               >
                 Continue →
               </Button>
