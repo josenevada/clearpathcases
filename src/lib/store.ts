@@ -73,49 +73,8 @@ export interface Case {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────
-// ─── Firm Settings Types ─────────────────────────────────────────────
-export interface TemplateItem {
-  id: string;
-  label: string;
-  description: string;
-  whyWeNeedThis: string;
-  required: boolean;
-  category: string;
-  order: number;
-  conditionalOn?: {
-    questionId: string;
-    answer: 'yes' | 'no';
-  };
-}
-
-export interface FirmTemplate {
-  id: string;
-  name: string;
-  chapterType: '7' | '13' | 'both';
-  isDefault: boolean;
-  createdAt: string;
-  lastModified: string;
-  items: TemplateItem[];
-}
-
-export interface TeamMember {
-  id: string;
-  name: string;
-  role: 'paralegal' | 'attorney';
-}
-
-export interface FirmSettings {
-  firmName: string;
-  firmAddress: string;
-  firmPhone: string;
-  templates: FirmTemplate[];
-  defaultTemplateId: string;
-  teamMembers: TeamMember[];
-}
-
 const STORAGE_KEY = 'cp_cases';
 const SEEDED_KEY = 'cp_seeded';
-const FIRM_SETTINGS_KEY = 'clearpath_firm_settings';
 
 const uid = () => Math.random().toString(36).substr(2, 9);
 
