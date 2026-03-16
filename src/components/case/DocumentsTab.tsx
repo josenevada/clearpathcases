@@ -194,7 +194,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
 
     const pdfBytes = await pdfDoc.save();
     const { saveAs } = await import('file-saver');
-    saveAs(new Blob([pdfBytes], { type: 'application/pdf' }), `${clientLastName}-${caseData.id}-CourtPacket.pdf`);
+    saveAs(new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' }), `${clientLastName}-${caseData.id}-CourtPacket.pdf`);
     toast.success('PDF compiled successfully.');
     setShowExportWarning(null);
   };
