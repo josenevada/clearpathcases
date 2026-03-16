@@ -79,23 +79,30 @@ const ClientWizard = () => {
   const isCheckpointItem = currentItem && currentItem.category === 'Agreements & Confirmation' &&
     currentItem.label.includes('Confirmation');
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentItem) return;
+  const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
+  const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
 
+  const handleFileAdd = (file: File) => {
+    if (!currentItem) return;
     const reader = new FileReader();
     reader.onload = () => {
+      const newFile = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString(),
+        reviewStatus: 'pending' as const,
+        uploadedBy: 'client' as const,
+      };
+
       const updated = updateCase(caseData.id, c => {
         const item = c.checklist.find(i => i.id === currentItem.id);
         if (item) {
-          item.files = [{
-            id: Math.random().toString(36).substr(2, 9),
-            name: file.name,
-            dataUrl: reader.result as string,
-            uploadedAt: new Date().toISOString(),
-            reviewStatus: 'pending',
-            uploadedBy: 'client',
-          }];
+          if (isMultiUpload) {
+            item.files = [...item.files, newFile];
+          } else {
+            item.files = [newFile];
+          }
           item.completed = true;
         }
         c.lastClientActivity = new Date().toISOString();
@@ -106,21 +113,67 @@ const ClientWizard = () => {
         eventType: 'file_upload',
         actorRole: 'client',
         actorName: caseData.clientName,
-        description: `${caseData.clientName.split(' ')[0]} uploaded ${currentItem.label}`,
+        description: `${caseData.clientName.split(' ')[0]} uploaded ${file.name} for ${currentItem.label}`,
         itemId: currentItem.id,
       });
 
       if (updated) {
         setCaseData(updated);
-        setShowSuccess(true);
-        setTimeout(() => {
-          setShowSuccess(false);
-          checkMilestoneAndAdvance(updated);
-        }, 1500);
+        if (!isMultiUpload) {
+          setShowSuccess(true);
+          setTimeout(() => {
+            setShowSuccess(false);
+            checkMilestoneAndAdvance(updated);
+          }, 1500);
+        } else {
+          toast.success(`${file.name} added`, { duration: 1500 });
+        }
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileDelete = (fileId: string) => {
+    if (!currentItem) return;
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(i => i.id === currentItem.id);
+      if (item) {
+        item.files = item.files.filter(f => f.id !== fileId);
+        if (item.files.length === 0) item.completed = false;
+      }
+      return c;
+    });
+    if (updated) setCaseData(updated);
+  };
+
+  const handleSingleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileAdd(file);
     e.target.value = '';
+  };
+
+  const handleContinueMultiUpload = () => {
+    if (!currentItem || !multiConfig) return;
+    const fileCount = currentItem.files.length;
+    if (fileCount === 0) return;
+    if (fileCount < multiConfig.minRecommended && !showLowCountConfirm) {
+      setShowLowCountConfirm(true);
+      return;
+    }
+    setShowLowCountConfirm(false);
+    checkMilestoneAndAdvance(caseData);
+  };
+
+  const handleLowCountConfirm = () => {
+    setShowLowCountConfirm(false);
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} confirmed single ${multiConfig?.singularLabel} upload`,
+      itemId: currentItem?.id,
+    });
+    checkMilestoneAndAdvance(caseData);
   };
 
   const handleCheckpointConfirm = () => {
