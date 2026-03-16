@@ -206,7 +206,7 @@ export interface IntakeAnswers {
   filingJointly: boolean;
 }
 
-const conditionalItems: Record<string, { category: string; items: Omit<ChecklistItem, 'id' | 'files' | 'flaggedForAttorney' | 'completed'>[] }> = {
+const conditionalItems: Record<string, { category: string; items: Omit<ChecklistItem, 'id' | 'category' | 'files' | 'flaggedForAttorney' | 'completed'>[] }> = {
   ownsRealEstate: {
     category: 'Assets & Property',
     items: [
