@@ -398,8 +398,28 @@ const ClientWizard = () => {
                     </span>
                   </label>
                 </div>
+              ) : isMultiUpload && multiConfig ? (
+                /* Multi-upload zone */
+                <div className="space-y-4">
+                  <MultiUploadZone
+                    files={currentItem.files}
+                    config={multiConfig}
+                    onFileAdd={handleFileAdd}
+                    onFileDelete={handleFileDelete}
+                  />
+                  <AnimatePresence>
+                    {showLowCountConfirm && (
+                      <LowCountConfirmation
+                        config={multiConfig}
+                        fileCount={currentItem.files.length}
+                        onConfirm={handleLowCountConfirm}
+                        onAddMore={() => setShowLowCountConfirm(false)}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
-                /* Already uploaded */
+                /* Already uploaded (single) */
                 <div className="surface-card glow-success p-6 flex items-center gap-4">
                   <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -412,10 +432,10 @@ const ClientWizard = () => {
                   >
                     Replace
                   </button>
-                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
+                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
                 </div>
               ) : (
-                /* Upload zone */
+                /* Upload zone (single) */
                 <div
                   className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
                   onClick={() => fileInputRef.current?.click()}
@@ -428,7 +448,7 @@ const ClientWizard = () => {
                     type="file"
                     className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileUpload}
+                    onChange={handleSingleFileUpload}
                   />
                 </div>
               )}
