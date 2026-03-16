@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import ClientWizard from "./pages/ClientWizard";
 import ParalegalDashboard from "./pages/ParalegalDashboard";
 import CaseDetail from "./pages/CaseDetail";
+import FirmSettings from "./pages/FirmSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
