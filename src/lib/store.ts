@@ -203,6 +203,8 @@ export const buildChecklistFromTemplates = (): ChecklistItem[] => {
       required: t.required,
       files: [],
       flaggedForAttorney: false,
+      correctionRequest: undefined,
+      resubmittedAt: undefined,
       completed: false,
     }));
 };
