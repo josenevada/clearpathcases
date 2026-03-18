@@ -444,6 +444,8 @@ const item = (category: string, label: string, description: string, whyWeNeedThi
   required,
   files: [],
   flaggedForAttorney: false,
+  correctionRequest: undefined,
+  resubmittedAt: undefined,
   completed: false,
 });
 
