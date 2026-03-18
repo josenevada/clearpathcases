@@ -19,6 +19,15 @@ export interface UploadedFile {
   uploadedBy: 'client' | 'paralegal';
 }
 
+export interface CorrectionRequest {
+  reason: string;
+  details?: string;
+  requestedBy: string;
+  requestedAt: string;
+  targetFileId?: string;
+  status: 'open' | 'resolved';
+}
+
 export interface ChecklistItem {
   id: string;
   category: string;
@@ -30,6 +39,8 @@ export interface ChecklistItem {
   files: UploadedFile[];
   flaggedForAttorney: boolean;
   attorneyNote?: string;
+  correctionRequest?: CorrectionRequest;
+  resubmittedAt?: string;
   completed: boolean;
 }
 
