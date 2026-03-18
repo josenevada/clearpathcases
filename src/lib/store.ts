@@ -337,7 +337,7 @@ export const calculateUrgency = (c: Case): UrgencyLevel => {
   const total = c.checklist.length;
   const done = c.checklist.filter(i => i.completed).length;
   const pct = total > 0 ? (done / total) * 100 : 0;
-  const hasCorrections = c.checklist.some(i => i.files.some(f => f.reviewStatus === 'correction-requested'));
+  const hasCorrections = c.checklist.some(i => i.correctionRequest?.status === 'open' || i.files.some(f => f.reviewStatus === 'correction-requested'));
   const daysSinceActivity = c.lastClientActivity
     ? differenceInDays(new Date(), new Date(c.lastClientActivity))
     : 999;
