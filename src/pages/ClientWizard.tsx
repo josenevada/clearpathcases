@@ -1,13 +1,17 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import ProgressPill from '@/components/wizard/ProgressPill';
 import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
-import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type ChecklistItem } from '@/lib/store';
+import CorrectionBanner from '@/components/wizard/CorrectionBanner';
+import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
+import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
+import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case } from '@/lib/store';
 import { toast } from 'sonner';
 
 const pageTransition = {
@@ -19,27 +23,28 @@ const pageTransition = {
 
 const MILESTONE_THRESHOLDS = [25, 50, 75, 100];
 const MILESTONE_MESSAGES = [
-  "Great start! Every document you upload brings you closer to a fresh start.",
+  'Great start! Every document you upload brings you closer to a fresh start.',
   "You're halfway there. Every document you've added helps your attorney fight for you.",
-  "Almost there! Your attorney will have nearly everything they need.",
+  'Almost there! Your attorney will have nearly everything they need.',
   "You're done. Your attorney has everything they need. We'll be in touch soon.",
 ];
 
 const ClientWizard = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0);
   const [currentItemIdx, setCurrentItemIdx] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showMilestone, setShowMilestone] = useState<number | null>(null);
-  const [showCheckpoint, setShowCheckpoint] = useState(false);
   const [checkpointConfirmed, setCheckpointConfirmed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
   const [showStepTransition, setShowStepTransition] = useState<number | null>(null);
   const [showLowCountConfirm, setShowLowCountConfirm] = useState(false);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const targetFixItemId = searchParams.get('fix');
 
   useEffect(() => {
     if (!caseId) return;
@@ -49,16 +54,25 @@ const ClientWizard = () => {
       navigate('/');
       return;
     }
+
     setCaseData(c);
-    // Restore wizard position
+    lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
+
+    if (targetFixItemId) {
+      const targetPosition = getChecklistItemPosition(c, targetFixItemId);
+      if (targetPosition) {
+        setCurrentCategoryIdx(targetPosition.categoryIdx);
+        setCurrentItemIdx(targetPosition.itemIdx);
+        return;
+      }
+    }
+
     const catIdx = Math.min(c.wizardStep, CATEGORIES.length - 1);
     setCurrentCategoryIdx(catIdx);
-    // Find first incomplete item in this category
-    const items = c.checklist.filter(i => i.category === CATEGORIES[catIdx]);
-    const firstIncomplete = items.findIndex(i => !i.completed);
+    const items = c.checklist.filter(item => item.category === CATEGORIES[catIdx]);
+    const firstIncomplete = items.findIndex(item => !item.completed);
     setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
-    lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
-  }, [caseId, navigate]);
+  }, [caseId, navigate, targetFixItemId]);
 
   const refreshCase = useCallback(() => {
     if (!caseId) return null;
@@ -69,21 +83,33 @@ const ClientWizard = () => {
 
   if (!caseData) return null;
 
-  const categoryItems = caseData.checklist.filter(i => i.category === CATEGORIES[currentCategoryIdx]);
+  const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
   const currentItem = categoryItems[currentItemIdx];
   const progress = calculateProgress(caseData);
-  const totalItems = caseData.checklist.length;
-  const completedItems = caseData.checklist.filter(i => i.completed).length;
+  const openCorrectionItem = getOpenCorrectionItem(caseData);
+  const hasPortalCorrection = Boolean(openCorrectionItem);
 
-  // Check if this is a checkpoint item (confirmation items in Step 6)
-  const isCheckpointItem = currentItem && currentItem.category === 'Agreements & Confirmation' &&
-    currentItem.label.includes('Confirmation');
-
+  const isCheckpointItem = currentItem && currentItem.category === 'Agreements & Confirmation' && currentItem.label.includes('Confirmation');
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
+  const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
+  const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
+
+  const jumpToItem = useCallback((itemId: string) => {
+    const position = getChecklistItemPosition(caseData, itemId);
+    if (!position) return;
+    setWhyOpen(false);
+    setShowSuccess(false);
+    setShowMilestone(null);
+    setShowStepTransition(null);
+    setCurrentCategoryIdx(position.categoryIdx);
+    setCurrentItemIdx(position.itemIdx);
+    setSearchParams({ fix: itemId }, { replace: true });
+  }, [caseData, setSearchParams]);
 
   const handleFileAdd = (file: File) => {
     if (!currentItem) return;
+
     const reader = new FileReader();
     reader.onload = () => {
       const newFile = {
@@ -96,14 +122,15 @@ const ClientWizard = () => {
       };
 
       const updated = updateCase(caseData.id, c => {
-        const item = c.checklist.find(i => i.id === currentItem.id);
+        const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
         if (item) {
-          if (isMultiUpload) {
+          if (isMultiUpload || currentItemHasOpenCorrection) {
             item.files = [...item.files, newFile];
+            item.completed = !currentItemHasOpenCorrection;
           } else {
             item.files = [newFile];
+            item.completed = true;
           }
-          item.completed = true;
         }
         c.lastClientActivity = new Date().toISOString();
         return c;
@@ -119,6 +146,11 @@ const ClientWizard = () => {
 
       if (updated) {
         setCaseData(updated);
+        if (currentItemHasOpenCorrection) {
+          toast.success(`${file.name} added`, { duration: 1500 });
+          return;
+        }
+
         if (!isMultiUpload) {
           setShowSuccess(true);
           setTimeout(() => {
@@ -136,9 +168,9 @@ const ClientWizard = () => {
   const handleFileDelete = (fileId: string) => {
     if (!currentItem) return;
     const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(i => i.id === currentItem.id);
+      const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
       if (item) {
-        item.files = item.files.filter(f => f.id !== fileId);
+        item.files = item.files.filter(file => file.id !== fileId);
         if (item.files.length === 0) item.completed = false;
       }
       return c;
@@ -146,14 +178,51 @@ const ClientWizard = () => {
     if (updated) setCaseData(updated);
   };
 
-  const handleSingleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleSingleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) handleFileAdd(file);
-    e.target.value = '';
+    event.target.value = '';
+  };
+
+  const completeCorrectionResubmission = () => {
+    if (!currentItem || !hasPendingReplacement) return;
+
+    const timestamp = new Date().toISOString();
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
+      if (item) {
+        item.completed = true;
+        item.resubmittedAt = timestamp;
+        if (item.correctionRequest) item.correctionRequest.status = 'resolved';
+      }
+      c.lastClientActivity = timestamp;
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'file_reupload',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} resubmitted ${currentItem.label}`,
+      itemId: currentItem.id,
+    });
+
+    if (updated) {
+      setCaseData(updated);
+      setSearchParams({}, { replace: true });
+      toast.success('Replacement submitted for review.');
+      advanceToNext();
+    }
   };
 
   const handleContinueMultiUpload = () => {
     if (!currentItem || !multiConfig) return;
+
+    if (currentItemHasOpenCorrection) {
+      completeCorrectionResubmission();
+      return;
+    }
+
     const fileCount = currentItem.files.length;
     if (fileCount === 0) return;
     if (fileCount < multiConfig.minRecommended && !showLowCountConfirm) {
@@ -177,8 +246,10 @@ const ClientWizard = () => {
   };
 
   const handleCheckpointConfirm = () => {
+    if (!currentItem) return;
+
     const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(i => i.id === currentItem.id);
+      const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
       if (item) item.completed = true;
       c.lastClientActivity = new Date().toISOString();
       c.checkpointsCompleted = [...c.checkpointsCompleted, currentItem.id];
@@ -202,7 +273,7 @@ const ClientWizard = () => {
 
   const checkMilestoneAndAdvance = (updated: Case) => {
     const newProgress = calculateProgress(updated);
-    const milestoneHit = MILESTONE_THRESHOLDS.find(t => newProgress >= t && lastMilestoneRef.current < t);
+    const milestoneHit = MILESTONE_THRESHOLDS.find(threshold => newProgress >= threshold && lastMilestoneRef.current < threshold);
     if (milestoneHit) {
       lastMilestoneRef.current = milestoneHit;
       setShowMilestone(milestoneHit);
@@ -216,18 +287,17 @@ const ClientWizard = () => {
     if (currentItemIdx < categoryItems.length - 1) {
       setCurrentItemIdx(currentItemIdx + 1);
     } else if (currentCategoryIdx < CATEGORIES.length - 1) {
-      // Show step transition card between categories
       setShowStepTransition(currentCategoryIdx);
     }
   };
 
   const handleStepTransitionContinue = () => {
     if (showStepTransition === null) return;
-    const nextCat = showStepTransition + 1;
+    const nextCategory = showStepTransition + 1;
     setShowStepTransition(null);
-    setCurrentCategoryIdx(nextCat);
+    setCurrentCategoryIdx(nextCategory);
     setCurrentItemIdx(0);
-    updateCase(caseData.id, c => ({ ...c, wizardStep: nextCat }));
+    updateCase(caseData.id, c => ({ ...c, wizardStep: nextCategory }));
     refreshCase();
   };
 
@@ -236,10 +306,10 @@ const ClientWizard = () => {
     if (currentItemIdx > 0) {
       setCurrentItemIdx(currentItemIdx - 1);
     } else if (currentCategoryIdx > 0) {
-      const prevCat = currentCategoryIdx - 1;
-      setCurrentCategoryIdx(prevCat);
-      const prevItems = caseData.checklist.filter(i => i.category === CATEGORIES[prevCat]);
-      setCurrentItemIdx(prevItems.length - 1);
+      const previousCategory = currentCategoryIdx - 1;
+      setCurrentCategoryIdx(previousCategory);
+      const previousItems = caseData.checklist.filter(item => item.category === CATEGORIES[previousCategory]);
+      setCurrentItemIdx(previousItems.length - 1);
     }
   };
 
@@ -250,22 +320,29 @@ const ClientWizard = () => {
 
   const handleDismissMilestone = () => {
     setShowMilestone(null);
-    if (lastMilestoneRef.current === 100) return; // Don't advance past completion
+    if (lastMilestoneRef.current === 100) return;
     advanceToNext();
   };
 
-  // Overall position across all items
-  const flatIdx = caseData.checklist.findIndex(i => i.id === currentItem?.id);
+  const handleContinueSingle = () => {
+    if (!currentItem) return;
+    if (currentItemHasOpenCorrection) {
+      completeCorrectionResubmission();
+      return;
+    }
+    advanceToNext();
+  };
 
-  // Urgency banner
   const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
-  // Completion screen
   if (progress === 100 && !showMilestone && !showSuccess) {
     return (
       <div className="min-h-screen flex flex-col">
         <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" />
+        {hasPortalCorrection && openCorrectionItem && (
+          <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id)} />
+        )}
         <div className="flex-1 flex items-center justify-center px-6">
           <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
             <div className="text-6xl mb-6">🎉</div>
@@ -284,6 +361,37 @@ const ClientWizard = () => {
     );
   }
 
+  const getClientFileBadgeClass = (status: 'pending' | 'approved' | 'correction-requested' | 'overridden') => {
+    if (status === 'correction-requested') return 'bg-warning/10 text-warning border-warning/20';
+    if (status === 'approved' || status === 'overridden') return 'bg-success/10 text-success border-success/20';
+    return 'bg-warning/10 text-warning border-warning/20';
+  };
+
+  const renderCorrectionFileList = () => (
+    <div className="space-y-2">
+      {currentItem?.files.map(file => (
+        <div key={file.id} className="surface-card p-4 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground font-medium truncate">{file.name}</p>
+            <p className="text-sm text-muted-foreground">Uploaded</p>
+          </div>
+          <Badge className={`${getClientFileBadgeClass(file.reviewStatus)} text-xs`}>
+            {file.reviewStatus === 'correction-requested'
+              ? 'Correction Requested'
+              : file.reviewStatus === 'overridden'
+                ? 'Approved'
+                : file.reviewStatus === 'approved'
+                  ? 'Approved'
+                  : 'Pending Review'}
+          </Badge>
+          <Button variant="ghost" size="sm" onClick={() => handleFileDelete(file.id)}>
+            <Trash2 className="w-4 h-4" /> Delete
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       <WizardHeader
@@ -292,6 +400,10 @@ const ClientWizard = () => {
         totalSteps={CATEGORIES.length}
         stepName={CATEGORIES[currentCategoryIdx]}
       />
+
+      {hasPortalCorrection && openCorrectionItem && (
+        <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id)} />
+      )}
 
       {showUrgencyBanner && (
         <div className={`px-4 py-3 text-center text-sm font-medium ${
@@ -357,7 +469,6 @@ const ClientWizard = () => {
                 </p>
               </header>
 
-              {/* Why accordion */}
               <button
                 onClick={() => setWhyOpen(!whyOpen)}
                 className="flex items-center gap-1 text-primary/80 text-sm mb-6 hover:text-primary transition-colors"
@@ -379,7 +490,6 @@ const ClientWizard = () => {
               </AnimatePresence>
 
               {isCheckpointItem ? (
-                /* Checkpoint confirmation */
                 <div className="space-y-6">
                   <div className="surface-card p-6">
                     <p className="text-foreground leading-relaxed">
@@ -390,7 +500,7 @@ const ClientWizard = () => {
                     <input
                       type="checkbox"
                       checked={checkpointConfirmed}
-                      onChange={e => setCheckpointConfirmed(e.target.checked)}
+                      onChange={event => setCheckpointConfirmed(event.target.checked)}
                       className="mt-1 w-5 h-5 rounded accent-primary"
                     />
                     <span className="text-foreground">
@@ -399,8 +509,14 @@ const ClientWizard = () => {
                   </label>
                 </div>
               ) : isMultiUpload && multiConfig ? (
-                /* Multi-upload zone */
                 <div className="space-y-4">
+                  {currentItemHasOpenCorrection && currentItem.correctionRequest && (
+                    <CorrectionNoteCard
+                      requestedBy={currentItem.correctionRequest.requestedBy}
+                      reason={currentItem.correctionRequest.reason}
+                      details={currentItem.correctionRequest.details}
+                    />
+                  )}
                   <MultiUploadZone
                     files={currentItem.files}
                     config={multiConfig}
@@ -418,8 +534,33 @@ const ClientWizard = () => {
                     )}
                   </AnimatePresence>
                 </div>
+              ) : currentItemHasOpenCorrection ? (
+                <div className="space-y-4">
+                  {currentItem.correctionRequest && (
+                    <CorrectionNoteCard
+                      requestedBy={currentItem.correctionRequest.requestedBy}
+                      reason={currentItem.correctionRequest.reason}
+                      details={currentItem.correctionRequest.details}
+                    />
+                  )}
+                  {currentItem.files.length > 0 && renderCorrectionFileList()}
+                  <div
+                    className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <UploadCloud className="w-12 h-12 text-primary mb-4" />
+                    <span className="text-foreground font-medium">Tap to upload or drag file</span>
+                    <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleSingleFileUpload}
+                    />
+                  </div>
+                </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
-                /* Already uploaded (single) */
                 <div className="surface-card glow-success p-6 flex items-center gap-4">
                   <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -435,7 +576,6 @@ const ClientWizard = () => {
                   <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
                 </div>
               ) : (
-                /* Upload zone (single) */
                 <div
                   className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
                   onClick={() => fileInputRef.current?.click()}
@@ -457,12 +597,10 @@ const ClientWizard = () => {
         </AnimatePresence>
       </div>
 
-      {/* Progress pill */}
       {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
         <ProgressPill caseData={caseData} />
       )}
 
-      {/* Bottom buttons */}
       {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-4">
           <div className="max-w-md mx-auto flex flex-col gap-3">
@@ -480,21 +618,21 @@ const ClientWizard = () => {
                 onClick={handleContinueMultiUpload}
                 size="lg"
                 className="w-full"
-                disabled={currentItem.files.length === 0 && currentItem.required}
+                disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : currentItem.files.length === 0 && currentItem.required}
               >
                 Continue →
               </Button>
             ) : (
               <Button
-                onClick={advanceToNext}
+                onClick={handleContinueSingle}
                 size="lg"
                 className="w-full"
-                disabled={!currentItem.completed && currentItem.required}
+                disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : !currentItem.completed && currentItem.required}
               >
                 Continue →
               </Button>
             )}
-            {!currentItem.required && !currentItem.completed && (
+            {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
               <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
                 I don't have this yet
               </Button>
