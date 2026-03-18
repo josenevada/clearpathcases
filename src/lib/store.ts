@@ -527,6 +527,13 @@ export const seedIfNeeded = () => {
     id: uid(), name: 'Vehicle Title.pdf', dataUrl: '', uploadedAt: new Date(now.getTime() - 86400000 * 4).toISOString(),
     reviewStatus: 'correction-requested', reviewNote: 'Wrong year', uploadedBy: 'client',
   }];
+  checklist2[completeCount2].correctionRequest = {
+    reason: 'Wrong year',
+    requestedBy: 'Sarah Johnson',
+    requestedAt: new Date(now.getTime() - 86400000 * 2).toISOString(),
+    targetFileId: checklist2[completeCount2].files[0].id,
+    status: 'open',
+  };
 
   const checklist3 = buildDefaultChecklist();
   checklist3.forEach(item => {
