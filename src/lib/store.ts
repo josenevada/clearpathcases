@@ -279,6 +279,8 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
       required: t.required,
       files: [],
       flaggedForAttorney: false,
+      correctionRequest: undefined,
+      resubmittedAt: undefined,
       completed: false,
     }));
 
@@ -291,6 +293,8 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
         category: config.category,
         files: [],
         flaggedForAttorney: false,
+        correctionRequest: undefined,
+        resubmittedAt: undefined,
         completed: false,
       }));
       // Insert after existing items in that category
