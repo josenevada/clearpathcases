@@ -1,0 +1,4 @@
+project_id = "gurufoykncixameklolt"
+
+[functions.case-correction-notify]
+verify_jwt = false

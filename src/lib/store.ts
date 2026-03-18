@@ -19,6 +19,15 @@ export interface UploadedFile {
   uploadedBy: 'client' | 'paralegal';
 }
 
+export interface CorrectionRequest {
+  reason: string;
+  details?: string;
+  requestedBy: string;
+  requestedAt: string;
+  targetFileId?: string;
+  status: 'open' | 'resolved';
+}
+
 export interface ChecklistItem {
   id: string;
   category: string;
@@ -30,6 +39,8 @@ export interface ChecklistItem {
   files: UploadedFile[];
   flaggedForAttorney: boolean;
   attorneyNote?: string;
+  correctionRequest?: CorrectionRequest;
+  resubmittedAt?: string;
   completed: boolean;
 }
 
@@ -192,6 +203,8 @@ export const buildChecklistFromTemplates = (): ChecklistItem[] => {
       required: t.required,
       files: [],
       flaggedForAttorney: false,
+      correctionRequest: undefined,
+      resubmittedAt: undefined,
       completed: false,
     }));
 };
@@ -266,6 +279,8 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
       required: t.required,
       files: [],
       flaggedForAttorney: false,
+      correctionRequest: undefined,
+      resubmittedAt: undefined,
       completed: false,
     }));
 
@@ -278,6 +293,8 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
         category: config.category,
         files: [],
         flaggedForAttorney: false,
+        correctionRequest: undefined,
+        resubmittedAt: undefined,
         completed: false,
       }));
       // Insert after existing items in that category
@@ -320,7 +337,7 @@ export const calculateUrgency = (c: Case): UrgencyLevel => {
   const total = c.checklist.length;
   const done = c.checklist.filter(i => i.completed).length;
   const pct = total > 0 ? (done / total) * 100 : 0;
-  const hasCorrections = c.checklist.some(i => i.files.some(f => f.reviewStatus === 'correction-requested'));
+  const hasCorrections = c.checklist.some(i => i.correctionRequest?.status === 'open' || i.files.some(f => f.reviewStatus === 'correction-requested'));
   const daysSinceActivity = c.lastClientActivity
     ? differenceInDays(new Date(), new Date(c.lastClientActivity))
     : 999;
@@ -337,8 +354,17 @@ export const calculateProgress = (c: Case): number => {
 };
 
 // ─── CRUD ────────────────────────────────────────────────────────────
+const normalizeCase = (c: Case): Case => ({
+  ...c,
+  checklist: c.checklist.map(item => ({
+    ...item,
+    correctionRequest: item.correctionRequest,
+    resubmittedAt: item.resubmittedAt,
+  })),
+});
+
 export const getAllCases = (): Case[] => {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').map(normalizeCase);
 };
 
 export const getCase = (id: string): Case | undefined => {
@@ -427,6 +453,8 @@ const item = (category: string, label: string, description: string, whyWeNeedThi
   required,
   files: [],
   flaggedForAttorney: false,
+  correctionRequest: undefined,
+  resubmittedAt: undefined,
   completed: false,
 });
 
@@ -499,6 +527,13 @@ export const seedIfNeeded = () => {
     id: uid(), name: 'Vehicle Title.pdf', dataUrl: '', uploadedAt: new Date(now.getTime() - 86400000 * 4).toISOString(),
     reviewStatus: 'correction-requested', reviewNote: 'Wrong year', uploadedBy: 'client',
   }];
+  checklist2[completeCount2].correctionRequest = {
+    reason: 'Wrong year',
+    requestedBy: 'Sarah Johnson',
+    requestedAt: new Date(now.getTime() - 86400000 * 2).toISOString(),
+    targetFileId: checklist2[completeCount2].files[0].id,
+    status: 'open',
+  };
 
   const checklist3 = buildDefaultChecklist();
   checklist3.forEach(item => {
