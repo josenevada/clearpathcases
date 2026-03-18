@@ -354,8 +354,17 @@ export const calculateProgress = (c: Case): number => {
 };
 
 // ─── CRUD ────────────────────────────────────────────────────────────
+const normalizeCase = (c: Case): Case => ({
+  ...c,
+  checklist: c.checklist.map(item => ({
+    ...item,
+    correctionRequest: item.correctionRequest,
+    resubmittedAt: item.resubmittedAt,
+  })),
+});
+
 export const getAllCases = (): Case[] => {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').map(normalizeCase);
 };
 
 export const getCase = (id: string): Case | undefined => {
