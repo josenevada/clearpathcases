@@ -28,6 +28,14 @@ export interface CorrectionRequest {
   status: 'open' | 'resolved';
 }
 
+export interface TextEntry {
+  employerName: string;
+  employerAddress?: string;
+  selfEmployed?: boolean;
+  notEmployed?: boolean;
+  savedAt: string;
+}
+
 export interface ChecklistItem {
   id: string;
   category: string;
@@ -37,6 +45,7 @@ export interface ChecklistItem {
   required: boolean;
   conditionalOn?: { itemId: string; answer: string };
   files: UploadedFile[];
+  textEntry?: TextEntry;
   flaggedForAttorney: boolean;
   attorneyNote?: string;
   correctionRequest?: CorrectionRequest;

@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import ProgressPill from '@/components/wizard/ProgressPill';
@@ -11,8 +12,11 @@ import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUpl
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case } from '@/lib/store';
+import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry } from '@/lib/store';
 import { toast } from 'sonner';
+
+const EMPLOYER_LABEL = 'Employer Name & Address';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
@@ -42,6 +46,9 @@ const ClientWizard = () => {
   const [whyOpen, setWhyOpen] = useState(false);
   const [showStepTransition, setShowStepTransition] = useState<number | null>(null);
   const [showLowCountConfirm, setShowLowCountConfirm] = useState(false);
+  const [employerName, setEmployerName] = useState('');
+  const [employerAddress, setEmployerAddress] = useState('');
+  const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetFixItemId = searchParams.get('fix');
@@ -74,12 +81,34 @@ const ClientWizard = () => {
     setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
   }, [caseId, navigate, targetFixItemId]);
 
+  // Move hook before the early return
   const refreshCase = useCallback(() => {
     if (!caseId) return null;
     const c = getCase(caseId);
     if (c) setCaseData(c);
     return c;
   }, [caseId]);
+
+  // Reset employer fields when item changes
+  useEffect(() => {
+    if (!caseData) return;
+    const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+    const item = catItems[currentItemIdx];
+    if (item && isTextEntryItem(item.label)) {
+      setEmployerName(item.textEntry?.employerName || '');
+      setEmployerAddress(item.textEntry?.employerAddress || '');
+      setEmploymentStatus(
+        item.textEntry?.selfEmployed ? 'self-employed'
+          : item.textEntry?.notEmployed ? 'not-employed'
+          : item.textEntry?.employerName ? 'employed'
+          : null
+      );
+    } else {
+      setEmployerName('');
+      setEmployerAddress('');
+      setEmploymentStatus(null);
+    }
+  }, [currentCategoryIdx, currentItemIdx, caseData]);
 
   if (!caseData) return null;
 
@@ -92,6 +121,7 @@ const ClientWizard = () => {
   const isCheckpointItem = currentItem && currentItem.category === 'Agreements & Confirmation' && currentItem.label.includes('Confirmation');
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
+  const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
@@ -333,6 +363,73 @@ const ClientWizard = () => {
     advanceToNext();
   };
 
+  const handleEmployerContinue = () => {
+    if (!currentItem) return;
+
+    if (employmentStatus === 'self-employed' || employmentStatus === 'not-employed') {
+      const statusLabel = employmentStatus === 'self-employed' ? 'is self-employed' : 'is not currently employed';
+      const updated = updateCase(caseData.id, c => {
+        const item = c.checklist.find(ci => ci.id === currentItem.id);
+        if (item) {
+          item.textEntry = {
+            employerName: '',
+            selfEmployed: employmentStatus === 'self-employed',
+            notEmployed: employmentStatus === 'not-employed',
+            savedAt: new Date().toISOString(),
+          };
+          item.completed = true;
+        }
+        c.lastClientActivity = new Date().toISOString();
+        return c;
+      });
+      addActivityEntry(caseData.id, {
+        eventType: 'checkpoint_completed',
+        actorRole: 'client',
+        actorName: caseData.clientName,
+        description: `${caseData.clientName.split(' ')[0]} indicated ${caseData.clientName.split(' ')[0]} ${statusLabel}`,
+        itemId: currentItem.id,
+      });
+      if (updated) {
+        setCaseData(updated);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          checkMilestoneAndAdvance(updated);
+        }, 1500);
+      }
+      return;
+    }
+
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(ci => ci.id === currentItem.id);
+      if (item) {
+        item.textEntry = {
+          employerName: employerName.trim(),
+          employerAddress: employerAddress.trim() || undefined,
+          savedAt: new Date().toISOString(),
+        };
+        item.completed = true;
+      }
+      c.lastClientActivity = new Date().toISOString();
+      return c;
+    });
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} provided employer information: ${employerName.trim()}`,
+      itemId: currentItem.id,
+    });
+    if (updated) {
+      setCaseData(updated);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        checkMilestoneAndAdvance(updated);
+      }, 1500);
+    }
+  };
+
   const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
@@ -508,6 +605,92 @@ const ClientWizard = () => {
                     </span>
                   </label>
                 </div>
+              ) : isTextEntry ? (
+                <div className="space-y-5">
+                  {employmentStatus === 'self-employed' || employmentStatus === 'not-employed' ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="surface-card p-6 text-center"
+                    >
+                      <Briefcase className="w-10 h-10 text-primary mx-auto mb-3" />
+                      <p className="text-foreground font-medium">
+                        {employmentStatus === 'self-employed'
+                          ? "Got it — we'll note that you are self-employed on your case."
+                          : "Got it — we'll note this on your case."}
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Employer Name</label>
+                        <Input
+                          value={employerName}
+                          onChange={e => setEmployerName(e.target.value)}
+                          placeholder="Your employer's company name"
+                          className="bg-input border-border rounded-[10px]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
+                          Employer Address <span className="text-muted-foreground font-normal">(optional)</span>
+                        </label>
+                        <Input
+                          value={employerAddress}
+                          onChange={e => setEmployerAddress(e.target.value)}
+                          placeholder="Street address, city, state, zip"
+                          className="bg-input border-border rounded-[10px]"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {employmentStatus !== 'self-employed' && employmentStatus !== 'not-employed' && (
+                    <div className="pt-2 space-y-2">
+                      <button
+                        onClick={() => setEmploymentStatus('not-employed')}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        I am not currently employed
+                      </button>
+                      <span className="text-muted-foreground text-sm mx-2">·</span>
+                      <button
+                        onClick={() => setEmploymentStatus('self-employed')}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        I am self-employed
+                      </button>
+                    </div>
+                  )}
+
+                  {(employmentStatus === 'self-employed' || employmentStatus === 'not-employed') && (
+                    <button
+                      onClick={() => { setEmploymentStatus(null); setEmployerName(''); setEmployerAddress(''); }}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      ← Actually, I have an employer
+                    </button>
+                  )}
+
+                  {currentItem.completed && currentItem.textEntry && (
+                    <div className="surface-card glow-success p-4 flex items-center gap-3">
+                      <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" />
+                      <div>
+                        <p className="text-foreground font-medium text-sm">
+                          {currentItem.textEntry.selfEmployed
+                            ? 'Self-employed'
+                            : currentItem.textEntry.notEmployed
+                              ? 'Not currently employed'
+                              : currentItem.textEntry.employerName}
+                        </p>
+                        {currentItem.textEntry.employerAddress && (
+                          <p className="text-muted-foreground text-xs">{currentItem.textEntry.employerAddress}</p>
+                        )}
+                        <p className="text-muted-foreground text-xs">Previously saved</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : isMultiUpload && multiConfig ? (
                 <div className="space-y-4">
                   {currentItemHasOpenCorrection && currentItem.correctionRequest && (
@@ -610,6 +793,15 @@ const ClientWizard = () => {
                 size="lg"
                 className="w-full"
                 disabled={!checkpointConfirmed}
+              >
+                Continue →
+              </Button>
+            ) : isTextEntry ? (
+              <Button
+                onClick={handleEmployerContinue}
+                size="lg"
+                className="w-full"
+                disabled={employmentStatus !== 'self-employed' && employmentStatus !== 'not-employed' && !employerName.trim()}
               >
                 Continue →
               </Button>
