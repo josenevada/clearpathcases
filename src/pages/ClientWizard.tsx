@@ -88,6 +88,35 @@ const ClientWizard = () => {
     return c;
   }, [caseId]);
 
+  // Move hook before the early return
+  const refreshCase = useCallback(() => {
+    if (!caseId) return null;
+    const c = getCase(caseId);
+    if (c) setCaseData(c);
+    return c;
+  }, [caseId]);
+
+  // Reset employer fields when item changes
+  useEffect(() => {
+    if (!caseData) return;
+    const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+    const item = catItems[currentItemIdx];
+    if (item && isTextEntryItem(item.label)) {
+      setEmployerName(item.textEntry?.employerName || '');
+      setEmployerAddress(item.textEntry?.employerAddress || '');
+      setEmploymentStatus(
+        item.textEntry?.selfEmployed ? 'self-employed'
+          : item.textEntry?.notEmployed ? 'not-employed'
+          : item.textEntry?.employerName ? 'employed'
+          : null
+      );
+    } else {
+      setEmployerName('');
+      setEmployerAddress('');
+      setEmploymentStatus(null);
+    }
+  }, [currentCategoryIdx, currentItemIdx, caseData]);
+
   if (!caseData) return null;
 
   const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
@@ -99,6 +128,7 @@ const ClientWizard = () => {
   const isCheckpointItem = currentItem && currentItem.category === 'Agreements & Confirmation' && currentItem.label.includes('Confirmation');
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
+  const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
