@@ -34,7 +34,8 @@ const MILESTONE_MESSAGES = [
 ];
 
 const ClientWizard = () => {
-  const { caseId } = useParams<{ caseId: string }>();
+  const { caseId, caseCode } = useParams<{ caseId?: string; caseCode?: string }>();
+  const resolvedCaseId = caseId || '';
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [caseData, setCaseData] = useState<Case | null>(null);
@@ -54,8 +55,8 @@ const ClientWizard = () => {
   const targetFixItemId = searchParams.get('fix');
 
   useEffect(() => {
-    if (!caseId) return;
-    const c = getCase(caseId);
+    if (!resolvedCaseId) return;
+    const c = getCase(resolvedCaseId);
     if (!c) {
       toast.error('Case not found');
       navigate('/');
@@ -79,15 +80,15 @@ const ClientWizard = () => {
     const items = c.checklist.filter(item => item.category === CATEGORIES[catIdx]);
     const firstIncomplete = items.findIndex(item => !item.completed);
     setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
-  }, [caseId, navigate, targetFixItemId]);
+  }, [resolvedCaseId, navigate, targetFixItemId]);
 
   // Move hook before the early return
   const refreshCase = useCallback(() => {
-    if (!caseId) return null;
-    const c = getCase(caseId);
+    if (!resolvedCaseId) return null;
+    const c = getCase(resolvedCaseId);
     if (c) setCaseData(c);
     return c;
-  }, [caseId]);
+  }, [resolvedCaseId]);
 
   // Reset employer fields when item changes
   useEffect(() => {
