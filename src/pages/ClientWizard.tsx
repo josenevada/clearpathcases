@@ -605,6 +605,92 @@ const ClientWizard = () => {
                     </span>
                   </label>
                 </div>
+              ) : isTextEntry ? (
+                <div className="space-y-5">
+                  {employmentStatus === 'self-employed' || employmentStatus === 'not-employed' ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="surface-card p-6 text-center"
+                    >
+                      <Briefcase className="w-10 h-10 text-primary mx-auto mb-3" />
+                      <p className="text-foreground font-medium">
+                        {employmentStatus === 'self-employed'
+                          ? "Got it — we'll note that you are self-employed on your case."
+                          : "Got it — we'll note this on your case."}
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Employer Name</label>
+                        <Input
+                          value={employerName}
+                          onChange={e => setEmployerName(e.target.value)}
+                          placeholder="Your employer's company name"
+                          className="bg-input border-border rounded-[10px]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
+                          Employer Address <span className="text-muted-foreground font-normal">(optional)</span>
+                        </label>
+                        <Input
+                          value={employerAddress}
+                          onChange={e => setEmployerAddress(e.target.value)}
+                          placeholder="Street address, city, state, zip"
+                          className="bg-input border-border rounded-[10px]"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {employmentStatus !== 'self-employed' && employmentStatus !== 'not-employed' && (
+                    <div className="pt-2 space-y-2">
+                      <button
+                        onClick={() => setEmploymentStatus('not-employed')}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        I am not currently employed
+                      </button>
+                      <span className="text-muted-foreground text-sm mx-2">·</span>
+                      <button
+                        onClick={() => setEmploymentStatus('self-employed')}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        I am self-employed
+                      </button>
+                    </div>
+                  )}
+
+                  {(employmentStatus === 'self-employed' || employmentStatus === 'not-employed') && (
+                    <button
+                      onClick={() => { setEmploymentStatus(null); setEmployerName(''); setEmployerAddress(''); }}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      ← Actually, I have an employer
+                    </button>
+                  )}
+
+                  {currentItem.completed && currentItem.textEntry && (
+                    <div className="surface-card glow-success p-4 flex items-center gap-3">
+                      <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" />
+                      <div>
+                        <p className="text-foreground font-medium text-sm">
+                          {currentItem.textEntry.selfEmployed
+                            ? 'Self-employed'
+                            : currentItem.textEntry.notEmployed
+                              ? 'Not currently employed'
+                              : currentItem.textEntry.employerName}
+                        </p>
+                        {currentItem.textEntry.employerAddress && (
+                          <p className="text-muted-foreground text-xs">{currentItem.textEntry.employerAddress}</p>
+                        )}
+                        <p className="text-muted-foreground text-xs">Previously saved</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : isMultiUpload && multiConfig ? (
                 <div className="space-y-4">
                   {currentItemHasOpenCorrection && currentItem.correctionRequest && (
