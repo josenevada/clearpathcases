@@ -404,7 +404,45 @@ const CaseDetail = () => {
                                       className="overflow-hidden"
                                     >
                                       <div className="space-y-4 px-4 pb-4 pl-12">
-                                        {item.files.length > 0 ? (
+                                        {item.textEntry ? (
+                                          <div className="surface-card p-4 space-y-2">
+                                            <div className="flex items-start justify-between">
+                                              <div>
+                                                <p className="text-sm font-medium text-foreground">
+                                                  {item.textEntry.selfEmployed
+                                                    ? 'Self-employed'
+                                                    : item.textEntry.notEmployed
+                                                      ? 'Not currently employed'
+                                                      : item.textEntry.employerName}
+                                                </p>
+                                                {item.textEntry.employerAddress && (
+                                                  <p className="text-xs text-muted-foreground mt-1">{item.textEntry.employerAddress}</p>
+                                                )}
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                  Provided {format(new Date(item.textEntry.savedAt), 'MMM d, yyyy · h:mm a')}
+                                                </p>
+                                              </div>
+                                              <Badge className={`${getFileStatusBadgeClass(item.files[0]?.reviewStatus || 'pending')} text-xs`}>
+                                                {item.completed ? (item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
+                                              </Badge>
+                                            </div>
+                                            {viewRole === 'attorney' && (
+                                              <div className="flex gap-2 mt-2">
+                                                <Button variant="success" size="sm" onClick={() => {
+                                                  const updated = updateCase(caseData!.id, c => {
+                                                    const ci = c.checklist.find(x => x.id === item.id);
+                                                    if (ci) ci.files = [{ id: 'text-approved', name: 'Employer Info', dataUrl: '', uploadedAt: item.textEntry!.savedAt, reviewStatus: 'approved', uploadedBy: 'client' }];
+                                                    return c;
+                                                  });
+                                                  if (updated) setCaseData(updated);
+                                                  toast.success('Employer information approved');
+                                                }}>
+                                                  <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : item.files.length > 0 ? (
                                           item.files.map(file => {
                                             const isActiveCorrection = activeCorrectionTarget?.itemId === item.id && activeCorrectionTarget.fileId === file.id;
                                             const isOverrideTarget = overrideTarget?.itemId === item.id && overrideTarget.fileId === file.id;
