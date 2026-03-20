@@ -77,6 +77,8 @@ export interface Case {
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
+  clientDob?: string;
+  caseCode?: string;
   chapterType: ChapterType;
   assignedParalegal: string;
   assignedAttorney: string;
