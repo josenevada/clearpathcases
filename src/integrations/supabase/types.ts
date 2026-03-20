@@ -63,6 +63,7 @@ export type Database = {
           assigned_paralegal_id: string | null
           case_code: string | null
           chapter_type: string
+          client_dob: string | null
           client_email: string
           client_name: string
           client_phone: string | null
@@ -82,6 +83,7 @@ export type Database = {
           assigned_paralegal_id?: string | null
           case_code?: string | null
           chapter_type: string
+          client_dob?: string | null
           client_email: string
           client_name: string
           client_phone?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           assigned_paralegal_id?: string | null
           case_code?: string | null
           chapter_type?: string
+          client_dob?: string | null
           client_email?: string
           client_name?: string
           client_phone?: string | null
