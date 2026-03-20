@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, getFirmSettings, buildCustomChecklist,
+  createCase, updateCase, getFirmSettings, buildCustomChecklist,
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { toast } from 'sonner';
@@ -151,10 +151,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       checklist: customChecklist,
     });
 
-    // Update case with case_code and client_dob via localStorage
-    // (store.ts updateCase handles this)
-    const { updateCase: storageUpdate } = require('@/lib/store');
-    storageUpdate(newCase.id, (c: any) => ({
+    // Update case with case_code and client_dob
+    updateCase(newCase.id, (c) => ({
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
