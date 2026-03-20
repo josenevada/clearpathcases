@@ -81,13 +81,6 @@ const ClientWizard = () => {
     setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
   }, [caseId, navigate, targetFixItemId]);
 
-  const refreshCase = useCallback(() => {
-    if (!caseId) return null;
-    const c = getCase(caseId);
-    if (c) setCaseData(c);
-    return c;
-  }, [caseId]);
-
   // Move hook before the early return
   const refreshCase = useCallback(() => {
     if (!caseId) return null;
