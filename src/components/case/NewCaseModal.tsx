@@ -381,6 +381,16 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Client Date of Birth</Label>
+        <Input
+          type="date"
+          value={info.clientDob}
+          onChange={e => update('clientDob', e.target.value)}
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+        <p className="text-xs text-muted-foreground mt-1">Used for client portal verification</p>
+      </div>
       <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Chapter Type *</Label>
         <div className="flex gap-3 mt-1">
