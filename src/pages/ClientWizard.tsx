@@ -363,6 +363,73 @@ const ClientWizard = () => {
     advanceToNext();
   };
 
+  const handleEmployerContinue = () => {
+    if (!currentItem) return;
+
+    if (employmentStatus === 'self-employed' || employmentStatus === 'not-employed') {
+      const statusLabel = employmentStatus === 'self-employed' ? 'is self-employed' : 'is not currently employed';
+      const updated = updateCase(caseData.id, c => {
+        const item = c.checklist.find(ci => ci.id === currentItem.id);
+        if (item) {
+          item.textEntry = {
+            employerName: '',
+            selfEmployed: employmentStatus === 'self-employed',
+            notEmployed: employmentStatus === 'not-employed',
+            savedAt: new Date().toISOString(),
+          };
+          item.completed = true;
+        }
+        c.lastClientActivity = new Date().toISOString();
+        return c;
+      });
+      addActivityEntry(caseData.id, {
+        eventType: 'checkpoint_completed',
+        actorRole: 'client',
+        actorName: caseData.clientName,
+        description: `${caseData.clientName.split(' ')[0]} indicated ${caseData.clientName.split(' ')[0]} ${statusLabel}`,
+        itemId: currentItem.id,
+      });
+      if (updated) {
+        setCaseData(updated);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          checkMilestoneAndAdvance(updated);
+        }, 1500);
+      }
+      return;
+    }
+
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(ci => ci.id === currentItem.id);
+      if (item) {
+        item.textEntry = {
+          employerName: employerName.trim(),
+          employerAddress: employerAddress.trim() || undefined,
+          savedAt: new Date().toISOString(),
+        };
+        item.completed = true;
+      }
+      c.lastClientActivity = new Date().toISOString();
+      return c;
+    });
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} provided employer information: ${employerName.trim()}`,
+      itemId: currentItem.id,
+    });
+    if (updated) {
+      setCaseData(updated);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        checkMilestoneAndAdvance(updated);
+      }, 1500);
+    }
+  };
+
   const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
