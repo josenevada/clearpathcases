@@ -150,7 +150,7 @@ const CaseDetail = () => {
       itemId: item.id,
     });
 
-    const correctionLink = `${window.location.origin}/client/${caseData.id}?fix=${encodeURIComponent(item.id)}`;
+    const correctionLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(item.id)}`;
 
     try {
       const result = await sendCorrectionNotifications({
@@ -655,12 +655,12 @@ const CaseDetail = () => {
               <div className="surface-card p-4">
                 <p className="mb-2 text-xs text-muted-foreground">Client Portal Link</p>
                 <div className="flex gap-2">
-                  <Input readOnly value={`${window.location.origin}/client/${caseData.id}`} className="rounded-[10px] bg-input border-border text-xs" />
+                  <Input readOnly value={`${window.location.origin}/client/${caseData.caseCode || caseData.id}`} className="rounded-[10px] bg-input border-border text-xs" />
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      navigator.clipboard?.writeText(`${window.location.origin}/client/${caseData.id}`);
+                      navigator.clipboard?.writeText(`${window.location.origin}/client/${caseData.caseCode || caseData.id}`);
                       toast.success('Link copied!');
                     }}
                   >
