@@ -796,6 +796,15 @@ const ClientWizard = () => {
               >
                 Continue →
               </Button>
+            ) : isTextEntry ? (
+              <Button
+                onClick={handleEmployerContinue}
+                size="lg"
+                className="w-full"
+                disabled={employmentStatus !== 'self-employed' && employmentStatus !== 'not-employed' && !employerName.trim()}
+              >
+                Continue →
+              </Button>
             ) : isMultiUpload ? (
               <Button
                 onClick={handleContinueMultiUpload}
