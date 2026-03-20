@@ -12,8 +12,11 @@ import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUpl
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case } from '@/lib/store';
+import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry } from '@/lib/store';
 import { toast } from 'sonner';
+
+const EMPLOYER_LABEL = 'Employer Name & Address';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
