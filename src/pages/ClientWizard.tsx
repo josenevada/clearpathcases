@@ -46,6 +46,9 @@ const ClientWizard = () => {
   const [whyOpen, setWhyOpen] = useState(false);
   const [showStepTransition, setShowStepTransition] = useState<number | null>(null);
   const [showLowCountConfirm, setShowLowCountConfirm] = useState(false);
+  const [employerName, setEmployerName] = useState('');
+  const [employerAddress, setEmployerAddress] = useState('');
+  const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetFixItemId = searchParams.get('fix');
