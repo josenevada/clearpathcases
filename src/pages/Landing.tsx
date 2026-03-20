@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, Users } from 'lucide-react';
+import { FileText, Users, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Logo from '@/components/Logo';
-import { getCase } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Landing = () => {
@@ -13,10 +13,18 @@ const Landing = () => {
   const [caseCode, setCaseCode] = useState('');
   const [showClientInput, setShowClientInput] = useState(false);
 
-  const handleClientSubmit = () => {
-    const c = getCase(caseCode.trim());
-    if (c) {
-      navigate(`/client/${c.id}`);
+  const handleClientSubmit = async () => {
+    const code = caseCode.trim();
+    if (!code) return;
+
+    const { data } = await supabase
+      .from('cases')
+      .select('id, case_code')
+      .eq('case_code', code)
+      .maybeSingle();
+
+    if (data) {
+      navigate(`/client/${code}`);
     } else {
       toast.error('Case not found. Please check your code and try again.');
     }
@@ -67,9 +75,6 @@ const Landing = () => {
               <Button onClick={handleClientSubmit} className="w-full" disabled={!caseCode.trim()}>
                 Access My Portal →
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Demo codes: maria-001, james-002, robert-003
-              </p>
             </motion.div>
           )}
         </motion.div>
@@ -79,7 +84,7 @@ const Landing = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2, ease: [0.2, 0, 0, 1] }}
           className="surface-card-hover p-8 flex flex-col items-center text-center cursor-pointer"
-          onClick={() => navigate('/paralegal')}
+          onClick={() => navigate('/login')}
         >
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Users className="w-7 h-7 text-primary" />

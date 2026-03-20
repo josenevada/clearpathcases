@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, getFirmSettings, buildCustomChecklist,
+  createCase, updateCase, getFirmSettings, buildCustomChecklist,
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { toast } from 'sonner';
@@ -31,6 +31,7 @@ interface BasicInfo {
   clientName: string;
   clientEmail: string;
   clientPhone: string;
+  clientDob: string;
   chapterType: ChapterType;
   filingDeadline: Date | undefined;
   assignedParalegal: string;
@@ -55,6 +56,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     clientName: '',
     clientEmail: '',
     clientPhone: '',
+    clientDob: '',
     chapterType: '7',
     filingDeadline: undefined,
     assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
@@ -106,7 +108,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const resetAndClose = () => {
     setStep(1);
     setInfo({
-      clientName: '', clientEmail: '', clientPhone: '',
+      clientName: '', clientEmail: '', clientPhone: '', clientDob: '',
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
       assignedAttorney: firmSettings.defaultAttorney || 'David Park',
@@ -127,7 +129,17 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     }
   };
 
+  const generateCaseCode = (name: string) => {
+    const parts = name.trim().split(' ');
+    const last = parts[parts.length - 1] || 'Client';
+    const first = parts[0]?.[0] || '';
+    const year = new Date().getFullYear();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    return `${first}${last}-${year}-${rand}`;
+  };
+
   const handleCreate = () => {
+    const caseCode = generateCaseCode(info.clientName);
     const newCase = createCase({
       clientName: info.clientName,
       clientEmail: info.clientEmail,
@@ -138,7 +150,16 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       assignedAttorney: info.assignedAttorney,
       checklist: customChecklist,
     });
-    navigator.clipboard?.writeText(`${window.location.origin}/client/${newCase.id}`);
+
+    // Update case with case_code and client_dob
+    updateCase(newCase.id, (c) => ({
+      ...c,
+      caseCode,
+      clientDob: info.clientDob || undefined,
+    }));
+
+    const portalLink = `${window.location.origin}/client/${caseCode}`;
+    navigator.clipboard?.writeText(portalLink);
     toast.success('Case created! Client portal link copied to clipboard.');
     onCreated(newCase);
     resetAndClose();
@@ -359,6 +380,16 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
           placeholder="(555) 000-0000"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Client Date of Birth</Label>
+        <Input
+          type="date"
+          value={info.clientDob}
+          onChange={e => update('clientDob', e.target.value)}
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+        <p className="text-xs text-muted-foreground mt-1">Used for client portal verification</p>
       </div>
       <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Chapter Type *</Label>

@@ -77,6 +77,8 @@ export interface Case {
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
+  clientDob?: string;
+  caseCode?: string;
   chapterType: ChapterType;
   assignedParalegal: string;
   assignedAttorney: string;
@@ -559,6 +561,8 @@ export const seedIfNeeded = () => {
       clientName: 'Maria Rodriguez',
       clientEmail: 'maria@example.com',
       clientPhone: '(555) 234-5678',
+      clientDob: '1988-03-15',
+      caseCode: 'MRodriguez-2026-A3F',
       chapterType: '7',
       assignedParalegal: 'Sarah Johnson',
       assignedAttorney: 'David Park',
@@ -583,6 +587,8 @@ export const seedIfNeeded = () => {
       id: 'james-002',
       clientName: 'James Chen',
       clientEmail: 'james@example.com',
+      clientDob: '1991-07-22',
+      caseCode: 'JChen-2026-B7K',
       chapterType: '13',
       assignedParalegal: 'Sarah Johnson',
       assignedAttorney: 'David Park',
@@ -605,6 +611,8 @@ export const seedIfNeeded = () => {
       clientName: 'Robert Kim',
       clientEmail: 'robert@example.com',
       clientPhone: '(555) 876-5432',
+      clientDob: '1975-11-08',
+      caseCode: 'RKim-2026-C2M',
       chapterType: '7',
       assignedParalegal: 'Sarah Johnson',
       assignedAttorney: 'David Park',

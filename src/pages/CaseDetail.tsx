@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import DocumentsTab from '@/components/case/DocumentsTab';
 import { sendCorrectionNotifications } from '@/lib/cloud-functions';
+import { useAuth } from '@/lib/auth';
 import {
   getCase,
   updateCase,
@@ -29,8 +30,9 @@ type TabType = 'checklist' | 'activity' | 'documents';
 const CaseDetail = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [caseData, setCaseData] = useState<Case | null>(null);
-  const [viewRole, setViewRole] = useState<ViewRole>('paralegal');
+  const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string>(CATEGORIES[0]);
   const [noteTab, setNoteTab] = useState<'internal' | 'client'>('internal');
@@ -148,7 +150,7 @@ const CaseDetail = () => {
       itemId: item.id,
     });
 
-    const correctionLink = `${window.location.origin}/client/${caseData.id}?fix=${encodeURIComponent(item.id)}`;
+    const correctionLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(item.id)}`;
 
     try {
       const result = await sendCorrectionNotifications({
@@ -288,19 +290,9 @@ const CaseDetail = () => {
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="w-3 h-3" /> {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
             </span>
-            <div className="flex rounded-pill bg-secondary p-0.5">
-              {(['paralegal', 'attorney'] as ViewRole[]).map(role => (
-                <button
-                  key={role}
-                  onClick={() => setViewRole(role)}
-                  className={`px-3 py-1 text-xs font-bold capitalize rounded-pill transition-all ${
-                    viewRole === role ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
+            <span className="rounded-pill bg-secondary px-3 py-1 text-xs font-bold capitalize text-muted-foreground">
+              {user?.fullName} · {viewRole}
+            </span>
           </div>
         </div>
       </header>
@@ -663,12 +655,12 @@ const CaseDetail = () => {
               <div className="surface-card p-4">
                 <p className="mb-2 text-xs text-muted-foreground">Client Portal Link</p>
                 <div className="flex gap-2">
-                  <Input readOnly value={`${window.location.origin}/client/${caseData.id}`} className="rounded-[10px] bg-input border-border text-xs" />
+                  <Input readOnly value={`${window.location.origin}/client/${caseData.caseCode || caseData.id}`} className="rounded-[10px] bg-input border-border text-xs" />
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      navigator.clipboard?.writeText(`${window.location.origin}/client/${caseData.id}`);
+                      navigator.clipboard?.writeText(`${window.location.origin}/client/${caseData.caseCode || caseData.id}`);
                       toast.success('Link copied!');
                     }}
                   >

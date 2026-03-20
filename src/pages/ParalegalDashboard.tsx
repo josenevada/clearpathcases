@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings } from 'lucide-react';
+import { Plus, AlertCircle, Clock, Settings, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,16 @@ import Logo from '@/components/Logo';
 import NewCaseModal from '@/components/case/NewCaseModal';
 import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 
 const ParalegalDashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [showNewCase, setShowNewCase] = useState(false);
+
+  const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
   useEffect(() => {
     const refreshCases = () => setCases(getAllCases());
@@ -22,6 +26,12 @@ const ParalegalDashboard = () => {
     window.addEventListener('focus', refreshCases);
     return () => window.removeEventListener('focus', refreshCases);
   }, []);
+
+  const handleSignOut = async () => {
+    sessionStorage.removeItem('admin_viewing_firm');
+    await signOut();
+    navigate('/login');
+  };
 
   const sortedCases = [...cases].sort((a, b) => {
     const order = { critical: 0, 'at-risk': 1, normal: 2 };
@@ -34,20 +44,32 @@ const ParalegalDashboard = () => {
     return (order[a.urgency] + aHasResubmission + aHasFlags + aReady) - (order[b.urgency] + bHasResubmission + bHasFlags + bReady);
   });
 
+  const displayName = user?.fullName ?? 'Staff';
+  const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-6">
           <Logo size="sm" />
-          <span className="hidden text-sm text-muted-foreground font-body sm:block">Paralegal Dashboard</span>
+          <span className="hidden text-sm text-muted-foreground font-body sm:block">
+            {isAdminViewing ? 'Admin View (Read-Only)' : `${displayRole} Dashboard`}
+          </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hidden text-sm text-muted-foreground md:block">Sarah Johnson, Paralegal</span>
+          <span className="hidden text-sm text-muted-foreground md:block">
+            {displayName}, {displayRole}
+          </span>
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>
-          <Button onClick={() => setShowNewCase(true)}>
-            <Plus className="w-4 h-4 mr-1" /> New Case
+          {!isAdminViewing && (
+            <Button onClick={() => setShowNewCase(true)}>
+              <Plus className="w-4 h-4 mr-1" /> New Case
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </header>
@@ -56,9 +78,11 @@ const ParalegalDashboard = () => {
         {sortedCases.length === 0 ? (
           <div className="py-20 text-center">
             <p className="mb-4 text-lg text-muted-foreground">No cases yet. Create your first case to get started.</p>
-            <Button onClick={() => setShowNewCase(true)}>
-              <Plus className="w-4 h-4 mr-1" /> New Case
-            </Button>
+            {!isAdminViewing && (
+              <Button onClick={() => setShowNewCase(true)}>
+                <Plus className="w-4 h-4 mr-1" /> New Case
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
