@@ -14,7 +14,404 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_log: {
+        Row: {
+          actor_name: string | null
+          actor_role: string | null
+          case_id: string
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          item_id: string | null
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_role?: string | null
+          case_id: string
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          item_id?: string | null
+        }
+        Update: {
+          actor_name?: string | null
+          actor_role?: string | null
+          case_id?: string
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          assigned_attorney: string | null
+          assigned_attorney_id: string | null
+          assigned_paralegal: string | null
+          assigned_paralegal_id: string | null
+          case_code: string | null
+          chapter_type: string
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          created_at: string | null
+          filing_deadline: string
+          firm_id: string | null
+          id: string
+          last_client_activity: string | null
+          ready_to_file: boolean | null
+          urgency: string | null
+          wizard_step: number | null
+        }
+        Insert: {
+          assigned_attorney?: string | null
+          assigned_attorney_id?: string | null
+          assigned_paralegal?: string | null
+          assigned_paralegal_id?: string | null
+          case_code?: string | null
+          chapter_type: string
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          created_at?: string | null
+          filing_deadline: string
+          firm_id?: string | null
+          id?: string
+          last_client_activity?: string | null
+          ready_to_file?: boolean | null
+          urgency?: string | null
+          wizard_step?: number | null
+        }
+        Update: {
+          assigned_attorney?: string | null
+          assigned_attorney_id?: string | null
+          assigned_paralegal?: string | null
+          assigned_paralegal_id?: string | null
+          case_code?: string | null
+          chapter_type?: string
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string | null
+          filing_deadline?: string
+          firm_id?: string | null
+          id?: string
+          last_client_activity?: string | null
+          ready_to_file?: boolean | null
+          urgency?: string | null
+          wizard_step?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_assigned_attorney_id_fkey"
+            columns: ["assigned_attorney_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_assigned_paralegal_id_fkey"
+            columns: ["assigned_paralegal_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_firm_id_fkey"
+            columns: ["firm_id"]
+            isOneToOne: false
+            referencedRelation: "firms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_items: {
+        Row: {
+          attorney_note: string | null
+          case_id: string
+          category: string
+          completed: boolean | null
+          correction_details: string | null
+          correction_reason: string | null
+          correction_requested_at: string | null
+          correction_requested_by: string | null
+          correction_status: string | null
+          correction_target_file_id: string | null
+          description: string | null
+          flagged_for_attorney: boolean | null
+          id: string
+          input_type: string | null
+          label: string
+          required: boolean | null
+          resubmitted_at: string | null
+          sort_order: number | null
+          text_value: Json | null
+          why_we_need_this: string | null
+        }
+        Insert: {
+          attorney_note?: string | null
+          case_id: string
+          category: string
+          completed?: boolean | null
+          correction_details?: string | null
+          correction_reason?: string | null
+          correction_requested_at?: string | null
+          correction_requested_by?: string | null
+          correction_status?: string | null
+          correction_target_file_id?: string | null
+          description?: string | null
+          flagged_for_attorney?: boolean | null
+          id?: string
+          input_type?: string | null
+          label: string
+          required?: boolean | null
+          resubmitted_at?: string | null
+          sort_order?: number | null
+          text_value?: Json | null
+          why_we_need_this?: string | null
+        }
+        Update: {
+          attorney_note?: string | null
+          case_id?: string
+          category?: string
+          completed?: boolean | null
+          correction_details?: string | null
+          correction_reason?: string | null
+          correction_requested_at?: string | null
+          correction_requested_by?: string | null
+          correction_status?: string | null
+          correction_target_file_id?: string | null
+          description?: string | null
+          flagged_for_attorney?: boolean | null
+          id?: string
+          input_type?: string | null
+          label?: string
+          required?: boolean | null
+          resubmitted_at?: string | null
+          sort_order?: number | null
+          text_value?: Json | null
+          why_we_need_this?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkpoints: {
+        Row: {
+          case_id: string
+          checkpoint_type: string
+          completed_at: string | null
+          confirmed_by: string | null
+          id: string
+        }
+        Insert: {
+          case_id: string
+          checkpoint_type: string
+          completed_at?: string | null
+          confirmed_by?: string | null
+          id?: string
+        }
+        Update: {
+          case_id?: string
+          checkpoint_type?: string
+          completed_at?: string | null
+          confirmed_by?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkpoints_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      files: {
+        Row: {
+          case_id: string
+          checklist_item_id: string
+          data_url: string | null
+          file_name: string
+          id: string
+          review_note: string | null
+          review_status: string | null
+          storage_path: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          case_id: string
+          checklist_item_id: string
+          data_url?: string | null
+          file_name: string
+          id?: string
+          review_note?: string | null
+          review_status?: string | null
+          storage_path?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          checklist_item_id?: string
+          data_url?: string | null
+          file_name?: string
+          id?: string
+          review_note?: string | null
+          review_status?: string | null
+          storage_path?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firms: {
+        Row: {
+          created_at: string | null
+          default_attorney: string | null
+          default_paralegal: string | null
+          id: string
+          name: string
+          phone: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          slug: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_attorney?: string | null
+          default_paralegal?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          slug?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_attorney?: string | null
+          default_paralegal?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          slug?: string | null
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          author_name: string | null
+          author_role: string | null
+          case_id: string
+          content: string | null
+          created_at: string | null
+          id: string
+          visibility: string | null
+        }
+        Insert: {
+          author_name?: string | null
+          author_role?: string | null
+          case_id: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          visibility?: string | null
+        }
+        Update: {
+          author_name?: string | null
+          author_role?: string | null
+          case_id?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          firm_id: string | null
+          full_name: string
+          id: string
+          last_sign_in: string | null
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          firm_id?: string | null
+          full_name: string
+          id?: string
+          last_sign_in?: string | null
+          role: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          firm_id?: string | null
+          full_name?: string
+          id?: string
+          last_sign_in?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_firm_id_fkey"
+            columns: ["firm_id"]
+            isOneToOne: false
+            referencedRelation: "firms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
