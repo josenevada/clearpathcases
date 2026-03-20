@@ -37,7 +37,7 @@ const Login = () => {
       .maybeSingle();
 
     if (userData?.role === 'super_admin') {
-      navigate('/admin');
+      navigate('/admin/dashboard');
     } else {
       navigate('/paralegal');
     }
