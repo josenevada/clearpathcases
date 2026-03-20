@@ -561,6 +561,8 @@ export const seedIfNeeded = () => {
       clientName: 'Maria Rodriguez',
       clientEmail: 'maria@example.com',
       clientPhone: '(555) 234-5678',
+      clientDob: '1988-03-15',
+      caseCode: 'MRodriguez-2026-A3F',
       chapterType: '7',
       assignedParalegal: 'Sarah Johnson',
       assignedAttorney: 'David Park',
