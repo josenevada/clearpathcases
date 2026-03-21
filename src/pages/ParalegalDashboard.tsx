@@ -59,8 +59,17 @@ const ParalegalDashboard = () => {
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
 
+  // Show subscription gate if trial expired
+  if (!subLoading && !subscribed && status === 'trial_expired') {
+    return <SubscriptionGate />;
+  }
+
   return (
     <div className="min-h-screen">
+      {/* Trial countdown banner */}
+      {status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
+        <TrialBanner daysLeft={daysLeft} />
+      )}
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-6">
           <Logo size="sm" />
