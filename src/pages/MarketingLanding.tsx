@@ -95,7 +95,7 @@ const MarketingLanding = () => {
       </nav>
 
       {/* Hero */}
-      <section className="px-6 py-20 md:py-28 text-center max-w-4xl mx-auto">
+      <section className="px-6 pt-20 md:pt-28 pb-10 md:pb-14 text-center max-w-4xl mx-auto">
         <motion.h1
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="font-display font-bold text-4xl md:text-6xl text-foreground leading-tight"
@@ -130,7 +130,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Problem / Solution */}
-      <section className="px-6 py-16 max-w-5xl mx-auto">
+      <section className="px-6 py-12 max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Old way */}
           <div className="rounded-2xl bg-destructive/[0.04] border border-destructive/10 border-l-4 border-l-destructive/40 p-6">
@@ -172,7 +172,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Features */}
-      <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
+      <section id="features" className="px-6 py-12 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-3xl text-foreground text-center mb-12">How it works</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -194,7 +194,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Social Proof */}
-      <section className="px-6 py-16 max-w-3xl mx-auto">
+      <section className="px-6 py-12 max-w-3xl mx-auto">
         <div className="surface-card p-8 border-l-4 border-primary">
           <p className="text-lg md:text-xl text-foreground font-body italic leading-relaxed">
             "We used to spend two weeks collecting documents by email. With ClearPath we have everything we need in three days."
@@ -208,10 +208,21 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Pricing */}
-      <section id="pricing" className="px-6 py-16 max-w-5xl mx-auto">
+      <section id="pricing" className="px-6 py-12 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-3xl text-foreground text-center mb-4">Simple, transparent pricing</h2>
         <p className="text-muted-foreground text-center mb-12 font-body">14-day free trial on every plan. No credit card required.</p>
         <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />
+      </section>
+
+      <SectionDivider />
+
+      {/* Final CTA */}
+      <section className="px-6 py-16 md:py-20">
+        <div className="max-w-3xl mx-auto text-center rounded-2xl bg-primary/[0.06] border border-primary/10 px-8 py-14">
+          <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-4">Ready to stop chasing documents?</h2>
+          <p className="text-muted-foreground font-body mb-8 max-w-xl mx-auto">Join ClearPath and get your first case set up in minutes.</p>
+          <Button size="lg" onClick={() => navigate('/signup')}>Start Free — No Card Needed</Button>
+        </div>
       </section>
 
       {/* Footer */}
