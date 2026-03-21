@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +41,6 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -53,7 +52,6 @@ const Signup = () => {
       const slug = firmName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
 
-      // Create firm
       const { data: firmData, error: firmError } = await supabase
         .from('firms')
         .insert({
@@ -70,7 +68,6 @@ const Signup = () => {
       if (firmError) throw firmError;
       setFirmId(firmData.id);
 
-      // Create user record
       const { error: userError } = await supabase
         .from('users')
         .insert({
@@ -118,21 +115,17 @@ const Signup = () => {
     month: 'long', day: 'numeric', year: 'numeric',
   });
 
+  const inputClasses = "border border-foreground/[0.12] bg-background focus-visible:ring-2 focus-visible:ring-ring";
+
   return (
     <div className="min-h-screen flex flex-col items-center px-6 py-12">
       <Logo size="md" />
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mt-8 mb-10">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i <= step ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
-              {i < step ? <Check className="w-4 h-4" /> : i + 1}
-            </div>
-            <span className="text-xs text-muted-foreground hidden sm:block">{s}</span>
-            {i < STEPS.length - 1 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-          </div>
-        ))}
+      {/* Step indicator — single step revealed */}
+      <div className="mt-8 mb-10">
+        <p className="text-sm text-muted-foreground font-body">
+          Step <span className="text-foreground font-semibold">{step + 1}</span> of {STEPS.length} — <span className="text-foreground">{STEPS[step]}</span>
+        </p>
       </div>
 
       <div className="w-full max-w-lg">
@@ -142,19 +135,19 @@ const Signup = () => {
               <h2 className="font-display font-bold text-2xl text-foreground">Create Your Account</h2>
               <div>
                 <Label className="font-body">Full Name</Label>
-                <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
+                <Input className={inputClasses} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
               </div>
               <div>
                 <Label className="font-body">Work Email</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@lawfirm.com" />
+                <Input className={inputClasses} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@lawfirm.com" />
               </div>
               <div>
                 <Label className="font-body">Password</Label>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                <Input className={inputClasses} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
               <div>
                 <Label className="font-body">Firm Name</Label>
-                <Input value={firmName} onChange={e => setFirmName(e.target.value)} placeholder="Smith & Associates" />
+                <Input className={inputClasses} value={firmName} onChange={e => setFirmName(e.target.value)} placeholder="Smith & Associates" />
               </div>
               <Button className="w-full" onClick={handleCreateAccount} disabled={loading}>
                 {loading ? 'Creating…' : 'Create Account'}
@@ -200,11 +193,11 @@ const Signup = () => {
               <p className="text-sm text-muted-foreground font-body">Let's set up a real case so you can see how ClearPath works.</p>
               <div>
                 <Label className="font-body">Client Name</Label>
-                <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Maria Rodriguez" />
+                <Input className={inputClasses} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Maria Rodriguez" />
               </div>
               <div>
                 <Label className="font-body">Client Email</Label>
-                <Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="maria@email.com" />
+                <Input className={inputClasses} type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="maria@email.com" />
               </div>
               <div>
                 <Label className="font-body">Chapter Type</Label>
@@ -219,7 +212,7 @@ const Signup = () => {
               </div>
               <div>
                 <Label className="font-body">Filing Deadline</Label>
-                <Input type="date" value={filingDeadline} onChange={e => setFilingDeadline(e.target.value)} />
+                <Input className={inputClasses} type="date" value={filingDeadline} onChange={e => setFilingDeadline(e.target.value)} />
               </div>
               <Button className="w-full" onClick={handleCreateCase} disabled={loading || !clientName || !clientEmail || !filingDeadline}>
                 {loading ? 'Creating…' : 'Create Case & Continue'}

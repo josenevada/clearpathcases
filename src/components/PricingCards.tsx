@@ -39,7 +39,7 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
               ))}
             </ul>
             <Button
-              className="w-full"
+              className={`w-full ${!isCurrent && !isPopular ? 'border border-foreground/20' : ''}`}
               variant={isCurrent ? 'outline' : isPopular ? 'default' : 'outline'}
               disabled={isCurrent}
               onClick={() => onSelectPlan(key)}
