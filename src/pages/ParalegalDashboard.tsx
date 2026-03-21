@@ -26,6 +26,13 @@ const ParalegalDashboard = () => {
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
   useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      toast.success('Welcome back! Your subscription is active.');
+      refresh();
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     const refreshCases = () => setCases(getAllCases());
     refreshCases();
     window.addEventListener('focus', refreshCases);
