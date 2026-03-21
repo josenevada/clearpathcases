@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { toast } from 'sonner';
 import { useState } from 'react';
 
 interface TrialBannerProps {
@@ -9,7 +8,6 @@ interface TrialBannerProps {
 }
 
 const TrialBanner = ({ daysLeft }: TrialBannerProps) => {
-  const { session } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleAddPayment = async () => {
