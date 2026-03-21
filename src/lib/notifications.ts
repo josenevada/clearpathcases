@@ -1,0 +1,140 @@
+import { supabase } from '@/integrations/supabase/client';
+import { addActivityEntry, calculateProgress, type Case } from '@/lib/store';
+import { hasOpenCorrection } from '@/lib/corrections';
+import { differenceInDays, differenceInHours } from 'date-fns';
+
+type NotificationType =
+  | 'client_welcome'
+  | 'correction_request'
+  | 'deadline_reminder_7d'
+  | 'deadline_reminder_3d'
+  | 'inactivity_48h'
+  | 'firm_welcome'
+  | 'general_reminder';
+
+interface NotificationPayload {
+  type: NotificationType;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  portalLink: string;
+  caseId: string;
+  correctionReason?: string;
+  completionPercent?: number;
+  firmName?: string;
+  setupLink?: string;
+  filingDeadline?: string;
+}
+
+export interface NotificationResult {
+  email: { status: 'sent' | 'skipped' | 'failed'; detail?: string };
+  sms: { status: 'sent' | 'skipped' | 'failed'; detail?: string };
+}
+
+export const sendNotification = async (payload: NotificationPayload): Promise<NotificationResult> => {
+  const { data, error } = await supabase.functions.invoke('send-notification', {
+    body: payload,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to send notification');
+  }
+
+  return data as NotificationResult;
+};
+
+export const sendClientWelcome = async (caseData: Case) => {
+  const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}`;
+  return sendNotification({
+    type: 'client_welcome',
+    clientName: caseData.clientName,
+    clientEmail: caseData.clientEmail,
+    clientPhone: caseData.clientPhone,
+    portalLink,
+    caseId: caseData.id,
+  });
+};
+
+export const sendCorrectionRequest = async (caseData: Case, correctionReason: string, itemId: string) => {
+  const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(itemId)}`;
+  return sendNotification({
+    type: 'correction_request',
+    clientName: caseData.clientName,
+    clientEmail: caseData.clientEmail,
+    clientPhone: caseData.clientPhone,
+    portalLink,
+    caseId: caseData.id,
+    correctionReason,
+  });
+};
+
+export const sendFirmWelcome = async (email: string, firmName: string, setupLink: string) => {
+  return sendNotification({
+    type: 'firm_welcome',
+    clientName: firmName,
+    clientEmail: email,
+    portalLink: setupLink,
+    caseId: 'n/a',
+    firmName,
+    setupLink,
+  });
+};
+
+/**
+ * Determines the best reminder type for a case based on its current state
+ * and sends both email and SMS.
+ */
+export const sendSmartReminder = async (caseData: Case): Promise<NotificationResult> => {
+  const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}`;
+  const progress = calculateProgress(caseData);
+  const daysLeft = differenceInDays(new Date(caseData.filingDeadline), new Date());
+
+  let type: NotificationType = 'general_reminder';
+
+  // Priority 1: Open correction
+  if (hasOpenCorrection(caseData)) {
+    type = 'correction_request';
+  }
+  // Priority 2: 3-day deadline
+  else if (daysLeft <= 3 && daysLeft > 0 && progress < 100) {
+    type = 'deadline_reminder_3d';
+  }
+  // Priority 3: 7-day deadline
+  else if (daysLeft <= 7 && daysLeft > 3 && progress < 100) {
+    type = 'deadline_reminder_7d';
+  }
+  // Priority 4: Inactivity
+  else if (caseData.lastClientActivity) {
+    const hoursSince = differenceInHours(new Date(), new Date(caseData.lastClientActivity));
+    if (hoursSince >= 48) {
+      type = 'inactivity_48h';
+    }
+  }
+
+  const result = await sendNotification({
+    type,
+    clientName: caseData.clientName,
+    clientEmail: caseData.clientEmail,
+    clientPhone: caseData.clientPhone,
+    portalLink,
+    caseId: caseData.id,
+    completionPercent: progress,
+    filingDeadline: caseData.filingDeadline,
+  });
+
+  // Log locally
+  const channels = [];
+  if (result.email.status === 'sent') channels.push('email');
+  if (result.sms.status === 'sent') channels.push('SMS');
+
+  if (channels.length > 0) {
+    addActivityEntry(caseData.id, {
+      eventType: 'reminder_sent',
+      actorRole: 'paralegal',
+      actorName: 'System',
+      description: `Reminder sent via ${channels.join(' and ')} to ${caseData.clientName}`,
+    });
+  }
+
+  return result;
+};

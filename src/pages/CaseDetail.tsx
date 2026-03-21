@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import DocumentsTab from '@/components/case/DocumentsTab';
-import { sendCorrectionNotifications } from '@/lib/cloud-functions';
+import { sendCorrectionRequest } from '@/lib/notifications';
 import { useAuth } from '@/lib/auth';
 import {
   getCase,
@@ -150,18 +150,15 @@ const CaseDetail = () => {
       itemId: item.id,
     });
 
-    const correctionLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(item.id)}`;
-
     try {
-      const result = await sendCorrectionNotifications({
-        clientEmail: caseData.clientEmail,
-        clientName: caseData.clientName,
-        clientPhone: caseData.clientPhone,
-        correctionLink,
-      });
+      const result = await sendCorrectionRequest(caseData, reason, item.id);
 
-      if (result.sms.status === 'sent' || result.email.status === 'sent') {
-        toast.success('Correction requested and client notifications queued.');
+      const channels = [];
+      if (result.email.status === 'sent') channels.push('email');
+      if (result.sms.status === 'sent') channels.push('SMS');
+
+      if (channels.length > 0) {
+        toast.success(`Correction requested and notification sent via ${channels.join(' and ')}.`);
       } else {
         toast.success('Correction requested. Notification delivery is configured but not active yet.');
       }
