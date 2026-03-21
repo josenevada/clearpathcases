@@ -17,7 +17,9 @@ import { toast } from 'sonner';
 
 const ParalegalDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, signOut } = useAuth();
+  const { subscribed, status, daysLeft, loading: subLoading, refresh } = useSubscription();
   const [cases, setCases] = useState<Case[]>([]);
   const [showNewCase, setShowNewCase] = useState(false);
 
