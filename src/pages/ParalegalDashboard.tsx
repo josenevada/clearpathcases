@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, AlertCircle, Clock, Settings, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import NewCaseModal from '@/components/case/NewCaseModal';
+import TrialBanner from '@/components/TrialBanner';
+import SubscriptionGate from '@/components/SubscriptionGate';
 import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
+import { useSubscription } from '@/lib/subscription';
 import { toast } from 'sonner';
 
 const ParalegalDashboard = () => {
