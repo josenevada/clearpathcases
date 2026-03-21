@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
+  ArrowRight, Upload, Lock, Shield, CheckCircle, Clock, ChevronDown,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import PricingCards from '@/components/PricingCards';
@@ -32,10 +35,8 @@ const DashboardMockup = () => {
       transition={{ delay: 0.35, duration: 0.5 }}
       className="relative mt-14 max-w-3xl mx-auto"
     >
-      {/* Teal glow */}
       <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-primary/15 blur-3xl rounded-full pointer-events-none" />
       <div className="surface-card overflow-hidden relative z-10">
-        {/* Titlebar */}
         <div className="flex items-center gap-2 px-5 py-3 border-b border-border/60">
           <div className="flex gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
@@ -44,7 +45,6 @@ const DashboardMockup = () => {
           </div>
           <span className="text-[11px] text-muted-foreground ml-2 font-body">ClearPath — Active Cases</span>
         </div>
-        {/* Case rows */}
         <div className="divide-y divide-border/40">
           {cases.map((c) => (
             <div key={c.name} className="flex items-center gap-4 px-5 py-3.5">
@@ -71,6 +71,66 @@ const DashboardMockup = () => {
     </motion.div>
   );
 };
+
+/* Stats confidence bar */
+const StatsBar = () => {
+  const stats = [
+    { value: '4 days', label: 'Avg. document collection time' },
+    { value: '94%', label: 'Client completion rate' },
+    { value: '0', label: 'Missed filing deadlines' },
+  ];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5, duration: 0.4 }}
+      className="max-w-3xl mx-auto mt-10"
+    >
+      <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] flex flex-col sm:flex-row items-center justify-center divide-y sm:divide-y-0 sm:divide-x divide-foreground/[0.08] py-4 sm:py-0">
+        {stats.map((s) => (
+          <div key={s.label} className="flex-1 text-center py-4 sm:py-5 px-6">
+            <p className="font-display font-bold text-2xl text-primary">{s.value}</p>
+            <p className="text-xs text-muted-foreground font-body mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+/* Client wizard phone mockup */
+const ClientWizardMockup = () => (
+  <div className="w-[280px] mx-auto md:mx-0 flex-shrink-0">
+    {/* Phone frame */}
+    <div className="rounded-[2rem] border-2 border-foreground/[0.12] bg-background p-3 shadow-xl">
+      <div className="rounded-[1.4rem] overflow-hidden border border-border/60 bg-card">
+        {/* Status bar */}
+        <div className="flex items-center justify-center py-2 px-4">
+          <div className="w-20 h-1 rounded-full bg-foreground/20" />
+        </div>
+        {/* Content */}
+        <div className="px-4 pb-5 pt-2 space-y-3">
+          <p className="text-[10px] text-muted-foreground font-body">Step 3 of 8</p>
+          <h4 className="font-display font-bold text-sm text-foreground leading-snug">Most recent pay stubs</h4>
+          {/* Accordion hint */}
+          <button className="flex items-center gap-1.5 text-[11px] text-primary font-body">
+            <ChevronDown className="w-3 h-3" />
+            Why do we need this?
+          </button>
+          {/* Upload zone */}
+          <div className="border border-dashed border-primary/30 rounded-lg bg-primary/[0.04] flex flex-col items-center justify-center py-6 gap-2">
+            <Upload className="w-5 h-5 text-primary/60" />
+            <p className="text-[10px] text-muted-foreground font-body">Tap to upload or take a photo</p>
+          </div>
+          {/* Continue button */}
+          <div className="rounded-full bg-primary py-2 text-center">
+            <span className="text-xs font-bold text-primary-foreground">Continue</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const MarketingLanding = () => {
   const navigate = useNavigate();
@@ -123,15 +183,15 @@ const MarketingLanding = () => {
           Designed for Chapter 7 and Chapter 13 bankruptcy practices.
         </motion.p>
 
-        {/* Product mockup */}
         <DashboardMockup />
+        <StatsBar />
       </section>
 
       <SectionDivider />
 
-      {/* Problem / Solution */}
+      {/* Before / After with narrative connector */}
       <section className="px-6 py-12 max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-4 items-stretch">
           {/* Old way */}
           <div className="rounded-2xl bg-destructive/[0.04] border border-destructive/10 border-l-4 border-l-destructive/40 p-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">Before ClearPath</p>
@@ -148,6 +208,22 @@ const MarketingLanding = () => {
                 </li>
               ))}
             </ul>
+          </div>
+          {/* Connector */}
+          <div className="hidden md:flex flex-col items-center justify-center gap-2 px-2">
+            <div className="w-px flex-1 bg-foreground/[0.08]" />
+            <div className="flex items-center gap-2">
+              <ArrowRight className="w-4 h-4 text-primary" />
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary text-center whitespace-nowrap">Your practice,<br />transformed</p>
+            <div className="w-px flex-1 bg-foreground/[0.08]" />
+          </div>
+          {/* Mobile connector */}
+          <div className="flex md:hidden items-center justify-center gap-3 py-1">
+            <div className="h-px flex-1 bg-foreground/[0.08]" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary whitespace-nowrap">Your practice, transformed</p>
+            <ArrowRight className="w-4 h-4 text-primary flex-shrink-0" />
+            <div className="h-px flex-1 bg-foreground/[0.08]" />
           </div>
           {/* ClearPath way */}
           <div className="rounded-2xl bg-primary/[0.04] border border-primary/10 border-l-4 border-l-primary/50 p-6">
@@ -171,9 +247,36 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Features */}
+      {/* How it works — 3-step flow */}
       <section id="features" className="px-6 py-12 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-3xl text-foreground text-center mb-12">How it works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 items-start relative">
+          {/* Dashed connector line (desktop) */}
+          <div className="hidden md:block absolute top-5 left-[calc(16.67%+20px)] right-[calc(16.67%+20px)] border-t-2 border-dashed border-primary/25" />
+          {[
+            { num: '1', title: 'Create a case', desc: 'A paralegal sets up the case and the system generates a secure client link in seconds.' },
+            { num: '2', title: 'Client uploads documents', desc: 'The client follows a guided step-by-step walkthrough on any device, one document at a time.' },
+            { num: '3', title: 'Review and file', desc: 'The paralegal reviews documents, requests corrections if needed, and exports a court-ready filing packet in one click.' },
+          ].map((step, i) => (
+            <div key={step.num} className="flex flex-col items-center text-center px-6 py-4 relative z-10">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                <span className="font-display font-bold text-sm text-primary-foreground">{step.num}</span>
+              </div>
+              <h3 className="font-display font-bold text-base text-foreground mb-2">{step.title}</h3>
+              <p className="text-sm text-muted-foreground font-body max-w-xs">{step.desc}</p>
+              {/* Mobile connector */}
+              {i < 2 && (
+                <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SectionDivider />
+
+      {/* Feature cards */}
+      <section className="px-6 py-12 max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { icon: FileText, title: 'Clients actually finish', desc: 'A guided step-by-step portal that walks clients through every document they need to upload. Adapts to each client\'s situation automatically.' },
@@ -192,6 +295,51 @@ const MarketingLanding = () => {
       </section>
 
       <SectionDivider />
+
+      {/* Client experience showcase */}
+      <section className="px-6 py-12 max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <h2 className="font-display font-bold text-3xl text-foreground mb-3">Your clients will actually finish</h2>
+          <p className="text-muted-foreground font-body max-w-2xl mx-auto">
+            ClearPath guides them through every document in plain English — one step at a time, on any device.
+          </p>
+        </div>
+        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-14 justify-center">
+          <ClientWizardMockup />
+          <ul className="space-y-5 max-w-sm">
+            {[
+              'No confusing legal jargon',
+              'Works on any phone or computer',
+              'Saves progress automatically',
+              'Clients know exactly what to do next',
+            ].map(item => (
+              <li key={item} className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-foreground font-body">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <SectionDivider />
+
+      {/* Trust bar */}
+      <section className="border-t border-foreground/[0.06] border-b border-b-foreground/[0.06]">
+        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          {[
+            { icon: Lock, text: 'Bank-level encryption' },
+            { icon: Shield, text: 'Documents stored securely' },
+            { icon: CheckCircle, text: 'Files encrypted in transit and at rest' },
+            { icon: Clock, text: 'Automatic deadline tracking' },
+          ].map(item => (
+            <div key={item.text} className="flex items-center gap-2">
+              <item.icon className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-body">{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Social Proof */}
       <section className="px-6 py-12 max-w-3xl mx-auto">
