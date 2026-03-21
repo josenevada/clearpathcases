@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -8,6 +7,7 @@ import Logo from '@/components/Logo';
 import FirmProfileTab from '@/components/settings/FirmProfileTab';
 import DocumentTemplatesTab from '@/components/settings/DocumentTemplatesTab';
 import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
+import BillingTab from '@/components/settings/BillingTab';
 
 const FirmSettings = () => {
   const navigate = useNavigate();
@@ -32,10 +32,12 @@ const FirmSettings = () => {
               <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Firm Profile</TabsTrigger>
               <TabsTrigger value="templates" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Document Templates</TabsTrigger>
               <TabsTrigger value="questions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Intake Questions</TabsTrigger>
+              <TabsTrigger value="billing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Billing</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><FirmProfileTab /></TabsContent>
             <TabsContent value="templates"><DocumentTemplatesTab /></TabsContent>
             <TabsContent value="questions"><IntakeQuestionsTab /></TabsContent>
+            <TabsContent value="billing"><BillingTab /></TabsContent>
           </Tabs>
         </motion.div>
       </main>

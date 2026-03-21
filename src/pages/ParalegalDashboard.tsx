@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, AlertCircle, Clock, Settings, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -7,18 +7,30 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import NewCaseModal from '@/components/case/NewCaseModal';
+import TrialBanner from '@/components/TrialBanner';
+import SubscriptionGate from '@/components/SubscriptionGate';
 import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
+import { useSubscription } from '@/lib/subscription';
 import { toast } from 'sonner';
 
 const ParalegalDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, signOut } = useAuth();
+  const { subscribed, status, daysLeft, loading: subLoading, refresh } = useSubscription();
   const [cases, setCases] = useState<Case[]>([]);
   const [showNewCase, setShowNewCase] = useState(false);
 
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
+
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      toast.success('Welcome back! Your subscription is active.');
+      refresh();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const refreshCases = () => setCases(getAllCases());
@@ -47,8 +59,17 @@ const ParalegalDashboard = () => {
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
 
+  // Show subscription gate if trial expired
+  if (!subLoading && !subscribed && status === 'trial_expired') {
+    return <SubscriptionGate />;
+  }
+
   return (
     <div className="min-h-screen">
+      {/* Trial countdown banner */}
+      {status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
+        <TrialBanner daysLeft={daysLeft} />
+      )}
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-6">
           <Logo size="sm" />

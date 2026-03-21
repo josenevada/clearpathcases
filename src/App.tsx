@@ -6,8 +6,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
 import { seedIfNeeded } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { SubscriptionProvider } from "@/lib/subscription";
+import MarketingLanding from "./pages/MarketingLanding";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import ClientVerify from "./pages/ClientVerify";
 import ClientWizard from "./pages/ClientWizard";
@@ -53,42 +56,46 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin" element={<Login />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+            <SubscriptionProvider>
+              <Routes>
+                <Route path="/" element={<MarketingLanding />} />
+                <Route path="/portal" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/admin" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Client routes */}
-              <Route path="/client/:caseCode" element={<ClientVerify />} />
-              <Route path="/client-portal/:caseCode/:caseId" element={<ClientWizard />} />
+                {/* Client routes */}
+                <Route path="/client/:caseCode" element={<ClientVerify />} />
+                <Route path="/client-portal/:caseCode/:caseId" element={<ClientWizard />} />
 
-              {/* Protected firm staff routes */}
-              <Route path="/paralegal" element={
-                <ProtectedRoute>
-                  <ParalegalDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/paralegal/case/:caseId" element={
-                <ProtectedRoute>
-                  <CaseDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="/paralegal/settings" element={
-                <ProtectedRoute>
-                  <FirmSettings />
-                </ProtectedRoute>
-              } />
+                {/* Protected firm staff routes */}
+                <Route path="/paralegal" element={
+                  <ProtectedRoute>
+                    <ParalegalDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/paralegal/case/:caseId" element={
+                  <ProtectedRoute>
+                    <CaseDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/paralegal/settings" element={
+                  <ProtectedRoute>
+                    <FirmSettings />
+                  </ProtectedRoute>
+                } />
 
-              {/* Super admin route */}
-              <Route path="/admin/dashboard" element={
-                <ProtectedRoute requiredRole="super_admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
+                {/* Super admin route */}
+                <Route path="/admin/dashboard" element={
+                  <ProtectedRoute requiredRole="super_admin">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SubscriptionProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
