@@ -77,7 +77,7 @@ const StatsBar = () => {
   const stats = [
     { value: '4 days', label: 'Avg. document collection time' },
     { value: '94%', label: 'Client completion rate' },
-    { value: '0', label: 'Missed filing deadlines' },
+    { value: 'Zero', label: 'Missed filing deadlines' },
   ];
   return (
     <motion.div
@@ -174,7 +174,7 @@ const MarketingLanding = () => {
           className="mt-8 flex items-center justify-center gap-4 flex-wrap"
         >
           <Button size="lg" onClick={() => navigate('/signup')}>Start Free Trial</Button>
-          <Button size="lg" variant="ghost" onClick={() => setShowDemo(true)}>Watch a 2-Minute Demo</Button>
+          <Button size="lg" variant="ghost" onClick={() => setShowDemo(true)} className="group">Watch a 2-Minute Demo <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" /></Button>
         </motion.div>
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
