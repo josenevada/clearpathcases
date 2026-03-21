@@ -13,6 +13,7 @@ import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
 import { useSubscription } from '@/lib/subscription';
+import { sendSmartReminder } from '@/lib/notifications';
 import { toast } from 'sonner';
 
 const ParalegalDashboard = () => {
@@ -138,8 +139,20 @@ const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: numbe
       return {
         label: 'Send Reminder',
         variant: 'warning' as const,
-        action: () => {
-          toast.success(`Reminder sent to ${caseData.clientName}`);
+        action: async () => {
+          try {
+            const result = await sendSmartReminder(caseData);
+            const channels = [];
+            if (result.email.status === 'sent') channels.push('email');
+            if (result.sms.status === 'sent') channels.push('SMS');
+            if (channels.length > 0) {
+              toast.success(`Reminder sent to ${caseData.clientName} via ${channels.join(' and ')}`);
+            } else {
+              toast.success(`Reminder queued for ${caseData.clientName}`);
+            }
+          } catch {
+            toast.error('Failed to send reminder. Please try again.');
+          }
         },
       };
     }
