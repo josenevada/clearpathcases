@@ -311,9 +311,14 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          plan_name: string | null
           primary_contact_email: string | null
           primary_contact_name: string | null
           slug: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          trial_ends_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -322,9 +327,14 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          plan_name?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           slug?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -333,9 +343,14 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          plan_name?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           slug?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
         }
         Relationships: []
       }
