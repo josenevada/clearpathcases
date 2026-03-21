@@ -19,6 +19,7 @@ import {
   createCase, updateCase, getFirmSettings, buildCustomChecklist,
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
+import { sendClientWelcome } from '@/lib/notifications';
 import { toast } from 'sonner';
 
 interface NewCaseModalProps {
@@ -138,7 +139,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     return `${first}${last}-${year}-${rand}`;
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const caseCode = generateCaseCode(info.clientName);
     const newCase = createCase({
       clientName: info.clientName,
@@ -152,7 +153,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     });
 
     // Update case with case_code and client_dob
-    updateCase(newCase.id, (c) => ({
+    const updatedCase = updateCase(newCase.id, (c) => ({
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
@@ -163,6 +164,20 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     toast.success('Case created! Client portal link copied to clipboard.');
     onCreated(newCase);
     resetAndClose();
+
+    // Send welcome notification (fire-and-forget)
+    if (updatedCase) {
+      sendClientWelcome(updatedCase).then(result => {
+        const channels = [];
+        if (result.email.status === 'sent') channels.push('email');
+        if (result.sms.status === 'sent') channels.push('SMS');
+        if (channels.length > 0) {
+          toast.success(`Welcome notification sent via ${channels.join(' and ')}`);
+        }
+      }).catch(() => {
+        // Silently fail — notifications are best-effort
+      });
+    }
   };
 
   const currentQ = INTAKE_QUESTIONS[questionIdx];
