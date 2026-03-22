@@ -99,9 +99,10 @@ const ParalegalDashboard = () => {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         {sortedCases.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="mb-4 text-lg text-muted-foreground">No cases yet. Create your first case to get started.</p>
+            <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
+            <p className="mb-6 text-sm text-muted-foreground font-body">Create your first case to get started.</p>
             {!isAdminViewing && (
-              <Button onClick={() => setShowNewCase(true)}>
+              <Button size="lg" onClick={() => setShowNewCase(true)}>
                 <Plus className="w-4 h-4 mr-1" /> New Case
               </Button>
             )}
