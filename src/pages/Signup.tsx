@@ -44,7 +44,10 @@ const Signup = () => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/login?verified=true`,
+        },
       });
       if (authError) throw authError;
 

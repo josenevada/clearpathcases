@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,15 +8,24 @@ import Logo from '@/components/Logo';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CheckCircle } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setVerified(true);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +79,15 @@ const Login = () => {
             Sign in to manage your cases.
           </p>
         </div>
+
+        {verified && (
+          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-primary/10 border border-primary/20">
+            <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+            <p className="text-sm text-foreground font-body">
+              Your email has been verified. Please sign in to continue.
+            </p>
+          </div>
+        )}
 
         {!showForgot ? (
           <form onSubmit={handleLogin} className="space-y-4">
