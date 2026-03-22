@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 import { CalendarIcon, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -152,12 +153,33 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       checklist: customChecklist,
     });
 
-    // Update case with case_code and client_dob
+    // Update case with case_code and client_dob in localStorage
     const updatedCase = updateCase(newCase.id, (c) => ({
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
     }));
+
+    // Sync case to Supabase so the client portal can find it
+    try {
+      await supabase.from('cases').upsert({
+        id: newCase.id,
+        client_name: info.clientName,
+        client_email: info.clientEmail,
+        client_phone: info.clientPhone || null,
+        client_dob: info.clientDob || null,
+        chapter_type: info.chapterType,
+        filing_deadline: info.filingDeadline!.toISOString().split('T')[0],
+        assigned_paralegal: info.assignedParalegal,
+        assigned_attorney: info.assignedAttorney,
+        case_code: caseCode,
+        urgency: 'normal',
+        wizard_step: 0,
+        ready_to_file: false,
+      });
+    } catch (err) {
+      console.error('Failed to sync case to database:', err);
+    }
 
     const portalLink = `${window.location.origin}/client/${caseCode}`;
     navigator.clipboard?.writeText(portalLink);
@@ -165,19 +187,21 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     onCreated(newCase);
     resetAndClose();
 
-    // Send welcome notification (fire-and-forget)
-    if (updatedCase) {
-      sendClientWelcome(updatedCase).then(result => {
-        const channels = [];
-        if (result.email.status === 'sent') channels.push('email');
-        if (result.sms.status === 'sent') channels.push('SMS');
-        if (channels.length > 0) {
-          toast.success(`Welcome notification sent via ${channels.join(' and ')}`);
-        }
-      }).catch(() => {
-        // Silently fail — notifications are best-effort
-      });
-    }
+    // Send welcome notification
+    const caseForNotification = updatedCase || { ...newCase, caseCode };
+    sendClientWelcome(caseForNotification).then(result => {
+      const channels = [];
+      if (result.email.status === 'sent') channels.push('email');
+      if (result.sms.status === 'sent') channels.push('SMS');
+      if (channels.length > 0) {
+        toast.success(`Welcome notification sent via ${channels.join(' and ')} to ${info.clientEmail}`);
+      } else {
+        toast.info('Case created. Notification delivery is pending.');
+      }
+    }).catch((err) => {
+      console.error('Notification error:', err);
+      toast.error('Case created but welcome notification failed to send.');
+    });
   };
 
   const currentQ = INTAKE_QUESTIONS[questionIdx];
