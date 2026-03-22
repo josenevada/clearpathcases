@@ -44,7 +44,7 @@ const emailWrapper = (content: string) => `
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
 <tr><td style="padding:32px 40px 0;">
-  <img src="https://clearpathcases.lovable.app/placeholder.svg" alt="ClearPath" width="120" style="display:block;margin-bottom:24px;" />
+  <img src="https://yourclearpath.app/placeholder.svg" alt="ClearPath" width="120" style="display:block;margin-bottom:24px;" />
 </td></tr>
 <tr><td style="padding:0 40px 32px;">
 ${content}

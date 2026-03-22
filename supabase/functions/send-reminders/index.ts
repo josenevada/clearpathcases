@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   for (const c of cases) {
     if (!c.client_email || !c.client_name) continue;
 
-    const portalLink = `https://clearpathcases.lovable.app/client/${c.case_code || c.id}`;
+    const portalLink = `https://yourclearpath.app/client/${c.case_code || c.id}`;
     const filingDeadline = new Date(c.filing_deadline);
     const daysUntilDeadline = Math.ceil((filingDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 

@@ -3,6 +3,8 @@ import { addActivityEntry, calculateProgress, type Case } from '@/lib/store';
 import { hasOpenCorrection } from '@/lib/corrections';
 import { differenceInDays, differenceInHours } from 'date-fns';
 
+const APP_BASE_URL = 'https://yourclearpath.app';
+
 type NotificationType =
   | 'client_welcome'
   | 'correction_request'
@@ -44,7 +46,7 @@ export const sendNotification = async (payload: NotificationPayload): Promise<No
 };
 
 export const sendClientWelcome = async (caseData: Case) => {
-  const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}`;
+  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}`;
   return sendNotification({
     type: 'client_welcome',
     clientName: caseData.clientName,
@@ -56,7 +58,7 @@ export const sendClientWelcome = async (caseData: Case) => {
 };
 
 export const sendCorrectionRequest = async (caseData: Case, correctionReason: string, itemId: string) => {
-  const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(itemId)}`;
+  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(itemId)}`;
   return sendNotification({
     type: 'correction_request',
     clientName: caseData.clientName,
@@ -85,7 +87,7 @@ export const sendFirmWelcome = async (email: string, firmName: string, setupLink
  * and sends both email and SMS.
  */
 export const sendSmartReminder = async (caseData: Case): Promise<NotificationResult> => {
-  const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}`;
+  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}`;
   const progress = calculateProgress(caseData);
   const daysLeft = differenceInDays(new Date(caseData.filingDeadline), new Date());
 
