@@ -35,6 +35,8 @@ const json = (body: unknown, status = 200) =>
 
 // ─── Email Templates ─────────────────────────────────────────────────
 
+const LOGO_URL = 'https://gurufoykncixameklolt.supabase.co/storage/v1/object/public/public-assets/clearpath-logo.png';
+
 const emailWrapper = (content: string) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -43,8 +45,8 @@ const emailWrapper = (content: string) => `
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
-<tr><td style="padding:32px 40px 0;">
-  <img src="https://yourclearpath.app/placeholder.svg" alt="ClearPath" width="120" style="display:block;margin-bottom:24px;" />
+<tr><td align="center" style="padding:32px 40px 24px;">
+  <img src="${LOGO_URL}" alt="ClearPath" width="160" style="display:block;max-width:160px;height:auto;" />
 </td></tr>
 <tr><td style="padding:0 40px 32px;">
 ${content}
