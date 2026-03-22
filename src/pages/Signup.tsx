@@ -46,7 +46,7 @@ const Signup = () => {
         password,
         options: {
           data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/login?verified=true`,
+          emailRedirectTo: 'https://yourclearpath.app/login?verified=true',
         },
       });
       if (authError) throw authError;
