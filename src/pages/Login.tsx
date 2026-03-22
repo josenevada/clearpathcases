@@ -12,11 +12,20 @@ import { CheckCircle } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setVerified(true);
+    }
+  }, [searchParams]);
   const [forgotEmail, setForgotEmail] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
