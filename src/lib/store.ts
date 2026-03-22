@@ -101,7 +101,7 @@ const FIRM_SETTINGS_KEY = 'cp_firmSettings';
 const TEMPLATES_KEY = 'cp_docTemplates';
 const INTAKE_QUESTIONS_KEY = 'cp_intakeQuestions';
 
-const uid = () => Math.random().toString(36).substr(2, 9);
+const uid = () => crypto.randomUUID();
 
 // ─── Firm Settings ───────────────────────────────────────────────────
 export interface FirmSettings {
