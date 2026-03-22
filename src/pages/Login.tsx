@@ -80,6 +80,15 @@ const Login = () => {
           </p>
         </div>
 
+        {verified && (
+          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-primary/10 border border-primary/20">
+            <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+            <p className="text-sm text-foreground font-body">
+              Your email has been verified. Please sign in to continue.
+            </p>
+          </div>
+        )}
+
         {!showForgot ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
