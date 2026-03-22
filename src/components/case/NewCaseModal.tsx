@@ -397,7 +397,7 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
         <Input
           value={info.clientName}
           onChange={e => update('clientName', e.target.value)}
-          placeholder="e.g. Maria Rodriguez"
+          placeholder="Full name"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>

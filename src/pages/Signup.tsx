@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ const Signup = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Step 1
   const [fullName, setFullName] = useState('');
@@ -124,7 +125,7 @@ const Signup = () => {
     <div className="min-h-screen flex flex-col items-center px-6 py-12">
       <Logo size="md" />
 
-      {/* Step indicator — single step revealed */}
+      {/* Step indicator */}
       <div className="mt-8 mb-10">
         <p className="text-sm text-muted-foreground font-body">
           Step <span className="text-foreground font-semibold">{step + 1}</span> of {STEPS.length} — <span className="text-foreground">{STEPS[step]}</span>
@@ -146,7 +147,23 @@ const Signup = () => {
               </div>
               <div>
                 <Label className="font-body">Password</Label>
-                <Input className={inputClasses} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                <div className="relative">
+                  <Input
+                    className={`${inputClasses} pr-10`}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <Label className="font-body">Firm Name</Label>
@@ -192,15 +209,15 @@ const Signup = () => {
 
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <h2 className="font-display font-bold text-2xl text-foreground">Create Your First Case</h2>
-              <p className="text-sm text-muted-foreground font-body">Let's set up a real case so you can see how ClearPath works.</p>
+              <h2 className="font-display font-bold text-2xl text-foreground">Create your first case</h2>
+              <p className="text-sm text-muted-foreground font-body">Set up a real client case to see how ClearPath works.</p>
               <div>
                 <Label className="font-body">Client Name</Label>
-                <Input className={inputClasses} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Maria Rodriguez" />
+                <Input className={inputClasses} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Full name" />
               </div>
               <div>
                 <Label className="font-body">Client Email</Label>
-                <Input className={inputClasses} type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="maria@email.com" />
+                <Input className={inputClasses} type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="client@email.com" />
               </div>
               <div>
                 <Label className="font-body">Chapter Type</Label>
