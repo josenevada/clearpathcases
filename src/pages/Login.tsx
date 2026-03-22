@@ -26,7 +26,6 @@ const Login = () => {
       setVerified(true);
     }
   }, [searchParams]);
-  const [forgotEmail, setForgotEmail] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
