@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -176,6 +176,14 @@ const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: numbe
   const hasFlags = caseData.checklist.some(item => item.flaggedForAttorney);
   const hasRecentResubmission = caseHasRecentResubmission(caseData);
 
+  // Find last SMS/notification sent
+  const lastSmsEntry = [...caseData.activityLog]
+    .filter(e => e.eventType === 'reminder_sent' || e.description?.toLowerCase().includes('sms'))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+  const lastSmsText = lastSmsEntry
+    ? `Last contacted via SMS ${formatDistanceToNow(new Date(lastSmsEntry.timestamp), { addSuffix: true })}`
+    : null;
+
   const urgencyClass = {
     critical: 'urgency-critical',
     'at-risk': 'urgency-at-risk',
@@ -256,6 +264,14 @@ const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: numbe
               <Clock className="w-3 h-3" />
               {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
             </span>
+          </div>
+          <div className="flex items-center gap-1 text-xs mt-1">
+            <MessageSquare className="w-3 h-3" />
+            {lastSmsText ? (
+              <span className="text-muted-foreground">{lastSmsText}</span>
+            ) : (
+              <span className="text-warning">Awaiting first contact</span>
+            )}
           </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-3">
