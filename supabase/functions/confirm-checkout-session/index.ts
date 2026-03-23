@@ -28,27 +28,32 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("Not authenticated");
 
-    const { session_id } = await req.json();
-    if (!session_id) throw new Error("No session_id provided");
+    const { payment_intent_id, plan } = await req.json();
+    if (!payment_intent_id) throw new Error("No payment_intent_id provided");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ["subscription"],
-    });
+    const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
 
-    if (session.status !== "complete") {
-      return new Response(JSON.stringify({ confirmed: false, status: session.status }), {
+    if (paymentIntent.status !== "succeeded") {
+      return new Response(JSON.stringify({ confirmed: false, status: paymentIntent.status }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    const subscription = session.subscription as Stripe.Subscription;
-    const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
-    const plan = session.metadata?.plan || "starter";
+    const customerId = typeof paymentIntent.customer === "string"
+      ? paymentIntent.customer
+      : paymentIntent.customer?.id;
+
+    // Find subscription for this customer
+    let subscriptionId: string | null = null;
+    if (customerId) {
+      const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "active" });
+      if (subs.data.length > 0) subscriptionId = subs.data[0].id;
+    }
 
     // Find the user's firm
     const { data: userRow } = await supabaseClient
@@ -62,9 +67,9 @@ serve(async (req) => {
         .from("firms")
         .update({
           subscription_status: "active",
-          plan_name: plan,
+          plan_name: plan || "starter",
           stripe_customer_id: customerId || null,
-          stripe_subscription_id: subscription?.id || null,
+          stripe_subscription_id: subscriptionId,
         })
         .eq("id", userRow.firm_id);
     }
