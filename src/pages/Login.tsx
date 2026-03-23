@@ -28,27 +28,43 @@ const Login = () => {
     }
   }, [searchParams]);
 
+  const [loginError, setLoginError] = useState('');
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError('');
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
 
-    if (error) {
-      toast.error(error);
-      return;
-    }
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('email', email)
-      .maybeSingle();
+      if (signInError) {
+        setLoginError(signInError.message);
+        setLoading(false);
+        return;
+      }
 
-    if (userData?.role === 'super_admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/paralegal');
+      if (!data.session) {
+        setLoginError('Sign in failed — please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Session confirmed — now check role for redirect
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (userData?.role === 'super_admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/paralegal');
+      }
+    } catch {
+      setLoginError('Something went wrong — please try again.');
+      setLoading(false);
     }
   };
 
@@ -123,6 +139,9 @@ const Login = () => {
                 </button>
               </div>
             </div>
+            {loginError && (
+              <p className="text-sm text-destructive font-body">{loginError}</p>
+            )}
             <Button type="submit" className="w-full h-11" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign In'}
             </Button>
