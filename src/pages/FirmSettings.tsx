@@ -10,19 +10,42 @@ import DocumentTemplatesTab from '@/components/settings/DocumentTemplatesTab';
 import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
 import BillingTab from '@/components/settings/BillingTab';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/lib/subscription';
 
 const FirmSettings = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'profile';
+  const { refresh } = useSubscription();
 
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('confirm-checkout-session', {
+            body: { session_id: sessionId },
+          });
+          if (error) throw error;
+          if (data?.confirmed) {
+            toast.success('You are all set — welcome to ClearPath!');
+            await refresh();
+          }
+        } catch {
+          toast.error('Failed to confirm subscription');
+        } finally {
+          searchParams.delete('session_id');
+          searchParams.delete('success');
+          setSearchParams(searchParams, { replace: true });
+        }
+      })();
+    } else if (searchParams.get('success') === 'true') {
       toast.success('You are all set. Welcome to ClearPath!');
       searchParams.delete('success');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, []);
 
   return (
     <div className="min-h-screen">
