@@ -37,24 +37,39 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // Find or create customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId: string | undefined;
+    let customerId: string;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+    } else {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { user_id: user.id },
+      });
+      customerId = customer.id;
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // Create subscription with incomplete payment
+    const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
-      ui_mode: "embedded",
-      payment_method_types: ["card", "us_bank_account"],
-      return_url: `https://yourclearpath.app/paralegal/settings?tab=billing&session_id={CHECKOUT_SESSION_ID}`,
+      items: [{ price: priceId }],
+      payment_behavior: "default_incomplete",
+      payment_settings: {
+        payment_method_types: ["card", "us_bank_account"],
+        save_default_payment_method: "on_subscription",
+      },
+      expand: ["latest_invoice.payment_intent"],
       metadata: { plan, user_id: user.id },
     });
 
-    return new Response(JSON.stringify({ clientSecret: session.client_secret }), {
+    const invoice = subscription.latest_invoice as Stripe.Invoice;
+    const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+    return new Response(JSON.stringify({
+      clientSecret: paymentIntent.client_secret,
+      subscriptionId: subscription.id,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
