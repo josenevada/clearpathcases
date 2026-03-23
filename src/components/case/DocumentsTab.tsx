@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ const CATEGORY_FOLDERS: Record<string, string> = {
   'Agreements & Confirmation': '06-Legal-Agreements',
 };
 
-const STATUS_FILTERS = ['All', 'Pending Review', 'Approved', 'Correction Requested'] as const;
+const STATUS_FILTERS = ['All', 'Pending Review', 'Approved', 'Correction Requested', 'Needs Review'] as const;
 
 const CATEGORY_SHORT: Record<string, string> = {
   'Income & Employment': 'Income',
