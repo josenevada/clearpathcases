@@ -15,7 +15,6 @@ import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/correctio
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry } from '@/lib/store';
 import { sendMomentumSms } from '@/lib/sms';
 import { toast } from 'sonner';
-import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
 const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
