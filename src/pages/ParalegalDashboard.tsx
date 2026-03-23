@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings, LogOut } from 'lucide-react';
+import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,10 @@ const ParalegalDashboard = () => {
     navigate('/login');
   };
 
-  const sortedCases = [...cases].sort((a, b) => {
+  const activeCases = [...cases].filter(c => c.status !== 'filed' && c.status !== 'closed');
+  const completedCases = cases.filter(c => c.status === 'filed' || c.status === 'closed');
+
+  const sortedCases = activeCases.sort((a, b) => {
     const order = { critical: 0, 'at-risk': 1, normal: 2 };
     const aHasResubmission = caseHasRecentResubmission(a) ? -1 : 0;
     const bHasResubmission = caseHasRecentResubmission(b) ? -1 : 0;
@@ -56,6 +59,8 @@ const ParalegalDashboard = () => {
     const bReady = b.readyToFile ? 0.5 : 0;
     return (order[a.urgency] + aHasResubmission + aHasFlags + aReady) - (order[b.urgency] + bHasResubmission + bHasFlags + bReady);
   });
+
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
