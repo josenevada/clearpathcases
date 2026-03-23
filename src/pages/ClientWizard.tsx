@@ -934,4 +934,80 @@ const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: numb
   </div>
 );
 
+// ─── File Validation Indicator ────────────────────────────────────────
+interface FileValidationIndicatorProps {
+  file: { id: string; validationStatus?: string; validationResult?: FileValidationResult };
+  isValidating: boolean;
+  onAction: (action: 'client-confirmed' | 'client-override') => void;
+  onReplace: () => void;
+}
+
+const FileValidationIndicator = ({ file, isValidating, onAction, onReplace }: FileValidationIndicatorProps) => {
+  const status = file.validationStatus;
+  const result = file.validationResult;
+
+  // Show nothing if already confirmed/overridden or just pending without result
+  if (status === 'client-confirmed' || status === 'client-override' || status === 'pending' || !status) {
+    if (isValidating) {
+      return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-3 py-2">
+          <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
+          <span className="text-xs text-muted-foreground">Checking your document…</span>
+        </motion.div>
+      );
+    }
+    return null;
+  }
+
+  if (isValidating) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-3 py-2">
+        <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
+        <span className="text-xs text-muted-foreground">Checking your document…</span>
+      </motion.div>
+    );
+  }
+
+  if (status === 'passed') {
+    return (
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-3 py-1.5">
+        <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+        <span className="text-xs text-success font-medium">Looks good</span>
+      </motion.div>
+    );
+  }
+
+  if (status === 'warning' && result) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
+          <span className="text-xs text-warning leading-relaxed">{result.suggestion}</span>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onReplace} className="text-xs text-primary hover:underline font-medium">Replace file</button>
+          <button onClick={() => onAction('client-confirmed')} className="text-xs text-muted-foreground hover:text-foreground">Looks correct, continue</button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (status === 'failed' && result) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
+          <span className="text-xs text-destructive leading-relaxed">{result.suggestion}</span>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onReplace} className="text-xs text-primary hover:underline font-medium">Try a different file</button>
+          <button onClick={() => onAction('client-override')} className="text-xs text-muted-foreground hover:text-foreground">Upload anyway</button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return null;
+};
+
 export default ClientWizard;
