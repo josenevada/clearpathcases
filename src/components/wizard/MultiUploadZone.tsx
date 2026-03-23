@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, X, AlertTriangle, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import type { UploadedFile } from '@/lib/store';
 
 interface MultiUploadConfig {
@@ -21,6 +20,7 @@ interface MultiUploadZoneProps {
 
 const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUploadZoneProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadZoneRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,7 +28,13 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
     e.target.value = '';
   };
 
+  const handleRemoveAndRetry = (fileId: string) => {
+    onFileDelete(fileId);
+    setTimeout(() => uploadZoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  };
+
   const hasFiles = files.length > 0;
+  const isFlagged = (vs?: string) => vs === 'warning' || vs === 'failed';
 
   return (
     <div className="space-y-3">
@@ -42,6 +48,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
         {files.map(f => {
           const vs = f.validationStatus;
           const vr = f.validationResult;
+          const flagged = isFlagged(vs);
           const validationIcon = vs === 'passed' ? <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
             : vs === 'validating' ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
             : vs === 'warning' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
@@ -61,20 +68,36 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
                 {validationIcon}
                 <button
                   onClick={() => onFileDelete(f.id)}
-                  className="p-1 rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
+                  className={`rounded-full transition-colors flex-shrink-0 ${
+                    flagged
+                      ? 'p-1.5 hover:bg-destructive/15 bg-destructive/10'
+                      : 'p-1 hover:bg-destructive/10'
+                  }`}
                   aria-label={`Remove ${f.name}`}
                 >
-                  <X className="w-3.5 h-3.5 text-destructive" />
+                  <X className={`text-destructive ${flagged ? 'w-4 h-4' : 'w-3.5 h-3.5 opacity-60'}`} />
                 </button>
               </div>
               {vs === 'validating' && (
                 <p className="text-[11px] text-muted-foreground pl-3 py-1">Checking your document…</p>
               )}
               {vs === 'warning' && vr && (
-                <p className="text-[11px] text-warning pl-3 py-1">{vr.suggestion}</p>
+                <div className="pl-3 py-1.5 space-y-1.5">
+                  <p className="text-[11px] text-warning leading-relaxed">This looks like it might not be quite right. {vr.suggestion}</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => handleRemoveAndRetry(f.id)} className="text-[11px] text-primary hover:underline font-medium">Remove and try again</button>
+                    <button onClick={() => {}} className="text-[11px] text-muted-foreground hover:text-foreground">Keep it anyway</button>
+                  </div>
+                </div>
               )}
               {vs === 'failed' && vr && (
-                <p className="text-[11px] text-destructive pl-3 py-1">{vr.suggestion}</p>
+                <div className="pl-3 py-1.5 space-y-1.5">
+                  <p className="text-[11px] text-destructive leading-relaxed">This looks like it might be the wrong file. {vr.suggestion}</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => handleRemoveAndRetry(f.id)} className="text-[11px] text-primary hover:underline font-medium">Remove and try again</button>
+                    <button onClick={() => {}} className="text-[11px] text-muted-foreground hover:text-foreground">Keep it anyway</button>
+                  </div>
+                </div>
               )}
             </motion.div>
           );
@@ -83,6 +106,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
 
       {/* Upload zone - always visible */}
       <div
+        ref={uploadZoneRef}
         className="upload-zone p-8 flex flex-col items-center justify-center cursor-pointer relative"
         onClick={() => fileInputRef.current?.click()}
       >
@@ -105,7 +129,11 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
   );
 };
 
+export default MultiUploadZone;
+
 // ─── Inline confirmation for low file count ──────────────────────────
+import { Button } from '@/components/ui/button';
+
 interface LowCountConfirmationProps {
   config: MultiUploadConfig;
   fileCount: number;
@@ -179,5 +207,3 @@ export const MULTI_UPLOAD_CONFIGS: Record<string, MultiUploadConfig> = {
 };
 
 export const isMultiUploadItem = (label: string): boolean => label in MULTI_UPLOAD_CONFIGS;
-
-export default MultiUploadZone;
