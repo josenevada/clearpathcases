@@ -130,3 +130,80 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
 };
 
 export default MultiUploadZone;
+
+// ─── Inline confirmation for low file count ──────────────────────────
+import { Button } from '@/components/ui/button';
+
+interface LowCountConfirmationProps {
+  config: MultiUploadConfig;
+  fileCount: number;
+  onConfirm: () => void;
+  onAddMore: () => void;
+}
+
+export const LowCountConfirmation = ({ config, fileCount, onConfirm, onAddMore }: LowCountConfirmationProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 8 }}
+    className="surface-card p-4 rounded-xl border border-warning/30 space-y-3"
+  >
+    <p className="text-sm text-foreground font-body leading-relaxed">
+      {config.confirmationMessage(fileCount)}
+    </p>
+    <div className="flex gap-2">
+      <Button size="sm" variant="outline" onClick={onConfirm} className="flex-1">
+        Yes, continue
+      </Button>
+      <Button size="sm" onClick={onAddMore} className="flex-1">
+        Add more {config.pluralLabel}
+      </Button>
+    </div>
+  </motion.div>
+);
+
+// ─── Multi-upload item configurations ────────────────────────────────
+export const MULTI_UPLOAD_CONFIGS: Record<string, MultiUploadConfig> = {
+  'Pay Stubs (Last 2 Months)': {
+    singularLabel: 'pay stub',
+    pluralLabel: 'pay stubs',
+    helperText: 'Most clients upload 4 to 8 pay stubs to cover the last 60 days. Upload as many as you have.',
+    minRecommended: 4,
+    confirmationMessage: (count) =>
+      `You've uploaded ${count} pay stub${count === 1 ? '' : 's'}. Most people need 4 to 8 to cover the last 60 days. Does this cover your last 60 days of income?`,
+  },
+  'Checking/Savings Statements (Last 6 Months)': {
+    singularLabel: 'bank statement',
+    pluralLabel: 'bank statements',
+    helperText: 'Upload statements for all checking and savings accounts from the last 6 months.',
+    minRecommended: 6,
+    confirmationMessage: (count) =>
+      `You've uploaded ${count} bank statement${count === 1 ? '' : 's'}. Most clients need 6 months of statements per account. Does this cover all your accounts?`,
+  },
+  'Credit Card Statements (Last 3 Months)': {
+    singularLabel: 'credit card statement',
+    pluralLabel: 'credit card statements',
+    helperText: 'Upload the last 3 months of statements for each credit card you have.',
+    minRecommended: 3,
+    confirmationMessage: (count) =>
+      `You've uploaded ${count} credit card statement${count === 1 ? '' : 's'}. Most clients need 3 months per card. Does this cover all your cards?`,
+  },
+  'Tax Returns (Last 2 Years)': {
+    singularLabel: 'tax return',
+    pluralLabel: 'tax returns',
+    helperText: 'Upload your federal tax returns from the last 2 years.',
+    minRecommended: 2,
+    confirmationMessage: (count) =>
+      `You've uploaded ${count} tax return${count === 1 ? '' : 's'}. The court requires the last 2 years. Does this cover both years?`,
+  },
+  'W-2s (Last 2 Years)': {
+    singularLabel: 'W-2',
+    pluralLabel: 'W-2s',
+    helperText: 'Upload W-2s from all employers for the last 2 years.',
+    minRecommended: 2,
+    confirmationMessage: (count) =>
+      `You've uploaded ${count} W-2${count === 1 ? '' : 's'}. The court requires 2 years from each employer. Does this cover everything?`,
+  },
+};
+
+export const isMultiUploadItem = (label: string): boolean => label in MULTI_UPLOAD_CONFIGS;
