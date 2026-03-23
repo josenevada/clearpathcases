@@ -500,6 +500,29 @@ const CaseDetail = () => {
                                                       </div>
 
                                                       <div className="mt-3 flex flex-wrap gap-2">
+                                                        {viewRole === 'paralegal' && file.reviewStatus !== 'approved' && file.reviewStatus !== 'overridden' && (
+                                                          <ApproveButton
+                                                            onApprove={() => {
+                                                              updateCase(caseData.id, c => {
+                                                                const found = c.checklist.find(ci => ci.id === item.id);
+                                                                const target = found?.files.find(f => f.id === file.id);
+                                                                if (found && target) {
+                                                                  target.reviewStatus = 'approved';
+                                                                  target.reviewNote = undefined;
+                                                                }
+                                                                return c;
+                                                              });
+                                                              addActivityEntry(caseData.id, {
+                                                                eventType: 'file_approved',
+                                                                actorRole: 'paralegal',
+                                                                actorName: user?.fullName || caseData.assignedParalegal,
+                                                                description: `${user?.fullName || caseData.assignedParalegal} approved ${file.name}`,
+                                                                itemId: item.id,
+                                                              });
+                                                              refresh();
+                                                            }}
+                                                          />
+                                                        )}
                                                         {viewRole === 'paralegal' && (
                                                           <Button
                                                             variant="warning"
