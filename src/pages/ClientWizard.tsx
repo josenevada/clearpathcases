@@ -935,7 +935,7 @@ const ClientWizard = () => {
                 onClick={handleContinueSingle}
                 size="lg"
                 className="w-full"
-                disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : !currentItem.completed && currentItem.required}
+                disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : false}
               >
                 Continue →
               </Button>
