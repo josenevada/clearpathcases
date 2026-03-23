@@ -109,7 +109,7 @@ const CheckoutForm = ({ plan, onSuccess }: CheckoutFormProps) => {
             background: '#1a2e45',
             border: focused ? '1px solid rgba(0,194,168,0.4)' : '1px solid rgba(255,255,255,0.1)',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '18px 16px',
           }}
         >
           <CardElement
@@ -198,7 +198,7 @@ const EmbeddedCheckoutModal = ({ plan, onClose, allowClose = true }: EmbeddedChe
 
       {/* Form */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-[480px] mx-auto">
           <Elements stripe={stripePromise} options={{ fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap' }] }}>
             <CheckoutForm plan={plan} onSuccess={handleSuccess} />
           </Elements>
