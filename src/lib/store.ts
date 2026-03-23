@@ -388,7 +388,7 @@ export const saveCases = (cases: Case[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
 };
 
-export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' | 'notes' | 'checkpointsCompleted' | 'urgency' | 'readyToFile' | 'wizardStep'> & { checklist?: ChecklistItem[] }): Case => {
+export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' | 'notes' | 'checkpointsCompleted' | 'urgency' | 'readyToFile' | 'wizardStep' | 'status'> & { checklist?: ChecklistItem[] }): Case => {
   const newCase: Case = {
     clientName: data.clientName,
     clientEmail: data.clientEmail,
@@ -411,6 +411,7 @@ export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' |
     notes: [],
     checkpointsCompleted: [],
     urgency: 'normal',
+    status: 'active',
     readyToFile: false,
     wizardStep: 0,
   };
