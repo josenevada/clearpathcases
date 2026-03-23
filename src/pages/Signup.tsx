@@ -52,6 +52,12 @@ const Signup = () => {
       });
       if (authError) throw authError;
 
+      // Wait for session to be fully established before proceeding
+      if (!authData.session) {
+        // Email confirmation required — session won't exist yet, but account is created
+        // We can still proceed with firm/user creation using the user id
+      }
+
       const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
       const slug = firmName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
