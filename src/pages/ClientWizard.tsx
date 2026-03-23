@@ -93,6 +93,53 @@ const ClientWizard = () => {
     return c;
   }, [resolvedCaseId]);
 
+  const triggerValidation = useCallback(async (fileId: string, dataUrl: string, itemLabel: string, caseIdForValidation: string) => {
+    const expectedDocType = getExpectedDocType(itemLabel);
+    setValidatingFiles(prev => new Set(prev).add(fileId));
+    try {
+      const result = await validateDocument(dataUrl, expectedDocType, caseIdForValidation);
+      if (result) {
+        const vr: FileValidationResult = {
+          isCorrectDocumentType: result.is_correct_document_type, confidenceScore: result.confidence_score,
+          extractedYear: result.extracted_year, extractedName: result.extracted_name,
+          extractedInstitution: result.extracted_institution, issues: result.issues,
+          suggestion: result.suggestion, validatorNotes: result.validator_notes,
+          validationStatus: result.validation_status, validatedAt: result.validated_at,
+        };
+        updateCase(caseIdForValidation, c => {
+          for (const ci of c.checklist) { const f = ci.files.find(fl => fl.id === fileId); if (f) { f.validationStatus = result.validation_status; f.validationResult = vr; break; } }
+          return c;
+        });
+        addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
+        refreshCase();
+      } else {
+        addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
+      }
+    } catch { console.warn('Document validation failed silently'); }
+    finally { setValidatingFiles(prev => { const next = new Set(prev); next.delete(fileId); return next; }); }
+  }, [refreshCase]);
+
+  const handleValidationAction = useCallback((fileId: string, action: 'client-confirmed' | 'client-override', cRef: Case | null) => {
+    if (!cRef) return;
+    updateCase(cRef.id, c => {
+      for (const ci of c.checklist) { const f = ci.files.find(fl => fl.id === fileId); if (f) { f.validationStatus = action; break; } }
+      return c;
+    });
+    if (action === 'client-override') {
+      addActivityEntry(cRef.id, { eventType: 'document_validated', actorRole: 'client', actorName: cRef.clientName, description: `${cRef.clientName.split(' ')[0]} uploaded despite validation warning`, itemId: fileId });
+    }
+    refreshCase();
+  }, [refreshCase]);
+
+  const jumpToItem = useCallback((itemId: string, cRef: Case | null) => {
+    if (!cRef) return;
+    const position = getChecklistItemPosition(cRef, itemId);
+    if (!position) return;
+    setWhyOpen(false); setShowSuccess(false); setShowMilestone(null); setShowStepTransition(null);
+    setCurrentCategoryIdx(position.categoryIdx); setCurrentItemIdx(position.itemIdx);
+    setSearchParams({ fix: itemId }, { replace: true });
+  }, [setSearchParams]);
+
   // Reset employer fields when item changes
   useEffect(() => {
     if (!caseData) return;
@@ -128,108 +175,6 @@ const ClientWizard = () => {
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
-
-  const jumpToItem = useCallback((itemId: string) => {
-    const position = getChecklistItemPosition(caseData, itemId);
-    if (!position) return;
-    setWhyOpen(false);
-    setShowSuccess(false);
-    setShowMilestone(null);
-    setShowStepTransition(null);
-    setCurrentCategoryIdx(position.categoryIdx);
-    setCurrentItemIdx(position.itemIdx);
-    setSearchParams({ fix: itemId }, { replace: true });
-  }, [caseData, setSearchParams]);
-
-  const triggerValidation = useCallback(async (fileId: string, dataUrl: string, itemLabel: string, caseIdForValidation: string) => {
-    const expectedDocType = getExpectedDocType(itemLabel);
-    setValidatingFiles(prev => new Set(prev).add(fileId));
-
-    try {
-      const result = await validateDocument(dataUrl, expectedDocType, caseIdForValidation);
-
-      if (result) {
-        const validationResult: FileValidationResult = {
-          isCorrectDocumentType: result.is_correct_document_type,
-          confidenceScore: result.confidence_score,
-          extractedYear: result.extracted_year,
-          extractedName: result.extracted_name,
-          extractedInstitution: result.extracted_institution,
-          issues: result.issues,
-          suggestion: result.suggestion,
-          validatorNotes: result.validator_notes,
-          validationStatus: result.validation_status,
-          validatedAt: result.validated_at,
-        };
-
-        updateCase(caseIdForValidation, c => {
-          for (const item of c.checklist) {
-            const f = item.files.find(file => file.id === fileId);
-            if (f) {
-              f.validationStatus = result.validation_status;
-              f.validationResult = validationResult;
-              break;
-            }
-          }
-          return c;
-        });
-
-        addActivityEntry(caseIdForValidation, {
-          eventType: 'document_validated',
-          actorRole: 'system',
-          actorName: 'ClearPath AI',
-          description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`,
-          itemId: fileId,
-        });
-
-        refreshCase();
-      } else {
-        // Validation failed silently — mark as pending
-        addActivityEntry(caseIdForValidation, {
-          eventType: 'document_validated',
-          actorRole: 'system',
-          actorName: 'ClearPath AI',
-          description: `Validation service unavailable for ${itemLabel}`,
-          itemId: fileId,
-        });
-      }
-    } catch {
-      // Fail silently
-      console.warn('Document validation failed silently');
-    } finally {
-      setValidatingFiles(prev => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
-    }
-  }, [refreshCase]);
-
-  const handleValidationAction = useCallback((fileId: string, action: 'client-confirmed' | 'client-override') => {
-    if (!caseData) return;
-    updateCase(caseData.id, c => {
-      for (const item of c.checklist) {
-        const f = item.files.find(file => file.id === fileId);
-        if (f) {
-          f.validationStatus = action;
-          break;
-        }
-      }
-      return c;
-    });
-
-    if (action === 'client-override') {
-      addActivityEntry(caseData.id, {
-        eventType: 'document_validated',
-        actorRole: 'client',
-        actorName: caseData.clientName,
-        description: `${caseData.clientName.split(' ')[0]} uploaded despite validation warning`,
-        itemId: fileId,
-      });
-    }
-
-    refreshCase();
-  }, [caseData, refreshCase]);
 
   const handleFileAdd = (file: File) => {
     if (!currentItem) return;
