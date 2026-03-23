@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ const CATEGORY_FOLDERS: Record<string, string> = {
   'Agreements & Confirmation': '06-Legal-Agreements',
 };
 
-const STATUS_FILTERS = ['All', 'Pending Review', 'Approved', 'Correction Requested'] as const;
+const STATUS_FILTERS = ['All', 'Pending Review', 'Approved', 'Correction Requested', 'Needs Review'] as const;
 
 const CATEGORY_SHORT: Record<string, string> = {
   'Income & Employment': 'Income',
@@ -74,6 +74,10 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const filteredFiles = useMemo(() => {
     return allFiles.filter(({ file, item }) => {
       if (searchQuery && !file.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (statusFilter === 'Needs Review') {
+        const vs = file.validationStatus;
+        return vs === 'warning' || vs === 'failed' || vs === 'client-override';
+      }
       if (statusFilter !== 'All') {
         const statusMap: Record<string, FileReviewStatus> = {
           'Pending Review': 'pending',
@@ -380,13 +384,15 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase tracking-wider">
                   {CATEGORY_SHORT[item.category] || item.category}
                 </span>
-                <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
-                  {file.reviewStatus.replace('-', ' ')}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  {file.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
+                  {file.validationStatus === 'warning' && <ShieldAlert className="w-3.5 h-3.5 text-warning" />}
+                  {(file.validationStatus === 'failed' || file.validationStatus === 'client-override') && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
+                  <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
+                    {file.reviewStatus.replace('-', ' ')}
+                  </Badge>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2">
-                Uploaded by {file.uploadedBy}
-              </p>
             </motion.div>
           ))}
         </div>
@@ -495,6 +501,26 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                     <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
                       <p className="text-xs text-destructive font-medium">Correction Note</p>
                       <p className="text-sm text-destructive/80 mt-1">{selectedFile.file.reviewNote}</p>
+                    </div>
+                  )}
+                  {/* Validation result */}
+                  {selectedFile.file.validationResult && (
+                    <div className="p-3 rounded-lg bg-secondary space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                          {selectedFile.file.validationResult.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
+                          {selectedFile.file.validationResult.validationStatus === 'warning' && <ShieldAlert className="w-3.5 h-3.5 text-warning" />}
+                          {selectedFile.file.validationResult.validationStatus === 'failed' && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
+                          AI Validation
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">{Math.round(selectedFile.file.validationResult.confidenceScore * 100)}% confidence</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{selectedFile.file.validationResult.validatorNotes}</p>
+                      <div className="grid grid-cols-2 gap-1 text-[10px]">
+                        {selectedFile.file.validationResult.extractedYear && <div><span className="text-muted-foreground">Year:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedYear}</span></div>}
+                        {selectedFile.file.validationResult.extractedInstitution && <div><span className="text-muted-foreground">Institution:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedInstitution}</span></div>}
+                        {selectedFile.file.validationResult.extractedName && <div><span className="text-muted-foreground">Name:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedName}</span></div>}
+                      </div>
                     </div>
                   )}
                 </div>

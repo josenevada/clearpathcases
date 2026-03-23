@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, X } from 'lucide-react';
+import { UploadCloud, CheckCircle2, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { UploadedFile } from '@/lib/store';
 
@@ -39,25 +39,46 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
 
       {/* Uploaded files list */}
       <AnimatePresence>
-        {files.map(f => (
-          <motion.div
-            key={f.id}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-3 py-2 px-3 rounded-lg bg-[hsl(var(--surface-card))] border border-[hsl(var(--surface-border))]"
-          >
-            <span className="flex-1 text-sm text-foreground truncate font-body">{f.name}</span>
-            <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-            <button
-              onClick={() => onFileDelete(f.id)}
-              className="p-1 rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
-              aria-label={`Remove ${f.name}`}
+        {files.map(f => {
+          const vs = f.validationStatus;
+          const vr = f.validationResult;
+          const validationIcon = vs === 'passed' ? <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+            : vs === 'validating' ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+            : vs === 'warning' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+            : vs === 'failed' ? <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+            : <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />;
+
+          return (
+            <motion.div
+              key={f.id}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-0"
             >
-              <X className="w-3.5 h-3.5 text-destructive" />
-            </button>
-          </motion.div>
-        ))}
+              <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-[hsl(var(--surface-card))] border border-[hsl(var(--surface-border))]">
+                <span className="flex-1 text-sm text-foreground truncate font-body">{f.name}</span>
+                {validationIcon}
+                <button
+                  onClick={() => onFileDelete(f.id)}
+                  className="p-1 rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
+                  aria-label={`Remove ${f.name}`}
+                >
+                  <X className="w-3.5 h-3.5 text-destructive" />
+                </button>
+              </div>
+              {vs === 'validating' && (
+                <p className="text-[11px] text-muted-foreground pl-3 py-1">Checking your document…</p>
+              )}
+              {vs === 'warning' && vr && (
+                <p className="text-[11px] text-warning pl-3 py-1">{vr.suggestion}</p>
+              )}
+              {vs === 'failed' && vr && (
+                <p className="text-[11px] text-destructive pl-3 py-1">{vr.suggestion}</p>
+              )}
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
 
       {/* Upload zone - always visible */}

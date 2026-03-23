@@ -352,14 +352,30 @@ const CaseDetail = () => {
         {activeTab === 'checklist' && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-3 lg:col-span-2">
-              <div className="mb-4 flex items-center gap-3">
-                <h2 className="font-display text-lg font-bold text-foreground">Documents</h2>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+              <div className="mb-4 space-y-1">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-display text-lg font-bold text-foreground">Documents</h2>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                    </div>
+                    {progress}%
                   </div>
-                  {progress}%
                 </div>
+                {(() => {
+                  const allFiles = caseData.checklist.flatMap(i => i.files);
+                  const validated = allFiles.filter(f => f.validationStatus === 'passed' || f.validationStatus === 'client-confirmed');
+                  const needsReview = allFiles.filter(f => f.validationStatus === 'warning' || f.validationStatus === 'failed' || f.validationStatus === 'client-override');
+                  const total = allFiles.length;
+                  if (total === 0) return null;
+                  if (needsReview.length > 0) {
+                    return <p className="text-xs text-warning">{validated.length} of {total} documents validated — {needsReview.length} need review</p>;
+                  }
+                  if (validated.length === total && total > 0) {
+                    return <p className="text-xs text-success">All documents validated</p>;
+                  }
+                  return null;
+                })()}
               </div>
 
               {CATEGORIES.map(category => {

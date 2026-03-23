@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,8 @@ import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUpl
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry } from '@/lib/store';
+import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { sendMomentumSms } from '@/lib/sms';
 import { toast } from 'sonner';
 
@@ -51,6 +52,7 @@ const ClientWizard = () => {
   const [employerName, setEmployerName] = useState('');
   const [employerAddress, setEmployerAddress] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
+  const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetFixItemId = searchParams.get('fix');
@@ -91,6 +93,53 @@ const ClientWizard = () => {
     return c;
   }, [resolvedCaseId]);
 
+  const triggerValidation = useCallback(async (fileId: string, dataUrl: string, itemLabel: string, caseIdForValidation: string) => {
+    const expectedDocType = getExpectedDocType(itemLabel);
+    setValidatingFiles(prev => new Set(prev).add(fileId));
+    try {
+      const result = await validateDocument(dataUrl, expectedDocType, caseIdForValidation);
+      if (result) {
+        const vr: FileValidationResult = {
+          isCorrectDocumentType: result.is_correct_document_type, confidenceScore: result.confidence_score,
+          extractedYear: result.extracted_year, extractedName: result.extracted_name,
+          extractedInstitution: result.extracted_institution, issues: result.issues,
+          suggestion: result.suggestion, validatorNotes: result.validator_notes,
+          validationStatus: result.validation_status, validatedAt: result.validated_at,
+        };
+        updateCase(caseIdForValidation, c => {
+          for (const ci of c.checklist) { const f = ci.files.find(fl => fl.id === fileId); if (f) { f.validationStatus = result.validation_status; f.validationResult = vr; break; } }
+          return c;
+        });
+        addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
+        refreshCase();
+      } else {
+        addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
+      }
+    } catch { console.warn('Document validation failed silently'); }
+    finally { setValidatingFiles(prev => { const next = new Set(prev); next.delete(fileId); return next; }); }
+  }, [refreshCase]);
+
+  const handleValidationAction = useCallback((fileId: string, action: 'client-confirmed' | 'client-override', cRef: Case | null) => {
+    if (!cRef) return;
+    updateCase(cRef.id, c => {
+      for (const ci of c.checklist) { const f = ci.files.find(fl => fl.id === fileId); if (f) { f.validationStatus = action; break; } }
+      return c;
+    });
+    if (action === 'client-override') {
+      addActivityEntry(cRef.id, { eventType: 'document_validated', actorRole: 'client', actorName: cRef.clientName, description: `${cRef.clientName.split(' ')[0]} uploaded despite validation warning`, itemId: fileId });
+    }
+    refreshCase();
+  }, [refreshCase]);
+
+  const jumpToItem = useCallback((itemId: string, cRef: Case | null) => {
+    if (!cRef) return;
+    const position = getChecklistItemPosition(cRef, itemId);
+    if (!position) return;
+    setWhyOpen(false); setShowSuccess(false); setShowMilestone(null); setShowStepTransition(null);
+    setCurrentCategoryIdx(position.categoryIdx); setCurrentItemIdx(position.itemIdx);
+    setSearchParams({ fix: itemId }, { replace: true });
+  }, [setSearchParams]);
+
   // Reset employer fields when item changes
   useEffect(() => {
     if (!caseData) return;
@@ -127,18 +176,6 @@ const ClientWizard = () => {
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
-  const jumpToItem = useCallback((itemId: string) => {
-    const position = getChecklistItemPosition(caseData, itemId);
-    if (!position) return;
-    setWhyOpen(false);
-    setShowSuccess(false);
-    setShowMilestone(null);
-    setShowStepTransition(null);
-    setCurrentCategoryIdx(position.categoryIdx);
-    setCurrentItemIdx(position.itemIdx);
-    setSearchParams({ fix: itemId }, { replace: true });
-  }, [caseData, setSearchParams]);
-
   const handleFileAdd = (file: File) => {
     if (!currentItem) return;
 
@@ -151,6 +188,7 @@ const ClientWizard = () => {
         uploadedAt: new Date().toISOString(),
         reviewStatus: 'pending' as const,
         uploadedBy: 'client' as const,
+        validationStatus: 'validating' as const,
       };
 
       const updated = updateCase(caseData.id, c => {
@@ -175,6 +213,9 @@ const ClientWizard = () => {
         description: `${caseData.clientName.split(' ')[0]} uploaded ${file.name} for ${currentItem.label}`,
         itemId: currentItem.id,
       });
+
+      // Trigger AI validation in the background
+      triggerValidation(newFile.id, newFile.dataUrl, currentItem.label, caseData.id);
 
       if (updated) {
         setCaseData(updated);
@@ -456,7 +497,7 @@ const ClientWizard = () => {
       <div className="min-h-screen flex flex-col">
         <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" />
         {hasPortalCorrection && openCorrectionItem && (
-          <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id)} />
+          <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} />
         )}
         <div className="flex-1 flex items-center justify-center px-6">
           <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
@@ -517,7 +558,7 @@ const ClientWizard = () => {
       />
 
       {hasPortalCorrection && openCorrectionItem && (
-        <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id)} />
+        <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} />
       )}
 
       {showUrgencyBanner && (
@@ -762,19 +803,31 @@ const ClientWizard = () => {
                   </div>
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
-                <div className="surface-card glow-success p-6 flex items-center gap-4">
-                  <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-foreground font-medium truncate">{currentItem.files[0].name}</p>
-                    <p className="text-sm text-muted-foreground">Uploaded</p>
+                <div className="space-y-2">
+                  <div className="surface-card glow-success p-6 flex items-center gap-4">
+                    <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground font-medium truncate">{currentItem.files[0].name}</p>
+                      <p className="text-sm text-muted-foreground">Uploaded</p>
+                    </div>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-sm text-primary hover:underline flex-shrink-0"
+                    >
+                      Replace
+                    </button>
+                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
                   </div>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-sm text-primary hover:underline flex-shrink-0"
-                  >
-                    Replace
-                  </button>
-                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
+                  {/* Validation status indicator */}
+                  {currentItem.files.map(file => (
+                    <FileValidationIndicator
+                      key={`val-${file.id}`}
+                      file={file}
+                      isValidating={validatingFiles.has(file.id)}
+                      onAction={(action) => handleValidationAction(file.id, action, caseData)}
+                      onReplace={() => fileInputRef.current?.click()}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div
@@ -880,5 +933,81 @@ const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: numb
     </p>
   </div>
 );
+
+// ─── File Validation Indicator ────────────────────────────────────────
+interface FileValidationIndicatorProps {
+  file: { id: string; validationStatus?: string; validationResult?: FileValidationResult };
+  isValidating: boolean;
+  onAction: (action: 'client-confirmed' | 'client-override') => void;
+  onReplace: () => void;
+}
+
+const FileValidationIndicator = ({ file, isValidating, onAction, onReplace }: FileValidationIndicatorProps) => {
+  const status = file.validationStatus;
+  const result = file.validationResult;
+
+  // Show nothing if already confirmed/overridden or just pending without result
+  if (status === 'client-confirmed' || status === 'client-override' || status === 'pending' || !status) {
+    if (isValidating) {
+      return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-3 py-2">
+          <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
+          <span className="text-xs text-muted-foreground">Checking your document…</span>
+        </motion.div>
+      );
+    }
+    return null;
+  }
+
+  if (isValidating) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-3 py-2">
+        <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
+        <span className="text-xs text-muted-foreground">Checking your document…</span>
+      </motion.div>
+    );
+  }
+
+  if (status === 'passed') {
+    return (
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-3 py-1.5">
+        <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+        <span className="text-xs text-success font-medium">Looks good</span>
+      </motion.div>
+    );
+  }
+
+  if (status === 'warning' && result) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
+          <span className="text-xs text-warning leading-relaxed">{result.suggestion}</span>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onReplace} className="text-xs text-primary hover:underline font-medium">Replace file</button>
+          <button onClick={() => onAction('client-confirmed')} className="text-xs text-muted-foreground hover:text-foreground">Looks correct, continue</button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (status === 'failed' && result) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
+          <span className="text-xs text-destructive leading-relaxed">{result.suggestion}</span>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onReplace} className="text-xs text-primary hover:underline font-medium">Try a different file</button>
+          <button onClick={() => onAction('client-override')} className="text-xs text-muted-foreground hover:text-foreground">Upload anyway</button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return null;
+};
 
 export default ClientWizard;
