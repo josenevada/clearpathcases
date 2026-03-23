@@ -444,6 +444,12 @@ const ClientWizard = () => {
       completeCorrectionResubmission();
       return;
     }
+    // Soft-block: no file on required item → show help first
+    if (!currentItem.completed && currentItem.required) {
+      setHelpForceOpen(true);
+      toast('When you\'ve found the document, tap the upload zone above to add it.', { duration: 4000 });
+      return;
+    }
     advanceToNext();
   };
 
