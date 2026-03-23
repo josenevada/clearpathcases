@@ -31,6 +31,31 @@ import { toast } from 'sonner';
 type ViewRole = 'paralegal' | 'attorney';
 type TabType = 'checklist' | 'client-info' | 'documents' | 'activity';
 
+const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
+  const [state, setState] = useState<'idle' | 'success'>('idle');
+
+  const handleClick = () => {
+    onApprove();
+    setState('success');
+    setTimeout(() => setState('idle'), 1500);
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleClick}
+      className={`gap-1 border-primary/30 text-primary hover:bg-primary/10 transition-colors ${
+        state === 'success' ? 'border-success/40 text-success bg-success/10' : ''
+      }`}
+      disabled={state === 'success'}
+    >
+      <CheckCircle2 className="w-3 h-3" />
+      {state === 'success' ? 'Approved' : 'Approve'}
+    </Button>
+  );
+};
+
 const CaseDetail = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
