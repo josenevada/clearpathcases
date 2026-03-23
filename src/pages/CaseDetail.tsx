@@ -716,6 +716,14 @@ const CaseDetail = () => {
           </div>
         )}
       </main>
+
+      <EditCasePanel
+        caseData={caseData}
+        open={showEditPanel}
+        onClose={() => setShowEditPanel(false)}
+        onUpdated={setCaseData}
+        actorName={user?.fullName || 'Staff'}
+      />
     </div>
   );
 };
