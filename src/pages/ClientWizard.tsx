@@ -164,6 +164,28 @@ const ClientWizard = () => {
     }
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
+  // ─── 90-second inactivity auto-show help ─────────────────────────
+  useEffect(() => {
+    // Reset on item change
+    setHelpForceOpen(false);
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    // Only set timer on upload screens (not text entry or checkpoint)
+    if (!caseData) return;
+    const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+    const item = catItems[currentItemIdx];
+    if (!item || isTextEntryItem(item.label) || (item.category === 'Agreements & Confirmation' && item.label.includes('Confirmation'))) return;
+    if (item.completed) return;
+
+    inactivityTimerRef.current = setTimeout(() => {
+      setHelpForceOpen(true);
+    }, 90_000);
+
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [currentCategoryIdx, currentItemIdx, caseData]);
+
   if (!caseData) return null;
 
   const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
