@@ -13,6 +13,8 @@ import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry } from '@/lib/store';
+import { sendMomentumSms } from '@/lib/sms';
+import { toast } from 'sonner';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
@@ -323,13 +325,29 @@ const ClientWizard = () => {
   };
 
   const handleStepTransitionContinue = () => {
-    if (showStepTransition === null) return;
+    if (showStepTransition === null || !caseData) return;
+    const completedStep = showStepTransition + 1; // 1-indexed
     const nextCategory = showStepTransition + 1;
     setShowStepTransition(null);
     setCurrentCategoryIdx(nextCategory);
     setCurrentItemIdx(0);
     updateCase(caseData.id, c => ({ ...c, wizardStep: nextCategory }));
     refreshCase();
+
+    // Trigger 3: Momentum Builder SMS
+    const updatedProgress = calculateProgress(caseData);
+    if (updatedProgress < 100) {
+      const nextStepName = CATEGORIES[nextCategory] || 'the next step';
+      sendMomentumSms(
+        caseData.clientPhone,
+        caseData.clientName,
+        caseData.caseCode || caseData.id,
+        caseData.id,
+        completedStep,
+        updatedProgress,
+        nextStepName,
+      ).catch((err) => console.error('Momentum SMS error:', err));
+    }
   };
 
   const goBack = () => {
