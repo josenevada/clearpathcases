@@ -46,6 +46,7 @@ const CaseDetail = () => {
   const [selectedCorrectionReason, setSelectedCorrectionReason] = useState('');
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('checklist');
+  const [showEditPanel, setShowEditPanel] = useState(false);
 
   useEffect(() => {
     if (!caseId) return;
