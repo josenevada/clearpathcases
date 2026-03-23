@@ -5,10 +5,25 @@ export type ChapterType = '7' | '13';
 export type UrgencyLevel = 'normal' | 'at-risk' | 'critical';
 export type CaseStatus = 'active' | 'on-hold' | 'ready-to-file' | 'filed' | 'closed';
 export type FileReviewStatus = 'pending' | 'approved' | 'correction-requested' | 'overridden';
+export type FileValidationStatus = 'pending' | 'validating' | 'passed' | 'warning' | 'failed' | 'client-confirmed' | 'client-override';
 export type ActivityEventType =
   | 'file_upload' | 'file_approved' | 'file_correction' | 'file_reupload'
   | 'file_overridden' | 'item_flagged' | 'milestone_reached' | 'checkpoint_completed'
-  | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated' | 'ssn_viewed' | 'client_info_updated';
+  | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated'
+  | 'ssn_viewed' | 'client_info_updated' | 'notification_sent' | 'document_validated';
+
+export interface FileValidationResult {
+  isCorrectDocumentType: boolean;
+  confidenceScore: number;
+  extractedYear: string | null;
+  extractedName: string | null;
+  extractedInstitution: string | null;
+  issues: string[];
+  suggestion: string;
+  validatorNotes: string;
+  validationStatus: 'passed' | 'warning' | 'failed';
+  validatedAt: string;
+}
 
 export interface UploadedFile {
   id: string;
@@ -18,6 +33,8 @@ export interface UploadedFile {
   reviewStatus: FileReviewStatus;
   reviewNote?: string;
   uploadedBy: 'client' | 'paralegal';
+  validationStatus?: FileValidationStatus;
+  validationResult?: FileValidationResult;
 }
 
 export interface CorrectionRequest {
