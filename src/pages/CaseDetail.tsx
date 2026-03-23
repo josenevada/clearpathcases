@@ -13,6 +13,7 @@ import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
 import { sendCorrectionRequest } from '@/lib/notifications';
 import { useAuth } from '@/lib/auth';
+import {
   getCase,
   updateCase,
   addActivityEntry,
@@ -27,7 +28,7 @@ import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/correct
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
-type TabType = 'checklist' | 'activity' | 'documents';
+type TabType = 'checklist' | 'client-info' | 'documents' | 'activity';
 
 const CaseDetail = () => {
   const { caseId } = useParams<{ caseId: string }>();
