@@ -74,6 +74,10 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const filteredFiles = useMemo(() => {
     return allFiles.filter(({ file, item }) => {
       if (searchQuery && !file.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (statusFilter === 'Needs Review') {
+        const vs = file.validationStatus;
+        return vs === 'warning' || vs === 'failed' || vs === 'client-override';
+      }
       if (statusFilter !== 'All') {
         const statusMap: Record<string, FileReviewStatus> = {
           'Pending Review': 'pending',
