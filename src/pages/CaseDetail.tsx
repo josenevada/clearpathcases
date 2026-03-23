@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import DocumentsTab from '@/components/case/DocumentsTab';
+import EditCasePanel from '@/components/case/EditCasePanel';
+import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
+import ClientInfoTab from '@/components/case/ClientInfoTab';
 import { sendCorrectionRequest } from '@/lib/notifications';
 import { useAuth } from '@/lib/auth';
-import {
   getCase,
   updateCase,
   addActivityEntry,
