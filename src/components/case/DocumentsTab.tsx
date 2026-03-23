@@ -384,13 +384,15 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase tracking-wider">
                   {CATEGORY_SHORT[item.category] || item.category}
                 </span>
-                <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
-                  {file.reviewStatus.replace('-', ' ')}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  {file.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
+                  {file.validationStatus === 'warning' && <ShieldAlert className="w-3.5 h-3.5 text-warning" />}
+                  {(file.validationStatus === 'failed' || file.validationStatus === 'client-override') && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
+                  <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
+                    {file.reviewStatus.replace('-', ' ')}
+                  </Badge>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2">
-                Uploaded by {file.uploadedBy}
-              </p>
             </motion.div>
           ))}
         </div>
