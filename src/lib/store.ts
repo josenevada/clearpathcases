@@ -369,6 +369,7 @@ export const calculateProgress = (c: Case): number => {
 // ─── CRUD ────────────────────────────────────────────────────────────
 const normalizeCase = (c: Case): Case => ({
   ...c,
+  status: c.status || 'active',
   checklist: c.checklist.map(item => ({
     ...item,
     correctionRequest: item.correctionRequest,
