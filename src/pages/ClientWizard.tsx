@@ -668,7 +668,21 @@ const ClientWizard = () => {
                     {currentItem.whyWeNeedThis}
                   </motion.p>
                 )}
-              </AnimatePresence>
+               </AnimatePresence>
+
+              {/* Contextual document help panel */}
+              {!isCheckpointItem && !isTextEntry && (
+                <DocumentHelpPanel
+                  itemLabel={currentItem.label}
+                  caseId={caseData.id}
+                  caseName={caseData.clientName}
+                  validationStatus={currentItem.files.find(f => f.validationStatus === 'failed' || f.validationStatus === 'warning')?.validationStatus}
+                  validationSuggestion={currentItem.files.find(f => f.validationStatus === 'failed' || f.validationStatus === 'warning')?.validationResult?.suggestion}
+                  hasFiles={currentItem.files.length > 0}
+                  forceOpen={helpForceOpen}
+                  onForceOpenHandled={() => setHelpForceOpen(false)}
+                />
+              )}
 
               {isCheckpointItem ? (
                 <div className="space-y-6">
