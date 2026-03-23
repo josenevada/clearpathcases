@@ -803,19 +803,31 @@ const ClientWizard = () => {
                   </div>
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
-                <div className="surface-card glow-success p-6 flex items-center gap-4">
-                  <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-foreground font-medium truncate">{currentItem.files[0].name}</p>
-                    <p className="text-sm text-muted-foreground">Uploaded</p>
+                <div className="space-y-2">
+                  <div className="surface-card glow-success p-6 flex items-center gap-4">
+                    <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground font-medium truncate">{currentItem.files[0].name}</p>
+                      <p className="text-sm text-muted-foreground">Uploaded</p>
+                    </div>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-sm text-primary hover:underline flex-shrink-0"
+                    >
+                      Replace
+                    </button>
+                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
                   </div>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-sm text-primary hover:underline flex-shrink-0"
-                  >
-                    Replace
-                  </button>
-                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
+                  {/* Validation status indicator */}
+                  {currentItem.files.map(file => (
+                    <FileValidationIndicator
+                      key={`val-${file.id}`}
+                      file={file}
+                      isValidating={validatingFiles.has(file.id)}
+                      onAction={(action) => handleValidationAction(file.id, action, caseData)}
+                      onReplace={() => fileInputRef.current?.click()}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div
