@@ -54,6 +54,8 @@ const ClientWizard = () => {
   const [employerAddress, setEmployerAddress] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
+  const [helpForceOpen, setHelpForceOpen] = useState(false);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetFixItemId = searchParams.get('fix');
