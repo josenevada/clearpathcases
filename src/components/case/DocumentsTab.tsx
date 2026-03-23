@@ -503,6 +503,26 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                       <p className="text-sm text-destructive/80 mt-1">{selectedFile.file.reviewNote}</p>
                     </div>
                   )}
+                  {/* Validation result */}
+                  {selectedFile.file.validationResult && (
+                    <div className="p-3 rounded-lg bg-secondary space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                          {selectedFile.file.validationResult.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
+                          {selectedFile.file.validationResult.validationStatus === 'warning' && <ShieldAlert className="w-3.5 h-3.5 text-warning" />}
+                          {selectedFile.file.validationResult.validationStatus === 'failed' && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
+                          AI Validation
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">{Math.round(selectedFile.file.validationResult.confidenceScore * 100)}% confidence</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{selectedFile.file.validationResult.validatorNotes}</p>
+                      <div className="grid grid-cols-2 gap-1 text-[10px]">
+                        {selectedFile.file.validationResult.extractedYear && <div><span className="text-muted-foreground">Year:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedYear}</span></div>}
+                        {selectedFile.file.validationResult.extractedInstitution && <div><span className="text-muted-foreground">Institution:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedInstitution}</span></div>}
+                        {selectedFile.file.validationResult.extractedName && <div><span className="text-muted-foreground">Name:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedName}</span></div>}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
