@@ -534,7 +534,7 @@ const ClientWizard = () => {
       <div className="min-h-screen flex flex-col">
         <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" />
         {hasPortalCorrection && openCorrectionItem && (
-          <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} />
+          <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
         )}
         <div className="flex-1 flex items-center justify-center px-6">
           <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
@@ -595,7 +595,10 @@ const ClientWizard = () => {
       />
 
       {hasPortalCorrection && openCorrectionItem && (
-        <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} />
+        <CorrectionBanner
+          onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)}
+          isOnCorrectionItem={currentItem?.id === openCorrectionItem.id}
+        />
       )}
 
       {showUrgencyBanner && (
