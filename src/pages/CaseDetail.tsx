@@ -332,6 +332,10 @@ const CaseDetail = () => {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {activeTab === 'client-info' && (
+          <ClientInfoTab caseData={caseData} viewRole={viewRole} actorName={user?.fullName || 'Staff'} onRefresh={refresh} />
+        )}
+
         {activeTab === 'documents' && (
           <DocumentsTab caseData={caseData} viewRole={viewRole} onRefresh={refresh} />
         )}
