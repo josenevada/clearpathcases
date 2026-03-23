@@ -877,6 +877,10 @@ const ClientWizard = () => {
                       isValidating={validatingFiles.has(file.id)}
                       onAction={(action) => handleValidationAction(file.id, action, caseData)}
                       onReplace={() => fileInputRef.current?.click()}
+                      onRemove={() => {
+                        handleFileDelete(file.id);
+                        setTimeout(() => fileInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+                      }}
                     />
                   ))}
                 </div>
@@ -991,9 +995,10 @@ interface FileValidationIndicatorProps {
   isValidating: boolean;
   onAction: (action: 'client-confirmed' | 'client-override') => void;
   onReplace: () => void;
+  onRemove?: () => void;
 }
 
-const FileValidationIndicator = ({ file, isValidating, onAction, onReplace }: FileValidationIndicatorProps) => {
+const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRemove }: FileValidationIndicatorProps) => {
   const status = file.validationStatus;
   const result = file.validationResult;
 
@@ -1033,11 +1038,11 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace }: Fi
       <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
         <div className="flex items-start gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-warning leading-relaxed">{result.suggestion}</span>
+          <span className="text-xs text-warning leading-relaxed">This looks like it might not be quite right. {result.suggestion}</span>
         </div>
         <div className="flex gap-3">
-          <button onClick={onReplace} className="text-xs text-primary hover:underline font-medium">Replace file</button>
-          <button onClick={() => onAction('client-confirmed')} className="text-xs text-muted-foreground hover:text-foreground">Looks correct, continue</button>
+          <button onClick={() => { onRemove?.(); }} className="text-xs text-primary hover:underline font-medium">Remove and try again</button>
+          <button onClick={() => onAction('client-confirmed')} className="text-xs text-muted-foreground hover:text-foreground">Keep it anyway</button>
         </div>
       </motion.div>
     );
@@ -1048,11 +1053,11 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace }: Fi
       <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
         <div className="flex items-start gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-destructive leading-relaxed">{result.suggestion}</span>
+          <span className="text-xs text-destructive leading-relaxed">This looks like it might be the wrong file. {result.suggestion}</span>
         </div>
         <div className="flex gap-3">
-          <button onClick={onReplace} className="text-xs text-primary hover:underline font-medium">Try a different file</button>
-          <button onClick={() => onAction('client-override')} className="text-xs text-muted-foreground hover:text-foreground">Upload anyway</button>
+          <button onClick={() => { onRemove?.(); }} className="text-xs text-primary hover:underline font-medium">Remove and try again</button>
+          <button onClick={() => onAction('client-override')} className="text-xs text-muted-foreground hover:text-foreground">Keep it anyway</button>
         </div>
       </motion.div>
     );
