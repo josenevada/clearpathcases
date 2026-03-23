@@ -11,6 +11,7 @@ import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
+import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
@@ -53,6 +54,8 @@ const ClientWizard = () => {
   const [employerAddress, setEmployerAddress] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
+  const [helpForceOpen, setHelpForceOpen] = useState(false);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetFixItemId = searchParams.get('fix');
@@ -111,6 +114,10 @@ const ClientWizard = () => {
           return c;
         });
         addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
+        // Auto-open help panel on validation warning/failure
+        if (result.validation_status === 'warning' || result.validation_status === 'failed') {
+          setHelpForceOpen(true);
+        }
         refreshCase();
       } else {
         addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
@@ -161,6 +168,28 @@ const ClientWizard = () => {
     }
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
+  // ─── 90-second inactivity auto-show help ─────────────────────────
+  useEffect(() => {
+    // Reset on item change
+    setHelpForceOpen(false);
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    // Only set timer on upload screens (not text entry or checkpoint)
+    if (!caseData) return;
+    const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+    const item = catItems[currentItemIdx];
+    if (!item || isTextEntryItem(item.label) || (item.category === 'Agreements & Confirmation' && item.label.includes('Confirmation'))) return;
+    if (item.completed) return;
+
+    inactivityTimerRef.current = setTimeout(() => {
+      setHelpForceOpen(true);
+    }, 90_000);
+
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [currentCategoryIdx, currentItemIdx, caseData]);
+
   if (!caseData) return null;
 
   const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
@@ -178,6 +207,8 @@ const ClientWizard = () => {
 
   const handleFileAdd = (file: File) => {
     if (!currentItem) return;
+    // Reset inactivity timer on upload
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -419,6 +450,12 @@ const ClientWizard = () => {
       completeCorrectionResubmission();
       return;
     }
+    // Soft-block: no file on required item → show help first
+    if (!currentItem.completed && currentItem.required) {
+      setHelpForceOpen(true);
+      toast('When you\'ve found the document, tap the upload zone above to add it.', { duration: 4000 });
+      return;
+    }
     advanceToNext();
   };
 
@@ -643,7 +680,21 @@ const ClientWizard = () => {
                     {currentItem.whyWeNeedThis}
                   </motion.p>
                 )}
-              </AnimatePresence>
+               </AnimatePresence>
+
+              {/* Contextual document help panel */}
+              {!isCheckpointItem && !isTextEntry && (
+                <DocumentHelpPanel
+                  itemLabel={currentItem.label}
+                  caseId={caseData.id}
+                  caseName={caseData.clientName}
+                  validationStatus={currentItem.files.find(f => f.validationStatus === 'failed' || f.validationStatus === 'warning')?.validationStatus}
+                  validationSuggestion={currentItem.files.find(f => f.validationStatus === 'failed' || f.validationStatus === 'warning')?.validationResult?.suggestion}
+                  hasFiles={currentItem.files.length > 0}
+                  forceOpen={helpForceOpen}
+                  onForceOpenHandled={() => setHelpForceOpen(false)}
+                />
+              )}
 
               {isCheckpointItem ? (
                 <div className="space-y-6">
@@ -890,7 +941,7 @@ const ClientWizard = () => {
                 onClick={handleContinueSingle}
                 size="lg"
                 className="w-full"
-                disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : !currentItem.completed && currentItem.required}
+                disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : false}
               >
                 Continue →
               </Button>
