@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import DocumentsTab from '@/components/case/DocumentsTab';
+import EditCasePanel from '@/components/case/EditCasePanel';
+import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
+import ClientInfoTab from '@/components/case/ClientInfoTab';
 import { sendCorrectionRequest } from '@/lib/notifications';
 import { useAuth } from '@/lib/auth';
 import {
@@ -25,7 +28,7 @@ import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/correct
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
-type TabType = 'checklist' | 'activity' | 'documents';
+type TabType = 'checklist' | 'client-info' | 'documents' | 'activity';
 
 const CaseDetail = () => {
   const { caseId } = useParams<{ caseId: string }>();
@@ -43,6 +46,7 @@ const CaseDetail = () => {
   const [selectedCorrectionReason, setSelectedCorrectionReason] = useState('');
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('checklist');
+  const [showEditPanel, setShowEditPanel] = useState(false);
 
   useEffect(() => {
     if (!caseId) return;
@@ -276,12 +280,20 @@ const CaseDetail = () => {
           <div className="flex flex-1 items-center gap-3 flex-wrap">
             <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
             <span className="font-mono text-xs text-muted-foreground">{caseData.id}</span>
+            <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
+              <Pencil className="w-3 h-3" /> Edit Case
+            </Button>
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Ch.{caseData.chapterType}
             </span>
             <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
               {caseData.urgency.replace('-', ' ')}
             </Badge>
+            <CaseStatusDropdown
+              caseData={caseData}
+              actorName={user?.fullName || 'Staff'}
+              onUpdated={setCaseData}
+            />
           </div>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -299,6 +311,7 @@ const CaseDetail = () => {
           <div className="flex gap-0">
             {([
               { key: 'checklist' as TabType, label: 'Checklist' },
+              { key: 'client-info' as TabType, label: 'Client Info' },
               { key: 'documents' as TabType, label: 'Documents' },
               { key: 'activity' as TabType, label: 'Activity' },
             ]).map(tab => (
@@ -319,6 +332,10 @@ const CaseDetail = () => {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {activeTab === 'client-info' && (
+          <ClientInfoTab caseData={caseData} viewRole={viewRole} actorName={user?.fullName || 'Staff'} onRefresh={refresh} />
+        )}
+
         {activeTab === 'documents' && (
           <DocumentsTab caseData={caseData} viewRole={viewRole} onRefresh={refresh} />
         )}
@@ -699,6 +716,14 @@ const CaseDetail = () => {
           </div>
         )}
       </main>
+
+      <EditCasePanel
+        caseData={caseData}
+        open={showEditPanel}
+        onClose={() => setShowEditPanel(false)}
+        onUpdated={setCaseData}
+        actorName={user?.fullName || 'Staff'}
+      />
     </div>
   );
 };

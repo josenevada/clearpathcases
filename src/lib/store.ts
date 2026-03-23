@@ -3,11 +3,12 @@ import { differenceInDays } from 'date-fns';
 // ─── Types ───────────────────────────────────────────────────────────
 export type ChapterType = '7' | '13';
 export type UrgencyLevel = 'normal' | 'at-risk' | 'critical';
+export type CaseStatus = 'active' | 'on-hold' | 'ready-to-file' | 'filed' | 'closed';
 export type FileReviewStatus = 'pending' | 'approved' | 'correction-requested' | 'overridden';
 export type ActivityEventType =
   | 'file_upload' | 'file_approved' | 'file_correction' | 'file_reupload'
   | 'file_overridden' | 'item_flagged' | 'milestone_reached' | 'checkpoint_completed'
-  | 'case_created' | 'case_ready' | 'reminder_sent';
+  | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated' | 'ssn_viewed' | 'client_info_updated';
 
 export interface UploadedFile {
   id: string;
@@ -90,6 +91,7 @@ export interface Case {
   notes: InternalNote[];
   checkpointsCompleted: string[];
   urgency: UrgencyLevel;
+  status: CaseStatus;
   readyToFile: boolean;
   wizardStep: number;
 }
@@ -367,6 +369,7 @@ export const calculateProgress = (c: Case): number => {
 // ─── CRUD ────────────────────────────────────────────────────────────
 const normalizeCase = (c: Case): Case => ({
   ...c,
+  status: c.status || 'active',
   checklist: c.checklist.map(item => ({
     ...item,
     correctionRequest: item.correctionRequest,
@@ -386,7 +389,7 @@ export const saveCases = (cases: Case[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
 };
 
-export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' | 'notes' | 'checkpointsCompleted' | 'urgency' | 'readyToFile' | 'wizardStep'> & { checklist?: ChecklistItem[] }): Case => {
+export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' | 'notes' | 'checkpointsCompleted' | 'urgency' | 'readyToFile' | 'wizardStep' | 'status'> & { checklist?: ChecklistItem[] }): Case => {
   const newCase: Case = {
     clientName: data.clientName,
     clientEmail: data.clientEmail,
@@ -409,6 +412,7 @@ export const createCase = (data: Omit<Case, 'id' | 'createdAt' | 'activityLog' |
     notes: [],
     checkpointsCompleted: [],
     urgency: 'normal',
+    status: 'active',
     readyToFile: false,
     wizardStep: 0,
   };

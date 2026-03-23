@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings, LogOut } from 'lucide-react';
+import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,10 @@ const ParalegalDashboard = () => {
     navigate('/login');
   };
 
-  const sortedCases = [...cases].sort((a, b) => {
+  const activeCases = [...cases].filter(c => c.status !== 'filed' && c.status !== 'closed');
+  const completedCases = cases.filter(c => c.status === 'filed' || c.status === 'closed');
+
+  const sortedCases = activeCases.sort((a, b) => {
     const order = { critical: 0, 'at-risk': 1, normal: 2 };
     const aHasResubmission = caseHasRecentResubmission(a) ? -1 : 0;
     const bHasResubmission = caseHasRecentResubmission(b) ? -1 : 0;
@@ -56,6 +59,8 @@ const ParalegalDashboard = () => {
     const bReady = b.readyToFile ? 0.5 : 0;
     return (order[a.urgency] + aHasResubmission + aHasFlags + aReady) - (order[b.urgency] + bHasResubmission + bHasFlags + bReady);
   });
+
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
@@ -97,7 +102,7 @@ const ParalegalDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        {sortedCases.length === 0 ? (
+        {sortedCases.length === 0 && completedCases.length === 0 ? (
           <div className="py-20 text-center">
             <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
             <p className="mb-6 text-sm text-muted-foreground font-body">Create your first case to get started.</p>
@@ -109,9 +114,54 @@ const ParalegalDashboard = () => {
           </div>
         ) : (
           <div className="space-y-3">
+            {sortedCases.length === 0 && (
+              <div className="py-10 text-center">
+                <p className="text-sm text-muted-foreground font-body">No active cases.</p>
+              </div>
+            )}
             {sortedCases.map((caseRecord, index) => (
               <CaseRow key={caseRecord.id} caseData={caseRecord} index={index} onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)} />
             ))}
+
+            {completedCases.length > 0 && (
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="flex w-full items-center gap-2 rounded-lg px-4 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-secondary/50"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-0' : '-rotate-90'}`} />
+                  Completed Cases
+                  <Badge variant="secondary" className="ml-1 text-xs">{completedCases.length}</Badge>
+                </button>
+                {showCompleted && (
+                  <div className="mt-2 space-y-2 opacity-60">
+                    {completedCases.map((caseRecord) => (
+                      <motion.div
+                        key={caseRecord.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="surface-card cursor-pointer p-4"
+                        onClick={() => navigate(`/paralegal/case/${caseRecord.id}`)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-display font-bold text-foreground">{caseRecord.clientName}</h3>
+                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                Ch.{caseRecord.chapterType}
+                              </span>
+                              <Badge className="bg-muted text-muted-foreground border-border text-xs capitalize">
+                                {caseRecord.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>

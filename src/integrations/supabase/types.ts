@@ -55,6 +55,38 @@ export type Database = {
           },
         ]
       }
+      attorney_notes: {
+        Row: {
+          case_id: string
+          content: string | null
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          case_id: string
+          content?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          content?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attorney_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
           assigned_attorney: string | null
@@ -73,6 +105,7 @@ export type Database = {
           id: string
           last_client_activity: string | null
           ready_to_file: boolean | null
+          status: string
           urgency: string | null
           wizard_step: number | null
         }
@@ -93,6 +126,7 @@ export type Database = {
           id?: string
           last_client_activity?: string | null
           ready_to_file?: boolean | null
+          status?: string
           urgency?: string | null
           wizard_step?: number | null
         }
@@ -113,6 +147,7 @@ export type Database = {
           id?: string
           last_client_activity?: string | null
           ready_to_file?: boolean | null
+          status?: string
           urgency?: string | null
           wizard_step?: number | null
         }
@@ -244,6 +279,116 @@ export type Database = {
             foreignKeyName: "checkpoints_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_info: {
+        Row: {
+          avg_monthly_income: number | null
+          business_name: string | null
+          business_type: string | null
+          case_id: string
+          created_at: string | null
+          current_address: string | null
+          date_last_employment: string | null
+          date_of_birth: string | null
+          email: string | null
+          employer_address: string | null
+          employer_name: string | null
+          employment_status: string | null
+          expense_food: number | null
+          expense_insurance: number | null
+          expense_other: number | null
+          expense_rent: number | null
+          expense_transportation: number | null
+          expense_utilities: number | null
+          full_legal_name: string | null
+          household_size: number | null
+          id: string
+          job_title: string | null
+          last_employer_name: string | null
+          marital_status: string | null
+          monthly_gross_income: number | null
+          num_dependents: number | null
+          other_expenses_description: string | null
+          pay_frequency: string | null
+          phone: string | null
+          ssn_encrypted: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_monthly_income?: number | null
+          business_name?: string | null
+          business_type?: string | null
+          case_id: string
+          created_at?: string | null
+          current_address?: string | null
+          date_last_employment?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          employer_address?: string | null
+          employer_name?: string | null
+          employment_status?: string | null
+          expense_food?: number | null
+          expense_insurance?: number | null
+          expense_other?: number | null
+          expense_rent?: number | null
+          expense_transportation?: number | null
+          expense_utilities?: number | null
+          full_legal_name?: string | null
+          household_size?: number | null
+          id?: string
+          job_title?: string | null
+          last_employer_name?: string | null
+          marital_status?: string | null
+          monthly_gross_income?: number | null
+          num_dependents?: number | null
+          other_expenses_description?: string | null
+          pay_frequency?: string | null
+          phone?: string | null
+          ssn_encrypted?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_monthly_income?: number | null
+          business_name?: string | null
+          business_type?: string | null
+          case_id?: string
+          created_at?: string | null
+          current_address?: string | null
+          date_last_employment?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          employer_address?: string | null
+          employer_name?: string | null
+          employment_status?: string | null
+          expense_food?: number | null
+          expense_insurance?: number | null
+          expense_other?: number | null
+          expense_rent?: number | null
+          expense_transportation?: number | null
+          expense_utilities?: number | null
+          full_legal_name?: string | null
+          household_size?: number | null
+          id?: string
+          job_title?: string | null
+          last_employer_name?: string | null
+          marital_status?: string | null
+          monthly_gross_income?: number | null
+          num_dependents?: number | null
+          other_expenses_description?: string | null
+          pay_frequency?: string | null
+          phone?: string | null
+          ssn_encrypted?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_info_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
             referencedRelation: "cases"
             referencedColumns: ["id"]
           },
