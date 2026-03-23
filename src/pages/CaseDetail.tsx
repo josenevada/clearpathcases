@@ -19,6 +19,7 @@ import {
   updateCase,
   addActivityEntry,
   calculateProgress,
+  isItemEffectivelyComplete,
   CATEGORIES,
   type Case,
   type ChecklistItem,
@@ -406,7 +407,7 @@ const CaseDetail = () => {
               {CATEGORIES.map(category => {
                 const items = caseData.checklist.filter(item => item.category === category);
                 const isOpen = expandedCategory === category;
-                const catDone = items.filter(item => item.completed).length;
+                const catDone = items.filter(isItemEffectivelyComplete).length;
                 const categoryHasCorrections = items.some(item => item.correctionRequest?.status === 'open');
                 const categoryHasFlags = items.some(item => item.flaggedForAttorney);
 
