@@ -13,7 +13,7 @@ import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { sendMomentumSms } from '@/lib/sms';
 import { toast } from 'sonner';
@@ -84,7 +84,7 @@ const ClientWizard = () => {
     const catIdx = Math.min(c.wizardStep, CATEGORIES.length - 1);
     setCurrentCategoryIdx(catIdx);
     const items = c.checklist.filter(item => item.category === CATEGORIES[catIdx]);
-    const firstIncomplete = items.findIndex(item => !item.completed);
+    const firstIncomplete = items.findIndex(item => !isItemEffectivelyComplete(item));
     setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
   }, [resolvedCaseId, navigate, targetFixItemId]);
 

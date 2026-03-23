@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle } from 'lucide-react';
-import { CATEGORIES, type Case } from '@/lib/store';
+import { CATEGORIES, isItemEffectivelyComplete, type Case } from '@/lib/store';
 
 interface ProgressPillProps {
   caseData: Case;
@@ -11,16 +11,16 @@ const ProgressPill = ({ caseData }: ProgressPillProps) => {
   const [open, setOpen] = useState(false);
 
   const totalItems = caseData.checklist.length;
-  const completedItems = caseData.checklist.filter(i => i.completed).length;
+  const completedItems = caseData.checklist.filter(isItemEffectivelyComplete).length;
 
   const categories = CATEGORIES.map(cat => {
     const items = caseData.checklist.filter(i => i.category === cat);
-    const done = items.filter(i => i.completed).length;
+    const done = items.filter(isItemEffectivelyComplete).length;
     const total = items.length;
     const status: 'complete' | 'in-progress' | 'not-started' =
-      done === total ? 'complete' : done > 0 ? 'in-progress' : 'not-started';
+      done === total && total > 0 ? 'complete' : done > 0 ? 'in-progress' : 'not-started';
     return { name: cat, done, total, status };
-  });
+  }).filter(cat => cat.total > 0);
 
   return (
     <>
