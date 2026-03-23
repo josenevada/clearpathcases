@@ -280,12 +280,20 @@ const CaseDetail = () => {
           <div className="flex flex-1 items-center gap-3 flex-wrap">
             <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
             <span className="font-mono text-xs text-muted-foreground">{caseData.id}</span>
+            <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
+              <Pencil className="w-3 h-3" /> Edit Case
+            </Button>
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Ch.{caseData.chapterType}
             </span>
             <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
               {caseData.urgency.replace('-', ' ')}
             </Badge>
+            <CaseStatusDropdown
+              caseData={caseData}
+              actorName={user?.fullName || 'Staff'}
+              onUpdated={setCaseData}
+            />
           </div>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -303,6 +311,7 @@ const CaseDetail = () => {
           <div className="flex gap-0">
             {([
               { key: 'checklist' as TabType, label: 'Checklist' },
+              { key: 'client-info' as TabType, label: 'Client Info' },
               { key: 'documents' as TabType, label: 'Documents' },
               { key: 'activity' as TabType, label: 'Activity' },
             ]).map(tab => (
