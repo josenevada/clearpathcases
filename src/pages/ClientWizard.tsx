@@ -11,6 +11,7 @@ import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
+import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, type Case, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
