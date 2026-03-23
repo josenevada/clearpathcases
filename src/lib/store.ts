@@ -365,7 +365,7 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
 export const calculateUrgency = (c: Case): UrgencyLevel => {
   const daysLeft = differenceInDays(new Date(c.filingDeadline), new Date());
   const total = c.checklist.length;
-  const done = c.checklist.filter(i => i.completed).length;
+  const done = c.checklist.filter(isItemEffectivelyComplete).length;
   const pct = total > 0 ? (done / total) * 100 : 0;
   const hasCorrections = c.checklist.some(i => i.correctionRequest?.status === 'open' || i.files.some(f => f.reviewStatus === 'correction-requested'));
   const daysSinceActivity = c.lastClientActivity
