@@ -21,6 +21,7 @@ import {
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { sendClientWelcome } from '@/lib/notifications';
+import { sendWelcomeSms } from '@/lib/sms';
 import { toast } from 'sonner';
 
 interface NewCaseModalProps {
@@ -187,7 +188,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     onCreated(newCase);
     resetAndClose();
 
-    // Send welcome notification
+    // Send welcome notification (email)
     const caseForNotification = updatedCase || { ...newCase, caseCode };
     sendClientWelcome(caseForNotification).then(result => {
       const channels = [];
@@ -202,6 +203,15 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       console.error('Notification error:', err);
       toast.error('Case created but welcome notification failed to send.');
     });
+
+    // Send welcome SMS (Trigger 1)
+    sendWelcomeSms(
+      info.clientPhone || undefined,
+      info.clientName,
+      caseCode,
+      newCase.id,
+      firmSettings.firmName || 'your attorney\'s office',
+    ).catch((err) => console.error('Welcome SMS error:', err));
   };
 
   const currentQ = INTAKE_QUESTIONS[questionIdx];
