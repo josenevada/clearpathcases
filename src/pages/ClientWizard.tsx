@@ -114,6 +114,10 @@ const ClientWizard = () => {
           return c;
         });
         addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
+        // Auto-open help panel on validation warning/failure
+        if (result.validation_status === 'warning' || result.validation_status === 'failed') {
+          setHelpForceOpen(true);
+        }
         refreshCase();
       } else {
         addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
