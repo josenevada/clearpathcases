@@ -43,6 +43,8 @@ const ClientWizard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [caseData, setCaseData] = useState<Case | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0);
   const [currentItemIdx, setCurrentItemIdx] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -65,6 +67,8 @@ const ClientWizard = () => {
     if (!resolvedCaseId) return;
 
     const loadCase = async () => {
+      setIsLoading(true);
+      setLoadError(null);
       // Try localStorage first (paralegal's browser or returning client)
       let c = getCase(resolvedCaseId);
 
@@ -178,13 +182,14 @@ const ClientWizard = () => {
           saveCases(cases);
         } catch (err) {
           console.error('Failed to load case from database:', err);
-          toast.error('Could not load case data');
-          navigate('/');
+          setLoadError('Could not load case data. Please refresh the page or contact your attorney\'s office.');
+          setIsLoading(false);
           return;
         }
       }
 
       setCaseData(c);
+      setIsLoading(false);
       lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
 
       if (targetFixItemId) {
@@ -308,7 +313,40 @@ const ClientWizard = () => {
     };
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
-  if (!caseData) return null;
+  if (isLoading || !caseData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <Logo size="md" />
+        {loadError ? (
+          <div className="mt-8 text-center max-w-md">
+            <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+            <p className="text-foreground font-medium mb-2">Having trouble loading your documents.</p>
+            <p className="text-muted-foreground text-sm mb-6">{loadError}</p>
+            <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+          </div>
+        ) : (
+          <div className="mt-8 flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+            <span className="text-muted-foreground">Loading your documents…</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (caseData.checklist.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <Logo size="md" />
+        <div className="mt-8 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+          <p className="text-foreground font-medium mb-2">Having trouble loading your documents.</p>
+          <p className="text-muted-foreground text-sm mb-6">Please refresh the page or contact your attorney's office.</p>
+          <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+        </div>
+      </div>
+    );
+  }
 
   const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
   const currentItem = categoryItems[currentItemIdx];
