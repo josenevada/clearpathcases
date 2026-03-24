@@ -3,7 +3,7 @@ import { addActivityEntry, calculateProgress, type Case } from '@/lib/store';
 import { hasOpenCorrection } from '@/lib/corrections';
 import { differenceInDays, differenceInHours } from 'date-fns';
 
-const APP_BASE_URL = 'https://yourclearpath.app';
+const APP_BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://clearpathcases.lovable.app';
 
 type NotificationType =
   | 'client_welcome'

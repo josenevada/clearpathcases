@@ -182,7 +182,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       console.error('Failed to sync case to database:', err);
     }
 
-    const portalLink = `https://yourclearpath.app/client/${caseCode}`;
+    const portalLink = `${window.location.origin}/client/${caseCode}`;
     navigator.clipboard?.writeText(portalLink);
     toast.success('Case created! Client portal link copied to clipboard.');
     onCreated(newCase);

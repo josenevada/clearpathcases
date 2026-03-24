@@ -30,7 +30,7 @@ export const sendWelcomeSms = async (
   if (!clientPhone) return;
 
   const firstName = clientName.split(' ')[0];
-  const portalLink = `https://yourclearpath.app/client/${caseCode}`;
+  const portalLink = `${window.location.origin}/client/${caseCode}`;
   const body = `Hi ${firstName}, your document portal from ${firmName} is ready. It takes most people about 30 minutes total and you can do it in pieces. Start here: ${portalLink}`;
 
   return sendSms({ to: clientPhone, body, caseId, clientName });
@@ -45,7 +45,7 @@ export const sendCorrectionSms = async (
   if (!clientPhone) return;
 
   const firstName = clientName.split(' ')[0];
-  const portalLink = `https://yourclearpath.app/client/${caseCode}`;
+  const portalLink = `${window.location.origin}/client/${caseCode}`;
   const body = `Hi ${firstName}, your attorney's office needs one quick update on your documents before your case can move forward. It only takes a minute: ${portalLink}`;
 
   return sendSms({ to: clientPhone, body, caseId, clientName });
@@ -63,7 +63,7 @@ export const sendMomentumSms = async (
   if (!clientPhone) return;
 
   const firstName = clientName.split(' ')[0];
-  const portalLink = `https://yourclearpath.app/client/${caseCode}`;
+  const portalLink = `${window.location.origin}/client/${caseCode}`;
   const body = `Great work ${firstName}. Step ${completedStep} is done. You are ${completionPercent} percent of the way there — ${nextStepName} is next and it usually takes just a few minutes. ${portalLink}`;
 
   return sendSms({ to: clientPhone, body, caseId, clientName });
