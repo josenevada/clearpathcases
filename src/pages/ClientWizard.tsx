@@ -1259,4 +1259,48 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRe
   return null;
 };
 
-export default ClientWizard;
+// ─── Error Boundary ──────────────────────────────────────────────────
+import React from 'react';
+
+class WizardErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ClientWizard error boundary caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+          <Logo size="md" />
+          <div className="mt-8 text-center max-w-md">
+            <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+            <p className="text-foreground font-medium mb-2">Something went wrong loading this step.</p>
+            <p className="text-muted-foreground text-sm mb-6">Please refresh the page or contact your attorney's office.</p>
+            <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const ClientWizardWithBoundary = () => (
+  <WizardErrorBoundary>
+    <ClientWizard />
+  </WizardErrorBoundary>
+);
+
+export default ClientWizardWithBoundary;
