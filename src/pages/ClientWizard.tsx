@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2 } from 'lucide-react';
@@ -43,6 +43,8 @@ const ClientWizard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [caseData, setCaseData] = useState<Case | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0);
   const [currentItemIdx, setCurrentItemIdx] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -65,6 +67,8 @@ const ClientWizard = () => {
     if (!resolvedCaseId) return;
 
     const loadCase = async () => {
+      setIsLoading(true);
+      setLoadError(null);
       // Try localStorage first (paralegal's browser or returning client)
       let c = getCase(resolvedCaseId);
 
@@ -78,8 +82,8 @@ const ClientWizard = () => {
             .maybeSingle();
 
           if (!caseRow) {
-            toast.error('Case not found');
-            navigate('/');
+            setLoadError('Case not found. The link may be incorrect or expired.');
+            setIsLoading(false);
             return;
           }
 
@@ -178,13 +182,14 @@ const ClientWizard = () => {
           saveCases(cases);
         } catch (err) {
           console.error('Failed to load case from database:', err);
-          toast.error('Could not load case data');
-          navigate('/');
+          setLoadError('Could not load case data. Please refresh the page or contact your attorney\'s office.');
+          setIsLoading(false);
           return;
         }
       }
 
       setCaseData(c);
+      setIsLoading(false);
       lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
 
       if (targetFixItemId) {
@@ -308,7 +313,40 @@ const ClientWizard = () => {
     };
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
-  if (!caseData) return null;
+  if (isLoading || !caseData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <Logo size="md" />
+        {loadError ? (
+          <div className="mt-8 text-center max-w-md">
+            <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+            <p className="text-foreground font-medium mb-2">Having trouble loading your documents.</p>
+            <p className="text-muted-foreground text-sm mb-6">{loadError}</p>
+            <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+          </div>
+        ) : (
+          <div className="mt-8 flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+            <span className="text-muted-foreground">Loading your documents…</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (caseData.checklist.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <Logo size="md" />
+        <div className="mt-8 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+          <p className="text-foreground font-medium mb-2">Having trouble loading your documents.</p>
+          <p className="text-muted-foreground text-sm mb-6">Please refresh the page or contact your attorney's office.</p>
+          <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+        </div>
+      </div>
+    );
+  }
 
   const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
   const currentItem = categoryItems[currentItemIdx];
@@ -1051,7 +1089,13 @@ const ClientWizard = () => {
                 </div>
               )}
             </motion.div>
-          ) : null}
+          ) : (
+            <motion.div key="no-item" {...pageTransition} className="max-w-md mx-auto text-center">
+              <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+              <p className="text-foreground font-medium mb-2">Something went wrong loading this step.</p>
+              <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -1215,4 +1259,47 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRe
   return null;
 };
 
-export default ClientWizard;
+
+
+class WizardErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ClientWizard error boundary caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+          <Logo size="md" />
+          <div className="mt-8 text-center max-w-md">
+            <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+            <p className="text-foreground font-medium mb-2">Something went wrong loading this step.</p>
+            <p className="text-muted-foreground text-sm mb-6">Please refresh the page or contact your attorney's office.</p>
+            <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const ClientWizardWithBoundary = () => (
+  <WizardErrorBoundary>
+    <ClientWizard />
+  </WizardErrorBoundary>
+);
+
+export default ClientWizardWithBoundary;
