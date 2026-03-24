@@ -13,9 +13,10 @@ import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { getCase, updateCase, addActivityEntry, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { sendMomentumSms } from '@/lib/sms';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
