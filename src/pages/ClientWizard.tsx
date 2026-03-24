@@ -1259,8 +1259,7 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRe
   return null;
 };
 
-// ─── Error Boundary ──────────────────────────────────────────────────
-import React from 'react';
+
 
 class WizardErrorBoundary extends React.Component<
   { children: React.ReactNode },
