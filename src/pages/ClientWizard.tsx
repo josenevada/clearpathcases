@@ -363,6 +363,29 @@ const ClientWizard = () => {
         itemId: currentItem.id,
       });
 
+      // Sync file upload and checklist status to Supabase
+      supabase.from('files').insert({
+        id: newFile.id,
+        case_id: caseData.id,
+        checklist_item_id: currentItem.id,
+        file_name: newFile.name,
+        data_url: newFile.dataUrl,
+        uploaded_at: newFile.uploadedAt,
+        review_status: 'pending',
+        uploaded_by: 'client',
+      }).then(() => {
+        supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
+        supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+        supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'file_upload',
+          actor_role: 'client',
+          actor_name: caseData.clientName,
+          description: `${caseData.clientName.split(' ')[0]} uploaded ${file.name} for ${currentItem.label}`,
+          item_id: currentItem.id,
+        });
+      }).catch(err => console.error('Failed to sync file upload:', err));
+
       // Trigger AI validation in the background
       triggerValidation(newFile.id, newFile.dataUrl, currentItem.label, caseData.id);
 
