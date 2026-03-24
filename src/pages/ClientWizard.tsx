@@ -82,8 +82,8 @@ const ClientWizard = () => {
             .maybeSingle();
 
           if (!caseRow) {
-            toast.error('Case not found');
-            navigate('/');
+            setLoadError('Case not found. The link may be incorrect or expired.');
+            setIsLoading(false);
             return;
           }
 
