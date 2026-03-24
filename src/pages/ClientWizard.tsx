@@ -63,30 +63,147 @@ const ClientWizard = () => {
 
   useEffect(() => {
     if (!resolvedCaseId) return;
-    const c = getCase(resolvedCaseId);
-    if (!c) {
-      toast.error('Case not found');
-      navigate('/');
-      return;
-    }
 
-    setCaseData(c);
-    lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
+    const loadCase = async () => {
+      // Try localStorage first (paralegal's browser or returning client)
+      let c = getCase(resolvedCaseId);
 
-    if (targetFixItemId) {
-      const targetPosition = getChecklistItemPosition(c, targetFixItemId);
-      if (targetPosition) {
-        setCurrentCategoryIdx(targetPosition.categoryIdx);
-        setCurrentItemIdx(targetPosition.itemIdx);
-        return;
+      // If not in localStorage, fetch from Supabase (client on different device)
+      if (!c) {
+        try {
+          const { data: caseRow } = await supabase
+            .from('cases')
+            .select('*')
+            .eq('id', resolvedCaseId)
+            .maybeSingle();
+
+          if (!caseRow) {
+            toast.error('Case not found');
+            navigate('/');
+            return;
+          }
+
+          const { data: checklistRows } = await supabase
+            .from('checklist_items')
+            .select('*')
+            .eq('case_id', resolvedCaseId)
+            .order('sort_order', { ascending: true });
+
+          const { data: fileRows } = await supabase
+            .from('files')
+            .select('*')
+            .eq('case_id', resolvedCaseId);
+
+          const { data: activityRows } = await supabase
+            .from('activity_log')
+            .select('*')
+            .eq('case_id', resolvedCaseId)
+            .order('created_at', { ascending: true });
+
+          // Build checklist items from Supabase data
+          const checklist: ChecklistItem[] = (checklistRows || []).map(row => {
+            const itemFiles = (fileRows || [])
+              .filter(f => f.checklist_item_id === row.id)
+              .map(f => ({
+                id: f.id,
+                name: f.file_name,
+                dataUrl: f.data_url || '',
+                uploadedAt: f.uploaded_at || new Date().toISOString(),
+                reviewStatus: (f.review_status || 'pending') as any,
+                reviewNote: f.review_note || undefined,
+                uploadedBy: (f.uploaded_by || 'client') as any,
+              }));
+
+            return {
+              id: row.id,
+              category: row.category,
+              label: row.label,
+              description: row.description || '',
+              whyWeNeedThis: row.why_we_need_this || '',
+              required: row.required ?? true,
+              files: itemFiles,
+              textEntry: row.text_value ? (row.text_value as any) : undefined,
+              flaggedForAttorney: row.flagged_for_attorney ?? false,
+              attorneyNote: row.attorney_note || undefined,
+              correctionRequest: row.correction_status ? {
+                reason: row.correction_reason || '',
+                details: row.correction_details || undefined,
+                requestedBy: row.correction_requested_by || '',
+                requestedAt: row.correction_requested_at || '',
+                targetFileId: row.correction_target_file_id || undefined,
+                status: row.correction_status as 'open' | 'resolved',
+              } : undefined,
+              resubmittedAt: row.resubmitted_at || undefined,
+              completed: row.completed ?? false,
+            };
+          });
+
+          const activityLog = (activityRows || []).map(row => ({
+            id: row.id,
+            eventType: row.event_type as any,
+            actorRole: (row.actor_role || 'system') as any,
+            actorName: row.actor_name || 'System',
+            description: row.description || '',
+            timestamp: row.created_at || new Date().toISOString(),
+            itemId: row.item_id || undefined,
+          }));
+
+          // Build the Case object
+          c = {
+            id: caseRow.id,
+            clientName: caseRow.client_name,
+            clientEmail: caseRow.client_email,
+            clientPhone: caseRow.client_phone || undefined,
+            clientDob: caseRow.client_dob || undefined,
+            caseCode: caseRow.case_code || undefined,
+            chapterType: caseRow.chapter_type as any,
+            assignedParalegal: caseRow.assigned_paralegal || '',
+            assignedAttorney: caseRow.assigned_attorney || '',
+            filingDeadline: caseRow.filing_deadline,
+            createdAt: caseRow.created_at || new Date().toISOString(),
+            lastClientActivity: caseRow.last_client_activity || undefined,
+            checklist,
+            activityLog,
+            notes: [],
+            checkpointsCompleted: [],
+            urgency: (caseRow.urgency || 'normal') as any,
+            status: (caseRow.status || 'active') as any,
+            readyToFile: caseRow.ready_to_file ?? false,
+            wizardStep: caseRow.wizard_step ?? 0,
+          };
+
+          // Save to localStorage for subsequent operations
+          const cases = getAllCases();
+          cases.push(c);
+          saveCases(cases);
+        } catch (err) {
+          console.error('Failed to load case from database:', err);
+          toast.error('Could not load case data');
+          navigate('/');
+          return;
+        }
       }
-    }
 
-    const catIdx = Math.min(c.wizardStep, CATEGORIES.length - 1);
-    setCurrentCategoryIdx(catIdx);
-    const items = c.checklist.filter(item => item.category === CATEGORIES[catIdx]);
-    const firstIncomplete = items.findIndex(item => !isItemEffectivelyComplete(item));
-    setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
+      setCaseData(c);
+      lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
+
+      if (targetFixItemId) {
+        const targetPosition = getChecklistItemPosition(c, targetFixItemId);
+        if (targetPosition) {
+          setCurrentCategoryIdx(targetPosition.categoryIdx);
+          setCurrentItemIdx(targetPosition.itemIdx);
+          return;
+        }
+      }
+
+      const catIdx = Math.min(c.wizardStep, CATEGORIES.length - 1);
+      setCurrentCategoryIdx(catIdx);
+      const items = c.checklist.filter(item => item.category === CATEGORIES[catIdx]);
+      const firstIncomplete = items.findIndex(item => !isItemEffectivelyComplete(item));
+      setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
+    };
+
+    loadCase();
   }, [resolvedCaseId, navigate, targetFixItemId]);
 
   // Move hook before the early return
