@@ -1089,7 +1089,13 @@ const ClientWizard = () => {
                 </div>
               )}
             </motion.div>
-          ) : null}
+          ) : (
+            <motion.div key="no-item" {...pageTransition} className="max-w-md mx-auto text-center">
+              <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
+              <p className="text-foreground font-medium mb-2">Something went wrong loading this step.</p>
+              <Button onClick={() => window.location.reload()} size="lg">Refresh Page</Button>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
