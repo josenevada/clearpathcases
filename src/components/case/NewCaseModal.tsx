@@ -178,6 +178,21 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         wizard_step: 0,
         ready_to_file: false,
       });
+
+      // Sync checklist items to Supabase so client wizard can load them
+      const checklistRows = newCase.checklist.map((item, idx) => ({
+        id: item.id,
+        case_id: newCase.id,
+        category: item.category,
+        label: item.label,
+        description: item.description,
+        why_we_need_this: item.whyWeNeedThis,
+        required: item.required,
+        completed: false,
+        sort_order: idx,
+        input_type: item.label === 'Employer Name & Address' ? 'text' : 'file',
+      }));
+      await supabase.from('checklist_items').insert(checklistRows);
     } catch (err) {
       console.error('Failed to sync case to database:', err);
     }
