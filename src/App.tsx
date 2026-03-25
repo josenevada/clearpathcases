@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { seedIfNeeded } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { SubscriptionProvider } from "@/lib/subscription";
+import { ThemeProvider } from "@/hooks/use-theme";
 import MarketingLanding from "./pages/MarketingLanding";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -51,6 +52,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -99,6 +101,7 @@ const App = () => {
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
