@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -329,6 +329,11 @@ const CaseDetail = () => {
               actorName={user?.fullName || 'Staff'}
               onUpdated={setCaseData}
             />
+            {!caseData.clientPhone && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded-full px-2.5 py-1">
+                <PhoneOff className="w-3 h-3" /> No phone number on file — SMS notifications paused
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-sm text-muted-foreground">

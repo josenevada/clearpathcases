@@ -3,6 +3,20 @@ import { addActivityEntry, calculateProgress, type Case } from '@/lib/store';
 import { hasOpenCorrection } from '@/lib/corrections';
 import { differenceInDays, differenceInHours } from 'date-fns';
 
+/** Fetch the latest contact info for a case from client_info, falling back to case record */
+const getFreshContactInfo = async (caseData: Case) => {
+  const { data } = await supabase
+    .from('client_info')
+    .select('email, phone')
+    .eq('case_id', caseData.id)
+    .maybeSingle();
+
+  return {
+    email: data?.email || caseData.clientEmail,
+    phone: data?.phone || caseData.clientPhone || undefined,
+  };
+};
+
 const APP_BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://clearpathcases.lovable.app';
 
 type NotificationType =
@@ -47,11 +61,12 @@ export const sendNotification = async (payload: NotificationPayload): Promise<No
 
 export const sendClientWelcome = async (caseData: Case) => {
   const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}`;
+  const contact = await getFreshContactInfo(caseData);
   return sendNotification({
     type: 'client_welcome',
     clientName: caseData.clientName,
-    clientEmail: caseData.clientEmail,
-    clientPhone: caseData.clientPhone,
+    clientEmail: contact.email,
+    clientPhone: contact.phone,
     portalLink,
     caseId: caseData.id,
   });
@@ -59,11 +74,12 @@ export const sendClientWelcome = async (caseData: Case) => {
 
 export const sendCorrectionRequest = async (caseData: Case, correctionReason: string, itemId: string) => {
   const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(itemId)}`;
+  const contact = await getFreshContactInfo(caseData);
   return sendNotification({
     type: 'correction_request',
     clientName: caseData.clientName,
-    clientEmail: caseData.clientEmail,
-    clientPhone: caseData.clientPhone,
+    clientEmail: contact.email,
+    clientPhone: contact.phone,
     portalLink,
     caseId: caseData.id,
     correctionReason,
@@ -90,6 +106,7 @@ export const sendSmartReminder = async (caseData: Case): Promise<NotificationRes
   const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}`;
   const progress = calculateProgress(caseData);
   const daysLeft = differenceInDays(new Date(caseData.filingDeadline), new Date());
+  const contact = await getFreshContactInfo(caseData);
 
   let type: NotificationType = 'general_reminder';
 
@@ -116,8 +133,8 @@ export const sendSmartReminder = async (caseData: Case): Promise<NotificationRes
   const result = await sendNotification({
     type,
     clientName: caseData.clientName,
-    clientEmail: caseData.clientEmail,
-    clientPhone: caseData.clientPhone,
+    clientEmail: contact.email,
+    clientPhone: contact.phone,
     portalLink,
     caseId: caseData.id,
     completionPercent: progress,

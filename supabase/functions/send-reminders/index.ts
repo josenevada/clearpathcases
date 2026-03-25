@@ -42,6 +42,16 @@ Deno.serve(async (req) => {
   for (const c of cases) {
     if (!c.client_email || !c.client_name) continue;
 
+    // Fetch latest contact info from client_info table (paralegal may have updated it)
+    const ciRes = await fetch(
+      `${supabaseUrl}/rest/v1/client_info?case_id=eq.${c.id}&select=email,phone&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const ciRows = await ciRes.json();
+    const ci = Array.isArray(ciRows) && ciRows.length > 0 ? ciRows[0] : null;
+    const clientEmail = ci?.email || c.client_email;
+    const clientPhone = ci?.phone || c.client_phone || null;
+
     const portalLink = `https://yourclearpath.app/client/${c.case_code || c.id}`;
     const filingDeadline = new Date(c.filing_deadline);
     const daysUntilDeadline = Math.ceil((filingDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -106,8 +116,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         type: notificationType,
         clientName: c.client_name,
-        clientEmail: c.client_email,
-        clientPhone: c.client_phone,
+        clientEmail: clientEmail,
+        clientPhone: clientPhone,
         portalLink,
         caseId: c.id,
         completionPercent: pct,
