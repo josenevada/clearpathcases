@@ -379,16 +379,19 @@ export const calculateUrgency = (c: Case): UrgencyLevel => {
 
 /**
  * Determines if a checklist item is effectively complete from the client's perspective.
- * An item is complete when it has at least one uploaded file AND has no open correction request.
+ * An item is complete when it has at least one uploaded file (or text entry) AND has no open correction request.
+ * Also honors the persisted `completed` flag from the database for cross-device consistency.
  * This is the single source of truth for progress calculations across the entire app.
  */
 export const isItemEffectivelyComplete = (item: ChecklistItem): boolean => {
-  if (item.files.length === 0 && !item.textEntry) return false;
   if (item.correctionRequest?.status === 'open') return false;
   // Text-entry items are complete if they have a saved entry
   if (item.textEntry?.savedAt) return true;
   // File-based items are complete if they have at least one file
-  return item.files.length > 0;
+  if (item.files.length > 0) return true;
+  // Honor the persisted completed flag from the database (cross-device persistence)
+  if (item.completed) return true;
+  return false;
 };
 
 export const calculateProgress = (c: Case): number => {
