@@ -415,6 +415,7 @@ const ClientWizard = () => {
     );
   };
 
+  const handleFileAdd = (file: File, replaceFileId?: string) => {
     if (!currentItem) return;
     // Reset inactivity timer on upload
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
