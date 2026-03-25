@@ -325,10 +325,26 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         email: info.email,
         marital_status: info.marital_status,
       });
+
+      // Sync contact info back to cases table so notifications always use the latest
+      const contactUpdates: Record<string, string | null> = {};
+      if (info.phone !== savedInfo.phone) contactUpdates.client_phone = info.phone || null;
+      if (info.email !== savedInfo.email) contactUpdates.client_email = info.email;
+      if (Object.keys(contactUpdates).length > 0) {
+        await supabase.from('cases').update(contactUpdates).eq('id', caseData.id);
+      }
+
       addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, full_legal_name: info.full_legal_name, date_of_birth: info.date_of_birth, ssn_encrypted: info.ssn_encrypted, current_address: info.current_address, phone: info.phone, email: info.email, marital_status: info.marital_status }));
       flashSuccess(setSuccessPersonal);
-      toast.success('Personal information saved');
+
+      // Show specific toast if contact info changed
+      const contactChanged = info.phone !== savedInfo.phone || info.email !== savedInfo.email;
+      if (contactChanged) {
+        toast.success('Contact information updated. Future notifications will be sent to the new email and phone number.');
+      } else {
+        toast.success('Personal information saved');
+      }
       onRefresh();
     } catch {
       toast.error('Failed to save personal information');

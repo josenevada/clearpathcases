@@ -45,7 +45,18 @@ Deno.serve(async (req) => {
   const results: any[] = [];
 
   for (const c of cases) {
-    if (!c.client_name || !c.client_phone) continue;
+    if (!c.client_name) continue;
+
+    // Fetch latest contact info from client_info table
+    const ciRes = await fetch(
+      `${supabaseUrl}/rest/v1/client_info?case_id=eq.${c.id}&select=phone&limit=1`,
+      { headers },
+    );
+    const ciRows = await ciRes.json();
+    const ci = Array.isArray(ciRows) && ciRows.length > 0 ? ciRows[0] : null;
+    const clientPhone = ci?.phone || c.client_phone || null;
+
+    if (!clientPhone) continue;
 
     const firstName = c.client_name.split(' ')[0];
     const portalLink = `https://yourclearpath.app/client/${c.case_code || c.id}`;
@@ -125,7 +136,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        to: c.client_phone,
+        to: clientPhone,
         body: smsBody,
         caseId: c.id,
         clientName: c.client_name,
