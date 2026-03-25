@@ -201,11 +201,34 @@ const ClientWizard = () => {
         }
       }
 
-      const catIdx = Math.min(c.wizardStep, CATEGORIES.length - 1);
-      setCurrentCategoryIdx(catIdx);
-      const items = c.checklist.filter(item => item.category === CATEGORIES[catIdx]);
-      const firstIncomplete = items.findIndex(item => !isItemEffectivelyComplete(item));
-      setCurrentItemIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
+      // Find the first category with incomplete items, skipping fully-done categories
+      let resumeCatIdx = 0;
+      let resumeItemIdx = 0;
+      let found = false;
+      for (let ci = 0; ci < CATEGORIES.length; ci++) {
+        const catItems = c.checklist.filter(item => item.category === CATEGORIES[ci]);
+        const firstIncomplete = catItems.findIndex(item => !isItemEffectivelyComplete(item));
+        if (firstIncomplete >= 0) {
+          resumeCatIdx = ci;
+          resumeItemIdx = firstIncomplete;
+          found = true;
+          break;
+        }
+      }
+      // If all items are complete, go to last category last item
+      if (!found) {
+        resumeCatIdx = CATEGORIES.length - 1;
+        const lastCatItems = c.checklist.filter(item => item.category === CATEGORIES[resumeCatIdx]);
+        resumeItemIdx = Math.max(0, lastCatItems.length - 1);
+      }
+      setCurrentCategoryIdx(resumeCatIdx);
+      setCurrentItemIdx(resumeItemIdx);
+
+      // Sync wizard_step to Supabase if it drifted
+      if (c.wizardStep !== resumeCatIdx) {
+        c.wizardStep = resumeCatIdx;
+        supabase.from('cases').update({ wizard_step: resumeCatIdx }).eq('id', c.id).then(() => {});
+      }
     };
 
     loadCase();
@@ -587,6 +610,8 @@ const ClientWizard = () => {
     setCurrentCategoryIdx(nextCategory);
     setCurrentItemIdx(0);
     updateCase(caseData.id, c => ({ ...c, wizardStep: nextCategory }));
+    // Persist wizard step to Supabase for cross-device persistence
+    supabase.from('cases').update({ wizard_step: nextCategory }).eq('id', caseData.id).then(() => {});
     refreshCase();
 
     // Trigger 3: Momentum Builder SMS
