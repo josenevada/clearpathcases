@@ -123,7 +123,7 @@ const ClientVerify = () => {
   if (!caseId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6">
-        <Logo size="lg" />
+        <Logo size="lg" clickable={false} />
         <p className="text-muted-foreground mt-6 text-center">
           This link doesn't match any active case. Please check the link your attorney's office sent you.
         </p>
@@ -140,7 +140,7 @@ const ClientVerify = () => {
         className="w-full max-w-sm"
       >
         <div className="text-center mb-8">
-          <Logo size="lg" />
+          <Logo size="lg" clickable={false} />
           <h2 className="font-display font-bold text-xl text-foreground mt-6 mb-2">
             Welcome to your document portal
           </h2>
