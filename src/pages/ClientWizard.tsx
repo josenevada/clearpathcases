@@ -386,7 +386,35 @@ const ClientWizard = () => {
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
-  const handleFileAdd = (file: File, replaceFileId?: string) => {
+  const renderDuplicateWarning = () => {
+    if (!pendingDuplicate) return null;
+    return (
+      <div className="surface-card border-warning/30 bg-warning/5 p-4 rounded-xl flex flex-col gap-2 mb-3">
+        <p className="text-sm text-foreground">
+          You already uploaded a file with this name. Do you want to replace it or keep both?
+        </p>
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            onClick={() => {
+              handleFileAdd(pendingDuplicate.file, pendingDuplicate.existingFileId);
+            }}
+          >
+            Replace existing
+          </Button>
+          <button
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => {
+              handleFileAdd(pendingDuplicate.file);
+            }}
+          >
+            Keep both
+          </button>
+        </div>
+      </div>
+    );
+  };
+
     if (!currentItem) return;
     // Reset inactivity timer on upload
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
