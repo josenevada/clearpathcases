@@ -8,19 +8,39 @@ import Logo from '@/components/Logo';
 import { supabase } from '@/integrations/supabase/client';
 import { getClientSession, setClientSession } from '@/lib/auth';
 
+const MIN_AGE = 18;
+const MAX_AGE = 110;
+
+const validateDob = (dateStr: string): string | null => {
+  if (!dateStr) return null;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return 'Please enter a valid date.';
+  const year = parseInt(parts[0], 10);
+  if (isNaN(year) || parts[0].length !== 4) return 'Please enter a 4-digit year.';
+  const today = new Date();
+  const birthDate = new Date(dateStr);
+  if (isNaN(birthDate.getTime())) return 'Please enter a valid date.';
+  const age = today.getFullYear() - birthDate.getFullYear() -
+    (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate()) ? 1 : 0);
+  if (age < MIN_AGE) return `You must be at least ${MIN_AGE} years old.`;
+  if (age > MAX_AGE) return 'Please enter a valid birth year.';
+  return null;
+};
+
 const ClientVerify = () => {
   const { caseCode } = useParams<{ caseCode: string }>();
   const navigate = useNavigate();
   const [dob, setDob] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dobError, setDobError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [caseId, setCaseId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!caseCode) return;
 
-    // Check for existing valid session
+    // Check for existing valid session (sessionStorage — same tab only)
     const existingSession = getClientSession(caseCode);
     if (existingSession?.verified) {
       navigate(`/client-portal/${caseCode}/${existingSession.caseId}`, { replace: true });
@@ -44,10 +64,26 @@ const ClientVerify = () => {
     checkCase();
   }, [caseCode, navigate]);
 
+  const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDob(value);
+    if (dobError) {
+      const err = validateDob(value);
+      setDobError(err);
+    }
+  };
+
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!caseCode || !dob) return;
 
+    // Validate DOB before submitting
+    const validationError = validateDob(dob);
+    if (validationError) {
+      setDobError(validationError);
+      return;
+    }
+    setDobError(null);
     setError('');
 
     const { data } = await supabase
@@ -120,10 +156,15 @@ const ClientVerify = () => {
               <Input
                 type="date"
                 value={dob}
-                onChange={e => setDob(e.target.value)}
+                onChange={handleDobChange}
+                max={new Date(new Date().getFullYear() - MIN_AGE, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]}
+                min={new Date(new Date().getFullYear() - MAX_AGE, 0, 1).toISOString().split('T')[0]}
                 className="mt-1 bg-input border-border rounded-[10px] h-11"
                 required
               />
+              {dobError && (
+                <p className="text-sm text-destructive mt-1">{dobError}</p>
+              )}
             </div>
             {error && (
               <p className="text-sm text-destructive text-center">{error}</p>
