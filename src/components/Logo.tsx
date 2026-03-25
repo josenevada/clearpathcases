@@ -1,12 +1,21 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 
-const Logo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+const Logo = ({ size = 'md', clickable = true }: { size?: 'sm' | 'md' | 'lg'; clickable?: boolean }) => {
   const sizes = {
     sm: 'text-xl',
     md: 'text-2xl',
     lg: 'text-4xl',
   };
+
+  const content = (
+    <span className={`font-display font-extrabold ${sizes[size]} tracking-tight`}>
+      <span className="text-foreground">Clear</span>
+      <span className="text-primary">Path</span>
+    </span>
+  );
+
+  if (!clickable) return content;
 
   let target = '/';
   try {

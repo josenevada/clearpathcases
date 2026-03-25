@@ -341,7 +341,7 @@ const ClientWizard = () => {
   if (isLoading || !caseData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
-        <Logo size="md" />
+        <Logo size="md" clickable={false} />
         {loadError ? (
           <div className="mt-8 text-center max-w-md">
             <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
@@ -362,7 +362,7 @@ const ClientWizard = () => {
   if (caseData.checklist.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
-        <Logo size="md" />
+        <Logo size="md" clickable={false} />
         <div className="mt-8 text-center max-w-md">
           <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
           <p className="text-foreground font-medium mb-2">Having trouble loading your documents.</p>
@@ -1246,7 +1246,7 @@ const ClientWizard = () => {
 const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: number; step: number; totalSteps: number; stepName: string }) => (
   <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm">
     <div className="flex items-center justify-between px-4 py-3">
-      <Logo size="sm" />
+      <Logo size="sm" clickable={false} />
       <span className="text-sm text-muted-foreground font-body">
         Step {step} of {totalSteps} — {stepName}
       </span>
@@ -1365,7 +1365,7 @@ class WizardErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
-          <Logo size="md" />
+          <Logo size="md" clickable={false} />
           <div className="mt-8 text-center max-w-md">
             <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
             <p className="text-foreground font-medium mb-2">Something went wrong loading this step.</p>
