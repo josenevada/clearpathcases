@@ -58,6 +58,7 @@ const ClientWizard = () => {
   const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
   const [helpForceOpen, setHelpForceOpen] = useState(false);
+  const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -384,10 +385,11 @@ const ClientWizard = () => {
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
-  const handleFileAdd = (file: File) => {
+  const handleFileAdd = (file: File, replaceFileId?: string) => {
     if (!currentItem) return;
     // Reset inactivity timer on upload
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    setPendingDuplicate(null);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -404,6 +406,10 @@ const ClientWizard = () => {
       const updated = updateCase(caseData.id, c => {
         const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
         if (item) {
+          // If replacing, remove the old file first
+          if (replaceFileId) {
+            item.files = item.files.filter(f => f.id !== replaceFileId);
+          }
           if (isMultiUpload || currentItemHasOpenCorrection) {
             item.files = [...item.files, newFile];
             item.completed = !currentItemHasOpenCorrection;
@@ -491,7 +497,17 @@ const ClientWizard = () => {
 
   const handleSingleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) handleFileAdd(file);
+    if (!file || !currentItem) { if (event.target) event.target.value = ''; return; }
+
+    // Check for duplicate filename on same checklist item
+    const existingFile = currentItem.files.find(f => f.name === file.name);
+    if (existingFile) {
+      setPendingDuplicate({ file, existingFileId: existingFile.id });
+      event.target.value = '';
+      return;
+    }
+
+    handleFileAdd(file);
     event.target.value = '';
   };
 
