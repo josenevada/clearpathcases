@@ -313,6 +313,7 @@ const ClientWizard = () => {
       setEmployerAddress('');
       setEmploymentStatus(null);
     }
+    setPendingDuplicate(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
   // ─── 90-second inactivity auto-show help ─────────────────────────
