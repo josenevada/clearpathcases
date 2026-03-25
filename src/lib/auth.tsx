@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Client session management (localStorage-based, no Supabase Auth)
+// Client session management (sessionStorage-based — clears when tab closes)
 const CLIENT_SESSION_PREFIX = 'cp_client_session_';
 
 export interface ClientSession {
@@ -114,18 +114,9 @@ export interface ClientSession {
 }
 
 export const getClientSession = (caseCode: string): ClientSession | null => {
-  const raw = localStorage.getItem(`${CLIENT_SESSION_PREFIX}${caseCode}`);
+  const raw = sessionStorage.getItem(`${CLIENT_SESSION_PREFIX}${caseCode}`);
   if (!raw) return null;
-  const session: ClientSession = JSON.parse(raw);
-  // Check if session is expired (7 days)
-  const verifiedAt = new Date(session.verifiedAt).getTime();
-  const now = Date.now();
-  const sevenDays = 7 * 24 * 60 * 60 * 1000;
-  if (now - verifiedAt > sevenDays) {
-    localStorage.removeItem(`${CLIENT_SESSION_PREFIX}${caseCode}`);
-    return null;
-  }
-  return session;
+  return JSON.parse(raw);
 };
 
 export const setClientSession = (caseCode: string, caseId: string) => {
@@ -135,5 +126,5 @@ export const setClientSession = (caseCode: string, caseId: string) => {
     verified: true,
     verifiedAt: new Date().toISOString(),
   };
-  localStorage.setItem(`${CLIENT_SESSION_PREFIX}${caseCode}`, JSON.stringify(session));
+  sessionStorage.setItem(`${CLIENT_SESSION_PREFIX}${caseCode}`, JSON.stringify(session));
 };
