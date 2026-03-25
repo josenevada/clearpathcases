@@ -1068,10 +1068,18 @@ const ClientWizard = () => {
                       details={currentItem.correctionRequest.details}
                     />
                   )}
+                  {renderDuplicateWarning()}
                   <MultiUploadZone
                     files={currentItem.files}
                     config={multiConfig}
-                    onFileAdd={handleFileAdd}
+                    onFileAdd={(file: File) => {
+                      const existing = currentItem.files.find(f => f.name === file.name);
+                      if (existing) {
+                        setPendingDuplicate({ file, existingFileId: existing.id });
+                      } else {
+                        handleFileAdd(file);
+                      }
+                    }}
                     onFileDelete={handleFileDelete}
                   />
                   <AnimatePresence>
