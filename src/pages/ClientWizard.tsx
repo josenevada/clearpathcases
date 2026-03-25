@@ -1161,6 +1161,7 @@ const ClientWizard = () => {
                     onChange={handleSingleFileUpload}
                   />
                 </div>
+                </>
               )}
             </motion.div>
           ) : (
