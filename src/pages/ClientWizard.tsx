@@ -1144,6 +1144,8 @@ const ClientWizard = () => {
                   ))}
                 </div>
               ) : (
+                <>
+                {renderDuplicateWarning()}
                 <div
                   className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
                   onClick={() => fileInputRef.current?.click()}
