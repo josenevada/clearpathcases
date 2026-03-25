@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root, .dark {
     --background: 210 45% 11%;
     --foreground: 210 33% 95%;
 
@@ -52,6 +52,57 @@
     --surface: 0 0% 100% / 0.04;
     --surface-border: 0 0% 100% / 0.08;
     --surface-hover: 0 0% 100% / 0.06;
+    --surface-card: 210 45% 13%;
+  }
+
+  .light {
+    --background: 213 20% 96%;
+    --foreground: 213 60% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 60% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 60% 11%;
+
+    --primary: 172 100% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 14% 92%;
+    --secondary-foreground: 213 60% 11%;
+
+    --muted: 210 14% 92%;
+    --muted-foreground: 210 20% 40%;
+
+    --accent: 210 14% 92%;
+    --accent-foreground: 213 60% 11%;
+
+    --destructive: 0 100% 71%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 36 91% 55%;
+    --warning-foreground: 213 60% 11%;
+
+    --border: 210 14% 89%;
+    --input: 210 14% 92%;
+    --ring: 172 100% 38%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 213 60% 11%;
+    --sidebar-primary: 172 100% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 14% 95%;
+    --sidebar-accent-foreground: 213 60% 11%;
+    --sidebar-border: 210 14% 89%;
+    --sidebar-ring: 172 100% 38%;
+
+    --surface: 0 0% 0% / 0.03;
+    --surface-border: 0 0% 0% / 0.08;
+    --surface-hover: 0 0% 0% / 0.05;
+    --surface-card: 0 0% 100%;
   }
 }
 

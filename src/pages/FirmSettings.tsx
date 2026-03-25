@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,12 +12,14 @@ import BillingTab from '@/components/settings/BillingTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
+import { useThemePreference } from '@/hooks/use-theme';
 
 const FirmSettings = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'profile';
   const { refresh } = useSubscription();
+  const { theme, setTheme } = useThemePreference();
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
@@ -67,11 +69,56 @@ const FirmSettings = () => {
               <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Firm Profile</TabsTrigger>
               <TabsTrigger value="templates" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Document Templates</TabsTrigger>
               <TabsTrigger value="questions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Intake Questions</TabsTrigger>
+              <TabsTrigger value="display" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Display</TabsTrigger>
               <TabsTrigger value="billing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Billing</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><FirmProfileTab /></TabsContent>
             <TabsContent value="templates"><DocumentTemplatesTab /></TabsContent>
             <TabsContent value="questions"><IntakeQuestionsTab /></TabsContent>
+            <TabsContent value="display">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="font-display font-bold text-lg text-foreground mb-1">Display Preferences</h2>
+                  <p className="text-sm text-muted-foreground font-body">Choose how ClearPath looks for your team and clients.</p>
+                </div>
+                <div className="surface-card p-5 space-y-4">
+                  <h3 className="font-display font-bold text-foreground">Theme</h3>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setTheme('dark'); toast.success('Switched to dark mode'); }}
+                      className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all ${
+                        theme === 'dark'
+                          ? 'border-primary bg-primary/10 text-foreground'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <Moon className="w-5 h-5" />
+                      <div className="text-left">
+                        <span className="block text-sm font-bold font-body">Dark</span>
+                        <span className="block text-xs text-muted-foreground">Professional, focused</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => { setTheme('light'); toast.success('Switched to light mode'); }}
+                      className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all ${
+                        theme === 'light'
+                          ? 'border-primary bg-primary/10 text-foreground'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <Sun className="w-5 h-5" />
+                      <div className="text-left">
+                        <span className="block text-sm font-bold font-body">Light</span>
+                        <span className="block text-xs text-muted-foreground">Clean, approachable</span>
+                      </div>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-body">
+                    This setting applies to both the staff dashboard and the client portal.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
             <TabsContent value="billing"><BillingTab /></TabsContent>
           </Tabs>
         </motion.div>

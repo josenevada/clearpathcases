@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import NewCaseModal from '@/components/case/NewCaseModal';
 import TrialBanner from '@/components/TrialBanner';
+import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionGate from '@/components/SubscriptionGate';
 import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
@@ -87,6 +88,7 @@ const ParalegalDashboard = () => {
           <span className="hidden text-sm text-muted-foreground md:block">
             {displayName}, {displayRole}
           </span>
+          <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>
