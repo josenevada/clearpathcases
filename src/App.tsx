@@ -19,6 +19,7 @@ import ParalegalDashboard from "./pages/ParalegalDashboard";
 import CaseDetail from "./pages/CaseDetail";
 import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
+import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => {
             <SubscriptionProvider>
               <Routes>
                 <Route path="/" element={<MarketingLanding />} />
+                <Route path="/security" element={<Security />} />
                 <Route path="/portal" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />
