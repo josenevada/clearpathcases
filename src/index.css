@@ -171,4 +171,48 @@
     box-shadow: 0 0 20px hsl(172 100% 38% / 0.2);
     border-color: hsl(172 100% 38% / 0.5);
   }
+
+  /* Pricing popular card ambient glow */
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px 2px hsl(172 100% 38% / 0.15); }
+    50% { box-shadow: 0 0 25px 4px hsl(172 100% 38% / 0.35); }
+  }
+
+  .pricing-glow {
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
+  /* CTA shimmer sweep */
+  @keyframes shimmer-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .cta-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      hsl(0 0% 100% / 0.15) 50%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+
+  .cta-shimmer:hover::after {
+    animation: shimmer-sweep 0.6s ease-in-out;
+  }
+
+  /* Respect reduced motion globally */
+  @media (prefers-reduced-motion: reduce) {
+    .pricing-glow {
+      animation: none;
+    }
+    .cta-shimmer::after {
+      display: none;
+    }
+  }
 }
