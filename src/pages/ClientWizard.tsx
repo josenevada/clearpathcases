@@ -797,7 +797,96 @@ const ClientWizard = () => {
     }
   };
 
-  const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
+  // ─── SSN helpers ─────────────────────────────────────────────────────
+  const formatSSN = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '').slice(0, 9);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+  };
+
+  const ssnDigits = ssnValue.replace(/\D/g, '');
+  const ssnFormatted = formatSSN(ssnValue);
+  const ssnIsValid = ssnDigits.length === 9;
+
+  const handleSSNChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    // Only allow digits and dashes
+    const cleaned = input.replace(/[^\d-]/g, '');
+    const digits = cleaned.replace(/\D/g, '').slice(0, 9);
+    setSsnValue(digits);
+    setSsnError('');
+  };
+
+  const handleSSNContinue = () => {
+    if (!currentItem) return;
+    if (!ssnIsValid) {
+      setSsnError('Please enter all 9 digits of your Social Security number.');
+      return;
+    }
+
+    const formatted = formatSSN(ssnValue);
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(ci => ci.id === currentItem.id);
+      if (item) {
+        item.textEntry = {
+          employerName: ssnDigits, // store raw digits in textEntry for local state
+          savedAt: new Date().toISOString(),
+        };
+        item.completed = true;
+      }
+      c.lastClientActivity = new Date().toISOString();
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} provided Social Security Number`,
+      itemId: currentItem.id,
+    });
+
+    // Store encrypted SSN in Supabase client_info
+    (async () => {
+      try {
+        const { data: existing } = await supabase
+          .from('client_info')
+          .select('id')
+          .eq('case_id', caseData.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from('client_info').update({ ssn_encrypted: formatted }).eq('case_id', caseData.id);
+        } else {
+          await supabase.from('client_info').insert({
+            case_id: caseData.id,
+            ssn_encrypted: formatted,
+            full_legal_name: caseData.clientName,
+            email: caseData.clientEmail,
+            phone: caseData.clientPhone || '',
+          });
+        }
+        // Also sync checklist item
+        await supabase.from('checklist_items').update({
+          completed: true,
+          text_value: { employerName: ssnDigits, savedAt: new Date().toISOString() },
+        }).eq('id', currentItem.id);
+      } catch (err) {
+        console.error('Failed to sync SSN:', err);
+      }
+    })();
+
+    if (updated) {
+      setCaseData(updated);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        checkMilestoneAndAdvance(updated);
+      }, 1500);
+    }
+  };
+
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
   if (progress === 100 && !showMilestone && !showSuccess) {
