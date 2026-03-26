@@ -19,6 +19,7 @@ import ParalegalDashboard from "./pages/ParalegalDashboard";
 import CaseDetail from "./pages/CaseDetail";
 import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
+import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
