@@ -16,9 +16,10 @@ interface MultiUploadZoneProps {
   config: MultiUploadConfig;
   onFileAdd: (file: File) => void;
   onFileDelete: (fileId: string) => void;
+  onFilePreview?: (file: UploadedFile) => void;
 }
 
-const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUploadZoneProps) => {
+const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview }: MultiUploadZoneProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadZoneRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +53,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
           const validationIcon = vs === 'passed' ? <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
             : vs === 'validating' ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
             : vs === 'warning' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-            : vs === 'failed' ? <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+            : vs === 'failed' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
             : <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />;
 
           return (
@@ -64,6 +65,22 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
               className="space-y-0"
             >
               <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-[hsl(var(--surface-card))] border border-[hsl(var(--surface-border))]">
+                {/* Thumbnail */}
+                {f.dataUrl?.startsWith('data:image') ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onFilePreview?.(f); }}
+                    className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-border hover:ring-2 hover:ring-primary/30 transition-all"
+                  >
+                    <img src={f.dataUrl} alt={f.name} className="w-full h-full object-cover" />
+                  </button>
+                ) : f.dataUrl ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onFilePreview?.(f); }}
+                    className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 border border-border hover:ring-2 hover:ring-primary/30 transition-all"
+                  >
+                    <span className="text-[10px] font-bold text-muted-foreground">PDF</span>
+                  </button>
+                ) : null}
                 <span className="flex-1 text-sm text-foreground truncate font-body">{f.name}</span>
                 {validationIcon}
                 <button
@@ -92,7 +109,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete }: MultiUpload
               )}
               {vs === 'failed' && vr && (
                 <div className="pl-3 py-1.5 space-y-1.5">
-                  <p className="text-[11px] text-destructive leading-relaxed">This looks like it might be the wrong file. {vr.suggestion}</p>
+                  <p className="text-[11px] text-warning leading-relaxed">This looks like it might be the wrong file. {vr.suggestion}</p>
                   <div className="flex gap-3">
                     <button onClick={() => handleRemoveAndRetry(f.id)} className="text-[11px] text-primary hover:underline font-medium">Remove and try again</button>
                     <button onClick={() => {}} className="text-[11px] text-muted-foreground hover:text-foreground">Keep it anyway</button>
