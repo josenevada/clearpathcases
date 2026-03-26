@@ -371,6 +371,49 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
+      {/* FAQ */}
+      <section className="px-6 py-12 max-w-3xl mx-auto">
+        <h2 className="font-display font-bold text-3xl text-foreground text-center mb-3">Common questions</h2>
+        <p className="text-muted-foreground font-body text-center mb-10">Everything bankruptcy firms want to know before getting started.</p>
+        <Accordion type="single" collapsible className="space-y-2">
+          {[
+            {
+              q: 'How do clients access their document portal?',
+              a: 'When you create a case in ClearPath the system generates a unique secure link for your client. You share that link with them by email or text. They click it, verify their identity with their date of birth, and are guided through uploading their documents step by step — no account creation required.',
+            },
+            {
+              q: 'Do clients need to create an account?',
+              a: 'No. Clients access their portal through a unique secure link and verify their identity with their date of birth. There is no username or password for clients to manage. This removes the biggest barrier to getting documents submitted quickly.',
+            },
+            {
+              q: 'What happens if a client uploads the wrong document?',
+              a: 'ClearPath uses AI validation to detect common mistakes — wrong document type, wrong year, illegible files — and alerts the client immediately with plain English guidance on what to fix. If a paralegal catches an issue during review they can request a correction with one click and the client receives an email and text notification with a direct link to fix it.',
+            },
+            {
+              q: 'Is client data secure?',
+              a: 'All documents are encrypted in transit and at rest using AES-256 encryption. Files are stored on secure AWS infrastructure. Client portal links are unique and access requires date of birth verification. We take data security seriously and are working toward formal SOC 2 compliance.',
+            },
+            {
+              q: 'Can we customize the document checklist for our firm?',
+              a: 'Yes. In your firm settings you can turn individual document requirements on or off, mark items as optional, add custom document types specific to your practice, and configure intake questions that automatically personalize each client\'s checklist based on their situation — whether they own property, have a vehicle, are self-employed, and more.',
+            },
+          ].map((item, i) => (
+            <AccordionItem key={i} value={`faq-${i}`} className="border border-border/60 rounded-xl px-5 data-[state=open]:bg-foreground/[0.02]">
+              <AccordionTrigger className="hover:no-underline py-5 [&>svg]:hidden">
+                <span className="text-left font-body text-sm font-medium text-foreground">{item.q}</span>
+                <Plus className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-4 block [[data-state=open]_&]:hidden" />
+                <Minus className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-4 hidden [[data-state=open]_&]:block" />
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground font-body leading-relaxed pb-5">
+                {item.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </section>
+
+      <SectionDivider />
+
       {/* Final CTA */}
       <section className="px-6 py-16 md:py-20">
         <div className="max-w-3xl mx-auto text-center rounded-2xl bg-primary/[0.06] border border-primary/10 px-8 py-14">
