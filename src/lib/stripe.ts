@@ -51,13 +51,14 @@ export const PLANS = {
   },
   firm: {
     name: 'Firm',
-    price: '$499',
-    priceAmount: 49900,
-    priceId: 'price_1TDTp5RwKiGRq1RZaqvm4t1U',
-    productId: 'prod_UBrYfLz4vub0FG',
+    price: '$799',
+    priceAmount: 79900,
+    priceId: 'price_1TFMr0RwKiGRq1RZqtfSMg4m',
+    productId: 'prod_UDoTIzLjHd2WEo',
     features: [
       'Everything in Professional',
       'White-label client portal',
+      "Your firm's logo and branding on the client portal — clients never see the ClearPath name",
       'Custom document templates',
       'Dedicated onboarding call',
       '14-day free trial',
