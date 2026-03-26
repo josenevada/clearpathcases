@@ -27,6 +27,17 @@ const ParalegalDashboard = () => {
 
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
+  // Session persistence check — redirect if no valid session after 3s
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login?expired=true', { replace: true });
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
   useEffect(() => {
     if (searchParams.get('checkout') === 'success') {
       toast.success('Welcome back! Your subscription is active.');

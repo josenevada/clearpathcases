@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
@@ -19,7 +18,6 @@ interface GoogleSignInButtonProps {
 
 const GoogleSignInButton = ({ label = 'Continue with Google' }: GoogleSignInButtonProps) => {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -34,8 +32,13 @@ const GoogleSignInButton = ({ label = 'Continue with Google' }: GoogleSignInButt
         return;
       }
 
+      // If redirected to Google, component unmounts — nothing more to do.
+      // When user returns, onAuthStateChange in Login/Signup handles the redirect.
       if (result.redirected) return;
 
+      // For popup flow: session is set by lovable.auth.signInWithOAuth via setSession.
+      // onAuthStateChange will fire SIGNED_IN and handle navigation.
+      // We just need to check if it's a new user that needs onboarding.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.email) {
         setLoading(false);
@@ -48,20 +51,18 @@ const GoogleSignInButton = ({ label = 'Continue with Google' }: GoogleSignInButt
         .eq('email', session.user.email)
         .maybeSingle();
 
-      if (existingUser?.firm_id) {
-        if (existingUser.role === 'super_admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/paralegal');
-        }
-      } else {
+      if (!existingUser?.firm_id) {
+        // New user — store metadata for signup flow
         sessionStorage.setItem('google_oauth_user', JSON.stringify({
           email: session.user.email,
           fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
           userId: session.user.id,
         }));
-        navigate('/signup?from=google');
+        // Set flag so Login's onAuthStateChange doesn't redirect to dashboard
+        sessionStorage.setItem('google_oauth_needs_onboarding', 'true');
+        window.location.href = '/signup?from=google';
       }
+      // If existingUser exists, onAuthStateChange in Login will handle the redirect
     } catch (err) {
       console.error('Google sign-in error:', err);
       toast.error('Something went wrong. Please try again.');
