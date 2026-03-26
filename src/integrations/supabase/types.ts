@@ -537,6 +537,42 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          email: string
+          firm_id: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          personal_message: string | null
+          role: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          email: string
+          firm_id: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          personal_message?: string | null
+          role?: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          email?: string
+          firm_id?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          personal_message?: string | null
+          role?: string
+          status?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null

@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import { Check, Eye, EyeOff, Send, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Logo from '@/components/Logo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 
-const STEPS = ['Create Account', 'Your Practice', 'First Case', 'All Set'];
+const STEPS = ['Create Account', 'Your Practice', 'First Case', 'Invite Your Team', 'All Set'];
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -318,7 +320,25 @@ const Signup = () => {
           )}
 
           {step === 3 && (
-            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
+            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-2xl text-foreground">Invite Your Team</h2>
+                  <p className="text-sm text-muted-foreground font-body">Add a paralegal or attorney to your workspace.</p>
+                </div>
+              </div>
+              <InviteTeamForm firmId={firmId} onDone={() => setStep(4)} />
+              <p className="text-sm text-muted-foreground text-center cursor-pointer hover:text-foreground" onClick={() => setStep(4)}>
+                Skip for now
+              </p>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <Check className="w-8 h-8 text-primary" />
               </div>
@@ -336,6 +356,91 @@ const Signup = () => {
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+};
+
+/* Inline invite form used in onboarding step 3 */
+const InviteTeamForm = ({ firmId, onDone }: { firmId: string | null; onDone: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('paralegal');
+  const [message, setMessage] = useState('Welcome to our ClearPath workspace. Please create your account to get started.');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async () => {
+    if (!email || !firmId) return;
+    setSending(true);
+    try {
+      // Get firm name
+      const { data: firm } = await supabase.from('firms').select('name').eq('id', firmId).single();
+
+      const { data: invite, error: insertError } = await supabase
+        .from('team_invitations')
+        .insert({ firm_id: firmId, email, role, invited_by: 'Account owner', personal_message: message })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+
+      await supabase.functions.invoke('send-invitation', {
+        body: {
+          invitationId: invite.id,
+          firmName: firm?.name || 'Your firm',
+          inviterName: 'Account owner',
+          recipientEmail: email,
+          role,
+          personalMessage: message,
+        },
+      });
+
+      toast.success(`Invitation sent to ${email}`);
+      setSent(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send invitation');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="surface-card p-5 text-center space-y-3">
+        <Check className="w-6 h-6 text-primary mx-auto" />
+        <p className="text-sm text-foreground font-body">Invitation sent to <span className="font-semibold">{email}</span></p>
+        <Button variant="outline" size="sm" onClick={() => { setSent(false); setEmail(''); }}>Invite Another</Button>
+        <div>
+          <Button onClick={onDone} className="mt-2">Continue</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const inputClasses = "border border-foreground/[0.12] bg-background focus-visible:ring-2 focus-visible:ring-ring";
+
+  return (
+    <div className="surface-card p-5 space-y-4">
+      <div>
+        <Label className="font-body">Email Address</Label>
+        <Input type="email" className={inputClasses} value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@lawfirm.com" />
+      </div>
+      <div>
+        <Label className="font-body">Role</Label>
+        <Select value={role} onValueChange={setRole}>
+          <SelectTrigger className={inputClasses}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="paralegal">Paralegal</SelectItem>
+            <SelectItem value="attorney">Attorney</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="font-body">Personal Message (optional)</Label>
+        <Textarea className={`${inputClasses} font-body text-sm`} value={message} onChange={e => setMessage(e.target.value)} rows={2} />
+      </div>
+      <Button onClick={handleSend} disabled={sending || !email} className="w-full">
+        <Send className="w-4 h-4 mr-2" />
+        {sending ? 'Sending…' : 'Send Invitation'}
+      </Button>
     </div>
   );
 };
