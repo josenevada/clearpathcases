@@ -59,7 +59,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
   const [showExportWarning, setShowExportWarning] = useState<'zip' | 'pdf' | null>(null);
   const [correctionNote, setCorrectionNote] = useState('');
-
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // Gather all files across all checklist items
   const allFiles: FileEntry[] = useMemo(() => {
     const entries: FileEntry[] = [];
