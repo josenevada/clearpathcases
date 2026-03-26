@@ -209,6 +209,8 @@ const Signup = () => {
           {step === 0 && (
             <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <h2 className="font-display font-bold text-2xl text-foreground">Create Your Account</h2>
+              <GoogleSignInButton label="Continue with Google" />
+              <OAuthDivider />
               <div>
                 <Label className="font-body">Full Name</Label>
                 <Input className={inputClasses} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
