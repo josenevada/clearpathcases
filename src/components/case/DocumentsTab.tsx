@@ -617,6 +617,55 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         )}
       </AnimatePresence>
 
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" /> Delete this document?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. The client will need to re-upload if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!selectedFile) return;
+                const fileName = selectedFile.file.name;
+                const actorName = caseData.assignedParalegal || 'Staff';
+
+                updateCase(caseData.id, c => {
+                  const found = c.checklist.find(i => i.id === selectedFile.item.id);
+                  if (found) {
+                    found.files = found.files.filter(f => f.id !== selectedFile.file.id);
+                    if (found.files.length === 0) found.completed = false;
+                  }
+                  return c;
+                });
+
+                addActivityEntry(caseData.id, {
+                  eventType: 'file_deleted',
+                  actorRole: 'paralegal',
+                  actorName,
+                  description: `${actorName} deleted ${fileName}`,
+                  itemId: selectedFile.item.id,
+                });
+
+                toast.success(`${fileName} deleted`);
+                setSelectedFile(null);
+                setShowDeleteConfirm(false);
+                onRefresh();
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Export warning dialog */}
       <AlertDialog open={showExportWarning !== null} onOpenChange={() => setShowExportWarning(null)}>
         <AlertDialogContent>
