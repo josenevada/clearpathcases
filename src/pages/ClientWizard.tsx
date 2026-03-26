@@ -1308,8 +1308,24 @@ const ClientWizard = () => {
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
                 <div className="space-y-2">
-                  <div className="surface-card glow-success p-6 flex items-center gap-4">
-                    <CheckCircle2 className="w-8 h-8 text-success flex-shrink-0" />
+                  <div className="surface-card glow-success p-4 flex items-center gap-3">
+                    {/* Thumbnail preview */}
+                    {currentItem.files[0].dataUrl?.startsWith('data:image') ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPreviewFile({ name: currentItem.files[0].name, dataUrl: currentItem.files[0].dataUrl }); }}
+                        className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-border hover:ring-2 hover:ring-primary/30 transition-all"
+                      >
+                        <img src={currentItem.files[0].dataUrl} alt={currentItem.files[0].name} className="w-full h-full object-cover" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPreviewFile({ name: currentItem.files[0].name, dataUrl: currentItem.files[0].dataUrl }); }}
+                        className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 border border-border hover:ring-2 hover:ring-primary/30 transition-all"
+                      >
+                        <span className="text-[10px] font-bold text-muted-foreground">PDF</span>
+                      </button>
+                    )}
+                    <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-foreground font-medium truncate">{currentItem.files[0].name}</p>
                       <p className="text-sm text-muted-foreground">Uploaded</p>
@@ -1355,6 +1371,11 @@ const ClientWizard = () => {
                     onChange={handleSingleFileUpload}
                   />
                 </div>
+                {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
+                  <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 mx-auto block">
+                    Skip this item
+                  </button>
+                )}
                 </>
               )}
             </motion.div>
@@ -1409,7 +1430,7 @@ const ClientWizard = () => {
                 className="w-full"
                 disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : currentItem.files.length === 0 && currentItem.required}
               >
-                Continue →
+                {hasValidationIssue ? 'Continue anyway →' : 'Continue →'}
               </Button>
             ) : (
               <Button
@@ -1418,12 +1439,7 @@ const ClientWizard = () => {
                 className="w-full"
                 disabled={currentItemHasOpenCorrection ? !hasPendingReplacement : false}
               >
-                Continue →
-              </Button>
-            )}
-            {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
-              <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
-                I don't have this yet
+                {hasValidationIssue ? 'Continue anyway →' : 'Continue →'}
               </Button>
             )}
             {(currentItemIdx > 0 || currentCategoryIdx > 0) && (
@@ -1434,6 +1450,36 @@ const ClientWizard = () => {
           </div>
         </div>
       )}
+      {/* Fullscreen preview modal */}
+      <AnimatePresence>
+        {previewFile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setPreviewFile(null)}
+          >
+            <button
+              onClick={() => setPreviewFile(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <p className="absolute top-5 left-4 text-white/70 text-sm truncate max-w-[60%]">{previewFile.name}</p>
+            {previewFile.dataUrl?.startsWith('data:image') ? (
+              <img src={previewFile.dataUrl} alt={previewFile.name} className="max-w-full max-h-[85vh] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
+            ) : previewFile.dataUrl?.startsWith('data:application/pdf') ? (
+              <iframe src={previewFile.dataUrl} className="w-full max-w-3xl h-[85vh] rounded-lg bg-white" title={previewFile.name} onClick={e => e.stopPropagation()} />
+            ) : (
+              <div className="text-white text-center" onClick={e => e.stopPropagation()}>
+                <p className="text-lg font-medium mb-2">{previewFile.name}</p>
+                <p className="text-white/60">Preview not available for this file type</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1523,8 +1569,8 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRe
     return (
       <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
         <div className="flex items-start gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-destructive leading-relaxed">This looks like it might be the wrong file. {result.suggestion}</span>
+          <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
+          <span className="text-xs text-warning leading-relaxed">This looks like it might be the wrong file. {result.suggestion}</span>
         </div>
         <div className="flex gap-3">
           <button onClick={() => { onRemove?.(); }} className="text-xs text-primary hover:underline font-medium">Remove and try again</button>
