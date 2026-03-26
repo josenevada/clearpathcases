@@ -4,10 +4,17 @@ import { motion } from 'framer-motion';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Upload, Lock, Shield, CheckCircle, Clock, ChevronDown,
+  Plus, Minus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import PricingCards from '@/components/PricingCards';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import type { PlanKey } from '@/lib/stripe';
 
 const SectionDivider = () => (
