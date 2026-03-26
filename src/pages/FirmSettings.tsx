@@ -9,6 +9,7 @@ import FirmProfileTab from '@/components/settings/FirmProfileTab';
 import DocumentTemplatesTab from '@/components/settings/DocumentTemplatesTab';
 import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
 import BillingTab from '@/components/settings/BillingTab';
+import TeamTab from '@/components/settings/TeamTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
@@ -71,6 +72,7 @@ const FirmSettings = () => {
               <TabsTrigger value="questions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Intake Questions</TabsTrigger>
               <TabsTrigger value="display" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Display</TabsTrigger>
               <TabsTrigger value="billing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Billing</TabsTrigger>
+              <TabsTrigger value="team" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Team</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><FirmProfileTab /></TabsContent>
             <TabsContent value="templates"><DocumentTemplatesTab /></TabsContent>
@@ -120,6 +122,7 @@ const FirmSettings = () => {
               </div>
             </TabsContent>
             <TabsContent value="billing"><BillingTab /></TabsContent>
+            <TabsContent value="team"><TeamTab /></TabsContent>
           </Tabs>
         </motion.div>
       </main>

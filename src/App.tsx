@@ -20,6 +20,7 @@ import CaseDetail from "./pages/CaseDetail";
 import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Security from "./pages/Security";
+import InviteSignup from "./pages/InviteSignup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ const App = () => {
                 <Route path="/admin" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/invite/:invitationId" element={<InviteSignup />} />
 
                 {/* Client routes */}
                 <Route path="/client/:caseCode" element={<ClientVerify />} />
