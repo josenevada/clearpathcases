@@ -1267,6 +1267,7 @@ const ClientWizard = () => {
                       }
                     }}
                     onFileDelete={handleFileDelete}
+                    onFilePreview={(f) => setPreviewFile({ name: f.name, dataUrl: f.dataUrl })}
                   />
                   <AnimatePresence>
                     {showLowCountConfirm && (
@@ -1278,6 +1279,11 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
+                  {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
+                    <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 mx-auto block">
+                      Skip this item
+                    </button>
+                  )}
                 </div>
               ) : currentItemHasOpenCorrection ? (
                 <div className="space-y-4">
