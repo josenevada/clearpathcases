@@ -360,4 +360,89 @@ const Signup = () => {
   );
 };
 
+/* Inline invite form used in onboarding step 3 */
+const InviteTeamForm = ({ firmId, onDone }: { firmId: string | null; onDone: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('paralegal');
+  const [message, setMessage] = useState('Welcome to our ClearPath workspace. Please create your account to get started.');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async () => {
+    if (!email || !firmId) return;
+    setSending(true);
+    try {
+      // Get firm name
+      const { data: firm } = await supabase.from('firms').select('name').eq('id', firmId).single();
+
+      const { data: invite, error: insertError } = await supabase
+        .from('team_invitations')
+        .insert({ firm_id: firmId, email, role, invited_by: 'Account owner', personal_message: message })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+
+      await supabase.functions.invoke('send-invitation', {
+        body: {
+          invitationId: invite.id,
+          firmName: firm?.name || 'Your firm',
+          inviterName: 'Account owner',
+          recipientEmail: email,
+          role,
+          personalMessage: message,
+        },
+      });
+
+      toast.success(`Invitation sent to ${email}`);
+      setSent(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send invitation');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="surface-card p-5 text-center space-y-3">
+        <Check className="w-6 h-6 text-primary mx-auto" />
+        <p className="text-sm text-foreground font-body">Invitation sent to <span className="font-semibold">{email}</span></p>
+        <Button variant="outline" size="sm" onClick={() => { setSent(false); setEmail(''); }}>Invite Another</Button>
+        <div>
+          <Button onClick={onDone} className="mt-2">Continue</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const inputClasses = "border border-foreground/[0.12] bg-background focus-visible:ring-2 focus-visible:ring-ring";
+
+  return (
+    <div className="surface-card p-5 space-y-4">
+      <div>
+        <Label className="font-body">Email Address</Label>
+        <Input type="email" className={inputClasses} value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@lawfirm.com" />
+      </div>
+      <div>
+        <Label className="font-body">Role</Label>
+        <Select value={role} onValueChange={setRole}>
+          <SelectTrigger className={inputClasses}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="paralegal">Paralegal</SelectItem>
+            <SelectItem value="attorney">Attorney</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="font-body">Personal Message (optional)</Label>
+        <Textarea className={`${inputClasses} font-body text-sm`} value={message} onChange={e => setMessage(e.target.value)} rows={2} />
+      </div>
+      <Button onClick={handleSend} disabled={sending || !email} className="w-full">
+        <Send className="w-4 h-4 mr-2" />
+        {sending ? 'Sending…' : 'Send Invitation'}
+      </Button>
+    </div>
+  );
+};
+
 export default Signup;
