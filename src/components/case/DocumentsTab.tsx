@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
