@@ -62,6 +62,7 @@ const App = () => {
             <SubscriptionProvider>
               <Routes>
                 <Route path="/" element={<MarketingLanding />} />
+                <Route path="/security" element={<Security />} />
                 <Route path="/portal" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />
