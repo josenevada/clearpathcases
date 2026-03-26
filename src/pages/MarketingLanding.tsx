@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Upload, Lock, Shield, CheckCircle, Clock, ChevronDown,
-  Plus, Minus,
+  Plus, Minus, Sparkles, MessageSquare, ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -289,6 +289,9 @@ const MarketingLanding = () => {
             { icon: FileText, title: 'Clients actually finish', desc: 'A guided step-by-step portal that walks clients through every document they need to upload. Adapts to each client\'s situation automatically.' },
             { icon: LayoutDashboard, title: 'Know exactly where every case stands', desc: 'Every case in one place, sorted by urgency. See who\'s done, who\'s stalled, and what needs your attention today.' },
             { icon: PackageCheck, title: 'Go from documents to filing in one click', desc: 'Download an organized ZIP or compiled PDF of all approved documents, ready for court, in one click.' },
+            { icon: Sparkles, title: 'AI catches mistakes before they reach you', desc: 'Every uploaded document is validated instantly — wrong year, wrong file, wrong document type — and the client is guided to fix it before it lands in your review queue.' },
+            { icon: MessageSquare, title: 'Clients stay on track automatically', desc: 'Automated SMS and email nudges bring clients back when they go quiet — timed to their behavior, written in plain English, with a direct link back to exactly where they left off.' },
+            { icon: ClipboardList, title: 'Full audit trail on every case', desc: 'Every upload, approval, correction, and client interaction is logged with a timestamp and actor — so you always know exactly what happened and when.' },
           ].map(f => (
             <div key={f.title} className="surface-card p-6">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
