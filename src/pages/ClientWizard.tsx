@@ -298,12 +298,12 @@ const ClientWizard = () => {
     setSearchParams({ fix: itemId }, { replace: true });
   }, [setSearchParams]);
 
-  // Reset employer fields when item changes
+  // Reset fields when item changes
   useEffect(() => {
     if (!caseData) return;
     const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
     const item = catItems[currentItemIdx];
-    if (item && isTextEntryItem(item.label)) {
+    if (item && item.label === EMPLOYER_LABEL) {
       setEmployerName(item.textEntry?.employerName || '');
       setEmployerAddress(item.textEntry?.employerAddress || '');
       setEmploymentStatus(
@@ -316,6 +316,16 @@ const ClientWizard = () => {
       setEmployerName('');
       setEmployerAddress('');
       setEmploymentStatus(null);
+    }
+    if (item && item.label === SSN_LABEL) {
+      // Load existing SSN from textEntry if previously saved
+      setSsnValue(item.textEntry?.employerName || ''); // reusing employerName field for SSN value storage in textEntry
+      setSsnVisible(false);
+      setSsnError('');
+    } else {
+      setSsnValue('');
+      setSsnVisible(false);
+      setSsnError('');
     }
     setPendingDuplicate(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
