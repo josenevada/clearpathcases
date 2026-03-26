@@ -18,7 +18,7 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
         return (
           <div
             key={key}
-            className={`surface-card relative flex flex-col px-6 py-6 ${isPopular ? 'border-primary/50 ring-1 ring-primary/20' : ''}`}
+            className={`surface-card relative flex flex-col px-6 py-6 ${isPopular ? 'border-primary/50 ring-1 ring-primary/20 pricing-glow' : ''}`}
           >
             {isPopular && (
               <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-xs">
