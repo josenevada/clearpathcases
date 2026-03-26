@@ -397,6 +397,8 @@ const ClientWizard = () => {
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
+  const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
+  const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
