@@ -1354,7 +1354,16 @@ const ClientWizard = () => {
               >
                 Continue →
               </Button>
-            ) : isTextEntry ? (
+            ) : isSSNEntry ? (
+              <Button
+                onClick={handleSSNContinue}
+                size="lg"
+                className="w-full"
+                disabled={!ssnIsValid}
+              >
+                Continue →
+              </Button>
+            ) : isEmployerEntry ? (
               <Button
                 onClick={handleEmployerContinue}
                 size="lg"
