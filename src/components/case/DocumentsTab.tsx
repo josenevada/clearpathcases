@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2 } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -52,6 +53,8 @@ const CATEGORY_SHORT: Record<string, string> = {
   'Agreements & Confirmation': 'Legal',
 };
 
+const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong document type'];
+
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -60,6 +63,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [showExportWarning, setShowExportWarning] = useState<'zip' | 'pdf' | null>(null);
   const [correctionNote, setCorrectionNote] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkCorrection, setShowBulkCorrection] = useState(false);
+  const [bulkCorrectionNote, setBulkCorrectionNote] = useState('');
+
   // Gather all files across all checklist items
   const allFiles: FileEntry[] = useMemo(() => {
     const entries: FileEntry[] = [];
@@ -97,6 +106,98 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
 
   const clientLastName = caseData.clientName.split(' ').pop() || caseData.clientName;
 
+  // Bulk selection helpers
+  const bulkMode = selectedIds.size > 0;
+  const allVisibleSelected = filteredFiles.length > 0 && filteredFiles.every(fe => selectedIds.has(fe.file.id));
+
+  const toggleSelection = useCallback((fileId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId);
+      else next.add(fileId);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (allVisibleSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredFiles.map(fe => fe.file.id)));
+    }
+  }, [allVisibleSelected, filteredFiles]);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  // Bulk approve
+  const handleBulkApprove = useCallback(() => {
+    const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
+    if (targets.length === 0) return;
+
+    updateCase(caseData.id, c => {
+      for (const { file, item } of targets) {
+        const found = c.checklist.find(i => i.id === item.id);
+        if (found) {
+          const f = found.files.find(ff => ff.id === file.id);
+          if (f) f.reviewStatus = 'approved';
+        }
+      }
+      return c;
+    });
+
+    for (const { file, item } of targets) {
+      addActivityEntry(caseData.id, {
+        eventType: 'file_approved',
+        actorRole: viewRole,
+        actorName: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+        description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved ${item.label}`,
+        itemId: item.id,
+      });
+    }
+
+    toast.success(`${targets.length} document${targets.length !== 1 ? 's' : ''} approved`);
+    clearSelection();
+    onRefresh();
+  }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, onRefresh]);
+
+  // Bulk correction
+  const handleBulkCorrection = useCallback(() => {
+    if (!bulkCorrectionNote.trim()) { toast.error('Please add a correction note.'); return; }
+    const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
+    if (targets.length === 0) return;
+
+    updateCase(caseData.id, c => {
+      for (const { file, item } of targets) {
+        const found = c.checklist.find(i => i.id === item.id);
+        if (found) {
+          const f = found.files.find(ff => ff.id === file.id);
+          if (f) {
+            f.reviewStatus = 'correction-requested';
+            f.reviewNote = bulkCorrectionNote;
+          }
+          found.completed = false;
+        }
+      }
+      return c;
+    });
+
+    for (const { file, item } of targets) {
+      addActivityEntry(caseData.id, {
+        eventType: 'file_correction',
+        actorRole: viewRole,
+        actorName: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+        description: `Correction requested on ${item.label} — '${bulkCorrectionNote}'`,
+        itemId: item.id,
+      });
+    }
+
+    toast.success(`Correction requested on ${targets.length} document${targets.length !== 1 ? 's' : ''}`);
+    setBulkCorrectionNote('');
+    setShowBulkCorrection(false);
+    clearSelection();
+    onRefresh();
+  }, [caseData, filteredFiles, selectedIds, bulkCorrectionNote, viewRole, clearSelection, onRefresh]);
+
   const handleExportCheck = (type: 'zip' | 'pdf') => {
     if (unapprovedCount > 0) {
       setShowExportWarning(type);
@@ -122,7 +223,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         const blob = await response.blob();
         zip.folder(folder)?.file(cleanName, blob);
       } else {
-        // Demo data without actual file content
         zip.folder(folder)?.file(cleanName, `Placeholder for ${file.name}`);
       }
     }
@@ -139,7 +239,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    // Cover page
     const coverPage = pdfDoc.addPage([612, 792]);
     const { height: coverH } = coverPage.getSize();
     coverPage.drawText('Court Filing Packet', { x: 50, y: coverH - 100, size: 28, font: helveticaBold, color: rgb(0, 0.76, 0.66) });
@@ -149,7 +248,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     coverPage.drawText(`Filing Deadline: ${format(new Date(caseData.filingDeadline), 'MMMM d, yyyy')}`, { x: 50, y: coverH - 235, size: 12, font: helvetica, color: rgb(0.54, 0.64, 0.72) });
     coverPage.drawText(`Compiled: ${format(new Date(), 'MMMM d, yyyy')}`, { x: 50, y: coverH - 260, size: 12, font: helvetica, color: rgb(0.54, 0.64, 0.72) });
 
-    // Group approved files by category
     for (const cat of CATEGORIES as readonly string[]) {
       const catFiles = approvedFiles.filter(f => f.item.category === cat);
       if (catFiles.length === 0) continue;
@@ -169,7 +267,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         catPage.drawText(`  ${file.name} — ${format(new Date(file.uploadedAt), 'MMM d, yyyy')}`, { x: 85, y: yPos - 16, size: 9, font: helvetica, color: rgb(0.54, 0.64, 0.72) });
         yPos -= 40;
 
-        // Embed actual files if available
         if (file.dataUrl && file.dataUrl.startsWith('data:')) {
           try {
             if (file.dataUrl.includes('image/png')) {
@@ -285,30 +382,67 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const totalCorrections = categorySummary.reduce((s, c) => s + c.corrections, 0);
   const overallStatus = totalCorrections > 0 ? 'attention' : totalPending > 0 ? 'in-progress' : 'complete';
 
-  const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong document type'];
-
   return (
     <div className="space-y-6">
-      {/* Toolbar */}
+      {/* Toolbar — switches between search bar and bulk action bar */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search files..."
-              className="pl-10 bg-input border-border rounded-[10px]"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => handleExportCheck('zip')}>
-              <Download className="w-4 h-4 mr-1" /> Download ZIP
-            </Button>
-            <Button variant="secondary" onClick={() => handleExportCheck('pdf')}>
-              <FileText className="w-4 h-4 mr-1" /> Compile PDF
-            </Button>
-          </div>
+          {bulkMode ? (
+            /* Bulk action toolbar */
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex-1 flex items-center gap-3 px-4 py-2 rounded-xl bg-primary/5 border border-primary/20"
+            >
+              <Checkbox
+                checked={allVisibleSelected}
+                onCheckedChange={toggleSelectAll}
+                className="border-primary data-[state=checked]:bg-primary"
+              />
+              <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                {selectedIds.size} document{selectedIds.size !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex-1" />
+              <Button
+                size="sm"
+                variant="success"
+                onClick={handleBulkApprove}
+              >
+                <Check className="w-3.5 h-3.5 mr-1" /> Approve All Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="warning"
+                onClick={() => setShowBulkCorrection(true)}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Request Correction
+              </Button>
+              <Button size="sm" variant="ghost" onClick={clearSelection}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </motion.div>
+          ) : (
+            /* Normal search bar */
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search files..."
+                className="pl-10 bg-input border-border rounded-[10px]"
+              />
+            </div>
+          )}
+          {!bulkMode && (
+            <div className="flex gap-2">
+              <Button onClick={() => handleExportCheck('zip')}>
+                <Download className="w-4 h-4 mr-1" /> Download ZIP
+              </Button>
+              <Button variant="secondary" onClick={() => handleExportCheck('pdf')}>
+                <FileText className="w-4 h-4 mr-1" /> Compile PDF
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Filter pills */}
@@ -358,44 +492,62 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredFiles.map(({ file, item }) => (
-            <motion.div
-              key={file.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="surface-card-hover p-4 cursor-pointer"
-              onClick={() => { setSelectedFile({ file, item }); setCorrectionNote(''); }}
-            >
-              <div className="flex items-start gap-3 mb-3">
-                {isImageFile(file.name) ? (
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                    <Image className="w-5 h-5 text-primary" />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                  </div>
+          {filteredFiles.map(({ file, item }) => {
+            const isSelected = selectedIds.has(file.id);
+            return (
+              <motion.div
+                key={file.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                  'surface-card-hover p-4 cursor-pointer relative',
+                  isSelected && 'ring-2 ring-primary/50 bg-primary/5'
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">{format(new Date(file.uploadedAt), 'MMM d, yyyy')}</p>
+                onClick={() => { setSelectedFile({ file, item }); setCorrectionNote(''); }}
+              >
+                {/* Checkbox */}
+                <div
+                  className="absolute top-3 left-3 z-10"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleSelection(file.id)}
+                    className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  />
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase tracking-wider">
-                  {CATEGORY_SHORT[item.category] || item.category}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {file.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
-                  {file.validationStatus === 'warning' && <ShieldAlert className="w-3.5 h-3.5 text-warning" />}
-                  {(file.validationStatus === 'failed' || file.validationStatus === 'client-override') && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
-                  <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
-                    {file.reviewStatus.replace('-', ' ')}
-                  </Badge>
+
+                <div className="flex items-start gap-3 mb-3 pl-7">
+                  {isImageFile(file.name) ? (
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                      <Image className="w-5 h-5 text-primary" />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(file.uploadedAt), 'MMM d, yyyy')}</p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                <div className="flex items-center justify-between pl-7">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase tracking-wider">
+                    {CATEGORY_SHORT[item.category] || item.category}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {file.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
+                    {file.validationStatus === 'warning' && <ShieldAlert className="w-3.5 h-3.5 text-warning" />}
+                    {(file.validationStatus === 'failed' || file.validationStatus === 'client-override') && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
+                    <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
+                      {file.reviewStatus.replace('-', ' ')}
+                    </Badge>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
@@ -616,6 +768,54 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Bulk Correction Dialog */}
+      <AlertDialog open={showBulkCorrection} onOpenChange={setShowBulkCorrection}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-warning" /> Request Correction on {selectedIds.size} Document{selectedIds.size !== 1 ? 's' : ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This correction reason will be applied to all selected documents. The client will be notified for each.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="flex gap-1.5 flex-wrap">
+              {correctionChips.map(chip => (
+                <button
+                  key={chip}
+                  onClick={() => setBulkCorrectionNote(chip)}
+                  className={cn(
+                    'px-3 py-1.5 text-xs rounded-full transition-colors border',
+                    bulkCorrectionNote === chip
+                      ? 'bg-warning/10 text-warning border-warning/30 font-bold'
+                      : 'bg-secondary text-muted-foreground border-border hover:text-foreground'
+                  )}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+            <Input
+              value={bulkCorrectionNote}
+              onChange={e => setBulkCorrectionNote(e.target.value)}
+              placeholder="Correction reason..."
+              className="bg-input border-border rounded-[10px]"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBulkCorrectionNote('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
+              onClick={handleBulkCorrection}
+              disabled={!bulkCorrectionNote.trim()}
+            >
+              Request Correction on {selectedIds.size} Document{selectedIds.size !== 1 ? 's' : ''}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
