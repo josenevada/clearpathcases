@@ -17,6 +17,7 @@ import {
 } from '@/lib/store';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import DocumentViewer from '@/components/case/DocumentViewer';
 
 type ViewRole = 'paralegal' | 'attorney';
 
