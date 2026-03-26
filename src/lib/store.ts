@@ -8,7 +8,7 @@ export type FileReviewStatus = 'pending' | 'approved' | 'correction-requested' |
 export type FileValidationStatus = 'pending' | 'validating' | 'passed' | 'warning' | 'failed' | 'client-confirmed' | 'client-override';
 export type ActivityEventType =
   | 'file_upload' | 'file_approved' | 'file_correction' | 'file_reupload'
-  | 'file_overridden' | 'item_flagged' | 'milestone_reached' | 'checkpoint_completed'
+  | 'file_overridden' | 'file_deleted' | 'item_flagged' | 'milestone_reached' | 'checkpoint_completed'
   | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated'
   | 'ssn_viewed' | 'client_info_updated' | 'notification_sent' | 'document_validated';
 

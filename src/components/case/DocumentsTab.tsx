@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import {
 } from '@/lib/store';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import DocumentViewer from '@/components/case/DocumentViewer';
 
 type ViewRole = 'paralegal' | 'attorney';
 
@@ -58,7 +59,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
   const [showExportWarning, setShowExportWarning] = useState<'zip' | 'pdf' | null>(null);
   const [correctionNote, setCorrectionNote] = useState('');
-
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // Gather all files across all checklist items
   const allFiles: FileEntry[] = useMemo(() => {
     const entries: FileEntry[] = [];
@@ -458,20 +459,71 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
               <div className="p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <h3 className="font-display font-bold text-lg text-foreground">Document Preview</h3>
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedFile(null)}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Open in new tab"
+                      onClick={() => {
+                        if (selectedFile.file.dataUrl) {
+                          const w = window.open('');
+                          if (w) {
+                            w.document.title = selectedFile.file.name;
+                            if (isImageFile(selectedFile.file.name)) {
+                              w.document.body.innerHTML = `<img src="${selectedFile.file.dataUrl}" style="max-width:100%;margin:auto;display:block" />`;
+                            } else {
+                              const embed = w.document.createElement('embed');
+                              embed.src = selectedFile.file.dataUrl;
+                              embed.type = 'application/pdf';
+                              embed.style.cssText = 'width:100%;height:100vh';
+                              w.document.body.style.margin = '0';
+                              w.document.body.appendChild(embed);
+                            }
+                          }
+                        }
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Download"
+                      onClick={() => {
+                        if (selectedFile.file.dataUrl) {
+                          const a = document.createElement('a');
+                          a.href = selectedFile.file.dataUrl;
+                          a.download = selectedFile.file.name;
+                          a.click();
+                        }
+                      }}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Delete"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedFile(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                {/* File preview area */}
-                <div className="surface-card p-6 flex flex-col items-center gap-3">
-                  {isImageFile(selectedFile.file.name) && selectedFile.file.dataUrl ? (
-                    <img src={selectedFile.file.dataUrl} alt={selectedFile.file.name} className="max-w-full max-h-64 rounded-lg object-contain" />
-                  ) : (
+                {/* Document viewer */}
+                {selectedFile.file.dataUrl ? (
+                  <DocumentViewer fileName={selectedFile.file.name} dataUrl={selectedFile.file.dataUrl} />
+                ) : (
+                  <div className="surface-card p-6 flex flex-col items-center gap-3">
                     <FileText className="w-16 h-16 text-muted-foreground/30" />
-                  )}
-                  <p className="text-foreground font-medium text-center">{selectedFile.file.name}</p>
-                </div>
+                    <p className="text-sm text-muted-foreground">No preview available</p>
+                  </div>
+                )}
 
                 {/* File info */}
                 <div className="space-y-2">
@@ -564,6 +616,55 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" /> Delete this document?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. The client will need to re-upload if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!selectedFile) return;
+                const fileName = selectedFile.file.name;
+                const actorName = caseData.assignedParalegal || 'Staff';
+
+                updateCase(caseData.id, c => {
+                  const found = c.checklist.find(i => i.id === selectedFile.item.id);
+                  if (found) {
+                    found.files = found.files.filter(f => f.id !== selectedFile.file.id);
+                    if (found.files.length === 0) found.completed = false;
+                  }
+                  return c;
+                });
+
+                addActivityEntry(caseData.id, {
+                  eventType: 'file_deleted',
+                  actorRole: 'paralegal',
+                  actorName,
+                  description: `${actorName} deleted ${fileName}`,
+                  itemId: selectedFile.item.id,
+                });
+
+                toast.success(`${fileName} deleted`);
+                setSelectedFile(null);
+                setShowDeleteConfirm(false);
+                onRefresh();
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Export warning dialog */}
       <AlertDialog open={showExportWarning !== null} onOpenChange={() => setShowExportWarning(null)}>
