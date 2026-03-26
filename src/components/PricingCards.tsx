@@ -11,7 +11,7 @@ interface PricingCardsProps {
 
 const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan }: PricingCardsProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full max-w-6xl mx-auto">
       {(Object.entries(PLANS) as [PlanKey, typeof PLANS[PlanKey]][]).map(([key, plan]) => {
         const isPopular = 'popular' in plan && plan.popular;
         const isCurrent = currentPlan === key;
