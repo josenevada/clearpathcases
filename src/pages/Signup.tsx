@@ -320,7 +320,25 @@ const Signup = () => {
           )}
 
           {step === 3 && (
-            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
+            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-2xl text-foreground">Invite Your Team</h2>
+                  <p className="text-sm text-muted-foreground font-body">Add a paralegal or attorney to your workspace.</p>
+                </div>
+              </div>
+              <InviteTeamForm firmId={firmId} onDone={() => setStep(4)} />
+              <p className="text-sm text-muted-foreground text-center cursor-pointer hover:text-foreground" onClick={() => setStep(4)}>
+                Skip for now
+              </p>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <Check className="w-8 h-8 text-primary" />
               </div>
