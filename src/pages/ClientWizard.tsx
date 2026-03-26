@@ -887,6 +887,7 @@ const ClientWizard = () => {
     }
   };
 
+  const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
   if (progress === 100 && !showMilestone && !showSuccess) {
