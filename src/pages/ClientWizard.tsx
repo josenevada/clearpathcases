@@ -1079,7 +1079,57 @@ const ClientWizard = () => {
                     </span>
                   </label>
                 </div>
-              ) : isTextEntry ? (
+              ) : isSSNEntry ? (
+                <div className="space-y-5">
+                  <div className="surface-card p-4 flex items-start gap-3 border-primary/20">
+                    <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Your SSN is encrypted before storage. Only your attorney's office can access it.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Social Security Number</label>
+                    <div className="relative">
+                      <Input
+                        type={ssnVisible ? 'text' : 'password'}
+                        value={formatSSN(ssnValue)}
+                        onChange={handleSSNChange}
+                        placeholder="XXX-XX-XXXX"
+                        className="bg-input border-border rounded-[10px] pr-10 text-lg tracking-wider font-mono"
+                        maxLength={11}
+                        inputMode="numeric"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSsnVisible(!ssnVisible)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {ssnVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {ssnError && (
+                      <p className="text-sm text-destructive">{ssnError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {ssnDigits.length}/9 digits entered
+                    </p>
+                  </div>
+
+                  {currentItem.completed && currentItem.textEntry && (
+                    <div className="surface-card glow-success p-4 flex items-center gap-3">
+                      <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" />
+                      <div>
+                        <p className="text-foreground font-medium text-sm">
+                          SSN: •••-••-{currentItem.textEntry.employerName?.slice(-4) || '••••'}
+                        </p>
+                        <p className="text-muted-foreground text-xs">Previously saved</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isEmployerEntry ? (
                 <div className="space-y-5">
                   {employmentStatus === 'self-employed' || employmentStatus === 'not-employed' ? (
                     <motion.div
