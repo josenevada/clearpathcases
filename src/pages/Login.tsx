@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
+import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -106,7 +107,10 @@ const Login = () => {
         )}
 
         {!showForgot ? (
-          <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <GoogleSignInButton />
+            <OAuthDivider />
+            <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label className="text-muted-foreground text-sm">Email</Label>
               <Input
@@ -153,6 +157,7 @@ const Login = () => {
               Forgot password?
             </button>
           </form>
+          </div>
         ) : (
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">

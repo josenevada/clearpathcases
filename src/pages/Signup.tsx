@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import Logo from '@/components/Logo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 
 const STEPS = ['Create Account', 'Your Practice', 'First Case', 'All Set'];
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +36,70 @@ const Signup = () => {
   const [filingDeadline, setFilingDeadline] = useState('');
 
   const [firmId, setFirmId] = useState<string | null>(null);
+
+  // Handle Google OAuth redirect — skip to step 1 (Your Practice) since account is already created
+  useEffect(() => {
+    if (searchParams.get('from') !== 'google') return;
+    const raw = sessionStorage.getItem('google_oauth_user');
+    if (!raw) return;
+
+    const googleUser = JSON.parse(raw);
+    sessionStorage.removeItem('google_oauth_user');
+
+    // Auto-create firm and user record, then jump to step 1
+    (async () => {
+      setLoading(true);
+      try {
+        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        const defaultFirmName = googleUser.email.split('@')[1]?.split('.')[0] || 'My Firm';
+        const slug = defaultFirmName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
+
+        // Prompt for firm name — pre-fill and jump to a mini step
+        setFullName(googleUser.fullName);
+        setEmail(googleUser.email);
+        setFirmName('');
+
+        // Create firm
+        const { data: firmData, error: firmError } = await supabase
+          .from('firms')
+          .insert({
+            name: defaultFirmName,
+            primary_contact_name: googleUser.fullName,
+            primary_contact_email: googleUser.email,
+            slug,
+            subscription_status: 'trial',
+            trial_ends_at: trialEndsAt,
+            plan_name: selectedPlan,
+          })
+          .select()
+          .single();
+        if (firmError) throw firmError;
+        setFirmId(firmData.id);
+
+        // Create user record
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: googleUser.userId,
+            email: googleUser.email,
+            full_name: googleUser.fullName,
+            role: 'paralegal',
+            firm_id: firmData.id,
+          });
+        if (userError && !userError.message.includes('duplicate')) throw userError;
+
+        sessionStorage.removeItem('selected_plan');
+        setStep(1); // Skip to "Your Practice"
+      } catch (err: any) {
+        console.error('Google onboarding error:', err);
+        toast.error(err.message || 'Failed to set up account');
+        setStep(0); // Fall back to step 1
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [searchParams]);
 
   const handleCreateAccount = async () => {
     if (!fullName || !email || !password || !firmName) {
@@ -143,6 +209,8 @@ const Signup = () => {
           {step === 0 && (
             <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <h2 className="font-display font-bold text-2xl text-foreground">Create Your Account</h2>
+              <GoogleSignInButton label="Continue with Google" />
+              <OAuthDivider />
               <div>
                 <Label className="font-body">Full Name</Label>
                 <Input className={inputClasses} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
