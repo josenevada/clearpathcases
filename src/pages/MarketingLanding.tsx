@@ -155,7 +155,6 @@ const MarketingLanding = () => {
         <Logo size="sm" />
         <div className="flex items-center gap-4">
           <a href="#features" className="text-sm text-muted-foreground hover:text-foreground hidden sm:block">Features</a>
-          <a href="/security" className="text-sm text-muted-foreground hover:text-foreground hidden sm:block">Security</a>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground hidden sm:block">Pricing</a>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
           <Button size="sm" onClick={() => navigate('/signup')}>Start Free Trial</Button>
@@ -368,6 +367,10 @@ const MarketingLanding = () => {
         <h2 className="font-display font-bold text-3xl text-foreground text-center mb-4">Simple, transparent pricing</h2>
         <p className="text-muted-foreground text-center mb-12 font-body">14-day free trial on every plan. No credit card required.</p>
         <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />
+        <p className="text-center text-xs text-muted-foreground font-body mt-8">
+          Your data is protected with bank-level encryption.{' '}
+          <a href="/security" className="text-primary hover:underline">Learn more</a>
+        </p>
       </section>
 
       <SectionDivider />
