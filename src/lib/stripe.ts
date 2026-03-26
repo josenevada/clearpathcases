@@ -1,5 +1,21 @@
 // Stripe product/price mapping
 export const PLANS = {
+  solo: {
+    name: 'Solo',
+    price: '$49',
+    priceAmount: 4900,
+    priceId: 'price_1TFMUTRwKiGRq1RZ6uwU3yJo',
+    productId: 'prod_UDo6LiCUUbiNKf',
+    features: [
+      'Up to 3 active cases',
+      '1 staff user',
+      'Full client wizard',
+      'AI document validation',
+      'Basic SMS & email notifications',
+      'Document export',
+      '14-day free trial',
+    ],
+  },
   starter: {
     name: 'Starter',
     price: '$99',
@@ -10,6 +26,8 @@ export const PLANS = {
       'Up to 10 active cases',
       '2 staff users',
       'Full client wizard',
+      'AI document validation',
+      'Basic SMS & email notifications',
       'Document export',
       '14-day free trial',
     ],
@@ -24,7 +42,9 @@ export const PLANS = {
     features: [
       'Unlimited active cases',
       '10 staff users',
-      'SMS & email notifications',
+      'AI document validation',
+      'Advanced automated notification sequences',
+      'Bulk document actions',
       'Priority support',
       '14-day free trial',
     ],
@@ -36,7 +56,7 @@ export const PLANS = {
     priceId: 'price_1TDTp5RwKiGRq1RZaqvm4t1U',
     productId: 'prod_UBrYfLz4vub0FG',
     features: [
-      'Unlimited everything',
+      'Everything in Professional',
       'White-label client portal',
       'Custom document templates',
       'Dedicated onboarding call',
@@ -53,3 +73,6 @@ export const getPlanByProductId = (productId: string): PlanKey | null => {
   }
   return null;
 };
+
+// Plans that include advanced notification sequences
+export const ADVANCED_NOTIFICATION_PLANS: PlanKey[] = ['professional', 'firm'];
