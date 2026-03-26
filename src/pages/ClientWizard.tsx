@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
+const SSN_LABEL = 'Social Security Number';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === SSN_LABEL;
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
@@ -56,6 +57,9 @@ const ClientWizard = () => {
   const [employerName, setEmployerName] = useState('');
   const [employerAddress, setEmployerAddress] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
+  const [ssnValue, setSsnValue] = useState('');
+  const [ssnVisible, setSsnVisible] = useState(false);
+  const [ssnError, setSsnError] = useState('');
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
   const [helpForceOpen, setHelpForceOpen] = useState(false);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
@@ -294,12 +298,12 @@ const ClientWizard = () => {
     setSearchParams({ fix: itemId }, { replace: true });
   }, [setSearchParams]);
 
-  // Reset employer fields when item changes
+  // Reset fields when item changes
   useEffect(() => {
     if (!caseData) return;
     const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
     const item = catItems[currentItemIdx];
-    if (item && isTextEntryItem(item.label)) {
+    if (item && item.label === EMPLOYER_LABEL) {
       setEmployerName(item.textEntry?.employerName || '');
       setEmployerAddress(item.textEntry?.employerAddress || '');
       setEmploymentStatus(
@@ -312,6 +316,16 @@ const ClientWizard = () => {
       setEmployerName('');
       setEmployerAddress('');
       setEmploymentStatus(null);
+    }
+    if (item && item.label === SSN_LABEL) {
+      // Load existing SSN from textEntry if previously saved
+      setSsnValue(item.textEntry?.employerName || ''); // reusing employerName field for SSN value storage in textEntry
+      setSsnVisible(false);
+      setSsnError('');
+    } else {
+      setSsnValue('');
+      setSsnVisible(false);
+      setSsnError('');
     }
     setPendingDuplicate(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
@@ -383,6 +397,8 @@ const ClientWizard = () => {
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
+  const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
+  const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
 
@@ -781,6 +797,96 @@ const ClientWizard = () => {
     }
   };
 
+  // ─── SSN helpers ─────────────────────────────────────────────────────
+  const formatSSN = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '').slice(0, 9);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+  };
+
+  const ssnDigits = ssnValue.replace(/\D/g, '');
+  const ssnFormatted = formatSSN(ssnValue);
+  const ssnIsValid = ssnDigits.length === 9;
+
+  const handleSSNChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    // Only allow digits and dashes
+    const cleaned = input.replace(/[^\d-]/g, '');
+    const digits = cleaned.replace(/\D/g, '').slice(0, 9);
+    setSsnValue(digits);
+    setSsnError('');
+  };
+
+  const handleSSNContinue = () => {
+    if (!currentItem) return;
+    if (!ssnIsValid) {
+      setSsnError('Please enter all 9 digits of your Social Security number.');
+      return;
+    }
+
+    const formatted = formatSSN(ssnValue);
+    const updated = updateCase(caseData.id, c => {
+      const item = c.checklist.find(ci => ci.id === currentItem.id);
+      if (item) {
+        item.textEntry = {
+          employerName: ssnDigits, // store raw digits in textEntry for local state
+          savedAt: new Date().toISOString(),
+        };
+        item.completed = true;
+      }
+      c.lastClientActivity = new Date().toISOString();
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} provided Social Security Number`,
+      itemId: currentItem.id,
+    });
+
+    // Store encrypted SSN in Supabase client_info
+    (async () => {
+      try {
+        const { data: existing } = await supabase
+          .from('client_info')
+          .select('id')
+          .eq('case_id', caseData.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from('client_info').update({ ssn_encrypted: formatted }).eq('case_id', caseData.id);
+        } else {
+          await supabase.from('client_info').insert({
+            case_id: caseData.id,
+            ssn_encrypted: formatted,
+            full_legal_name: caseData.clientName,
+            email: caseData.clientEmail,
+            phone: caseData.clientPhone || '',
+          });
+        }
+        // Also sync checklist item
+        await supabase.from('checklist_items').update({
+          completed: true,
+          text_value: { employerName: ssnDigits, savedAt: new Date().toISOString() },
+        }).eq('id', currentItem.id);
+      } catch (err) {
+        console.error('Failed to sync SSN:', err);
+      }
+    })();
+
+    if (updated) {
+      setCaseData(updated);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        checkMilestoneAndAdvance(updated);
+      }, 1500);
+    }
+  };
+
   const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
@@ -973,7 +1079,57 @@ const ClientWizard = () => {
                     </span>
                   </label>
                 </div>
-              ) : isTextEntry ? (
+              ) : isSSNEntry ? (
+                <div className="space-y-5">
+                  <div className="surface-card p-4 flex items-start gap-3 border-primary/20">
+                    <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Your SSN is encrypted before storage. Only your attorney's office can access it.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Social Security Number</label>
+                    <div className="relative">
+                      <Input
+                        type={ssnVisible ? 'text' : 'password'}
+                        value={formatSSN(ssnValue)}
+                        onChange={handleSSNChange}
+                        placeholder="XXX-XX-XXXX"
+                        className="bg-input border-border rounded-[10px] pr-10 text-lg tracking-wider font-mono"
+                        maxLength={11}
+                        inputMode="numeric"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSsnVisible(!ssnVisible)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {ssnVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {ssnError && (
+                      <p className="text-sm text-destructive">{ssnError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {ssnDigits.length}/9 digits entered
+                    </p>
+                  </div>
+
+                  {currentItem.completed && currentItem.textEntry && (
+                    <div className="surface-card glow-success p-4 flex items-center gap-3">
+                      <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" />
+                      <div>
+                        <p className="text-foreground font-medium text-sm">
+                          SSN: •••-••-{currentItem.textEntry.employerName?.slice(-4) || '••••'}
+                        </p>
+                        <p className="text-muted-foreground text-xs">Previously saved</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isEmployerEntry ? (
                 <div className="space-y-5">
                   {employmentStatus === 'self-employed' || employmentStatus === 'not-employed' ? (
                     <motion.div
@@ -1198,7 +1354,16 @@ const ClientWizard = () => {
               >
                 Continue →
               </Button>
-            ) : isTextEntry ? (
+            ) : isSSNEntry ? (
+              <Button
+                onClick={handleSSNContinue}
+                size="lg"
+                className="w-full"
+                disabled={!ssnIsValid}
+              >
+                Continue →
+              </Button>
+            ) : isEmployerEntry ? (
               <Button
                 onClick={handleEmployerContinue}
                 size="lg"
