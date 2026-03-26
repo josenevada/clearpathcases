@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +63,7 @@ const ClientWizard = () => {
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
   const [helpForceOpen, setHelpForceOpen] = useState(false);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -401,6 +402,7 @@ const ClientWizard = () => {
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
+  const hasValidationIssue = currentItem?.files.some(f => f.validationStatus === 'warning' || f.validationStatus === 'failed') ?? false;
 
   const renderDuplicateWarning = () => {
     if (!pendingDuplicate) return null;
@@ -660,6 +662,14 @@ const ClientWizard = () => {
     if (currentItemIdx < categoryItems.length - 1) {
       setCurrentItemIdx(currentItemIdx + 1);
     } else if (currentCategoryIdx < CATEGORIES.length - 1) {
+      // Check if all required items in current section are complete before advancing
+      const requiredIncomplete = categoryItems.filter(item => item.required && !isItemEffectivelyComplete(item));
+      if (requiredIncomplete.length > 0) {
+        toast('You still have required items in this section. Please upload them before moving on.', { duration: 4000 });
+        const firstIdx = categoryItems.findIndex(item => item.required && !isItemEffectivelyComplete(item));
+        if (firstIdx >= 0) setCurrentItemIdx(firstIdx);
+        return;
+      }
       setShowStepTransition(currentCategoryIdx);
     }
   };
@@ -705,6 +715,26 @@ const ClientWizard = () => {
   };
 
   const handleSkip = () => {
+    if (!currentItem) return;
+    addActivityEntry(caseData.id, {
+      eventType: 'checkpoint_completed',
+      actorRole: 'client',
+      actorName: caseData.clientName,
+      description: `${caseData.clientName.split(' ')[0]} skipped ${currentItem.label}`,
+      itemId: currentItem.id,
+    });
+    (async () => {
+      try {
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'checkpoint_completed',
+          actor_role: 'client',
+          actor_name: caseData.clientName,
+          description: `${caseData.clientName.split(' ')[0]} skipped ${currentItem.label}`,
+          item_id: currentItem.id,
+        });
+      } catch (err) { console.error('Failed to log skip:', err); }
+    })();
     toast('No worries — you can come back to this later.', { duration: 2000 });
     advanceToNext();
   };
