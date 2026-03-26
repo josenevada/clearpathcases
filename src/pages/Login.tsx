@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButto
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signIn } = useAuth();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,14 +22,60 @@ const Login = () => {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [verified, setVerified] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const redirectingRef = useRef(false);
 
   useEffect(() => {
     if (searchParams.get('verified') === 'true') {
       setVerified(true);
     }
+    if (searchParams.get('expired') === 'true') {
+      toast.error('Your session expired. Please sign in again.');
+    }
   }, [searchParams]);
 
-  const [loginError, setLoginError] = useState('');
+  // Central redirect handler — fires when auth state confirms a valid session
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user && !redirectingRef.current) {
+          // Skip redirect if user needs onboarding (Google OAuth new user)
+          if (sessionStorage.getItem('google_oauth_needs_onboarding')) {
+            return;
+          }
+          redirectingRef.current = true;
+          // Use setTimeout to avoid Supabase deadlock on nested calls
+          setTimeout(async () => {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('role')
+              .eq('email', session.user.email!)
+              .maybeSingle();
+
+            if (userData?.role === 'super_admin') {
+              navigate('/admin/dashboard', { replace: true });
+            } else {
+              navigate('/paralegal', { replace: true });
+            }
+          }, 0);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  // If user is already authenticated (e.g. navigated back to /login), redirect
+  useEffect(() => {
+    if (user && !redirectingRef.current) {
+      redirectingRef.current = true;
+      if (user.role === 'super_admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/paralegal', { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +83,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
       if (signInError) {
         setLoginError(signInError.message);
@@ -45,24 +91,7 @@ const Login = () => {
         return;
       }
 
-      if (!data.session) {
-        setLoginError('Sign in failed — please try again.');
-        setLoading(false);
-        return;
-      }
-
-      // Session confirmed — now check role for redirect
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (userData?.role === 'super_admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/paralegal');
-      }
+      // Do NOT redirect here — onAuthStateChange listener handles it
     } catch {
       setLoginError('Something went wrong — please try again.');
       setLoading(false);
