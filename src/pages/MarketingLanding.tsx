@@ -82,9 +82,9 @@ const DashboardMockup = () => {
 /* Stats confidence bar */
 const StatsBar = () => {
   const stats = [
-    { value: '4 days', label: 'Avg. document collection time' },
-    { value: '94%', label: 'Client completion rate' },
-    { value: 'Zero', label: 'Missed filing deadlines' },
+    { value: 'Just days', label: 'Average document collection time — firms report significant time savings' },
+    { value: 'High', label: 'Client completion rate — guided step by step' },
+    { value: 'Zero', label: 'Filing deadlines missed — with automated reminders' },
   ];
   return (
     <motion.div
