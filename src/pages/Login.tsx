@@ -29,6 +29,9 @@ const Login = () => {
     if (searchParams.get('verified') === 'true') {
       setVerified(true);
     }
+    if (searchParams.get('expired') === 'true') {
+      toast.error('Your session expired. Please sign in again.');
+    }
   }, [searchParams]);
 
   // Central redirect handler — fires when auth state confirms a valid session
@@ -36,6 +39,10 @@ const Login = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session?.user && !redirectingRef.current) {
+          // Skip redirect if user needs onboarding (Google OAuth new user)
+          if (sessionStorage.getItem('google_oauth_needs_onboarding')) {
+            return;
+          }
           redirectingRef.current = true;
           // Use setTimeout to avoid Supabase deadlock on nested calls
           setTimeout(async () => {
