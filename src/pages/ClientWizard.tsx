@@ -57,6 +57,9 @@ const ClientWizard = () => {
   const [employerName, setEmployerName] = useState('');
   const [employerAddress, setEmployerAddress] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState<'employed' | 'self-employed' | 'not-employed' | null>(null);
+  const [ssnValue, setSsnValue] = useState('');
+  const [ssnVisible, setSsnVisible] = useState(false);
+  const [ssnError, setSsnError] = useState('');
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
   const [helpForceOpen, setHelpForceOpen] = useState(false);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
