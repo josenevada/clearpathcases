@@ -20,7 +20,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
+const SSN_LABEL = 'Social Security Number';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === SSN_LABEL;
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
