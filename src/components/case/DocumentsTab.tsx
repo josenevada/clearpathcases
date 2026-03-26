@@ -459,20 +459,71 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
               <div className="p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <h3 className="font-display font-bold text-lg text-foreground">Document Preview</h3>
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedFile(null)}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Open in new tab"
+                      onClick={() => {
+                        if (selectedFile.file.dataUrl) {
+                          const w = window.open('');
+                          if (w) {
+                            w.document.title = selectedFile.file.name;
+                            if (isImageFile(selectedFile.file.name)) {
+                              w.document.body.innerHTML = `<img src="${selectedFile.file.dataUrl}" style="max-width:100%;margin:auto;display:block" />`;
+                            } else {
+                              const embed = w.document.createElement('embed');
+                              embed.src = selectedFile.file.dataUrl;
+                              embed.type = 'application/pdf';
+                              embed.style.cssText = 'width:100%;height:100vh';
+                              w.document.body.style.margin = '0';
+                              w.document.body.appendChild(embed);
+                            }
+                          }
+                        }
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Download"
+                      onClick={() => {
+                        if (selectedFile.file.dataUrl) {
+                          const a = document.createElement('a');
+                          a.href = selectedFile.file.dataUrl;
+                          a.download = selectedFile.file.name;
+                          a.click();
+                        }
+                      }}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Delete"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedFile(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                {/* File preview area */}
-                <div className="surface-card p-6 flex flex-col items-center gap-3">
-                  {isImageFile(selectedFile.file.name) && selectedFile.file.dataUrl ? (
-                    <img src={selectedFile.file.dataUrl} alt={selectedFile.file.name} className="max-w-full max-h-64 rounded-lg object-contain" />
-                  ) : (
+                {/* Document viewer */}
+                {selectedFile.file.dataUrl ? (
+                  <DocumentViewer fileName={selectedFile.file.name} dataUrl={selectedFile.file.dataUrl} />
+                ) : (
+                  <div className="surface-card p-6 flex flex-col items-center gap-3">
                     <FileText className="w-16 h-16 text-muted-foreground/30" />
-                  )}
-                  <p className="text-foreground font-medium text-center">{selectedFile.file.name}</p>
-                </div>
+                    <p className="text-sm text-muted-foreground">No preview available</p>
+                  </div>
+                )}
 
                 {/* File info */}
                 <div className="space-y-2">
