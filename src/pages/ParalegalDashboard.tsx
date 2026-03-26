@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
