@@ -11,14 +11,14 @@ interface PricingCardsProps {
 
 const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan }: PricingCardsProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full max-w-6xl mx-auto">
       {(Object.entries(PLANS) as [PlanKey, typeof PLANS[PlanKey]][]).map(([key, plan]) => {
         const isPopular = 'popular' in plan && plan.popular;
         const isCurrent = currentPlan === key;
         return (
           <div
             key={key}
-            className={`surface-card relative flex flex-col px-8 py-6 ${isPopular ? 'border-primary/50 ring-1 ring-primary/20' : ''}`}
+            className={`surface-card relative flex flex-col px-6 py-6 ${isPopular ? 'border-primary/50 ring-1 ring-primary/20' : ''}`}
           >
             {isPopular && (
               <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-xs">

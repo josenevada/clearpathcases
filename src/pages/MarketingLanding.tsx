@@ -363,7 +363,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Pricing */}
-      <section id="pricing" className="px-6 py-12 max-w-5xl mx-auto">
+      <section id="pricing" className="px-6 py-12 max-w-6xl mx-auto">
         <h2 className="font-display font-bold text-3xl text-foreground text-center mb-4">Simple, transparent pricing</h2>
         <p className="text-muted-foreground text-center mb-12 font-body">14-day free trial on every plan. No credit card required.</p>
         <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />

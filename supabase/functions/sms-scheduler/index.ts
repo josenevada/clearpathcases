@@ -18,6 +18,16 @@ const STEP_NAMES = [
   'Agreements & Confirmation',
 ];
 
+// Advanced triggers only available on Professional and Firm plans
+const ADVANCED_TRIGGERS = new Set([
+  'first_step_nudge',
+  'reengagement_nudge',
+  'momentum_builder',
+]);
+
+// Plans that include advanced notification sequences
+const ADVANCED_PLANS = new Set(['professional', 'firm']);
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -58,6 +68,19 @@ Deno.serve(async (req) => {
 
     if (!clientPhone) continue;
 
+    // Determine firm plan for tier gating
+    let firmPlan: string | null = null;
+    if (c.firm_id) {
+      const firmRes = await fetch(
+        `${supabaseUrl}/rest/v1/firms?id=eq.${c.firm_id}&select=name,plan_name&limit=1`,
+        { headers },
+      );
+      const firms = await firmRes.json();
+      if (Array.isArray(firms) && firms.length > 0) {
+        firmPlan = firms[0].plan_name || null;
+      }
+    }
+
     const firstName = c.client_name.split(' ')[0];
     const portalLink = `https://yourclearpath.app/client/${c.case_code || c.id}`;
     const filingDeadline = new Date(c.filing_deadline);
@@ -89,12 +112,11 @@ Deno.serve(async (req) => {
 
     const wizardStep = c.wizard_step ?? 0;
     const currentStepName = STEP_NAMES[wizardStep] || 'the next step';
-    const nextStepName = STEP_NAMES[wizardStep] || 'the next step';
 
     let smsBody: string | null = null;
     let triggerName: string | null = null;
 
-    // ── Trigger 2: First Step Nudge (24h after welcome, wizard_step still 0) ──
+    // ── Trigger 2: First Step Nudge (24h after welcome, wizard_step still 0) ── ADVANCED
     if (wizardStep === 0) {
       const createdAt = new Date(c.created_at);
       const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
@@ -104,7 +126,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Trigger 4: Re-engagement Nudge (48h inactivity) ──
+    // ── Trigger 4: Re-engagement Nudge (48h inactivity) ── ADVANCED
     if (!smsBody && c.last_client_activity && pct < 100) {
       const lastActivity = new Date(c.last_client_activity);
       const hoursSince = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60);
@@ -114,19 +136,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Trigger 6: Deadline Awareness (7 days, < 80%) ──
+    // ── Trigger 6: Deadline Awareness (7 days, < 80%) ── BASIC (all plans)
     if (!smsBody && daysUntilDeadline === 7 && pct < 80) {
       triggerName = 'deadline_7d';
       smsBody = `Hi ${firstName}, your filing date is in 7 days. You have ${remaining} items left — finishing this week keeps everything on track. Your attorney is ready when you are: ${portalLink}`;
     }
 
-    // ── Trigger 7: Final Urgency (3 days, < 100%) ──
+    // ── Trigger 7: Final Urgency (3 days, < 100%) ── BASIC (all plans)
     if (!smsBody && daysUntilDeadline === 3 && pct < 100) {
       triggerName = 'final_urgency';
       smsBody = `${firstName}, your filing date is in 3 days. Please complete your documents today so your attorney has time to review everything. This is important: ${portalLink}`;
     }
 
-    if (!smsBody) continue;
+    if (!smsBody || !triggerName) continue;
+
+    // Tier gating: advanced triggers require Professional or Firm plan
+    if (ADVANCED_TRIGGERS.has(triggerName) && !ADVANCED_PLANS.has(firmPlan || '')) {
+      continue;
+    }
 
     // Send via send-sms function (which handles rate limiting)
     const smsRes = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
