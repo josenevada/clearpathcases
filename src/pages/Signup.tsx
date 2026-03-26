@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import { Check, Eye, EyeOff, Send, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Logo from '@/components/Logo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 
-const STEPS = ['Create Account', 'Your Practice', 'First Case', 'All Set'];
+const STEPS = ['Create Account', 'Your Practice', 'First Case', 'Invite Your Team', 'All Set'];
 
 const Signup = () => {
   const navigate = useNavigate();
