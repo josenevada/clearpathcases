@@ -183,7 +183,7 @@ const Signup = () => {
         urgency: 'normal',
       });
       if (error) throw error;
-      setStep(3);
+      setStep(4);
     } catch (err: any) {
       toast.error(err.message || 'Failed to create case');
     } finally {
@@ -291,7 +291,7 @@ const Signup = () => {
             </motion.div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <h2 className="font-display font-bold text-2xl text-foreground">Create your first case</h2>
               <p className="text-sm text-muted-foreground font-body">Set up a real client case to see how ClearPath works.</p>
