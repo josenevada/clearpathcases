@@ -10,6 +10,7 @@ import DocumentTemplatesTab from '@/components/settings/DocumentTemplatesTab';
 import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
 import BillingTab from '@/components/settings/BillingTab';
 import TeamTab from '@/components/settings/TeamTab';
+import DataRetentionTab from '@/components/settings/DataRetentionTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
@@ -73,6 +74,7 @@ const FirmSettings = () => {
               <TabsTrigger value="display" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Display</TabsTrigger>
               <TabsTrigger value="billing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Billing</TabsTrigger>
               <TabsTrigger value="team" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Team</TabsTrigger>
+              <TabsTrigger value="retention" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Data Retention</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><FirmProfileTab /></TabsContent>
             <TabsContent value="templates"><DocumentTemplatesTab /></TabsContent>
@@ -123,6 +125,7 @@ const FirmSettings = () => {
             </TabsContent>
             <TabsContent value="billing"><BillingTab /></TabsContent>
             <TabsContent value="team"><TeamTab /></TabsContent>
+            <TabsContent value="retention"><DataRetentionTab /></TabsContent>
           </Tabs>
         </motion.div>
       </main>

@@ -35,6 +35,7 @@ interface BasicInfo {
   clientEmail: string;
   clientPhone: string;
   clientDob: string;
+  courtCaseNumber: string;
   chapterType: ChapterType;
   filingDeadline: Date | undefined;
   assignedParalegal: string;
@@ -60,6 +61,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     clientEmail: '',
     clientPhone: '',
     clientDob: '',
+    courtCaseNumber: '',
     chapterType: '7',
     filingDeadline: undefined,
     assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
@@ -111,7 +113,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const resetAndClose = () => {
     setStep(1);
     setInfo({
-      clientName: '', clientEmail: '', clientPhone: '', clientDob: '',
+      clientName: '', clientEmail: '', clientPhone: '', clientDob: '', courtCaseNumber: '',
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
       assignedAttorney: firmSettings.defaultAttorney || 'David Park',
@@ -174,6 +176,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         assigned_paralegal: info.assignedParalegal,
         assigned_attorney: info.assignedAttorney,
         case_code: caseCode,
+        court_case_number: info.courtCaseNumber || null,
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
@@ -501,6 +504,17 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
             />
           </PopoverContent>
         </Popover>
+        <p className="text-xs text-muted-foreground mt-1">Required for case tracking</p>
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Court Case Number</Label>
+        <Input
+          value={info.courtCaseNumber}
+          onChange={e => update('courtCaseNumber', e.target.value)}
+          placeholder="Assigned by court after filing — e.g. 24-12345-ABC"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+        <p className="text-xs text-muted-foreground mt-1">You can add this later once the court assigns it.</p>
       </div>
       <div />
       <div>

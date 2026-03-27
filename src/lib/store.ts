@@ -102,6 +102,7 @@ export interface Case {
   clientPhone?: string;
   clientDob?: string;
   caseCode?: string;
+  courtCaseNumber?: string;
   chapterType: ChapterType;
   assignedParalegal: string;
   assignedAttorney: string;
@@ -116,6 +117,9 @@ export interface Case {
   status: CaseStatus;
   readyToFile: boolean;
   wizardStep: number;
+  closedAt?: string;
+  retentionNotifiedAt?: string;
+  retentionDeleteScheduledAt?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare } from 'lucide-react';
+import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare, Search, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { format, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const ParalegalDashboard = () => {
   const { subscribed, status, daysLeft, loading: subLoading, refresh } = useSubscription();
   const [cases, setCases] = useState<Case[]>([]);
   const [showNewCase, setShowNewCase] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
@@ -59,10 +61,22 @@ const ParalegalDashboard = () => {
     navigate('/login');
   };
 
+  const filterBySearch = (list: Case[]) => {
+    if (!searchTerm.trim()) return list;
+    const term = searchTerm.toLowerCase();
+    return list.filter(c =>
+      c.clientName.toLowerCase().includes(term) ||
+      (c.caseCode && c.caseCode.toLowerCase().includes(term)) ||
+      (c.courtCaseNumber && c.courtCaseNumber.toLowerCase().includes(term))
+    );
+  };
+
   const activeCases = [...cases].filter(c => c.status !== 'filed' && c.status !== 'closed');
   const completedCases = cases.filter(c => c.status === 'filed' || c.status === 'closed');
+  const filteredActive = filterBySearch(activeCases);
+  const filteredCompleted = filterBySearch(completedCases);
 
-  const sortedCases = activeCases.sort((a, b) => {
+  const sortedCases = [...filteredActive].sort((a, b) => {
     const order = { critical: 0, 'at-risk': 1, normal: 2 };
     const aHasResubmission = caseHasRecentResubmission(a) ? -1 : 0;
     const bHasResubmission = caseHasRecentResubmission(b) ? -1 : 0;
@@ -116,7 +130,30 @@ const ParalegalDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        {sortedCases.length === 0 && completedCases.length === 0 ? (
+        {/* Search bar */}
+        {(cases.length > 0) && (
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search cases by client name or case number"
+              className="pl-10 pr-10 bg-input border-border rounded-[10px]"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {sortedCases.length === 0 && filteredCompleted.length === 0 ? (
+          searchTerm ? (
+            <div className="py-20 text-center">
+              <p className="text-sm text-muted-foreground font-body">No cases match your search.</p>
+            </div>
+          ) : (
           <div className="py-20 text-center">
             <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
             <p className="mb-6 text-sm text-muted-foreground font-body">Create your first case to get started.</p>
@@ -126,9 +163,10 @@ const ParalegalDashboard = () => {
               </Button>
             )}
           </div>
+          )
         ) : (
           <div className="space-y-3">
-            {sortedCases.length === 0 && (
+            {sortedCases.length === 0 && !searchTerm && (
               <div className="py-10 text-center">
                 <p className="text-sm text-muted-foreground font-body">No active cases.</p>
               </div>
@@ -137,7 +175,7 @@ const ParalegalDashboard = () => {
               <CaseRow key={caseRecord.id} caseData={caseRecord} index={index} onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)} />
             ))}
 
-            {completedCases.length > 0 && (
+            {filteredCompleted.length > 0 && (
               <div className="mt-8">
                 <button
                   onClick={() => setShowCompleted(!showCompleted)}
@@ -145,11 +183,11 @@ const ParalegalDashboard = () => {
                 >
                   <ChevronDown className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-0' : '-rotate-90'}`} />
                   Completed Cases
-                  <Badge variant="secondary" className="ml-1 text-xs">{completedCases.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">{filteredCompleted.length}</Badge>
                 </button>
                 {showCompleted && (
                   <div className="mt-2 space-y-2 opacity-60">
-                    {completedCases.map((caseRecord) => (
+                    {filteredCompleted.map((caseRecord) => (
                       <motion.div
                         key={caseRecord.id}
                         initial={{ opacity: 0 }}

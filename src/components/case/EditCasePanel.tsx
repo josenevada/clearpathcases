@@ -25,6 +25,7 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
   const [clientPhone, setClientPhone] = useState(caseData.clientPhone || '');
   const [chapterType, setChapterType] = useState<ChapterType>(caseData.chapterType);
   const [filingDeadline, setFilingDeadline] = useState<Date>(new Date(caseData.filingDeadline));
+  const [courtCaseNumber, setCourtCaseNumber] = useState(caseData.courtCaseNumber || '');
   const [assignedParalegal, setAssignedParalegal] = useState(caseData.assignedParalegal);
   const [assignedAttorney, setAssignedAttorney] = useState(caseData.assignedAttorney);
   const [saving, setSaving] = useState(false);
@@ -37,6 +38,7 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
       setClientPhone(caseData.clientPhone || '');
       setChapterType(caseData.chapterType);
       setFilingDeadline(new Date(caseData.filingDeadline));
+      setCourtCaseNumber(caseData.courtCaseNumber || '');
       setAssignedParalegal(caseData.assignedParalegal);
       setAssignedAttorney(caseData.assignedAttorney);
       setError(null);
@@ -49,6 +51,7 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
     clientPhone !== (caseData.clientPhone || '') ||
     chapterType !== caseData.chapterType ||
     filingDeadline.toISOString().slice(0, 10) !== new Date(caseData.filingDeadline).toISOString().slice(0, 10) ||
+    courtCaseNumber !== (caseData.courtCaseNumber || '') ||
     assignedParalegal !== caseData.assignedParalegal ||
     assignedAttorney !== caseData.assignedAttorney;
 
@@ -65,12 +68,32 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
           client_phone: clientPhone || null,
           chapter_type: chapterType,
           filing_deadline: filingDeadline.toISOString().slice(0, 10),
+          court_case_number: courtCaseNumber || null,
           assigned_paralegal: assignedParalegal,
           assigned_attorney: assignedAttorney,
         })
         .eq('id', caseData.id);
 
       if (dbError) throw new Error(dbError.message);
+
+      // Log court case number change
+      const oldCCN = caseData.courtCaseNumber || '';
+      if (courtCaseNumber && courtCaseNumber !== oldCCN) {
+        addActivityEntry(caseData.id, {
+          eventType: 'case_updated',
+          actorRole: 'paralegal',
+          actorName,
+          description: `${actorName} added court case number ${courtCaseNumber}`,
+        });
+        // Sync to Supabase activity log
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'case_updated',
+          actor_role: 'paralegal',
+          actor_name: actorName,
+          description: `${actorName} added court case number ${courtCaseNumber}`,
+        });
+      }
 
       // Update in localStorage
       const updated = updateCase(caseData.id, c => ({
@@ -80,6 +103,7 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
         clientPhone: clientPhone || undefined,
         chapterType,
         filingDeadline: filingDeadline.toISOString(),
+        courtCaseNumber: courtCaseNumber || undefined,
         assignedParalegal,
         assignedAttorney,
       }));
@@ -170,6 +194,11 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Court Case Number</Label>
+            <Input value={courtCaseNumber} onChange={e => setCourtCaseNumber(e.target.value)} placeholder="Assigned by court after filing — e.g. 24-12345-ABC" className="bg-input border-border rounded-[10px]" />
           </div>
 
           <div className="space-y-1.5">
