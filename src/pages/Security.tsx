@@ -150,8 +150,8 @@ const Security = () => {
             <span className="text-sm text-muted-foreground font-body">Bankruptcy document intake, simplified.</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground">Privacy Policy</a>
-            <a href="#" className="hover:text-foreground">Terms of Service</a>
+            <Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms of Service</Link>
             <Link to="/security" className="hover:text-foreground">Security</Link>
             <Link to="/login" className="hover:text-foreground">Sign In</Link>
           </div>

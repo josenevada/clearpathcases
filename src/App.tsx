@@ -21,6 +21,7 @@ import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Security from "./pages/Security";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import InviteSignup from "./pages/InviteSignup";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +67,7 @@ const App = () => {
                 <Route path="/" element={<MarketingLanding />} />
                 <Route path="/security" element={<Security />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="/portal" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />
