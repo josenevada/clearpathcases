@@ -299,6 +299,100 @@ const CaseDetail = () => {
     refresh();
   };
 
+  const handleDeleteCase = async () => {
+    if (!caseData || deleteConfirmName !== caseData.clientName) return;
+    setIsDeleting(true);
+    try {
+      // Delete all associated records from Supabase
+      await Promise.all([
+        supabase.from('files').delete().eq('case_id', caseData.id),
+        supabase.from('checklist_items').delete().eq('case_id', caseData.id),
+        supabase.from('activity_log').delete().eq('case_id', caseData.id),
+        supabase.from('notes').delete().eq('case_id', caseData.id),
+        supabase.from('client_info').delete().eq('case_id', caseData.id),
+        supabase.from('attorney_notes').delete().eq('case_id', caseData.id),
+        supabase.from('checkpoints').delete().eq('case_id', caseData.id),
+      ]);
+      // Delete the case itself
+      await supabase.from('cases').delete().eq('id', caseData.id);
+      // Delete from localStorage
+      deleteCase(caseData.id);
+      // Delete files from storage
+      const { data: storedFiles } = await supabase.storage.from('case-documents').list(caseData.id);
+      if (storedFiles && storedFiles.length > 0) {
+        await supabase.storage.from('case-documents').remove(storedFiles.map(f => `${caseData.id}/${f.name}`));
+      }
+      toast.success('Case deleted permanently.');
+      navigate('/paralegal');
+    } catch (err) {
+      console.error('Failed to delete case:', err);
+      toast.error('Failed to delete case. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const NA_REASONS = [
+    'Client is unemployed',
+    'Client does not own this asset',
+    'Document does not exist for this client',
+    'Other',
+  ];
+
+  const handleMarkNotApplicable = async (item: ChecklistItem) => {
+    const reason = naReason === 'Other' ? naCustomReason.trim() : naReason;
+    if (!reason) {
+      toast.error('Please select a reason.');
+      return;
+    }
+
+    const actorName = user?.fullName || 'Staff';
+    const timestamp = new Date().toISOString();
+
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === item.id);
+      if (found) {
+        found.notApplicable = true;
+        found.notApplicableReason = reason;
+        found.notApplicableMarkedBy = actorName;
+        found.notApplicableAt = timestamp;
+        found.completed = false;
+      }
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_not_applicable',
+      actorRole: 'paralegal',
+      actorName,
+      description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
+      itemId: item.id,
+    });
+
+    // Sync to Supabase
+    await supabase.from('checklist_items').update({
+      not_applicable: true,
+      not_applicable_reason: reason,
+      not_applicable_marked_by: actorName,
+      not_applicable_at: timestamp,
+    }).eq('id', item.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_not_applicable',
+      actor_role: 'paralegal',
+      actor_name: actorName,
+      description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
+      item_id: item.id,
+    });
+
+    setNaTarget(null);
+    setNaReason('');
+    setNaCustomReason('');
+    toast.success(`${item.label} marked as not applicable`);
+    refresh();
+  };
+
   const handleAddNote = () => {
     if (!newNote.trim()) return;
 
