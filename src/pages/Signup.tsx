@@ -286,6 +286,12 @@ const Signup = () => {
           )}
 
           {step === 2 && (
+            <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <OnboardingChecklistConfig onNext={() => setStep(3)} onSkip={() => setStep(3)} />
+            </motion.div>
+          )}
+
+          {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <h2 className="font-display font-bold text-2xl text-foreground">Create your first case</h2>
               <p className="text-sm text-muted-foreground font-body">Set up a real client case to see how ClearPath works.</p>
