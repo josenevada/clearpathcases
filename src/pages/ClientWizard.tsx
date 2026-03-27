@@ -1391,7 +1391,7 @@ const ClientWizard = () => {
                   {renderDuplicateWarning()}
                   <div
                     className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => isMobile ? setShowMobileUploadOptions(true) : fileInputRef.current?.click()}
                   >
                     <UploadCloud className="w-12 h-12 text-primary mb-4" />
                     <span className="text-foreground font-medium">Tap to upload or drag file</span>
@@ -1400,10 +1400,23 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                      onChange={handleSingleFileUpload}
+                    />
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png"
+                      capture="environment"
                       onChange={handleSingleFileUpload}
                     />
                   </div>
+                  {isMobile && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      You can photograph physical documents directly with your camera.
+                    </p>
+                  )}
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
                 <div className="space-y-2">
