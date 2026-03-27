@@ -99,12 +99,16 @@ export type Database = {
           client_email: string
           client_name: string
           client_phone: string | null
+          closed_at: string | null
+          court_case_number: string | null
           created_at: string | null
           filing_deadline: string
           firm_id: string | null
           id: string
           last_client_activity: string | null
           ready_to_file: boolean | null
+          retention_delete_scheduled_at: string | null
+          retention_notified_at: string | null
           status: string
           urgency: string | null
           wizard_step: number | null
@@ -120,12 +124,16 @@ export type Database = {
           client_email: string
           client_name: string
           client_phone?: string | null
+          closed_at?: string | null
+          court_case_number?: string | null
           created_at?: string | null
           filing_deadline: string
           firm_id?: string | null
           id?: string
           last_client_activity?: string | null
           ready_to_file?: boolean | null
+          retention_delete_scheduled_at?: string | null
+          retention_notified_at?: string | null
           status?: string
           urgency?: string | null
           wizard_step?: number | null
@@ -141,12 +149,16 @@ export type Database = {
           client_email?: string
           client_name?: string
           client_phone?: string | null
+          closed_at?: string | null
+          court_case_number?: string | null
           created_at?: string | null
           filing_deadline?: string
           firm_id?: string | null
           id?: string
           last_client_activity?: string | null
           ready_to_file?: boolean | null
+          retention_delete_scheduled_at?: string | null
+          retention_notified_at?: string | null
           status?: string
           urgency?: string | null
           wizard_step?: number | null
