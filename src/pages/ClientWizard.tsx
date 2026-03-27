@@ -13,6 +13,7 @@ import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
+import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
@@ -413,8 +414,11 @@ const ClientWizard = () => {
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
   const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
+  const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
+  const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
+  const hasValidationIssue = currentItem?.files.some(f => f.validationStatus === 'warning' || f.validationStatus === 'failed') ?? false;
   const hasValidationIssue = currentItem?.files.some(f => f.validationStatus === 'warning' || f.validationStatus === 'failed') ?? false;
 
   const renderDuplicateWarning = () => {
