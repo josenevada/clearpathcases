@@ -518,7 +518,8 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 )}
                 onClick={() => { setSelectedFile({ file, item }); setCorrectionNote(''); setFeedbackMode('idle'); setFeedbackDocType(''); setFeedbackNotes(''); }}
               >
-                {/* Checkbox */}
+                {/* Checkbox — only for plans with bulk actions */}
+                {bulkActionsEnabled ? (
                 <div
                   className="absolute top-3 left-3 z-10"
                   onClick={e => e.stopPropagation()}
@@ -529,6 +530,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                     className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                 </div>
+                ) : null}
 
                 <div className="flex items-start gap-3 mb-3 pl-7">
                   {isImageFile(file.name) ? (
