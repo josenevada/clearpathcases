@@ -532,7 +532,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 </div>
                 ) : null}
 
-                <div className="flex items-start gap-3 mb-3 pl-7">
+                <div className={`flex items-start gap-3 mb-3 ${bulkActionsEnabled ? 'pl-7' : ''}`}>
                   {isImageFile(file.name) ? (
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
                       <Image className="w-5 h-5 text-primary" />
