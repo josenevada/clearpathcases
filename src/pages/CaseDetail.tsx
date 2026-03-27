@@ -2,11 +2,28 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import DocumentsTab from '@/components/case/DocumentsTab';
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
@@ -17,6 +34,7 @@ import { useAuth } from '@/lib/auth';
 import {
   getCase,
   updateCase,
+  deleteCase,
   addActivityEntry,
   calculateProgress,
   isItemEffectivelyComplete,
@@ -27,6 +45,7 @@ import {
   type FileReviewStatus,
 } from '@/lib/store';
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
@@ -74,6 +93,12 @@ const CaseDetail = () => {
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('checklist');
   const [showEditPanel, setShowEditPanel] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [naTarget, setNaTarget] = useState<string | null>(null);
+  const [naReason, setNaReason] = useState('');
+  const [naCustomReason, setNaCustomReason] = useState('');
 
   useEffect(() => {
     if (!caseId) return;
@@ -274,6 +299,100 @@ const CaseDetail = () => {
     refresh();
   };
 
+  const handleDeleteCase = async () => {
+    if (!caseData || deleteConfirmName !== caseData.clientName) return;
+    setIsDeleting(true);
+    try {
+      // Delete all associated records from Supabase
+      await Promise.all([
+        supabase.from('files').delete().eq('case_id', caseData.id),
+        supabase.from('checklist_items').delete().eq('case_id', caseData.id),
+        supabase.from('activity_log').delete().eq('case_id', caseData.id),
+        supabase.from('notes').delete().eq('case_id', caseData.id),
+        supabase.from('client_info').delete().eq('case_id', caseData.id),
+        supabase.from('attorney_notes').delete().eq('case_id', caseData.id),
+        supabase.from('checkpoints').delete().eq('case_id', caseData.id),
+      ]);
+      // Delete the case itself
+      await supabase.from('cases').delete().eq('id', caseData.id);
+      // Delete from localStorage
+      deleteCase(caseData.id);
+      // Delete files from storage
+      const { data: storedFiles } = await supabase.storage.from('case-documents').list(caseData.id);
+      if (storedFiles && storedFiles.length > 0) {
+        await supabase.storage.from('case-documents').remove(storedFiles.map(f => `${caseData.id}/${f.name}`));
+      }
+      toast.success('Case deleted permanently.');
+      navigate('/paralegal');
+    } catch (err) {
+      console.error('Failed to delete case:', err);
+      toast.error('Failed to delete case. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const NA_REASONS = [
+    'Client is unemployed',
+    'Client does not own this asset',
+    'Document does not exist for this client',
+    'Other',
+  ];
+
+  const handleMarkNotApplicable = async (item: ChecklistItem) => {
+    const reason = naReason === 'Other' ? naCustomReason.trim() : naReason;
+    if (!reason) {
+      toast.error('Please select a reason.');
+      return;
+    }
+
+    const actorName = user?.fullName || 'Staff';
+    const timestamp = new Date().toISOString();
+
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === item.id);
+      if (found) {
+        found.notApplicable = true;
+        found.notApplicableReason = reason;
+        found.notApplicableMarkedBy = actorName;
+        found.notApplicableAt = timestamp;
+        found.completed = false;
+      }
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_not_applicable',
+      actorRole: 'paralegal',
+      actorName,
+      description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
+      itemId: item.id,
+    });
+
+    // Sync to Supabase
+    await supabase.from('checklist_items').update({
+      not_applicable: true,
+      not_applicable_reason: reason,
+      not_applicable_marked_by: actorName,
+      not_applicable_at: timestamp,
+    }).eq('id', item.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_not_applicable',
+      actor_role: 'paralegal',
+      actor_name: actorName,
+      description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
+      item_id: item.id,
+    });
+
+    setNaTarget(null);
+    setNaReason('');
+    setNaCustomReason('');
+    toast.success(`${item.label} marked as not applicable`);
+    refresh();
+  };
+
   const handleAddNote = () => {
     if (!newNote.trim()) return;
 
@@ -317,6 +436,9 @@ const CaseDetail = () => {
             <span className="font-mono text-xs text-muted-foreground">{caseData.id}</span>
             <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
               <Pencil className="w-3 h-3" /> Edit Case
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)} className="gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/20">
+              <Trash2 className="w-3 h-3" /> Delete
             </Button>
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Ch.{caseData.chapterType}
@@ -446,15 +568,21 @@ const CaseDetail = () => {
                                   onClick={() => setExpandedItem(isExpanded ? null : item.id)}
                                   className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[hsl(var(--surface-hover))]"
                                 >
-                                  {item.completed ? (
+                                  {item.notApplicable ? (
+                                    <Ban className="w-5 h-5 flex-shrink-0 text-muted-foreground" />
+                                  ) : item.completed ? (
                                     <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${status.tone === 'warning' ? 'text-warning' : 'text-success'}`} />
                                   ) : (
                                     <div className="w-5 h-5 flex-shrink-0 rounded-full border-2 border-muted-foreground/30" />
                                   )}
-                                  <span className="flex-1 text-sm text-foreground">{item.label}</span>
-                                  <span className={`text-xs ${status.colorClass}`}>{status.label}</span>
+                                  <span className={`flex-1 text-sm ${item.notApplicable ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{item.label}</span>
+                                  {item.notApplicable ? (
+                                    <Badge className="bg-muted text-muted-foreground border-border text-[10px]">N/A</Badge>
+                                  ) : (
+                                    <span className={`text-xs ${status.colorClass}`}>{status.label}</span>
+                                  )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
-                                  {!item.required && <span className="text-[10px] text-muted-foreground">Optional</span>}
+                                  {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}
                                 </button>
 
                                 <AnimatePresence>
@@ -659,15 +787,70 @@ const CaseDetail = () => {
                                         )}
 
                                         {viewRole === 'paralegal' && (
-                                          <div className="flex items-center gap-3">
-                                            <Button
-                                              variant={item.flaggedForAttorney ? 'warning' : 'outline'}
-                                              size="sm"
-                                              onClick={() => handleFlag(item)}
-                                            >
-                                              <Flag className="w-3 h-3 mr-1" />
-                                              {item.flaggedForAttorney ? 'Remove Flag' : 'Flag for Attorney'}
-                                            </Button>
+                                          <div className="space-y-3">
+                                            {item.notApplicable && (
+                                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Ban className="w-4 h-4" />
+                                                <span>Marked N/A{item.notApplicableReason ? ` — ${item.notApplicableReason}` : ''}</span>
+                                                {item.notApplicableMarkedBy && (
+                                                  <span className="text-xs">by {item.notApplicableMarkedBy}</span>
+                                                )}
+                                              </div>
+                                            )}
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                              <Button
+                                                variant={item.flaggedForAttorney ? 'warning' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handleFlag(item)}
+                                              >
+                                                <Flag className="w-3 h-3 mr-1" />
+                                                {item.flaggedForAttorney ? 'Remove Flag' : 'Flag for Attorney'}
+                                              </Button>
+                                              {!item.notApplicable && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => { setNaTarget(item.id); setNaReason(''); setNaCustomReason(''); }}
+                                                  className="text-muted-foreground"
+                                                >
+                                                  <Ban className="w-3 h-3 mr-1" /> Mark as Not Applicable
+                                                </Button>
+                                              )}
+                                            </div>
+
+                                            {naTarget === item.id && (
+                                              <div className="rounded-xl border border-border bg-secondary/50 p-4 space-y-3">
+                                                <p className="text-sm font-semibold text-foreground">Reason for N/A</p>
+                                                <Select value={naReason} onValueChange={setNaReason}>
+                                                  <SelectTrigger className="bg-background">
+                                                    <SelectValue placeholder="Select a reason..." />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {NA_REASONS.map(r => (
+                                                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                                {naReason === 'Other' && (
+                                                  <Input
+                                                    value={naCustomReason}
+                                                    onChange={e => setNaCustomReason(e.target.value)}
+                                                    placeholder="Describe why this doesn't apply..."
+                                                    className="bg-background"
+                                                  />
+                                                )}
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    size="sm"
+                                                    onClick={() => handleMarkNotApplicable(item)}
+                                                    disabled={!naReason || (naReason === 'Other' && !naCustomReason.trim())}
+                                                  >
+                                                    Save
+                                                  </Button>
+                                                  <Button variant="ghost" size="sm" onClick={() => setNaTarget(null)}>Cancel</Button>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         )}
                                       </div>
@@ -803,6 +986,34 @@ const CaseDetail = () => {
         onUpdated={setCaseData}
         actorName={user?.fullName || 'Staff'}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={open => { if (!open) { setShowDeleteDialog(false); setDeleteConfirmName(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this case?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>All documents, activity history, and client data will be permanently deleted. This cannot be undone.</p>
+              <p className="font-medium text-foreground">Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{caseData.clientName}</span> to confirm deletion.</p>
+              <Input
+                value={deleteConfirmName}
+                onChange={e => setDeleteConfirmName(e.target.value)}
+                placeholder="Type client name..."
+                className="mt-2"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCase}
+              disabled={deleteConfirmName !== caseData.clientName || isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Case'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

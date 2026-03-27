@@ -64,6 +64,8 @@ const ClientWizard = () => {
   const [helpForceOpen, setHelpForceOpen] = useState(false);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [showNaFlow, setShowNaFlow] = useState(false);
+  const [naClientReason, setNaClientReason] = useState<string | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -145,6 +147,10 @@ const ClientWizard = () => {
               } : undefined,
               resubmittedAt: row.resubmitted_at || undefined,
               completed: row.completed ?? false,
+              notApplicable: (row as any).not_applicable ?? false,
+              notApplicableReason: (row as any).not_applicable_reason || undefined,
+              notApplicableMarkedBy: (row as any).not_applicable_marked_by || undefined,
+              notApplicableAt: (row as any).not_applicable_at || undefined,
             };
           });
 
@@ -329,6 +335,8 @@ const ClientWizard = () => {
       setSsnError('');
     }
     setPendingDuplicate(null);
+    setShowNaFlow(false);
+    setNaClientReason(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
   // ─── 90-second inactivity auto-show help ─────────────────────────
@@ -737,6 +745,69 @@ const ClientWizard = () => {
     })();
     toast('No worries — you can come back to this later.', { duration: 2000 });
     advanceToNext();
+  };
+
+  const CLIENT_NA_OPTIONS = [
+    { label: 'I am not currently employed', reason: 'Client indicated not employed' },
+    { label: 'I do not own this asset', reason: 'Client indicated does not own this asset' },
+    { label: 'I am not sure — my attorney can help', reason: 'Client unsure — needs attorney follow-up' },
+  ];
+
+  const handleClientNA = (reason: string) => {
+    if (!currentItem) return;
+    const timestamp = new Date().toISOString();
+    const actorName = caseData.clientName;
+
+    const updated = updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === currentItem.id);
+      if (found) {
+        found.notApplicable = true;
+        found.notApplicableReason = reason;
+        found.notApplicableMarkedBy = 'client';
+        found.notApplicableAt = timestamp;
+      }
+      c.lastClientActivity = timestamp;
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_not_applicable' as any,
+      actorRole: 'client',
+      actorName,
+      description: `${actorName.split(' ')[0]} indicated ${currentItem.label} is not applicable — ${reason}`,
+      itemId: currentItem.id,
+    });
+
+    // Sync to Supabase
+    (async () => {
+      try {
+        await supabase.from('checklist_items').update({
+          not_applicable: true,
+          not_applicable_reason: reason,
+          not_applicable_marked_by: 'client',
+          not_applicable_at: timestamp,
+        }).eq('id', currentItem.id);
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'item_not_applicable',
+          actor_role: 'client',
+          actor_name: actorName,
+          description: `${actorName.split(' ')[0]} indicated ${currentItem.label} is not applicable — ${reason}`,
+          item_id: currentItem.id,
+        });
+        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+      } catch (err) { console.error('Failed to sync N/A:', err); }
+    })();
+
+    if (updated) {
+      setCaseData(updated);
+      setShowNaFlow(false);
+      setNaClientReason(null);
+      toast.success('Got it — your attorney will be notified.', { duration: 2000 });
+      setTimeout(() => {
+        checkMilestoneAndAdvance(updated);
+      }, 800);
+    }
   };
 
   const handleDismissMilestone = () => {
@@ -1279,11 +1350,19 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
-                  {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
-                    <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 mx-auto block">
-                      Skip this item
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
+                      <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                        Skip this item
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNaFlow(true)}
+                      className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
+                    >
+                      I don't have this document
                     </button>
-                  )}
+                  </div>
                 </div>
               ) : currentItemHasOpenCorrection ? (
                 <div className="space-y-4">
@@ -1361,26 +1440,64 @@ const ClientWizard = () => {
                 </div>
               ) : (
                 <>
-                {renderDuplicateWarning()}
-                <div
-                  className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <UploadCloud className="w-12 h-12 text-primary mb-4" />
-                  <span className="text-foreground font-medium">Tap to upload or drag file</span>
-                  <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleSingleFileUpload}
-                  />
-                </div>
-                {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
-                  <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 mx-auto block">
-                    Skip this item
-                  </button>
+                {showNaFlow ? (
+                  <div className="space-y-4">
+                    <div className="surface-card p-5">
+                      <p className="text-foreground font-medium mb-1">No problem</p>
+                      <p className="text-muted-foreground text-sm mb-5">Let us know why and your attorney's office will be notified.</p>
+                      <div className="space-y-2">
+                        {CLIENT_NA_OPTIONS.map(opt => (
+                          <button
+                            key={opt.label}
+                            onClick={() => handleClientNA(opt.reason)}
+                            className="w-full text-left p-4 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-foreground font-medium"
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowNaFlow(false)}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors mx-auto block"
+                    >
+                      ← I have this document
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  {renderDuplicateWarning()}
+                  <div
+                    className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <UploadCloud className="w-12 h-12 text-primary mb-4" />
+                    <span className="text-foreground font-medium">Tap to upload or drag file</span>
+                    <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleSingleFileUpload}
+                    />
+                  </div>
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
+                      <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                        Skip this item
+                      </button>
+                    )}
+                    {!isCheckpointItem && !isTextEntry && (
+                      <button
+                        onClick={() => setShowNaFlow(true)}
+                        className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
+                      >
+                        I don't have this document
+                      </button>
+                    )}
+                  </div>
+                  </>
                 )}
                 </>
               )}

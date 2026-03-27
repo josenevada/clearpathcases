@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
   const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
 
-  // Fetch all active, non-complete cases
+  // Fetch all active, non-complete cases (skip filed, closed, and deleted cases)
   const casesRes = await fetch(
     `${supabaseUrl}/rest/v1/cases?status=eq.active&ready_to_file=eq.false&select=*`,
     { headers },
@@ -51,10 +51,13 @@ Deno.serve(async (req) => {
     return json({ error: 'Failed to fetch cases' }, 500);
   }
 
+  // Filter out any cases that somehow have terminal statuses
+  const activeCases = cases.filter((c: any) => c.status === 'active' || c.status === 'on-hold');
+
   const now = new Date();
   const results: any[] = [];
 
-  for (const c of cases) {
+  for (const c of activeCases) {
     if (!c.client_name) continue;
 
     // Fetch latest contact info from client_info table
