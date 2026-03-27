@@ -10,7 +10,8 @@ export type ActivityEventType =
   | 'file_upload' | 'file_approved' | 'file_correction' | 'file_reupload'
   | 'file_overridden' | 'file_deleted' | 'item_flagged' | 'milestone_reached' | 'checkpoint_completed'
   | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated'
-  | 'ssn_viewed' | 'client_info_updated' | 'notification_sent' | 'document_validated';
+  | 'ssn_viewed' | 'client_info_updated' | 'notification_sent' | 'document_validated'
+  | 'item_not_applicable' | 'case_deleted' | 'notifications_paused';
 
 export interface FileValidationResult {
   isCorrectDocumentType: boolean;
@@ -69,6 +70,10 @@ export interface ChecklistItem {
   correctionRequest?: CorrectionRequest;
   resubmittedAt?: string;
   completed: boolean;
+  notApplicable?: boolean;
+  notApplicableReason?: string;
+  notApplicableMarkedBy?: string;
+  notApplicableAt?: string;
 }
 
 export interface ActivityLogEntry {
@@ -384,6 +389,7 @@ export const calculateUrgency = (c: Case): UrgencyLevel => {
  * This is the single source of truth for progress calculations across the entire app.
  */
 export const isItemEffectivelyComplete = (item: ChecklistItem): boolean => {
+  if (item.notApplicable) return true;
   if (item.correctionRequest?.status === 'open') return false;
   // Text-entry items are complete if they have a saved entry
   if (item.textEntry?.savedAt) return true;
@@ -395,9 +401,11 @@ export const isItemEffectivelyComplete = (item: ChecklistItem): boolean => {
 };
 
 export const calculateProgress = (c: Case): number => {
-  const total = c.checklist.length;
+  // N/A items are excluded from both numerator and denominator
+  const applicable = c.checklist.filter(i => !i.notApplicable);
+  const total = applicable.length;
   if (total === 0) return 0;
-  return Math.round((c.checklist.filter(isItemEffectivelyComplete).length / total) * 100);
+  return Math.round((applicable.filter(isItemEffectivelyComplete).length / total) * 100);
 };
 
 // ─── CRUD ────────────────────────────────────────────────────────────
