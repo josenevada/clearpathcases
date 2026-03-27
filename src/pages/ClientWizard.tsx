@@ -331,6 +331,8 @@ const ClientWizard = () => {
       setSsnError('');
     }
     setPendingDuplicate(null);
+    setShowNaFlow(false);
+    setNaClientReason(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
   // ─── 90-second inactivity auto-show help ─────────────────────────
