@@ -400,7 +400,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       {/* Toolbar — switches between search bar and bulk action bar */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
-          {bulkMode ? (
+          {bulkActionsEnabled && bulkMode ? (
             /* Bulk action toolbar */
             <motion.div
               initial={{ opacity: 0, y: -4 }}
