@@ -419,7 +419,6 @@ const ClientWizard = () => {
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
   const hasValidationIssue = currentItem?.files.some(f => f.validationStatus === 'warning' || f.validationStatus === 'failed') ?? false;
-  const hasValidationIssue = currentItem?.files.some(f => f.validationStatus === 'warning' || f.validationStatus === 'failed') ?? false;
 
   const renderDuplicateWarning = () => {
     if (!pendingDuplicate) return null;
