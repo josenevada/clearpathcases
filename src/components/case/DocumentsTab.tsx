@@ -71,6 +71,9 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [feedbackDocType, setFeedbackDocType] = useState('');
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkCorrection, setShowBulkCorrection] = useState(false);
   const [bulkCorrectionNote, setBulkCorrectionNote] = useState('');
 
