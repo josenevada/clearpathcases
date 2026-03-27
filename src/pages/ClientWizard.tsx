@@ -743,7 +743,69 @@ const ClientWizard = () => {
     advanceToNext();
   };
 
-  const handleDismissMilestone = () => {
+  const CLIENT_NA_OPTIONS = [
+    { label: 'I am not currently employed', reason: 'Client indicated not employed' },
+    { label: 'I do not own this asset', reason: 'Client indicated does not own this asset' },
+    { label: 'I am not sure — my attorney can help', reason: 'Client unsure — needs attorney follow-up' },
+  ];
+
+  const handleClientNA = (reason: string) => {
+    if (!currentItem) return;
+    const timestamp = new Date().toISOString();
+    const actorName = caseData.clientName;
+
+    const updated = updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === currentItem.id);
+      if (found) {
+        found.notApplicable = true;
+        found.notApplicableReason = reason;
+        found.notApplicableMarkedBy = 'client';
+        found.notApplicableAt = timestamp;
+      }
+      c.lastClientActivity = timestamp;
+      return c;
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_not_applicable' as any,
+      actorRole: 'client',
+      actorName,
+      description: `${actorName.split(' ')[0]} indicated ${currentItem.label} is not applicable — ${reason}`,
+      itemId: currentItem.id,
+    });
+
+    // Sync to Supabase
+    (async () => {
+      try {
+        await supabase.from('checklist_items').update({
+          not_applicable: true,
+          not_applicable_reason: reason,
+          not_applicable_marked_by: 'client',
+          not_applicable_at: timestamp,
+        }).eq('id', currentItem.id);
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'item_not_applicable',
+          actor_role: 'client',
+          actor_name: actorName,
+          description: `${actorName.split(' ')[0]} indicated ${currentItem.label} is not applicable — ${reason}`,
+          item_id: currentItem.id,
+        });
+        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+      } catch (err) { console.error('Failed to sync N/A:', err); }
+    })();
+
+    if (updated) {
+      setCaseData(updated);
+      setShowNaFlow(false);
+      setNaClientReason(null);
+      toast.success('Got it — your attorney will be notified.', { duration: 2000 });
+      setTimeout(() => {
+        checkMilestoneAndAdvance(updated);
+      }, 800);
+    }
+  };
+
     setShowMilestone(null);
     if (lastMilestoneRef.current === 100) return;
     advanceToNext();
