@@ -437,6 +437,9 @@ const CaseDetail = () => {
             <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
               <Pencil className="w-3 h-3" /> Edit Case
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)} className="gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/20">
+              <Trash2 className="w-3 h-3" /> Delete
+            </Button>
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Ch.{caseData.chapterType}
             </span>
