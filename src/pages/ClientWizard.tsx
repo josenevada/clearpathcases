@@ -75,7 +75,6 @@ const ClientWizard = () => {
   const isMobile = useIsMobile();
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
   const targetFixItemId = searchParams.get('fix');
-  const targetFixItemId = searchParams.get('fix');
 
   useEffect(() => {
     if (!resolvedCaseId) return;
