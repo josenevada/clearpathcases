@@ -147,6 +147,10 @@ const ClientWizard = () => {
               } : undefined,
               resubmittedAt: row.resubmitted_at || undefined,
               completed: row.completed ?? false,
+              notApplicable: (row as any).not_applicable ?? false,
+              notApplicableReason: (row as any).not_applicable_reason || undefined,
+              notApplicableMarkedBy: (row as any).not_applicable_marked_by || undefined,
+              notApplicableAt: (row as any).not_applicable_at || undefined,
             };
           });
 
