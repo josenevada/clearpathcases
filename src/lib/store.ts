@@ -36,6 +36,7 @@ export interface UploadedFile {
   uploadedBy: 'client' | 'paralegal';
   validationStatus?: FileValidationStatus;
   validationResult?: FileValidationResult;
+  manuallyReviewed?: boolean;
 }
 
 export interface CorrectionRequest {
