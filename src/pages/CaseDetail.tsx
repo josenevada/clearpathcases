@@ -93,6 +93,12 @@ const CaseDetail = () => {
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('checklist');
   const [showEditPanel, setShowEditPanel] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [naTarget, setNaTarget] = useState<string | null>(null);
+  const [naReason, setNaReason] = useState('');
+  const [naCustomReason, setNaCustomReason] = useState('');
 
   useEffect(() => {
     if (!caseId) return;
