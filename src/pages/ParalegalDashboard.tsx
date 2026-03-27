@@ -28,6 +28,7 @@ const ParalegalDashboard = () => {
   const [cases, setCases] = useState<Case[]>([]);
   const [showNewCase, setShowNewCase] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
@@ -104,7 +105,7 @@ const ParalegalDashboard = () => {
       {status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
         <TrialBanner daysLeft={daysLeft} />
       )}
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+      <header className="relative flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-6">
           <Logo size="sm" />
           <span className="hidden text-sm text-muted-foreground font-body sm:block">
@@ -116,6 +117,9 @@ const ParalegalDashboard = () => {
             {displayName}, {displayRole}
           </span>
           <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setGlobalSearchOpen(true)}>
+            <Search className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>
@@ -128,6 +132,7 @@ const ParalegalDashboard = () => {
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
+        <GlobalSearch open={globalSearchOpen} onClose={() => setGlobalSearchOpen(false)} />
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
