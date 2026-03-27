@@ -71,6 +71,10 @@ const ClientWizard = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
+  const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
+  const targetFixItemId = searchParams.get('fix');
   const targetFixItemId = searchParams.get('fix');
 
   useEffect(() => {
