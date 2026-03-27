@@ -192,6 +192,10 @@ export type Database = {
           id: string
           input_type: string | null
           label: string
+          not_applicable: boolean | null
+          not_applicable_at: string | null
+          not_applicable_marked_by: string | null
+          not_applicable_reason: string | null
           required: boolean | null
           resubmitted_at: string | null
           sort_order: number | null
@@ -214,6 +218,10 @@ export type Database = {
           id?: string
           input_type?: string | null
           label: string
+          not_applicable?: boolean | null
+          not_applicable_at?: string | null
+          not_applicable_marked_by?: string | null
+          not_applicable_reason?: string | null
           required?: boolean | null
           resubmitted_at?: string | null
           sort_order?: number | null
@@ -236,6 +244,10 @@ export type Database = {
           id?: string
           input_type?: string | null
           label?: string
+          not_applicable?: boolean | null
+          not_applicable_at?: string | null
+          not_applicable_marked_by?: string | null
+          not_applicable_reason?: string | null
           required?: boolean | null
           resubmitted_at?: string | null
           sort_order?: number | null
