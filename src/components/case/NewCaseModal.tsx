@@ -508,8 +508,8 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
       <div>
         <Label className="text-muted-foreground text-sm">Court Case Number</Label>
         <Input
-          value={(info as any).courtCaseNumber || ''}
-          onChange={e => setInfo({ ...info, courtCaseNumber: e.target.value } as any)}
+          value={info.courtCaseNumber}
+          onChange={e => update('courtCaseNumber', e.target.value)}
           placeholder="Assigned by court after filing — e.g. 24-12345-ABC"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
