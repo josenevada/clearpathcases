@@ -12,7 +12,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 
-const STEPS = ['Create Account', 'Your Practice', 'First Case', 'Invite Your Team', 'All Set'];
+import OnboardingChecklistConfig from '@/components/onboarding/OnboardingChecklistConfig';
+
+const STEPS = ['Create Account', 'Your Practice', 'Configure Checklist', 'First Case', 'Invite Your Team', 'All Set'];
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -181,7 +183,7 @@ const Signup = () => {
         urgency: 'normal',
       });
       if (error) throw error;
-      setStep(3);
+      setStep(4);
     } catch (err: any) {
       toast.error(err.message || 'Failed to create case');
     } finally {
@@ -284,7 +286,13 @@ const Signup = () => {
           )}
 
           {step === 2 && (
-            <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+            <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <OnboardingChecklistConfig onNext={() => setStep(3)} onSkip={() => setStep(3)} />
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <h2 className="font-display font-bold text-2xl text-foreground">Create your first case</h2>
               <p className="text-sm text-muted-foreground font-body">Set up a real client case to see how ClearPath works.</p>
               <div>
@@ -313,14 +321,14 @@ const Signup = () => {
               <Button className="w-full" onClick={handleCreateCase} disabled={loading || !clientName || !clientEmail || !filingDeadline}>
                 {loading ? 'Creating…' : 'Create Case & Continue'}
               </Button>
-              <p className="text-sm text-muted-foreground text-center cursor-pointer hover:text-foreground" onClick={() => setStep(3)}>
+              <p className="text-sm text-muted-foreground text-center cursor-pointer hover:text-foreground" onClick={() => setStep(4)}>
                 Skip for now
               </p>
             </motion.div>
           )}
 
-          {step === 3 && (
-            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+          {step === 4 && (
+            <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <UserPlus className="w-5 h-5 text-primary" />
@@ -330,15 +338,15 @@ const Signup = () => {
                   <p className="text-sm text-muted-foreground font-body">Add a paralegal or attorney to your workspace.</p>
                 </div>
               </div>
-              <InviteTeamForm firmId={firmId} onDone={() => setStep(4)} />
-              <p className="text-sm text-muted-foreground text-center cursor-pointer hover:text-foreground" onClick={() => setStep(4)}>
+              <InviteTeamForm firmId={firmId} onDone={() => setStep(5)} />
+              <p className="text-sm text-muted-foreground text-center cursor-pointer hover:text-foreground" onClick={() => setStep(5)}>
                 Skip for now
               </p>
             </motion.div>
           )}
 
-          {step === 4 && (
-            <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
+          {step === 5 && (
+            <motion.div key="s5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <Check className="w-8 h-8 text-primary" />
               </div>
