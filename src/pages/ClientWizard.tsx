@@ -1428,26 +1428,64 @@ const ClientWizard = () => {
                 </div>
               ) : (
                 <>
-                {renderDuplicateWarning()}
-                <div
-                  className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <UploadCloud className="w-12 h-12 text-primary mb-4" />
-                  <span className="text-foreground font-medium">Tap to upload or drag file</span>
-                  <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleSingleFileUpload}
-                  />
-                </div>
-                {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
-                  <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 mx-auto block">
-                    Skip this item
-                  </button>
+                {showNaFlow ? (
+                  <div className="space-y-4">
+                    <div className="surface-card p-5">
+                      <p className="text-foreground font-medium mb-1">No problem</p>
+                      <p className="text-muted-foreground text-sm mb-5">Let us know why and your attorney's office will be notified.</p>
+                      <div className="space-y-2">
+                        {CLIENT_NA_OPTIONS.map(opt => (
+                          <button
+                            key={opt.label}
+                            onClick={() => handleClientNA(opt.reason)}
+                            className="w-full text-left p-4 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-foreground font-medium"
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowNaFlow(false)}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors mx-auto block"
+                    >
+                      ← I have this document
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  {renderDuplicateWarning()}
+                  <div
+                    className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <UploadCloud className="w-12 h-12 text-primary mb-4" />
+                    <span className="text-foreground font-medium">Tap to upload or drag file</span>
+                    <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleSingleFileUpload}
+                    />
+                  </div>
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
+                      <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                        Skip this item
+                      </button>
+                    )}
+                    {!isCheckpointItem && !isTextEntry && (
+                      <button
+                        onClick={() => setShowNaFlow(true)}
+                        className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
+                      >
+                        I don't have this document
+                      </button>
+                    )}
+                  </div>
+                  </>
                 )}
                 </>
               )}
