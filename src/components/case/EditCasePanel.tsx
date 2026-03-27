@@ -197,6 +197,11 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
           </div>
 
           <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Court Case Number</Label>
+            <Input value={courtCaseNumber} onChange={e => setCourtCaseNumber(e.target.value)} placeholder="Assigned by court after filing — e.g. 24-12345-ABC" className="bg-input border-border rounded-[10px]" />
+          </div>
+
+          <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Assigned Paralegal</Label>
             <Input value={assignedParalegal} onChange={e => setAssignedParalegal(e.target.value)} className="bg-input border-border rounded-[10px]" />
           </div>

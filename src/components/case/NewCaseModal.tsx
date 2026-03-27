@@ -501,6 +501,17 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
             />
           </PopoverContent>
         </Popover>
+        <p className="text-xs text-muted-foreground mt-1">Required for case tracking</p>
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Court Case Number</Label>
+        <Input
+          value={(info as any).courtCaseNumber || ''}
+          onChange={e => setInfo({ ...info, courtCaseNumber: e.target.value } as any)}
+          placeholder="Assigned by court after filing — e.g. 24-12345-ABC"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+        <p className="text-xs text-muted-foreground mt-1">You can add this later once the court assigns it.</p>
       </div>
       <div />
       <div>

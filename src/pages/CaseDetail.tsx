@@ -434,6 +434,11 @@ const CaseDetail = () => {
           <div className="flex flex-1 items-center gap-3 flex-wrap">
             <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
             <span className="font-mono text-xs text-muted-foreground">{caseData.id}</span>
+            {caseData.courtCaseNumber && (
+              <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-mono text-muted-foreground border border-border">
+                {caseData.courtCaseNumber}
+              </span>
+            )}
             <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
               <Pencil className="w-3 h-3" /> Edit Case
             </Button>
