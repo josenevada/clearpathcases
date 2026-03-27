@@ -13,13 +13,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { UserPlus, Trash2, Send, RotateCw, XCircle } from 'lucide-react';
-
-const PLAN_USER_LIMITS: Record<string, number> = {
-  solo: 1,
-  starter: 2,
-  professional: 10,
-  firm: Infinity,
-};
+import UpgradeModal from '@/components/UpgradeModal';
+import { getPlanLimits } from '@/lib/plan-limits';
 
 interface TeamMember {
   id: string;
@@ -49,10 +44,12 @@ const TeamTab = () => {
   const [inviteMessage, setInviteMessage] = useState('Welcome to our ClearPath workspace. Please create your account to get started.');
   const [sending, setSending] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [firmName, setFirmName] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const userLimit = PLAN_USER_LIMITS[plan || 'solo'] ?? 1;
+  const planLimits = getPlanLimits(plan);
+  const userLimit = planLimits.staffUsers;
   const currentCount = members.length;
   const pendingCount = invitations.filter(i => i.status === 'pending').length;
   const atLimit = (currentCount + pendingCount) >= userLimit && userLimit !== Infinity;
@@ -190,8 +187,8 @@ const TeamTab = () => {
       {/* Invite button or limit message */}
       {atLimit ? (
         <div className="surface-card p-4 text-center">
-          <p className="text-sm text-muted-foreground font-body mb-2">You have reached your plan's user limit.</p>
-          <a href="/paralegal/settings?tab=billing" className="text-sm text-primary hover:underline font-body">Upgrade Plan</a>
+          <p className="text-sm text-muted-foreground font-body mb-2">You have reached your plan's user limit ({userLimit === Infinity ? '∞' : userLimit} staff members).</p>
+          <Button variant="outline" size="sm" onClick={() => setShowUpgrade(true)}>Upgrade Plan</Button>
         </div>
       ) : (
         !showInviteForm && (
@@ -321,6 +318,12 @@ const TeamTab = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        featureName="Staff User Limit Reached"
+        description={`Your current plan supports up to ${userLimit} staff member${userLimit !== 1 ? 's' : ''}. Upgrade to add more team members.`}
+      />
     </div>
   );
 };

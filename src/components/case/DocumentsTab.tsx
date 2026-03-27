@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare, ThumbsUp, ThumbsDown, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -21,6 +22,8 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import DocumentViewer from '@/components/case/DocumentViewer';
+import { useSubscription } from '@/lib/subscription';
+import { getPlanLimits } from '@/lib/plan-limits';
 
 type ViewRole = 'paralegal' | 'attorney';
 
@@ -58,6 +61,8 @@ const CATEGORY_SHORT: Record<string, string> = {
 const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong document type'];
 
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
+  const { plan } = useSubscription();
+  const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
@@ -395,7 +400,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       {/* Toolbar — switches between search bar and bulk action bar */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
-          {bulkMode ? (
+          {bulkActionsEnabled && bulkMode ? (
             /* Bulk action toolbar */
             <motion.div
               initial={{ opacity: 0, y: -4 }}
@@ -442,7 +447,21 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
             </div>
           )}
           {!bulkMode && (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              {!bulkActionsEnabled && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs text-muted-foreground font-body flex items-center gap-1 cursor-default">
+                        <Lock className="w-3 h-3" /> Bulk actions
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Available on Professional</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <Button onClick={() => handleExportCheck('zip')}>
                 <Download className="w-4 h-4 mr-1" /> Download ZIP
               </Button>
@@ -513,7 +532,8 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 )}
                 onClick={() => { setSelectedFile({ file, item }); setCorrectionNote(''); setFeedbackMode('idle'); setFeedbackDocType(''); setFeedbackNotes(''); }}
               >
-                {/* Checkbox */}
+                {/* Checkbox — only for plans with bulk actions */}
+                {bulkActionsEnabled ? (
                 <div
                   className="absolute top-3 left-3 z-10"
                   onClick={e => e.stopPropagation()}
@@ -524,8 +544,9 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                     className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                 </div>
+                ) : null}
 
-                <div className="flex items-start gap-3 mb-3 pl-7">
+                <div className={`flex items-start gap-3 mb-3 ${bulkActionsEnabled ? 'pl-7' : ''}`}>
                   {isImageFile(file.name) ? (
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
                       <Image className="w-5 h-5 text-primary" />
