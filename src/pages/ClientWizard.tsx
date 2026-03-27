@@ -64,6 +64,8 @@ const ClientWizard = () => {
   const [helpForceOpen, setHelpForceOpen] = useState(false);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [showNaFlow, setShowNaFlow] = useState(false);
+  const [naClientReason, setNaClientReason] = useState<string | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
