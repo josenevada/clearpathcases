@@ -806,6 +806,7 @@ const ClientWizard = () => {
     }
   };
 
+  const handleDismissMilestone = () => {
     setShowMilestone(null);
     if (lastMilestoneRef.current === 100) return;
     advanceToNext();
