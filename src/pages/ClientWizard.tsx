@@ -13,6 +13,7 @@ import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
+import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
@@ -413,6 +414,8 @@ const ClientWizard = () => {
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
   const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
+  const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
+  const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
   const hasValidationIssue = currentItem?.files.some(f => f.validationStatus === 'warning' || f.validationStatus === 'failed') ?? false;
@@ -1330,6 +1333,70 @@ const ClientWizard = () => {
                     </div>
                   )}
                 </div>
+              ) : isBankStatements && !currentItemHasOpenCorrection ? (
+                <div className="space-y-4">
+                  <PlaidBankConnect
+                    caseId={caseData.id}
+                    clientName={caseData.clientName}
+                    checklistItemId={currentItem.id}
+                    onSuccess={(plaidResult) => {
+                      // Update local state with plaid files
+                      const updated = updateCase(caseData.id, c => {
+                        const item = c.checklist.find(ci => ci.id === currentItem.id);
+                        if (item) {
+                          item.completed = true;
+                          // Add placeholder files to local state
+                          for (const acct of plaidResult.accounts) {
+                            for (let m = 0; m < 6; m++) {
+                              const d = new Date();
+                              d.setMonth(d.getMonth() - m);
+                              const monthName = d.toLocaleString('default', { month: 'long' });
+                              const year = d.getFullYear();
+                              item.files.push({
+                                id: Math.random().toString(36).substr(2, 9),
+                                name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
+                                dataUrl: '',
+                                uploadedAt: new Date().toISOString(),
+                                reviewStatus: 'pending',
+                                uploadedBy: 'plaid',
+                              });
+                            }
+                          }
+                        }
+                        c.lastClientActivity = new Date().toISOString();
+                        return c;
+                      });
+                      if (updated) setCaseData(updated);
+                    }}
+                    onManualUploadClick={() => {}}
+                    manualUploadContent={
+                      multiConfig ? (
+                        <MultiUploadZone
+                          files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
+                          config={multiConfig}
+                          onFileAdd={(file: File) => {
+                            const existing = currentItem.files.find(f => f.name === file.name);
+                            if (existing) {
+                              setPendingDuplicate({ file, existingFileId: existing.id });
+                            } else {
+                              handleFileAdd(file);
+                            }
+                          }}
+                          onFileDelete={handleFileDelete}
+                          onFilePreview={(f) => setPreviewFile({ name: f.name, dataUrl: f.dataUrl })}
+                        />
+                      ) : null
+                    }
+                  />
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    <button
+                      onClick={() => setShowNaFlow(true)}
+                      className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
+                    >
+                      I don't have this document
+                    </button>
+                  </div>
+                </div>
               ) : isMultiUpload && multiConfig ? (
                 <div className="space-y-4">
                   {currentItemHasOpenCorrection && currentItem.correctionRequest && (
@@ -1583,6 +1650,21 @@ const ClientWizard = () => {
                 size="lg"
                 className="w-full"
                 disabled={employmentStatus !== 'self-employed' && employmentStatus !== 'not-employed' && !employerName.trim()}
+              >
+                Continue →
+              </Button>
+            ) : isBankStatements && !currentItemHasOpenCorrection ? (
+              <Button
+                onClick={() => {
+                  if (currentItem.completed || isPlaidConnected) {
+                    checkMilestoneAndAdvance(caseData);
+                  } else {
+                    handleContinueMultiUpload();
+                  }
+                }}
+                size="lg"
+                className="w-full"
+                disabled={!currentItem.completed && currentItem.files.length === 0 && currentItem.required}
               >
                 Continue →
               </Button>

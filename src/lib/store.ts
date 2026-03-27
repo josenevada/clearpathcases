@@ -33,7 +33,7 @@ export interface UploadedFile {
   uploadedAt: string;
   reviewStatus: FileReviewStatus;
   reviewNote?: string;
-  uploadedBy: 'client' | 'paralegal';
+  uploadedBy: 'client' | 'paralegal' | 'plaid';
   validationStatus?: FileValidationStatus;
   validationResult?: FileValidationResult;
   manuallyReviewed?: boolean;

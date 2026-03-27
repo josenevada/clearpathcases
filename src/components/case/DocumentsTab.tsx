@@ -557,7 +557,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                      {file.uploadedBy === 'plaid' && (
+                        <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] px-1.5 py-0">Plaid</Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">{format(new Date(file.uploadedAt), 'MMM d, yyyy')}</p>
                   </div>
                 </div>
@@ -722,8 +727,19 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Uploaded by</span>
-                    <span className="text-foreground capitalize">{selectedFile.file.uploadedBy}</span>
+                    <span className="text-foreground capitalize flex items-center gap-1.5">
+                      {selectedFile.file.uploadedBy}
+                      {selectedFile.file.uploadedBy === 'plaid' && (
+                        <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] px-1.5 py-0">Plaid</Badge>
+                      )}
+                    </span>
                   </div>
+                  {selectedFile.file.uploadedBy === 'plaid' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Source</span>
+                      <span className="text-foreground text-xs">Plaid — automatically retrieved</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm items-center">
                     <span className="text-muted-foreground">Status</span>
                     <Badge className={`${getStatusBadgeClass(selectedFile.file.reviewStatus)} text-xs`}>
