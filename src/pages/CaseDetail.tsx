@@ -2,11 +2,28 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import DocumentsTab from '@/components/case/DocumentsTab';
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
@@ -17,6 +34,7 @@ import { useAuth } from '@/lib/auth';
 import {
   getCase,
   updateCase,
+  deleteCase,
   addActivityEntry,
   calculateProgress,
   isItemEffectivelyComplete,
@@ -27,6 +45,7 @@ import {
   type FileReviewStatus,
 } from '@/lib/store';
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
