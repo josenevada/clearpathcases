@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare, ThumbsUp, ThumbsDown, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -21,6 +22,8 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import DocumentViewer from '@/components/case/DocumentViewer';
+import { useSubscription } from '@/lib/subscription';
+import { getPlanLimits } from '@/lib/plan-limits';
 
 type ViewRole = 'paralegal' | 'attorney';
 
