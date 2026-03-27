@@ -176,6 +176,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         assigned_paralegal: info.assignedParalegal,
         assigned_attorney: info.assignedAttorney,
         case_code: caseCode,
+        court_case_number: info.courtCaseNumber || null,
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
