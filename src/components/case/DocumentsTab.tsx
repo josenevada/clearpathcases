@@ -61,6 +61,8 @@ const CATEGORY_SHORT: Record<string, string> = {
 const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong document type'];
 
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
+  const { plan } = useSubscription();
+  const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
