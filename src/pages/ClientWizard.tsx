@@ -1346,11 +1346,19 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
-                  {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
-                    <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 mx-auto block">
-                      Skip this item
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
+                      <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                        Skip this item
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNaFlow(true)}
+                      className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
+                    >
+                      I don't have this document
                     </button>
-                  )}
+                  </div>
                 </div>
               ) : currentItemHasOpenCorrection ? (
                 <div className="space-y-4">
