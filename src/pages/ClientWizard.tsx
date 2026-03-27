@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,8 @@ import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUpl
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
+import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
@@ -69,6 +71,9 @@ const ClientWizard = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMilestoneRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
+  const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
   const targetFixItemId = searchParams.get('fix');
 
   useEffect(() => {
@@ -1147,6 +1152,15 @@ const ClientWizard = () => {
                 )}
                </AnimatePresence>
 
+              {/* Document retrieval links */}
+              {!isCheckpointItem && !isTextEntry && (
+                <DocumentRetrievalLinks
+                  itemLabel={currentItem.label}
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                />
+              )}
+
               {/* Contextual document help panel */}
               {!isCheckpointItem && !isTextEntry && (
                 <DocumentHelpPanel
@@ -1377,7 +1391,7 @@ const ClientWizard = () => {
                   {renderDuplicateWarning()}
                   <div
                     className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => isMobile ? setShowMobileUploadOptions(true) : fileInputRef.current?.click()}
                   >
                     <UploadCloud className="w-12 h-12 text-primary mb-4" />
                     <span className="text-foreground font-medium">Tap to upload or drag file</span>
@@ -1386,10 +1400,23 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                      onChange={handleSingleFileUpload}
+                    />
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png"
+                      capture="environment"
                       onChange={handleSingleFileUpload}
                     />
                   </div>
+                  {isMobile && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      You can photograph physical documents directly with your camera.
+                    </p>
+                  )}
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
                 <div className="space-y-2">
@@ -1421,7 +1448,7 @@ const ClientWizard = () => {
                     >
                       Replace
                     </button>
-                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
+                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleSingleFileUpload} />
                   </div>
                   {/* Validation status indicator */}
                   {currentItem.files.map(file => (
@@ -1469,7 +1496,7 @@ const ClientWizard = () => {
                   {renderDuplicateWarning()}
                   <div
                     className="upload-zone p-12 flex flex-col items-center justify-center cursor-pointer relative"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => isMobile ? setShowMobileUploadOptions(true) : fileInputRef.current?.click()}
                   >
                     <UploadCloud className="w-12 h-12 text-primary mb-4" />
                     <span className="text-foreground font-medium">Tap to upload or drag file</span>
@@ -1478,10 +1505,23 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                      onChange={handleSingleFileUpload}
+                    />
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png"
+                      capture="environment"
                       onChange={handleSingleFileUpload}
                     />
                   </div>
+                  {isMobile && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      You can photograph physical documents directly with your camera.
+                    </p>
+                  )}
                   <div className="flex flex-col items-center gap-1 mt-1">
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -1573,6 +1613,55 @@ const ClientWizard = () => {
           </div>
         </div>
       )}
+      {/* Mobile upload action sheet */}
+      <AnimatePresence>
+        {showMobileUploadOptions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center"
+            onClick={() => setShowMobileUploadOptions(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-background rounded-t-2xl p-4 pb-8 space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
+              <button
+                onClick={() => {
+                  setShowMobileUploadOptions(false);
+                  cameraInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              >
+                <Camera className="w-5 h-5 text-primary" />
+                <span className="text-foreground font-medium">Take a Photo</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowMobileUploadOptions(false);
+                  fileInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              >
+                <UploadCloud className="w-5 h-5 text-primary" />
+                <span className="text-foreground font-medium">Choose from Library</span>
+              </button>
+              <button
+                onClick={() => setShowMobileUploadOptions(false)}
+                className="w-full p-3 text-center text-muted-foreground text-sm"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Fullscreen preview modal */}
       <AnimatePresence>
         {previewFile && (
