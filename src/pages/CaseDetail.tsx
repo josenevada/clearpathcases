@@ -986,6 +986,34 @@ const CaseDetail = () => {
         onUpdated={setCaseData}
         actorName={user?.fullName || 'Staff'}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={open => { if (!open) { setShowDeleteDialog(false); setDeleteConfirmName(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this case?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>All documents, activity history, and client data will be permanently deleted. This cannot be undone.</p>
+              <p className="font-medium text-foreground">Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{caseData.clientName}</span> to confirm deletion.</p>
+              <Input
+                value={deleteConfirmName}
+                onChange={e => setDeleteConfirmName(e.target.value)}
+                placeholder="Type client name..."
+                className="mt-2"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCase}
+              disabled={deleteConfirmName !== caseData.clientName || isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Case'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
