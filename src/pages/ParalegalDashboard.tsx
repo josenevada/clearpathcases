@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare, Search, X } from 'lucide-react';
+import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
