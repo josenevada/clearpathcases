@@ -787,15 +787,70 @@ const CaseDetail = () => {
                                         )}
 
                                         {viewRole === 'paralegal' && (
-                                          <div className="flex items-center gap-3">
-                                            <Button
-                                              variant={item.flaggedForAttorney ? 'warning' : 'outline'}
-                                              size="sm"
-                                              onClick={() => handleFlag(item)}
-                                            >
-                                              <Flag className="w-3 h-3 mr-1" />
-                                              {item.flaggedForAttorney ? 'Remove Flag' : 'Flag for Attorney'}
-                                            </Button>
+                                          <div className="space-y-3">
+                                            {item.notApplicable && (
+                                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Ban className="w-4 h-4" />
+                                                <span>Marked N/A{item.notApplicableReason ? ` — ${item.notApplicableReason}` : ''}</span>
+                                                {item.notApplicableMarkedBy && (
+                                                  <span className="text-xs">by {item.notApplicableMarkedBy}</span>
+                                                )}
+                                              </div>
+                                            )}
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                              <Button
+                                                variant={item.flaggedForAttorney ? 'warning' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handleFlag(item)}
+                                              >
+                                                <Flag className="w-3 h-3 mr-1" />
+                                                {item.flaggedForAttorney ? 'Remove Flag' : 'Flag for Attorney'}
+                                              </Button>
+                                              {!item.notApplicable && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => { setNaTarget(item.id); setNaReason(''); setNaCustomReason(''); }}
+                                                  className="text-muted-foreground"
+                                                >
+                                                  <Ban className="w-3 h-3 mr-1" /> Mark as Not Applicable
+                                                </Button>
+                                              )}
+                                            </div>
+
+                                            {naTarget === item.id && (
+                                              <div className="rounded-xl border border-border bg-secondary/50 p-4 space-y-3">
+                                                <p className="text-sm font-semibold text-foreground">Reason for N/A</p>
+                                                <Select value={naReason} onValueChange={setNaReason}>
+                                                  <SelectTrigger className="bg-background">
+                                                    <SelectValue placeholder="Select a reason..." />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {NA_REASONS.map(r => (
+                                                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                                {naReason === 'Other' && (
+                                                  <Input
+                                                    value={naCustomReason}
+                                                    onChange={e => setNaCustomReason(e.target.value)}
+                                                    placeholder="Describe why this doesn't apply..."
+                                                    className="bg-background"
+                                                  />
+                                                )}
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    size="sm"
+                                                    onClick={() => handleMarkNotApplicable(item)}
+                                                    disabled={!naReason || (naReason === 'Other' && !naCustomReason.trim())}
+                                                  >
+                                                    Save
+                                                  </Button>
+                                                  <Button variant="ghost" size="sm" onClick={() => setNaTarget(null)}>Cancel</Button>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         )}
                                       </div>
