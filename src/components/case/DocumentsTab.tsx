@@ -725,7 +725,11 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                           {selectedFile.file.validationResult.validationStatus === 'failed' && <ShieldAlert className="w-3.5 h-3.5 text-destructive" />}
                           AI Validation
                         </p>
-                        <span className="text-[10px] text-muted-foreground">{Math.round(selectedFile.file.validationResult.confidenceScore * 100)}% confidence</span>
+                        {selectedFile.file.manuallyReviewed ? (
+                          <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">Manually Reviewed</Badge>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">{Math.round(selectedFile.file.validationResult.confidenceScore * 100)}% confidence</span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">{selectedFile.file.validationResult.validatorNotes}</p>
                       <div className="grid grid-cols-2 gap-1 text-[10px]">
@@ -733,6 +737,122 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                         {selectedFile.file.validationResult.extractedInstitution && <div><span className="text-muted-foreground">Institution:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedInstitution}</span></div>}
                         {selectedFile.file.validationResult.extractedName && <div><span className="text-muted-foreground">Name:</span> <span className="text-foreground">{selectedFile.file.validationResult.extractedName}</span></div>}
                       </div>
+
+                      {/* Paralegal feedback on AI validation */}
+                      {!selectedFile.file.manuallyReviewed && feedbackMode === 'idle' && (
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                          <span className="text-[11px] text-muted-foreground">Was this AI result correct?</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-[10px] border-primary/30 text-primary hover:bg-primary/10"
+                            onClick={async () => {
+                              setFeedbackMode('confirmed');
+                              setFeedbackSubmitting(true);
+                              try {
+                                await supabase.from('document_validation_feedback').insert({
+                                  file_id: selectedFile.file.id,
+                                  case_id: caseData.id,
+                                  expected_document_type: selectedFile.item.label,
+                                  ai_result: selectedFile.file.validationResult!.validationStatus,
+                                  paralegal_feedback: 'confirmed_correct',
+                                  paralegal_id: caseData.assignedParalegal || 'unknown',
+                                });
+                                updateCase(caseData.id, c => {
+                                  const item = c.checklist.find(i => i.id === selectedFile.item.id);
+                                  const f = item?.files.find(ff => ff.id === selectedFile.file.id);
+                                  if (f) f.manuallyReviewed = true;
+                                  return c;
+                                });
+                                onRefresh();
+                              } catch { /* silent */ }
+                              setFeedbackSubmitting(false);
+                            }}
+                            disabled={feedbackSubmitting}
+                          >
+                            <ThumbsUp className="w-3 h-3 mr-1" /> Yes — correct
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-[10px] border-border text-muted-foreground hover:bg-secondary"
+                            onClick={() => setFeedbackMode('form')}
+                          >
+                            <ThumbsDown className="w-3 h-3 mr-1" /> No — wrong detection
+                          </Button>
+                        </div>
+                      )}
+
+                      {feedbackMode === 'confirmed' && (
+                        <p className="text-[11px] text-success pt-1">Thanks — your feedback helps improve accuracy.</p>
+                      )}
+
+                      {feedbackMode === 'form' && (
+                        <div className="space-y-2 pt-2 border-t border-border/50">
+                          <label className="text-[11px] text-muted-foreground font-medium">What is this document actually?</label>
+                          <Select value={feedbackDocType} onValueChange={setFeedbackDocType}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select document type..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['Pay Stub', 'W-2', 'Bank Statement', 'Tax Return', 'Credit Card Statement', 'Government ID', 'Mortgage Statement', 'Other'].map(dt => (
+                                <SelectItem key={dt} value={dt} className="text-xs">{dt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div>
+                            <label className="text-[11px] text-muted-foreground font-medium">Any additional notes — optional</label>
+                            <Input
+                              value={feedbackNotes}
+                              onChange={e => setFeedbackNotes(e.target.value)}
+                              placeholder="e.g. This is actually a 1099..."
+                              className="h-8 text-xs mt-1 bg-input border-border rounded-[10px]"
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs w-full"
+                            disabled={!feedbackDocType || feedbackSubmitting}
+                            onClick={async () => {
+                              setFeedbackSubmitting(true);
+                              try {
+                                await supabase.from('document_validation_feedback').insert({
+                                  file_id: selectedFile.file.id,
+                                  case_id: caseData.id,
+                                  expected_document_type: selectedFile.item.label,
+                                  ai_result: selectedFile.file.validationResult!.validationStatus,
+                                  paralegal_feedback: 'wrong_detection',
+                                  correct_document_type: feedbackDocType,
+                                  additional_notes: feedbackNotes || null,
+                                  paralegal_id: caseData.assignedParalegal || 'unknown',
+                                });
+                                updateCase(caseData.id, c => {
+                                  const item = c.checklist.find(i => i.id === selectedFile.item.id);
+                                  const f = item?.files.find(ff => ff.id === selectedFile.file.id);
+                                  if (f) f.manuallyReviewed = true;
+                                  return c;
+                                });
+                                addActivityEntry(caseData.id, {
+                                  eventType: 'document_validated',
+                                  actorRole: 'paralegal',
+                                  actorName: caseData.assignedParalegal || 'Paralegal',
+                                  description: `Corrected AI detection on ${selectedFile.item.label} — actual type: ${feedbackDocType}`,
+                                  itemId: selectedFile.item.id,
+                                });
+                                setFeedbackMode('submitted');
+                                onRefresh();
+                              } catch { /* silent */ }
+                              setFeedbackSubmitting(false);
+                            }}
+                          >
+                            Submit Feedback
+                          </Button>
+                        </div>
+                      )}
+
+                      {feedbackMode === 'submitted' && (
+                        <p className="text-[11px] text-success pt-1">Thanks — your feedback helps improve accuracy.</p>
+                      )}
                     </div>
                   )}
                 </div>
