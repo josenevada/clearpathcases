@@ -12,7 +12,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 
-const STEPS = ['Create Account', 'Your Practice', 'First Case', 'Invite Your Team', 'All Set'];
+import OnboardingChecklistConfig from '@/components/onboarding/OnboardingChecklistConfig';
+
+const STEPS = ['Create Account', 'Your Practice', 'Configure Checklist', 'First Case', 'Invite Your Team', 'All Set'];
 
 const Signup = () => {
   const navigate = useNavigate();
