@@ -418,6 +418,45 @@ export type Database = {
           },
         ]
       }
+      document_validation_feedback: {
+        Row: {
+          additional_notes: string | null
+          ai_result: string
+          case_id: string
+          correct_document_type: string | null
+          created_at: string | null
+          expected_document_type: string
+          file_id: string
+          id: string
+          paralegal_feedback: string
+          paralegal_id: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          ai_result: string
+          case_id: string
+          correct_document_type?: string | null
+          created_at?: string | null
+          expected_document_type: string
+          file_id: string
+          id?: string
+          paralegal_feedback: string
+          paralegal_id?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          ai_result?: string
+          case_id?: string
+          correct_document_type?: string | null
+          created_at?: string | null
+          expected_document_type?: string
+          file_id?: string
+          id?: string
+          paralegal_feedback?: string
+          paralegal_id?: string | null
+        }
+        Relationships: []
+      }
       files: {
         Row: {
           case_id: string
