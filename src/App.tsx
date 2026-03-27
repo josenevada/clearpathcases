@@ -20,6 +20,7 @@ import CaseDetail from "./pages/CaseDetail";
 import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Security from "./pages/Security";
+import Privacy from "./pages/Privacy";
 import InviteSignup from "./pages/InviteSignup";
 import NotFound from "./pages/NotFound";
 
@@ -64,6 +65,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<MarketingLanding />} />
                 <Route path="/security" element={<Security />} />
+                <Route path="/privacy" element={<Privacy />} />
                 <Route path="/portal" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />

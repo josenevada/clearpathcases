@@ -602,7 +602,7 @@ const MarketingLanding = () => {
             <span className="text-sm text-muted-foreground font-body">Bankruptcy document intake, simplified.</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground">Privacy Policy</a>
+            <a href="/privacy" className="hover:text-foreground">Privacy Policy</a>
             <a href="#" className="hover:text-foreground">Terms of Service</a>
             <a href="/security" className="hover:text-foreground">Security</a>
             <a href="/login" className="hover:text-foreground">Sign In</a>
