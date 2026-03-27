@@ -175,7 +175,7 @@ const ParalegalDashboard = () => {
               <CaseRow key={caseRecord.id} caseData={caseRecord} index={index} onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)} />
             ))}
 
-            {completedCases.length > 0 && (
+            {filteredCompleted.length > 0 && (
               <div className="mt-8">
                 <button
                   onClick={() => setShowCompleted(!showCompleted)}
@@ -183,11 +183,11 @@ const ParalegalDashboard = () => {
                 >
                   <ChevronDown className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-0' : '-rotate-90'}`} />
                   Completed Cases
-                  <Badge variant="secondary" className="ml-1 text-xs">{completedCases.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">{filteredCompleted.length}</Badge>
                 </button>
                 {showCompleted && (
                   <div className="mt-2 space-y-2 opacity-60">
-                    {completedCases.map((caseRecord) => (
+                    {filteredCompleted.map((caseRecord) => (
                       <motion.div
                         key={caseRecord.id}
                         initial={{ opacity: 0 }}
