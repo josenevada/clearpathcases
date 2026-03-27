@@ -16,13 +16,6 @@ import { UserPlus, Trash2, Send, RotateCw, XCircle } from 'lucide-react';
 import UpgradeModal from '@/components/UpgradeModal';
 import { getPlanLimits } from '@/lib/plan-limits';
 
-const PLAN_USER_LIMITS: Record<string, number> = {
-  solo: 1,
-  starter: 2,
-  professional: 10,
-  firm: Infinity,
-};
-
 interface TeamMember {
   id: string;
   full_name: string;
