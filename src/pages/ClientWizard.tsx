@@ -1653,6 +1653,21 @@ const ClientWizard = () => {
               >
                 Continue →
               </Button>
+            ) : isBankStatements && !currentItemHasOpenCorrection ? (
+              <Button
+                onClick={() => {
+                  if (currentItem.completed || isPlaidConnected) {
+                    checkMilestoneAndAdvance(caseData);
+                  } else {
+                    handleContinueMultiUpload();
+                  }
+                }}
+                size="lg"
+                className="w-full"
+                disabled={!currentItem.completed && currentItem.files.length === 0 && currentItem.required}
+              >
+                Continue →
+              </Button>
             ) : isMultiUpload ? (
               <Button
                 onClick={handleContinueMultiUpload}
