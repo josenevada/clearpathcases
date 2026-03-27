@@ -11,6 +11,8 @@ import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
 import BillingTab from '@/components/settings/BillingTab';
 import TeamTab from '@/components/settings/TeamTab';
 import DataRetentionTab from '@/components/settings/DataRetentionTab';
+import SupportTab from '@/components/settings/SupportTab';
+import WhiteLabelTab from '@/components/settings/WhiteLabelTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
@@ -75,6 +77,8 @@ const FirmSettings = () => {
               <TabsTrigger value="billing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Billing</TabsTrigger>
               <TabsTrigger value="team" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Team</TabsTrigger>
               <TabsTrigger value="retention" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Data Retention</TabsTrigger>
+              <TabsTrigger value="support" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Support</TabsTrigger>
+              <TabsTrigger value="whitelabel" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">White Label</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><FirmProfileTab /></TabsContent>
             <TabsContent value="templates"><DocumentTemplatesTab /></TabsContent>
@@ -126,6 +130,8 @@ const FirmSettings = () => {
             <TabsContent value="billing"><BillingTab /></TabsContent>
             <TabsContent value="team"><TeamTab /></TabsContent>
             <TabsContent value="retention"><DataRetentionTab /></TabsContent>
+            <TabsContent value="support"><SupportTab /></TabsContent>
+            <TabsContent value="whitelabel"><WhiteLabelTab /></TabsContent>
           </Tabs>
         </motion.div>
       </main>
