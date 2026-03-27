@@ -35,6 +35,7 @@ interface BasicInfo {
   clientEmail: string;
   clientPhone: string;
   clientDob: string;
+  courtCaseNumber: string;
   chapterType: ChapterType;
   filingDeadline: Date | undefined;
   assignedParalegal: string;
@@ -60,6 +61,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     clientEmail: '',
     clientPhone: '',
     clientDob: '',
+    courtCaseNumber: '',
     chapterType: '7',
     filingDeadline: undefined,
     assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
@@ -111,7 +113,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const resetAndClose = () => {
     setStep(1);
     setInfo({
-      clientName: '', clientEmail: '', clientPhone: '', clientDob: '',
+      clientName: '', clientEmail: '', clientPhone: '', clientDob: '', courtCaseNumber: '',
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
       assignedAttorney: firmSettings.defaultAttorney || 'David Park',
