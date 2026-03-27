@@ -1,12 +1,14 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldAlert, ShieldCheck, ExternalLink, Trash2, CheckSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -64,8 +66,11 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [correctionNote, setCorrectionNote] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Bulk selection state
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // AI validation feedback state
+  const [feedbackMode, setFeedbackMode] = useState<'idle' | 'confirmed' | 'form' | 'submitted'>('idle');
+  const [feedbackDocType, setFeedbackDocType] = useState('');
+  const [feedbackNotes, setFeedbackNotes] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [showBulkCorrection, setShowBulkCorrection] = useState(false);
   const [bulkCorrectionNote, setBulkCorrectionNote] = useState('');
 
