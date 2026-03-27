@@ -568,15 +568,21 @@ const CaseDetail = () => {
                                   onClick={() => setExpandedItem(isExpanded ? null : item.id)}
                                   className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[hsl(var(--surface-hover))]"
                                 >
-                                  {item.completed ? (
+                                  {item.notApplicable ? (
+                                    <Ban className="w-5 h-5 flex-shrink-0 text-muted-foreground" />
+                                  ) : item.completed ? (
                                     <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${status.tone === 'warning' ? 'text-warning' : 'text-success'}`} />
                                   ) : (
                                     <div className="w-5 h-5 flex-shrink-0 rounded-full border-2 border-muted-foreground/30" />
                                   )}
-                                  <span className="flex-1 text-sm text-foreground">{item.label}</span>
-                                  <span className={`text-xs ${status.colorClass}`}>{status.label}</span>
+                                  <span className={`flex-1 text-sm ${item.notApplicable ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{item.label}</span>
+                                  {item.notApplicable ? (
+                                    <Badge className="bg-muted text-muted-foreground border-border text-[10px]">N/A</Badge>
+                                  ) : (
+                                    <span className={`text-xs ${status.colorClass}`}>{status.label}</span>
+                                  )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
-                                  {!item.required && <span className="text-[10px] text-muted-foreground">Optional</span>}
+                                  {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}
                                 </button>
 
                                 <AnimatePresence>
