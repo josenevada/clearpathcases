@@ -475,6 +475,11 @@ export const updateCase = (id: string, updater: (c: Case) => Case): Case | undef
   return updated;
 };
 
+export const deleteCase = (id: string): void => {
+  const cases = getAllCases().filter(c => c.id !== id);
+  saveCases(cases);
+};
+
 export const addActivityEntry = (caseId: string, entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>): void => {
   updateCase(caseId, c => ({
     ...c,
