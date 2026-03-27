@@ -1152,6 +1152,15 @@ const ClientWizard = () => {
                 )}
                </AnimatePresence>
 
+              {/* Document retrieval links */}
+              {!isCheckpointItem && !isTextEntry && (
+                <DocumentRetrievalLinks
+                  itemLabel={currentItem.label}
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                />
+              )}
+
               {/* Contextual document help panel */}
               {!isCheckpointItem && !isTextEntry && (
                 <DocumentHelpPanel
