@@ -1448,7 +1448,7 @@ const ClientWizard = () => {
                     >
                       Replace
                     </button>
-                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleSingleFileUpload} />
+                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleSingleFileUpload} />
                   </div>
                   {/* Validation status indicator */}
                   {currentItem.files.map(file => (
