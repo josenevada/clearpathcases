@@ -1613,6 +1613,55 @@ const ClientWizard = () => {
           </div>
         </div>
       )}
+      {/* Mobile upload action sheet */}
+      <AnimatePresence>
+        {showMobileUploadOptions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center"
+            onClick={() => setShowMobileUploadOptions(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-background rounded-t-2xl p-4 pb-8 space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
+              <button
+                onClick={() => {
+                  setShowMobileUploadOptions(false);
+                  cameraInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              >
+                <Camera className="w-5 h-5 text-primary" />
+                <span className="text-foreground font-medium">Take a Photo</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowMobileUploadOptions(false);
+                  fileInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              >
+                <UploadCloud className="w-5 h-5 text-primary" />
+                <span className="text-foreground font-medium">Choose from Library</span>
+              </button>
+              <button
+                onClick={() => setShowMobileUploadOptions(false)}
+                className="w-full p-3 text-center text-muted-foreground text-sm"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Fullscreen preview modal */}
       <AnimatePresence>
         {previewFile && (
