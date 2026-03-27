@@ -1,12 +1,13 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, X, AlertTriangle, Loader2, Camera } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { UploadedFile } from '@/lib/store';
 
 interface MultiUploadConfig {
-  singularLabel: string; // e.g. "pay stub"
-  pluralLabel: string;   // e.g. "pay stubs"
-  helperText: string;    // guidance text above upload zone
+  singularLabel: string;
+  pluralLabel: string;
+  helperText: string;
   minRecommended: number;
   confirmationMessage: (count: number) => string;
 }
@@ -21,7 +22,10 @@ interface MultiUploadZoneProps {
 
 const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview }: MultiUploadZoneProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadZoneRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [showMobileOptions, setShowMobileOptions] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,6 +36,14 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
   const handleRemoveAndRetry = (fileId: string) => {
     onFileDelete(fileId);
     setTimeout(() => uploadZoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  };
+
+  const handleUploadZoneClick = () => {
+    if (isMobile) {
+      setShowMobileOptions(true);
+    } else {
+      fileInputRef.current?.click();
+    }
   };
 
   const hasFiles = files.length > 0;
@@ -65,7 +77,6 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
               className="space-y-0"
             >
               <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-[hsl(var(--surface-card))] border border-[hsl(var(--surface-border))]">
-                {/* Thumbnail */}
                 {f.dataUrl?.startsWith('data:image') ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); onFilePreview?.(f); }}
@@ -125,7 +136,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
       <div
         ref={uploadZoneRef}
         className="upload-zone p-8 flex flex-col items-center justify-center cursor-pointer relative"
-        onClick={() => fileInputRef.current?.click()}
+        onClick={handleUploadZoneClick}
       >
         <UploadCloud className="w-10 h-10 text-primary mb-3" />
         <span className="text-foreground font-medium text-sm">
@@ -138,10 +149,75 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.jpg,.jpeg,.png"
+          accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+          onChange={handleChange}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          className="hidden"
+          accept="image/jpeg,image/png"
+          capture="environment"
           onChange={handleChange}
         />
       </div>
+
+      {/* Mobile helper text */}
+      {isMobile && (
+        <p className="text-xs text-muted-foreground text-center">
+          You can photograph physical documents directly with your camera.
+        </p>
+      )}
+
+      {/* Mobile action sheet */}
+      <AnimatePresence>
+        {showMobileOptions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center"
+            onClick={() => setShowMobileOptions(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-background rounded-t-2xl p-4 pb-8 space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
+              <button
+                onClick={() => {
+                  setShowMobileOptions(false);
+                  cameraInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              >
+                <Camera className="w-5 h-5 text-primary" />
+                <span className="text-foreground font-medium">Take a Photo</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowMobileOptions(false);
+                  fileInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              >
+                <UploadCloud className="w-5 h-5 text-primary" />
+                <span className="text-foreground font-medium">Choose from Library</span>
+              </button>
+              <button
+                onClick={() => setShowMobileOptions(false)}
+                className="w-full p-3 text-center text-muted-foreground text-sm"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
