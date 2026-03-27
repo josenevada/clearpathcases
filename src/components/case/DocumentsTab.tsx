@@ -447,7 +447,21 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
             </div>
           )}
           {!bulkMode && (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              {!bulkActionsEnabled && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs text-muted-foreground font-body flex items-center gap-1 cursor-default">
+                        <Lock className="w-3 h-3" /> Bulk actions
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Available on Professional</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <Button onClick={() => handleExportCheck('zip')}>
                 <Download className="w-4 h-4 mr-1" /> Download ZIP
               </Button>
