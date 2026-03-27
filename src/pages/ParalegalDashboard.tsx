@@ -17,18 +17,33 @@ import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
 import { useSubscription } from '@/lib/subscription';
+import { getPlanLimits } from '@/lib/plan-limits';
 import { sendSmartReminder } from '@/lib/notifications';
 import { toast } from 'sonner';
+import PlanBadge from '@/components/PlanBadge';
+import UpgradeModal from '@/components/UpgradeModal';
 
 const ParalegalDashboard = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, signOut } = useAuth();
-  const { subscribed, status, daysLeft, loading: subLoading, refresh } = useSubscription();
+  const { subscribed, status, daysLeft, plan, loading: subLoading, refresh } = useSubscription();
   const [cases, setCases] = useState<Case[]>([]);
   const [showNewCase, setShowNewCase] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const planLimits = getPlanLimits(plan);
+  const activeCaseCount = cases.filter(c => c.status !== 'filed' && c.status !== 'closed').length;
+
+  const handleNewCase = () => {
+    if (planLimits.activeCases !== Infinity && activeCaseCount >= planLimits.activeCases) {
+      setShowUpgrade(true);
+    } else {
+      setShowNewCase(true);
+    }
+  };
 
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
@@ -111,6 +126,7 @@ const ParalegalDashboard = () => {
           <span className="hidden text-sm text-muted-foreground font-body sm:block">
             {isAdminViewing ? 'Admin View (Read-Only)' : `${displayRole} Dashboard`}
           </span>
+          <PlanBadge />
         </div>
         <div className="flex items-center gap-4">
           <span className="hidden text-sm text-muted-foreground md:block">
@@ -124,7 +140,7 @@ const ParalegalDashboard = () => {
             <Settings className="w-4 h-4" />
           </Button>
           {!isAdminViewing && (
-            <Button onClick={() => setShowNewCase(true)}>
+            <Button onClick={handleNewCase}>
               <Plus className="w-4 h-4 mr-1" /> New Case
             </Button>
           )}
@@ -164,7 +180,7 @@ const ParalegalDashboard = () => {
             <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
             <p className="mb-6 text-sm text-muted-foreground font-body">Create your first case to get started.</p>
             {!isAdminViewing && (
-              <Button size="lg" onClick={() => setShowNewCase(true)}>
+              <Button size="lg" onClick={handleNewCase}>
                 <Plus className="w-4 h-4 mr-1" /> New Case
               </Button>
             )}
@@ -225,6 +241,12 @@ const ParalegalDashboard = () => {
       </main>
 
       <NewCaseModal open={showNewCase} onOpenChange={setShowNewCase} onCreated={() => setCases(getAllCases())} />
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        featureName={`Active Case Limit Reached`}
+        description={`You have reached the ${getPlanLimits(plan).activeCases === 3 ? 'Solo' : 'Starter'} plan limit of ${getPlanLimits(plan).activeCases} active cases. Upgrade to ${getPlanLimits(plan).activeCases === 3 ? 'Starter' : 'Professional'} to add more.`}
+      />
     </div>
   );
 };
