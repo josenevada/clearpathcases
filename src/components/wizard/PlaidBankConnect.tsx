@@ -169,7 +169,6 @@ const PlaidBankConnect = ({
           <button
             onClick={handleDisconnect}
             className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-            disabled={state === 'disconnecting'}
           >
             Disconnect Bank
           </button>
