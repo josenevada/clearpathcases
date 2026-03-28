@@ -4,6 +4,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
+  Building, Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -640,6 +641,57 @@ const MarketingLanding = () => {
           </div>
         </div>
       </section>
+
+      <SectionDivider />
+
+      {/* Wizard Section */}
+      {(() => {
+        const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
+        return (
+          <section className="px-6 py-16 max-w-5xl mx-auto">
+            <div ref={wizRef} className="text-center mb-12" style={revealStyle(wizVisible)}>
+              <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
+                Clients upload everything.<br />
+                <span className="text-primary">Without a single email from you.</span>
+              </h2>
+              <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
+                ClearPath sends your client a secure link. They follow a guided step-by-step<br className="hidden sm:block" />
+                wizard — one document at a time, on any device, with plain English instructions.<br className="hidden sm:block" />
+                No account required. No confusion. No chasing.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients are guided through each document with plain English instructions, mobile camera capture, and a "Why do we need this?" explanation for every step. Completion rates are dramatically higher than email checklists.' },
+                { icon: Building, title: 'Bank statements in seconds', desc: 'Clients connect their bank directly via Plaid — no downloading, no scanning, no uploading. Statements arrive instantly and are automatically validated. Available on Professional and Firm plans.' },
+                { icon: Shield, title: 'Wrong documents rejected instantly', desc: 'Every upload is reviewed by AI the moment it arrives. Blurry photo, wrong year, wrong document type — the client is notified immediately and guided to fix it before it ever reaches your review queue.' },
+              ].map((c, i) => (
+                <div
+                  key={c.title}
+                  className="p-7 rounded-xl transition-all duration-200"
+                  style={{
+                    background: '#111f2e',
+                    border: '0.5px solid rgba(255,255,255,0.08)',
+                    ...revealStyle(wizVisible, { delay: 0.1 + i * 0.08, y: 16 }),
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,194,168,0.25)';
+                    (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
+                    (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                  }}
+                >
+                  <c.icon className="w-7 h-7 text-primary mb-4" />
+                  <h3 className="font-body font-semibold text-[17px] text-foreground mb-2">{c.title}</h3>
+                  <p className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{c.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       <SectionDivider />
 
