@@ -335,6 +335,22 @@ const Packets = () => {
           )}
         </motion.div>
       </main>
+
+      {/* Batch export confirmation */}
+      <AlertDialog open={showBatchConfirm} onOpenChange={setShowBatchConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export packets for {readyCases.length} ready case{readyCases.length !== 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will generate and download a ZIP file containing {readyCases.length} court packet{readyCases.length !== 1 ? 's' : ''}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchExport}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
