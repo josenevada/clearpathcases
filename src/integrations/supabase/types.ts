@@ -102,10 +102,12 @@ export type Database = {
           closed_at: string | null
           court_case_number: string | null
           created_at: string | null
+          district: string | null
           filing_deadline: string
           firm_id: string | null
           id: string
           last_client_activity: string | null
+          meeting_date: string | null
           ready_to_file: boolean | null
           retention_delete_scheduled_at: string | null
           retention_notified_at: string | null
@@ -127,10 +129,12 @@ export type Database = {
           closed_at?: string | null
           court_case_number?: string | null
           created_at?: string | null
+          district?: string | null
           filing_deadline: string
           firm_id?: string | null
           id?: string
           last_client_activity?: string | null
+          meeting_date?: string | null
           ready_to_file?: boolean | null
           retention_delete_scheduled_at?: string | null
           retention_notified_at?: string | null
@@ -152,10 +156,12 @@ export type Database = {
           closed_at?: string | null
           court_case_number?: string | null
           created_at?: string | null
+          district?: string | null
           filing_deadline?: string
           firm_id?: string | null
           id?: string
           last_client_activity?: string | null
+          meeting_date?: string | null
           ready_to_file?: boolean | null
           retention_delete_scheduled_at?: string | null
           retention_notified_at?: string | null
@@ -593,6 +599,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packet_history: {
+        Row: {
+          case_id: string
+          chapter: string | null
+          created_at: string
+          district: string | null
+          document_count: number
+          generated_at: string
+          generated_by: string | null
+          id: string
+          ssn_redactions_count: number | null
+          storage_path: string | null
+        }
+        Insert: {
+          case_id: string
+          chapter?: string | null
+          created_at?: string
+          district?: string | null
+          document_count?: number
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          ssn_redactions_count?: number | null
+          storage_path?: string | null
+        }
+        Update: {
+          case_id?: string
+          chapter?: string | null
+          created_at?: string
+          district?: string | null
+          document_count?: number
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          ssn_redactions_count?: number | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packet_history_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
