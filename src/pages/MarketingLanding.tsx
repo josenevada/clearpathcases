@@ -514,7 +514,7 @@ const MarketingLanding = () => {
   ];
 
   return (
-    <div className="min-h-screen" style={{ lineHeight: '1.7' }}>
+    <div className="min-h-screen" style={{ lineHeight: '1.7', border: 'none', outline: 'none', boxShadow: 'none' }}>
       {/* Nav */}
       <nav
         className="sticky top-0 z-50 px-6 py-3 flex items-center justify-between"
@@ -534,8 +534,8 @@ const MarketingLanding = () => {
       </nav>
 
       {/* Hero */}
-      <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative">
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)' }} />
+      <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative" style={{ border: 'none' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)', border: 'none' }} />
         <h1
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
           style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '800px' }}
