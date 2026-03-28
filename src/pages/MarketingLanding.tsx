@@ -537,8 +537,8 @@ const MarketingLanding = () => {
       <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative">
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)' }} />
         <h1
-          className="font-display font-bold text-[36px] md:text-[58px] text-foreground relative landing-heading-glow"
-          style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.1' }}
+          className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
+          style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '800px' }}
         >
           The bankruptcy firm that still<br />
           types data into federal forms<br />
@@ -947,11 +947,8 @@ const MarketingLanding = () => {
       {/* Final CTA — Redesigned */}
       <section
         className="px-6 py-16 md:py-20 relative"
-        style={{
-          background: 'linear-gradient(135deg, #0a1a18 0%, #0d1b2a 50%, #0a1520 100%)',
-        }}
+        style={{ background: '#0a1520' }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 10% 20%, rgba(0,194,168,0.06) 0%, transparent 50%)' }} />
         <div
           ref={ctaRef}
           className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center relative"
