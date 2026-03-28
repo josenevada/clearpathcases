@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Lock, Shield, CheckCircle2, Loader2, UploadCloud, AlertTriangle, X } from 'lucide-react';
@@ -82,6 +82,18 @@ const PlaidBankConnect = ({
     onExit: handlePlaidExit,
   });
 
+  // Open Plaid Link once token is ready and state is link-open
+  const prevReadyRef = useRef(false);
+  useEffect(() => {
+    if (state === 'link-open' && plaidReady && linkToken && !prevReadyRef.current) {
+      prevReadyRef.current = true;
+      openPlaidLink();
+    }
+    if (state !== 'link-open') {
+      prevReadyRef.current = false;
+    }
+  }, [state, plaidReady, linkToken, openPlaidLink]);
+
   const handleConnectClick = async () => {
     setState('loading-token');
     setErrorMsg('');
@@ -91,15 +103,16 @@ const PlaidBankConnect = ({
         body: { case_id: caseId, client_name: clientName },
       });
 
+      console.log('plaid-create-link-token response:', res);
+
       if (res.error || !res.data?.link_token) {
-        throw new Error(res.error?.message || res.data?.error || 'Failed to initialize');
+        const msg = res.error?.message || res.data?.error || 'Failed to initialize';
+        console.error('Link token error details:', { error: res.error, data: res.data });
+        throw new Error(msg);
       }
 
       setLinkToken(res.data.link_token);
-      // Need to wait for next render when token is set
-      setTimeout(() => {
-        setState('link-open');
-      }, 100);
+      setState('link-open');
     } catch (err: any) {
       console.error('Link token error:', err);
       setState('error');
@@ -107,11 +120,6 @@ const PlaidBankConnect = ({
       setShowManual(true);
     }
   };
-
-  // Open plaid link once token is ready
-  if (state === 'link-open' && plaidReady && linkToken) {
-    setTimeout(() => openPlaidLink(), 0);
-  }
 
   const handleDisconnect = async () => {
     setState('disconnecting');
