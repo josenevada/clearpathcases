@@ -505,11 +505,11 @@ export const CATEGORIES = [
 ] as const;
 
 export const STEP_MOTIVATIONS = [
-  "Most people finish this step in about 3 minutes.",
-  "You're building momentum — keep going.",
-  "This is the most important step. Take your time.",
-  "Over halfway there. You're doing great.",
-  "Almost done. Just a few more things.",
+  "Most people finish this part in just a few minutes.",
+  "You're building momentum — keep it up.",
+  "Take your time with this one. There's no rush.",
+  "You're doing great — over halfway done.",
+  "Almost there. Just a few more things to go.",
   "Final stretch — you've got this.",
 ];
 
@@ -529,35 +529,35 @@ const item = (category: string, label: string, description: string, whyWeNeedThi
 
 export const buildDefaultChecklist = (): ChecklistItem[] => [
   // Step 1: Income & Employment
-  item('Income & Employment', 'Pay Stubs (Last 2 Months)', 'Upload your most recent pay stubs from the last 60 days.', 'The court requires proof of your current income to determine your eligibility for bankruptcy protection.'),
-  item('Income & Employment', 'W-2s (Last 2 Years)', 'Upload your W-2 forms from the last two tax years.', 'W-2s help verify your employment history and total earnings, which the court uses to assess your financial situation.'),
-  item('Income & Employment', 'Tax Returns (Last 2 Years)', 'Upload your federal tax returns from the last two years.', 'Tax returns provide a comprehensive view of your income and are required by the bankruptcy court.'),
-  item('Income & Employment', 'Employer Name & Address', 'Provide your current employer\'s name and address.', 'This is required on bankruptcy petition forms and helps verify your employment status.', false),
+  item('Income & Employment', 'Pay Stubs (Last 2 Months)', 'Upload your most recent pay stubs from the last 60 days.', 'Your pay stubs show the court what you\'re currently earning. Think of it as proof that you qualify for the fresh start you\'re asking for.'),
+  item('Income & Employment', 'W-2s (Last 2 Years)', 'Upload your W-2 forms from the last two tax years.', 'W-2s help your attorney show the court your work history. It\'s a standard part of every filing — nothing unusual.'),
+  item('Income & Employment', 'Tax Returns (Last 2 Years)', 'Upload your federal tax returns from the last two years.', 'Your tax returns give the court the big picture of your finances. Every bankruptcy filing includes these.'),
+  item('Income & Employment', 'Employer Name & Address', 'Tell us where you work so we can include it on your paperwork.', 'This goes directly on your bankruptcy petition. If you\'re not working right now, just let us know — that\'s totally fine.', false),
 
   // Step 2: Bank & Financial Accounts
-  item('Bank & Financial Accounts', 'Checking/Savings Statements (Last 6 Months)', 'Upload bank statements for all checking and savings accounts.', 'The court needs to see your account activity to understand your financial transactions and current balances.'),
-  item('Bank & Financial Accounts', 'Digital Wallet Statements', 'Used Venmo, PayPal, or Cash App in the last 12 months? Statements from these accounts are required for your filing.', 'Federal bankruptcy law requires full disclosure of all financial accounts including digital wallets. The trustee reviews all money movement from the past 12 months. Missing these accounts can put your case at risk.'),
-  item('Bank & Financial Accounts', 'Investment/Retirement Statements', 'Upload statements for any investment or retirement accounts.', 'These documents help determine what assets may be exempt from the bankruptcy estate.', false),
+  item('Bank & Financial Accounts', 'Checking/Savings Statements (Last 6 Months)', 'Upload bank statements for all your checking and savings accounts.', 'The trustee looks at these to understand your day-to-day finances. Six months is the standard — it\'s the same for everyone.'),
+  item('Bank & Financial Accounts', 'Digital Wallet Statements', 'Used Venmo, PayPal, or Cash App in the last 12 months? We need to include those too.', 'Digital wallets count as financial accounts under bankruptcy law. The trustee needs to see all money movement — even Venmo. Missing these could cause problems with your case.'),
+  item('Bank & Financial Accounts', 'Investment/Retirement Statements', 'Upload statements for any investment or retirement accounts.', 'Good news — retirement accounts are usually protected. We just need to document them so your attorney can make sure they\'re covered.', false),
 
   // Step 3: Debts & Credit
-  item('Debts & Credit', 'Credit Card Statements (Last 3 Months)', 'Upload your most recent credit card statements.', 'Credit card statements help us create an accurate list of your unsecured debts for the bankruptcy petition.'),
-  item('Debts & Credit', 'Loan Statements', 'Upload statements for auto loans, personal loans, or student loans.', 'All outstanding debts must be listed in your bankruptcy filing to ensure they can be properly addressed.'),
-  item('Debts & Credit', 'Collection Notices', 'Upload any collection letters or notices you\'ve received.', 'Collection accounts are debts that need to be included in your filing to stop collection activity.', false),
+  item('Debts & Credit', 'Credit Card Statements (Last 3 Months)', 'Upload your most recent credit card statements.', 'We need these so we can make a complete list of what you owe. The more accurate the list, the better your filing goes.'),
+  item('Debts & Credit', 'Loan Statements', 'Upload statements for any auto loans, personal loans, or student loans.', 'Every debt needs to be listed in your filing. This makes sure nothing slips through the cracks.'),
+  item('Debts & Credit', 'Collection Notices', 'Got any letters from collectors? Upload them here.', 'Including collection accounts in your filing is how we stop them from contacting you. The more you upload, the more protection you get.', false),
 
   // Step 4: Assets & Property
-  item('Assets & Property', 'Mortgage Statement or Lease', 'Upload your mortgage statement or rental lease agreement.', 'Your housing situation affects how your bankruptcy case is structured and what exemptions apply.'),
-  item('Assets & Property', 'Vehicle Title or Registration', 'Upload your vehicle title or current registration.', 'Vehicle ownership must be disclosed and may be subject to exemptions in your bankruptcy case.', false),
-  item('Assets & Property', 'Property Deed', 'Upload the deed if you own any real property.', 'Real property ownership is a critical factor in bankruptcy and affects which chapter is best for you.', false),
+  item('Assets & Property', 'Mortgage Statement or Lease', 'Upload your mortgage statement or rental lease.', 'Your housing situation affects how your case is structured. Whether you rent or own, this helps your attorney pick the right strategy.'),
+  item('Assets & Property', 'Vehicle Title or Registration', 'Upload your car title or registration if you own a vehicle.', 'We need to know about your vehicles so your attorney can make sure they\'re protected under the right exemptions.', false),
+  item('Assets & Property', 'Property Deed', 'Upload the deed if you own any real property.', 'Property ownership is a big factor in bankruptcy. Your attorney needs this to figure out the best way to protect your home.', false),
 
   // Step 5: Personal Identification
-  item('Personal Identification', 'Government-Issued Photo ID', 'Upload a clear photo of your driver\'s license, passport, or state ID.', 'Identity verification is required by the court before your case can be filed.'),
-  item('Personal Identification', 'Social Security Number', 'Enter your 9-digit Social Security number. This is encrypted and stored securely — your attorney\'s office needs this to file your case.', 'Your Social Security number is required on all bankruptcy petition forms.'),
+  item('Personal Identification', 'Government-Issued Photo ID', 'Upload a clear photo of your driver\'s license, passport, or state ID.', 'The court needs to verify your identity before your case can be filed. A simple photo of your ID is all we need.'),
+  item('Personal Identification', 'Social Security Number', 'Enter your 9-digit Social Security number. It\'s encrypted and stored securely — only your attorney\'s office can see it.', 'Your SSN goes on every page of the bankruptcy petition. It\'s required by the court, but we keep it locked down tight.'),
 
   // Step 6: Agreements & Confirmation
-  item('Agreements & Confirmation', 'Credit Counseling Certificate', 'Upload your certificate from an approved credit counseling course.', 'Federal law requires completion of credit counseling before filing for bankruptcy.'),
-  item('Agreements & Confirmation', 'Financial Disclosure Confirmation', 'Please confirm that all financial information you\'ve provided is accurate and complete.', 'This confirmation is a legal requirement and ensures your filing is truthful.'),
-  item('Agreements & Confirmation', 'Assets Disclosure Confirmation', 'Please confirm that you\'ve disclosed all assets and property you own.', 'Failing to disclose assets can result in your case being dismissed or criminal charges.'),
-  item('Agreements & Confirmation', 'Final Confirmation', 'Please confirm that everything submitted is accurate to the best of your knowledge.', 'This final confirmation completes your document intake and allows your attorney to begin preparing your petition.'),
+  item('Agreements & Confirmation', 'Credit Counseling Certificate', 'Upload your certificate from an approved credit counseling course.', 'Federal law says everyone has to complete a short counseling session before filing. Most people do it online in under an hour.'),
+  item('Agreements & Confirmation', 'Financial Disclosure Confirmation', 'Please confirm that all financial information you\'ve provided is accurate and complete.', 'This is just you saying "yes, everything I shared is true to the best of my knowledge." It\'s a standard part of the process.'),
+  item('Agreements & Confirmation', 'Assets Disclosure Confirmation', 'Please confirm that you\'ve told us about everything you own.', 'The court takes this seriously, so we want to make sure nothing was accidentally left out. No surprises is the goal.'),
+  item('Agreements & Confirmation', 'Final Confirmation', 'One last check — confirm everything looks good before your attorney takes over.', 'This wraps up your part. After this, your attorney reviews everything and starts preparing your petition.'),
 ];
 
 // ─── Seed Data ───────────────────────────────────────────────────────
