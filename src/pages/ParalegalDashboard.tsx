@@ -294,7 +294,11 @@ const ParalegalDashboard = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <h3 className="font-display font-bold text-foreground">{caseRecord.clientName}</h3>
-                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                caseRecord.chapterType === '13'
+                                  ? 'bg-warning/10 text-warning border border-warning/20'
+                                  : 'bg-primary/10 text-primary border border-primary/20'
+                              }`}>
                                 Ch.{caseRecord.chapterType}
                               </span>
                               <Badge className="bg-muted text-muted-foreground border-border text-xs capitalize">
@@ -389,7 +393,11 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-2 flex-wrap">
             <h3 className="font-display text-lg font-bold text-foreground">{caseData.clientName}</h3>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              caseData.chapterType === '13'
+                ? 'bg-warning/10 text-warning border border-warning/20'
+                : 'bg-primary/10 text-primary border border-primary/20'
+            }`}>
               Ch.{caseData.chapterType}
             </span>
             {caseData.clientName.includes(' & ') && (

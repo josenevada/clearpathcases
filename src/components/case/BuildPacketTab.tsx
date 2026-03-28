@@ -20,6 +20,8 @@ import {
   type Case,
   type ChecklistItem,
   CATEGORIES,
+  FEDERAL_FORMS_CH7,
+  FEDERAL_FORMS_CH13,
 } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -299,7 +301,11 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
         <div className="space-y-1.5">
           <h2 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h2>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground font-body">
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              caseData.chapterType === '13'
+                ? 'bg-warning/10 text-warning border border-warning/20'
+                : 'bg-primary/10 text-primary border border-primary/20'
+            }`}>
               CH.{caseData.chapterType}
             </span>
             {district && (
@@ -350,8 +356,12 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
           </div>
         </div>
         <div className="surface-card p-4 space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Chapter</p>
-          <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold uppercase text-muted-foreground">Chapter {caseData.chapterType}</span>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Federal Forms</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(caseData.chapterType === '13' ? FEDERAL_FORMS_CH13 : FEDERAL_FORMS_CH7).map(form => (
+              <span key={form} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{form}</span>
+            ))}
+          </div>
         </div>
         <div className="surface-card p-4 space-y-2">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">341 Meeting Date</p>

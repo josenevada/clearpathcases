@@ -125,6 +125,7 @@ export interface Case {
   retentionDeleteScheduledAt?: string;
   district?: string;
   meetingDate?: string;
+  milestones?: MilestoneEntry[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -261,7 +262,49 @@ export interface IntakeAnswers {
   hasRetirement: boolean;
   hasStudentLoans: boolean;
   filingJointly: boolean;
+  mortgageInArrears?: boolean; // CH.13 only
 }
+
+// ─── Chapter 13 Milestone Tracking ──────────────────────────────────
+export const CH13_MILESTONES = [
+  'Intake Complete',
+  'Petition Filed',
+  '341 Meeting Scheduled',
+  '341 Meeting Held',
+  'Plan Filed',
+  'Plan Confirmation Hearing',
+  'Plan Confirmed',
+  'First Payment Due',
+] as const;
+
+export type Ch13Milestone = typeof CH13_MILESTONES[number];
+
+export interface MilestoneEntry {
+  name: Ch13Milestone;
+  date?: string;
+  completed: boolean;
+}
+
+// ─── Federal Forms by Chapter ───────────────────────────────────────
+export const FEDERAL_FORMS_CH7 = [
+  'Schedule A/B',
+  'Schedule C',
+  'Schedule I',
+  'Schedule J',
+  'Form 122A-1',
+  'SOFA (Statement of Financial Affairs)',
+];
+
+export const FEDERAL_FORMS_CH13 = [
+  'Schedule A/B',
+  'Schedule C',
+  'Schedule I',
+  'Schedule J',
+  'Form 122C-1',
+  'Form 122C-2',
+  'Form 113 (Repayment Plan)',
+  'SOFA (Statement of Financial Affairs)',
+];
 
 const conditionalItems: Record<string, { category: string; items: Omit<ChecklistItem, 'id' | 'category' | 'files' | 'flaggedForAttorney' | 'completed'>[] }> = {
   ownsRealEstate: {
@@ -300,7 +343,7 @@ const exclusionMap: Record<string, string[]> = {
   hasRetirement: ['Investment/Retirement Statements'],
 };
 
-export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] => {
+export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: ChapterType = '7'): ChecklistItem[] => {
   const templates = getDocTemplates();
   let items = templates
     .filter(t => t.active)
@@ -314,19 +357,28 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
 
   let checklist: ChecklistItem[] = items
     .filter(t => !labelsToExclude.has(t.label))
-    .map(t => ({
-      id: uid(),
-      category: t.category,
-      label: t.label,
-      description: t.description,
-      whyWeNeedThis: t.whyWeNeedThis,
-      required: t.required,
-      files: [],
-      flaggedForAttorney: false,
-      correctionRequest: undefined,
-      resubmittedAt: undefined,
-      completed: false,
-    }));
+    .map(t => {
+      let label = t.label;
+      let description = t.description;
+      // CH.13: upgrade Tax Returns from 2 years to 4 years
+      if (chapterType === '13' && t.label === 'Tax Returns (Last 2 Years)') {
+        label = 'Tax Returns (Last 4 Years)';
+        description = 'Upload your federal tax returns from the last four years. Chapter 13 requires a longer history to support your repayment plan.';
+      }
+      return {
+        id: uid(),
+        category: t.category,
+        label,
+        description,
+        whyWeNeedThis: t.whyWeNeedThis,
+        required: t.required,
+        files: [],
+        flaggedForAttorney: false,
+        correctionRequest: undefined,
+        resubmittedAt: undefined,
+        completed: false,
+      };
+    });
 
   // Add conditional items for "Yes" answers
   for (const [key, config] of Object.entries(conditionalItems)) {
@@ -341,13 +393,87 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
         resubmittedAt: undefined,
         completed: false,
       }));
-      // Insert after existing items in that category
       const lastIdx = checklist.map(c => c.category).lastIndexOf(config.category);
       if (lastIdx !== -1) {
         checklist.splice(lastIdx + 1, 0, ...newItems);
       } else {
         checklist.push(...newItems);
       }
+    }
+  }
+
+  // ─── Chapter 13 Additional Documents ──────────────────────────────
+  if (chapterType === '13') {
+    const ch13Income: ChecklistItem[] = [
+      {
+        id: uid(), category: 'Income & Employment',
+        label: 'Proof of Regular Income — Last 6 Months',
+        description: 'Upload documentation showing consistent income over the past 6 months (e.g. pay stubs, deposit records, or income ledgers).',
+        whyWeNeedThis: 'Chapter 13 requires demonstrating consistent income to support your repayment plan.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      },
+    ];
+    const lastIncomeIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+    if (lastIncomeIdx !== -1) checklist.splice(lastIncomeIdx + 1, 0, ...ch13Income);
+
+    // Property valuation (conditional on owning real estate)
+    if (answers.ownsRealEstate) {
+      const propItems: ChecklistItem[] = [
+        {
+          id: uid(), category: 'Assets & Property',
+          label: 'Property Valuation or Appraisal',
+          description: 'Upload a recent appraisal or valuation of your real estate property.',
+          whyWeNeedThis: 'Chapter 13 plans must account for the value of property you intend to keep.',
+          required: true, files: [], flaggedForAttorney: false, completed: false,
+        },
+      ];
+      const lastPropIdx = checklist.map(c => c.category).lastIndexOf('Assets & Property');
+      if (lastPropIdx !== -1) checklist.splice(lastPropIdx + 1, 0, ...propItems);
+    }
+
+    // Vehicle valuation (conditional on owning vehicle)
+    if (answers.ownsVehicle) {
+      const vehItems: ChecklistItem[] = [
+        {
+          id: uid(), category: 'Assets & Property',
+          label: 'Vehicle Valuation — Kelley Blue Book or Dealer Appraisal',
+          description: 'Upload a KBB printout or dealer appraisal for each vehicle you own.',
+          whyWeNeedThis: 'Vehicle values must be documented to determine how they are treated in your repayment plan.',
+          required: true, files: [], flaggedForAttorney: false, completed: false,
+        },
+      ];
+      const lastVehIdx = checklist.map(c => c.category).lastIndexOf('Assets & Property');
+      if (lastVehIdx !== -1) checklist.splice(lastVehIdx + 1, 0, ...vehItems);
+    }
+
+    // Mortgage arrears docs (conditional)
+    if (answers.mortgageInArrears) {
+      const mortgageItems: ChecklistItem[] = [
+        {
+          id: uid(), category: 'Assets & Property',
+          label: 'Mortgage Cure Amount Statement',
+          description: 'Upload a statement from your mortgage servicer showing the total amount needed to cure the arrears.',
+          whyWeNeedThis: 'The Chapter 13 plan must include the exact cure amount to bring your mortgage current.',
+          required: true, files: [], flaggedForAttorney: false, completed: false,
+        },
+      ];
+      const lastMortIdx = checklist.map(c => c.category).lastIndexOf('Assets & Property');
+      if (lastMortIdx !== -1) checklist.splice(lastMortIdx + 1, 0, ...mortgageItems);
+    }
+
+    // Mortgage payment history (conditional on owning real estate / having mortgage)
+    if (answers.ownsRealEstate) {
+      const mortHistItems: ChecklistItem[] = [
+        {
+          id: uid(), category: 'Debts & Credit',
+          label: 'Mortgage Payment History — Last 12 Months',
+          description: 'Upload a 12-month payment history from your mortgage servicer.',
+          whyWeNeedThis: 'The court needs to see your recent mortgage payment pattern to evaluate your Chapter 13 plan.',
+          required: true, files: [], flaggedForAttorney: false, completed: false,
+        },
+      ];
+      const lastDebtIdx = checklist.map(c => c.category).lastIndexOf('Debts & Credit');
+      if (lastDebtIdx !== -1) checklist.splice(lastDebtIdx + 1, 0, ...mortHistItems);
     }
   }
 
@@ -364,7 +490,6 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
         });
       }
     });
-    // Insert spouse income items after income section, spouse ID after ID section
     const lastIncomeIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
     const incomeSpouse = spouseItems.filter(s => s.category === 'Income & Employment');
     const idSpouse = spouseItems.filter(s => s.category === 'Personal Identification');
@@ -375,6 +500,10 @@ export const buildCustomChecklist = (answers: IntakeAnswers): ChecklistItem[] =>
 
   return checklist;
 };
+
+// Build default milestones for CH.13
+export const buildCh13Milestones = (): MilestoneEntry[] =>
+  CH13_MILESTONES.map(name => ({ name, completed: false }));
 
 export const calculateUrgency = (c: Case): UrgencyLevel => {
   const daysLeft = differenceInDays(new Date(c.filingDeadline), new Date());

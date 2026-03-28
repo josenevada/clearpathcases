@@ -20,7 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, updateCase, getFirmSettings, buildCustomChecklist,
+  createCase, updateCase, getFirmSettings, buildCustomChecklist, buildCh13Milestones,
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
@@ -59,13 +59,22 @@ interface TeamMember {
   email: string;
 }
 
-const INTAKE_QUESTIONS = [
-  { key: 'ownsRealEstate' as const, question: 'Does this client own real estate?' },
-  { key: 'ownsVehicle' as const, question: 'Does this client own a vehicle?' },
-  { key: 'selfEmployed' as const, question: 'Is this client self-employed or do they own a business?' },
-  { key: 'hasRetirement' as const, question: 'Does this client have retirement or investment accounts?' },
-  { key: 'hasStudentLoans' as const, question: 'Does this client have student loans?' },
-  { key: 'filingJointly' as const, question: 'Is this client filing jointly with a spouse?' },
+interface IntakeQuestionDef {
+  key: string;
+  question: string;
+}
+
+const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
+  { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
+  { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
+  { key: 'selfEmployed', question: 'Is this client self-employed or do they own a business?' },
+  { key: 'hasRetirement', question: 'Does this client have retirement or investment accounts?' },
+  { key: 'hasStudentLoans', question: 'Does this client have student loans?' },
+  { key: 'filingJointly', question: 'Is this client filing jointly with a spouse?' },
+];
+
+const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
+  { key: 'mortgageInArrears', question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
 ];
 
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
@@ -128,6 +137,17 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [questionIdx, setQuestionIdx] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
 
+  // Build chapter-aware question list
+  const INTAKE_QUESTIONS = useMemo(() => {
+    const base = [...BASE_INTAKE_QUESTIONS];
+    if (info.chapterType === '13') {
+      // Insert CH.13 questions after the real estate question
+      const realEstateIdx = base.findIndex(q => q.key === 'ownsRealEstate');
+      base.splice(realEstateIdx + 1, 0, ...CH13_EXTRA_QUESTIONS);
+    }
+    return base;
+  }, [info.chapterType]);
+
   const isDirty = info.clientName || info.clientEmail || Object.keys(answers).length > 0;
 
   const isJointFiling = answers.filingJointly === true;
@@ -143,12 +163,13 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     hasRetirement: answers.hasRetirement ?? false,
     hasStudentLoans: answers.hasStudentLoans ?? false,
     filingJointly: answers.filingJointly ?? false,
+    mortgageInArrears: answers.mortgageInArrears ?? false,
   };
 
   const customChecklist = useMemo(() => {
     if (!allAnswered) return [];
-    return buildCustomChecklist(intakeAnswers);
-  }, [allAnswered, ...Object.values(answers)]);
+    return buildCustomChecklist(intakeAnswers, info.chapterType);
+  }, [allAnswered, info.chapterType, ...Object.values(answers)]);
 
   const categorySummary = useMemo(() => {
     const map: Record<string, number> = {};
@@ -222,6 +243,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
+      milestones: info.chapterType === '13' ? buildCh13Milestones() : undefined,
     }));
 
     try {
