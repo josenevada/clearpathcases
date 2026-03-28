@@ -45,6 +45,11 @@ interface BasicInfo {
   filingDeadline: Date | undefined;
   assignedParalegal: string;
   assignedAttorney: string;
+  // Joint filing spouse fields
+  spouseName: string;
+  spouseEmail: string;
+  spousePhone: string;
+  spouseDob: string;
 }
 
 interface TeamMember {
@@ -102,6 +107,10 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     filingDeadline: undefined,
     assignedParalegal: defaultParalegal,
     assignedAttorney: defaultAttorney,
+    spouseName: '',
+    spouseEmail: '',
+    spousePhone: '',
+    spouseDob: '',
   });
 
   // Update defaults when team loads
@@ -164,6 +173,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: defaultParalegal,
       assignedAttorney: defaultAttorney,
+      spouseName: '', spouseEmail: '', spousePhone: '', spouseDob: '',
     });
     setAnswers({});
     setQuestionIdx(0);
