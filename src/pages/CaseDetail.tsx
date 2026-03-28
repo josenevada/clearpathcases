@@ -493,7 +493,10 @@ const CaseDetail = () => {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab.label}
+                <span className="flex items-center gap-1.5">
+                  {tab.label}
+                  {'dot' in tab && tab.dot && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                </span>
               </button>
             ))}
           </div>
