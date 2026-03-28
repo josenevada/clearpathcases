@@ -430,7 +430,7 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
             {packetHistory.map(p => (
               <div key={p.id} className="surface-card p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" title="This packet is archived and cannot be modified. It reflects the documents at the time of generation." />
+                  <Tooltip><TooltipTrigger asChild><span><Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" /></span></TooltipTrigger><TooltipContent>This packet is archived and cannot be modified.</TooltipContent></Tooltip>
                   <div className="text-sm font-body">
                     <span className="text-foreground">{format(new Date(p.generated_at), 'MMM d, yyyy h:mm a')}</span>
                     <span className="text-muted-foreground ml-2">by {p.generated_by}</span>
