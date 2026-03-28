@@ -20,7 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, updateCase, getFirmSettings, buildCustomChecklist,
+  createCase, updateCase, getFirmSettings, buildCustomChecklist, buildCh13Milestones,
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
@@ -59,13 +59,17 @@ interface TeamMember {
   email: string;
 }
 
-const INTAKE_QUESTIONS = [
+const BASE_INTAKE_QUESTIONS = [
   { key: 'ownsRealEstate' as const, question: 'Does this client own real estate?' },
   { key: 'ownsVehicle' as const, question: 'Does this client own a vehicle?' },
   { key: 'selfEmployed' as const, question: 'Is this client self-employed or do they own a business?' },
   { key: 'hasRetirement' as const, question: 'Does this client have retirement or investment accounts?' },
   { key: 'hasStudentLoans' as const, question: 'Does this client have student loans?' },
   { key: 'filingJointly' as const, question: 'Is this client filing jointly with a spouse?' },
+];
+
+const CH13_EXTRA_QUESTIONS = [
+  { key: 'mortgageInArrears' as const, question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
 ];
 
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
