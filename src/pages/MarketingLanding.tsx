@@ -703,7 +703,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* How it works */}
-      <section id="features" className="px-6 py-16 max-w-5xl mx-auto" style={{ background: sectionBg.howItWorks }}>
+      <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>How it works</h2>
         <div ref={howRef} className="grid grid-cols-1 md:grid-cols-4 gap-0 items-start relative">
           {[0, 1, 2].map(i => (
@@ -792,6 +792,89 @@ const MarketingLanding = () => {
           ))}
         </div>
       </section>
+
+      <SectionDivider />
+
+      {/* Packet Section */}
+      {(() => {
+        const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
+        const packetItems = [
+          'SSN automatically redacted from all documents',
+          'Documents organized by schedule and category',
+          'Pre-filled federal forms included when attorney-approved',
+          'Packet version history — every generated packet saved',
+          'One-click download as compiled PDF or organized ZIP',
+          'Attorney certification page auto-populated with firm details',
+        ];
+        const packetSections = [
+          'Voluntary Petition (B101)',
+          'Schedules A/B through H',
+          'Schedule I & J — Income & Expenses',
+          'Statement of Financial Affairs',
+          'Pre-filled Federal Forms (15 forms)',
+          'Credit Counseling Certificate',
+          'Supporting Documents (23 files)',
+        ];
+        return (
+          <section className="px-6 py-16 max-w-5xl mx-auto">
+            <div ref={pktRef} className="text-center mb-12" style={revealStyle(pktVisible)}>
+              <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
+                Court-ready in one click.<br />
+                <span className="text-primary">Not one afternoon.</span>
+              </h2>
+              <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
+                When documents are approved and forms are filled, ClearPath assembles your<br className="hidden sm:block" />
+                complete court filing packet automatically — organized, redacted, and ready.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+              {/* Left — feature list */}
+              <div className="space-y-4" style={revealStyle(pktVisible, { delay: 0.1, x: -30, y: 0 })}>
+                {packetItems.map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-[15px] text-[#8aa3b8] font-body" style={{ lineHeight: '1.7' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Right — packet preview card */}
+              <div
+                className="rounded-xl p-6"
+                style={{
+                  background: '#111f2e',
+                  border: '0.5px solid rgba(0,194,168,0.2)',
+                  ...revealStyle(pktVisible, { delay: 0.2, x: 30, y: 0 }),
+                }}
+              >
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="font-body font-semibold text-sm text-foreground">Court Packet — Rodriguez, Maria</span>
+                  <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full font-body" style={{ background: 'rgba(34,197,94,0.15)', color: 'rgb(34,197,94)' }}>Ready to Generate</span>
+                </div>
+                <div className="space-y-2.5">
+                  {packetSections.map((s, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <FileText className="w-4 h-4 text-primary/60 flex-shrink-0" />
+                      <span className="text-[14px] text-foreground font-body">✓ {s}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6">
+                  <button
+                    className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 font-body font-semibold text-sm text-primary-foreground bg-primary cursor-default"
+                  >
+                    <Package className="w-4 h-4" />
+                    Generate Packet
+                  </button>
+                  <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-3">
+                    SSN redacted · Attorney certified · Version 1
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <SectionDivider />
 
