@@ -440,8 +440,8 @@ const ClientWizard = () => {
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
-  const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
-  const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
+  const isSSNEntry = false; // SSN is now a document upload step, not a text entry
+  const isSSNUpload = currentItem && (currentItem.label === SSN_LABEL || currentItem.label === SSN_LABEL_LEGACY);
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
   const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
   const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
