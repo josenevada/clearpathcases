@@ -1399,6 +1399,25 @@ const ClientWizard = () => {
                     </button>
                   </div>
                 </div>
+              ) : isDigitalWallet && !currentItemHasOpenCorrection ? (
+                <DigitalWalletStep
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                  clientPhone={caseData.clientPhone}
+                  checklistItemId={currentItem.id}
+                  files={currentItem.files}
+                  onFileAdd={(file: File) => {
+                    const existing = currentItem.files.find(f => f.name === file.name);
+                    if (existing) {
+                      setPendingDuplicate({ file, existingFileId: existing.id });
+                    } else {
+                      handleFileAdd(file);
+                    }
+                  }}
+                  onFileDelete={handleFileDelete}
+                  onFilePreview={(f) => setPreviewFile({ name: f.name, dataUrl: f.dataUrl })}
+                  onMarkNA={() => handleClientNA("Client indicated they don't use any digital wallet apps")}
+                />
               ) : isMultiUpload && multiConfig ? (
                 <div className="space-y-4">
                   {currentItemHasOpenCorrection && currentItem.correctionRequest && (
