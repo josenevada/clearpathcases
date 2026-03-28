@@ -36,11 +36,42 @@ const pageTransition = {
 
 const MILESTONE_THRESHOLDS = [25, 50, 75, 100];
 const MILESTONE_MESSAGES = [
-  'Great start! Every document you upload brings you closer to a fresh start.',
-  "You're halfway there. Every document you've added helps your attorney fight for you.",
-  'Almost there! Your attorney will have nearly everything they need.',
-  "You're done. Your attorney has everything they need. We'll be in touch soon.",
+  'You're off to a great start. Every document you upload brings you one step closer to a fresh start.',
+  "You're halfway there — that's a big deal. Keep going, you're doing amazing.",
+  'Almost there! Your attorney will have nearly everything they need to move forward.',
+  "You did it — your documents are ready for review. We'll be in touch soon.",
 ];
+
+// Human subtitles for each document step
+const WARM_SUBTITLES: Record<string, string> = {
+  'Pay Stubs (Last 2 Months)': 'This shows the court what you currently earn — it\'s one of the most important documents in your filing.',
+  'W-2s (Last 2 Years)': 'These help paint a picture of your work history over the past couple of years.',
+  'Tax Returns (Last 2 Years)': 'Your tax returns give the court a full view of your financial year — we need the last two.',
+  'Employer Name & Address': 'Just your current employer\'s info — this goes on the official paperwork.',
+  'Checking/Savings Statements (Last 6 Months)': 'The trustee reviews these to understand your recent finances — 6 months is the standard requirement.',
+  'Digital Wallet Statements': 'If you\'ve used Venmo, PayPal, or Cash App, the court needs to see that activity too.',
+  'Investment/Retirement Statements': 'Don\'t worry — retirement accounts are usually protected. We just need to document them.',
+  'Credit Card Statements (Last 3 Months)': 'This helps us list out your debts accurately so nothing gets missed in your filing.',
+  'Loan Statements': 'Car loans, personal loans, student loans — anything you owe on, we need a recent statement.',
+  'Collection Notices': 'If you\'ve gotten letters from collectors, upload them here so we can include those debts.',
+  'Mortgage Statement or Lease': 'Whether you rent or own, this helps your attorney understand your housing situation.',
+  'Vehicle Title or Registration': 'If you own a car, we just need proof of ownership — title or registration works.',
+  'Property Deed': 'If you own any property, upload the deed so we can make sure the right protections apply.',
+  'Government-Issued Photo ID': 'We just need to confirm who you are — a driver\'s license or passport works perfectly.',
+  'Social Security Number': 'This is required on all court paperwork. It\'s encrypted and only your attorney can see it.',
+  'Credit Counseling Certificate': 'This is a quick online course the court requires before filing — most people finish in under an hour.',
+  'Financial Disclosure Confirmation': 'Just confirming that everything you\'ve shared so far is accurate to the best of your knowledge.',
+  'Assets Disclosure Confirmation': 'One more confirmation — that you\'ve told us about everything you own.',
+  'Final Confirmation': 'Last step — just a final check that everything looks good before your attorney takes over.',
+};
+
+const getProgressLabel = (progress: number): string => {
+  if (progress >= 100) return 'You did it — your documents are ready for review.';
+  if (progress >= 76) return 'Almost done — just a few more steps.';
+  if (progress >= 51) return 'More than halfway there!';
+  if (progress >= 26) return 'Good progress — keep going.';
+  return 'Let\'s get started — you\'ve got this.';
+};
 
 const ClientWizard = () => {
   const { caseId, caseCode } = useParams<{ caseId?: string; caseCode?: string }>();
@@ -683,7 +714,7 @@ const ClientWizard = () => {
       // Check if all required items in current section are complete before advancing
       const requiredIncomplete = categoryItems.filter(item => item.required && !isItemEffectivelyComplete(item));
       if (requiredIncomplete.length > 0) {
-        toast('You still have required items in this section. Please upload them before moving on.', { duration: 4000 });
+        toast('Hang on — there are still a few things we need in this section before you can move on.', { duration: 4000 });
         const firstIdx = categoryItems.findIndex(item => item.required && !isItemEffectivelyComplete(item));
         if (firstIdx >= 0) setCurrentItemIdx(firstIdx);
         return;
@@ -753,7 +784,7 @@ const ClientWizard = () => {
         });
       } catch (err) { console.error('Failed to log skip:', err); }
     })();
-    toast('No worries — you can come back to this later.', { duration: 2000 });
+    toast('No worries — you can always come back to this one later.', { duration: 2000 });
     advanceToNext();
   };
 
@@ -835,7 +866,7 @@ const ClientWizard = () => {
     // Soft-block: no file on required item → show help first
     if (!currentItem.completed && currentItem.required) {
       setHelpForceOpen(true);
-      toast('When you\'ve found the document, tap the upload zone above to add it.', { duration: 4000 });
+      toast('Take your time — when you\'ve found it, just tap the upload area above.', { duration: 4000 });
       return;
     }
     advanceToNext();
@@ -1001,6 +1032,9 @@ const ClientWizard = () => {
   const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
+  // Check for pending items for warm nudge on completion screen
+  const pendingCount = caseData.checklist.filter(i => !i.notApplicable && !isItemEffectivelyComplete(i)).length;
+
   if (progress === 100 && !showMilestone && !showSuccess) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -1010,13 +1044,15 @@ const ClientWizard = () => {
         )}
         <div className="flex-1 flex items-center justify-center px-6">
           <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
-            <div className="text-6xl mb-6">🎉</div>
-            <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're done!</h2>
-            <p className="text-muted-foreground text-lg mb-8">
-              Your attorney has everything they need. We'll be in touch soon.
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-14 h-14 text-primary" />
+            </div>
+            <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're all done — great work.</h2>
+            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+              Your documents have been sent to {caseData.assignedAttorney || 'your attorney'}. They'll review everything and reach out within 1–2 business days. You can close this window.
             </p>
-            <div className="surface-card p-6 text-left space-y-2">
-              <p className="text-sm text-muted-foreground">Questions? Contact your legal team:</p>
+            <div className="surface-card p-6 text-left space-y-2 rounded-xl">
+              <p className="text-sm text-muted-foreground">Questions? Your team is here for you:</p>
               <p className="text-foreground font-medium">{caseData.assignedAttorney}</p>
               <p className="text-foreground font-medium">{caseData.assignedParalegal}</p>
             </div>
@@ -1132,6 +1168,11 @@ const ClientWizard = () => {
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2 leading-tight">
                   {currentItem.label}
                 </h2>
+                {WARM_SUBTITLES[currentItem.label] && (
+                  <p className="text-primary/80 text-sm font-body mb-2 leading-relaxed">
+                    {WARM_SUBTITLES[currentItem.label]}
+                  </p>
+                )}
                 <p className="text-muted-foreground text-lg font-body leading-relaxed">
                   {currentItem.description}
                 </p>
@@ -1142,7 +1183,7 @@ const ClientWizard = () => {
                 className="flex items-center gap-1 text-primary/80 text-sm mb-6 hover:text-primary transition-colors"
               >
                 <ChevronDown className={`w-4 h-4 transition-transform ${whyOpen ? 'rotate-180' : ''}`} />
-                Why do we need this?
+                Why does my attorney need this?
               </button>
               <AnimatePresence>
                 {whyOpen && (
@@ -1587,8 +1628,8 @@ const ClientWizard = () => {
                     onClick={() => isMobile ? setShowMobileUploadOptions(true) : fileInputRef.current?.click()}
                   >
                     <UploadCloud className="w-12 h-12 text-primary mb-4" />
-                    <span className="text-foreground font-medium">Tap to upload or drag file</span>
-                    <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
+                    <span className="text-foreground font-medium">Tap to upload your file</span>
+                    <span className="text-sm text-muted-foreground mt-1">PDF, JPG, or PNG · Up to 25MB</span>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -1613,7 +1654,7 @@ const ClientWizard = () => {
                   <div className="flex flex-col items-center gap-1 mt-1">
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                        Skip this item
+                        Skip for now
                       </button>
                     )}
                     {!isCheckpointItem && !isTextEntry && (
@@ -1621,7 +1662,7 @@ const ClientWizard = () => {
                         onClick={() => setShowNaFlow(true)}
                         className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
                       >
-                        I don't have this document
+                        I don't think I have this
                       </button>
                     )}
                   </div>
@@ -1818,21 +1859,26 @@ const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: numb
   <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm">
     <div className="flex items-center justify-between px-4 py-3">
       <Logo size="sm" clickable={false} />
-      <span className="text-sm text-muted-foreground font-body">
-        Step {step} of {totalSteps} — {stepName}
+      <span className="text-sm text-muted-foreground font-body tabular-nums">
+        {progress}%
       </span>
     </div>
-    <div className="h-1 bg-secondary">
+    <div className="h-2 bg-secondary rounded-full mx-4">
       <motion.div
-        className="h-full bg-primary"
+        className="h-full bg-primary rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${progress}%` }}
         transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
       />
     </div>
-    <p className="text-center text-xs text-muted-foreground py-2 font-body">
-      {STEP_MOTIVATIONS[Math.min(step - 1, STEP_MOTIVATIONS.length - 1)]}
-    </p>
+    <div className="text-center py-2.5 px-4">
+      <p className="text-sm text-foreground font-medium font-body">
+        {getProgressLabel(progress)}
+      </p>
+      <p className="text-xs text-muted-foreground font-body mt-0.5">
+        {stepName}
+      </p>
+    </div>
   </div>
 );
 
