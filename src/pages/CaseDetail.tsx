@@ -421,6 +421,94 @@ const CaseDetail = () => {
     refresh();
   };
 
+  // PROMPT 5: Add custom document to a category
+  const handleAddCustomDoc = async (category: string) => {
+    if (!addDocName.trim()) {
+      toast.error('Please enter a document name.');
+      return;
+    }
+    const newItemId = Math.random().toString(36).substr(2, 9);
+    const sortOrder = caseData.checklist.filter(i => i.category === category).length;
+
+    // Add to localStorage
+    updateCase(caseData.id, c => ({
+      ...c,
+      checklist: [...c.checklist, {
+        id: newItemId,
+        category,
+        label: addDocName.trim(),
+        description: addDocDesc.trim(),
+        whyWeNeedThis: '',
+        required: addDocRequired,
+        files: [],
+        flaggedForAttorney: false,
+        completed: false,
+        isCustom: true,
+      } as any],
+    }));
+
+    // Sync to Supabase
+    await supabase.from('checklist_items').insert({
+      id: newItemId,
+      case_id: caseData.id,
+      category,
+      label: addDocName.trim(),
+      description: addDocDesc.trim(),
+      why_we_need_this: '',
+      required: addDocRequired,
+      completed: false,
+      sort_order: sortOrder,
+      input_type: 'file',
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_added',
+      actorRole: 'paralegal',
+      actorName: user?.fullName || 'Staff',
+      description: `Added custom document "${addDocName.trim()}" to ${category}`,
+      itemId: newItemId,
+    });
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_added',
+      actor_role: 'paralegal',
+      actor_name: user?.fullName || 'Staff',
+      description: `Added custom document "${addDocName.trim()}" to ${category}`,
+      item_id: newItemId,
+    });
+
+    setAddDocCategory(null);
+    setAddDocName('');
+    setAddDocDesc('');
+    setAddDocRequired(true);
+    toast.success(`"${addDocName.trim()}" added to checklist`);
+    refresh();
+  };
+
+  const handleDeleteCustomDoc = async (item: ChecklistItem) => {
+    // Remove from localStorage
+    updateCase(caseData.id, c => ({
+      ...c,
+      checklist: c.checklist.filter(i => i.id !== item.id),
+    }));
+
+    // Remove from Supabase
+    await supabase.from('checklist_items').delete().eq('id', item.id);
+    await supabase.from('files').delete().eq('checklist_item_id', item.id);
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_removed',
+      actorRole: 'paralegal',
+      actorName: user?.fullName || 'Staff',
+      description: `Removed custom document "${item.label}"`,
+      itemId: item.id,
+    });
+
+    toast.success(`"${item.label}" removed from checklist`);
+    refresh();
+  };
+
   const groupedActivity = caseData.activityLog
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .reduce<{ label: string; entries: typeof caseData.activityLog }[]>((groups, entry) => {
