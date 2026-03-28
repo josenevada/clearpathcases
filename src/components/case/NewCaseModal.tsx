@@ -332,6 +332,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     currentUserId={user?.id}
                     currentUserName={user?.fullName}
                     currentUserRole={user?.role}
+                    isJointFiling={isJointFiling}
+                    onToggleJoint={(v) => setAnswers(prev => ({ ...prev, filingJointly: v }))}
                   />
                   <div className="flex justify-end mt-6">
                     <Button onClick={() => { setStep(2); setQuestionIdx(0); setShowSummary(false); }} disabled={!step1Valid}>
