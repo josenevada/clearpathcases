@@ -257,6 +257,14 @@ export const LowCountConfirmation = ({ config, fileCount, onConfirm, onAddMore }
 
 // ─── Multi-upload item configurations ────────────────────────────────
 export const MULTI_UPLOAD_CONFIGS: Record<string, MultiUploadConfig> = {
+  'Digital Wallet Statements': {
+    singularLabel: 'statement',
+    pluralLabel: 'statements',
+    helperText: 'Upload statements from Venmo, PayPal, Cash App, or other digital wallets for the last 12 months.',
+    minRecommended: 1,
+    confirmationMessage: (count) =>
+      `You've uploaded ${count} file${count === 1 ? '' : 's'}. Make sure you've included statements from all digital wallets you've used in the last 12 months.`,
+  },
   'Pay Stubs (Last 2 Months)': {
     singularLabel: 'pay stub',
     pluralLabel: 'pay stubs',
