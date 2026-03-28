@@ -24,8 +24,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
-const SSN_LABEL = 'Social Security Number';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === SSN_LABEL;
+const SSN_LABEL = 'Social Security Card';
+const SSN_LABEL_LEGACY = 'Social Security Number';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
@@ -58,7 +59,8 @@ const WARM_SUBTITLES: Record<string, string> = {
   'Vehicle Title or Registration': 'If you own a car, we just need proof of ownership — title or registration works.',
   'Property Deed': 'If you own any property, upload the deed so we can make sure the right protections apply.',
   'Government-Issued Photo ID': 'We just need to confirm who you are — a driver\'s license or passport works perfectly.',
-  'Social Security Number': 'This is required on all court paperwork. It\'s encrypted and only your attorney can see it.',
+  'Social Security Card': 'Upload a photo or scan of your Social Security card. A clear photo taken with your phone works perfectly.',
+  'Social Security Number': 'Upload a photo or scan of your Social Security card. A clear photo taken with your phone works perfectly.',
   'Credit Counseling Certificate': 'This is a quick online course the court requires before filing — most people finish in under an hour.',
   'Financial Disclosure Confirmation': 'Just confirming that everything you\'ve shared so far is accurate to the best of your knowledge.',
   'Assets Disclosure Confirmation': 'One more confirmation — that you\'ve told us about everything you own.',
