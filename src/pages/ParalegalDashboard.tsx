@@ -392,6 +392,9 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Ch.{caseData.chapterType}
             </span>
+            {caseData.clientName.includes(' & ') && (
+              <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] rounded-full">Joint</Badge>
+            )}
             <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
               {caseData.urgency.replace('-', ' ')}
             </Badge>
