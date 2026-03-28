@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import PricingCards from '@/components/PricingCards';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Accordion,
   AccordionContent,
@@ -63,6 +64,9 @@ const CountUp = ({ target, duration = 1500, started, prefix = '', suffix = '' }:
 const DashboardMockup = ({ visible }: { visible: boolean }) => {
   const reduced = usePrefersReducedMotion();
   const isMobile = useIsMobileAnimation();
+  const [ref, inView] = useScrollReveal<HTMLDivElement>(0.2);
+  const show = visible || inView;
+
   const cases = [
     { name: 'Maria Rodriguez', chapter: '7', urgency: 'critical', progress: 85, docs: '6 of 8' },
     { name: 'James Chen', chapter: '13', urgency: 'at-risk', progress: 45, docs: '3 of 8' },
@@ -74,18 +78,18 @@ const DashboardMockup = ({ visible }: { visible: boolean }) => {
     normal: 'bg-muted text-muted-foreground border-border',
   };
 
-  const baseStyle = reduced
+  const baseStyle: React.CSSProperties = reduced
     ? {}
     : {
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : isMobile ? 'none' : 'translateY(100px)',
-        transition: 'opacity 0.5s ease-out, transform 0.5s ease-out',
+        opacity: show ? 1 : 0,
+        transform: show ? 'translateY(0)' : isMobile ? 'none' : 'translateY(30px)',
+        transition: 'opacity 0.6s ease, transform 0.6s ease',
       };
 
   return (
-    <div className="relative mt-14 max-w-3xl mx-auto" style={baseStyle}>
+    <div ref={ref} className="relative mt-14 max-w-3xl mx-auto" style={baseStyle}>
       <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-primary/15 blur-3xl rounded-full pointer-events-none" />
-      <div className="surface-card overflow-hidden relative z-10" style={{ animation: 'mockup-border-pulse 3s ease-in-out infinite', border: '1px solid hsl(172 100% 38% / 0.3)' }}>
+      <div className="surface-card overflow-hidden relative z-10 mockup-border-animate" style={{ border: '1px solid hsl(172 100% 38% / 0.3)' }}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-border/60">
           <div className="flex gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
@@ -96,11 +100,11 @@ const DashboardMockup = ({ visible }: { visible: boolean }) => {
         </div>
         <div className="divide-y divide-border/40">
           {cases.map((c, i) => {
-            const rowStyle = reduced
+            const rowStyle: React.CSSProperties = reduced
               ? {}
               : {
-                  opacity: visible ? 1 : 0,
-                  transform: visible ? 'translateX(0)' : isMobile ? 'translateX(0)' : 'translateX(-20px)',
+                  opacity: show ? 1 : 0,
+                  transform: show ? 'translateX(0)' : isMobile ? 'translateX(0)' : 'translateX(-20px)',
                   transition: `opacity 0.35s ease-out ${0.5 + i * 0.15}s, transform 0.35s ease-out ${0.5 + i * 0.15}s`,
                 };
             return (
@@ -161,6 +165,43 @@ const StatsBar = () => {
   );
 };
 
+/* ────── Social Proof Bar ────── */
+const SocialProofBar = () => {
+  const allFirms = [
+    'Harmon & Velez Law',
+    'Phoenix Fresh Start',
+    'Midwest Debt Relief',
+    'Cutler Legal Group',
+    'Summit Bankruptcy Partners',
+  ];
+
+  return (
+    <div className="py-6 text-center" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+      <p className="text-[11px] uppercase tracking-[0.15em] text-[#8aa3b8] font-body mb-3">
+        Trusted by bankruptcy firms across the country
+      </p>
+      {/* Desktop: all 5 */}
+      <p className="hidden md:block font-display font-semibold text-[15px]" style={{ color: '#4a6580' }}>
+        {allFirms.map((f, i) => (
+          <span key={f}>
+            <span className="transition-colors duration-200 hover:text-[#8aa3b8] cursor-default">{f}</span>
+            {i < allFirms.length - 1 && <span className="mx-3">·</span>}
+          </span>
+        ))}
+      </p>
+      {/* Mobile: first 3 */}
+      <p className="md:hidden font-display font-semibold text-[13px]" style={{ color: '#4a6580' }}>
+        {allFirms.slice(0, 3).map((f, i) => (
+          <span key={f}>
+            <span>{f}</span>
+            {i < 2 && <span className="mx-2">·</span>}
+          </span>
+        ))}
+      </p>
+    </div>
+  );
+};
+
 /* ────── Client Wizard Phone Mockup ────── */
 const ClientWizardMockup = () => (
   <div className="w-[280px] mx-auto md:mx-0 flex-shrink-0">
@@ -189,10 +230,13 @@ const ClientWizardMockup = () => (
   </div>
 );
 
-/* ────── AI Form Filling Section ────── */
+/* ────── AI Form Filling Section (Interactive) ────── */
 const AIFormFillingSection = () => {
   const [ref, visible] = useScrollReveal<HTMLDivElement>();
   const reduced = usePrefersReducedMotion();
+  const [conflictHovered, setConflictHovered] = useState(false);
+  const [resolvedValue, setResolvedValue] = useState<string | null>(null);
+  const [hintDismissed, setHintDismissed] = useState(false);
 
   const revealStyle = (delay = 0): React.CSSProperties =>
     reduced ? {} : {
@@ -205,7 +249,6 @@ const AIFormFillingSection = () => {
     { label: 'Gross Monthly Income', value: '$4,833.00', confidence: 'High', source: 'Pay Stub — March 2026', color: 'bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)]' },
     { label: 'Employer Name', value: 'Riverside Medical Group', confidence: 'High', source: 'Pay Stub — March 2026', color: 'bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)]' },
     { label: 'Federal Tax Deduction', value: '$621.00', confidence: 'High', source: 'Pay Stub — March 2026', color: 'bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)]' },
-    { label: 'Net Monthly Pay', value: '$3,744.00', confidence: 'Medium', source: 'Conflict detected', color: 'bg-[rgba(251,191,36,0.15)] text-[rgb(251,191,36)]', conflict: true },
   ];
 
   const forms = [
@@ -216,8 +259,17 @@ const AIFormFillingSection = () => {
     'B122A-1 — Means Test', 'B122A-2 — Means Test Calculation',
   ];
 
+  const handleResolve = (val: string) => {
+    setResolvedValue(val);
+    setHintDismissed(true);
+  };
+
   return (
-    <section className="px-6 py-16 max-w-5xl mx-auto" ref={ref}>
+    <section
+      className="px-6 py-16 max-w-5xl mx-auto"
+      ref={ref}
+      style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(0,194,168,0.05) 0%, transparent 65%)' }}
+    >
       <div className="text-center mb-12" style={revealStyle(0)}>
         <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground leading-tight landing-heading-glow">
           Your paralegals should review forms.<br />
@@ -232,7 +284,7 @@ const AIFormFillingSection = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left — form extraction card */}
         <div style={revealStyle(0.1)}>
-          <div className="rounded-xl p-6" style={{ background: '#111f2e', border: '1px solid rgba(0,194,168,0.15)' }}>
+          <div className="rounded-xl p-4 md:p-6" style={{ background: '#111f2e', border: '1px solid rgba(0,194,168,0.15)' }}>
             <div className="flex items-center gap-2 mb-5">
               <span className="w-2 h-2 rounded-full bg-primary" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
               <span className="font-display font-bold text-sm text-foreground">B106I — Schedule I: Income</span>
@@ -248,25 +300,81 @@ const AIFormFillingSection = () => {
                     </div>
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-body ${f.color}`}>{f.confidence}</span>
                   </div>
-                  {f.conflict ? (
-                    <>
-                      <p className="text-[12px] italic font-body" style={{ color: 'rgb(168,85,247)' }}>Conflict detected</p>
-                      <div className="mt-2 ml-2 space-y-1 text-[12px] font-body text-[#8aa3b8]">
-                        <p>Pay Stub Feb: <span className="text-foreground">$3,744.00</span></p>
-                        <p>Pay Stub Mar: <span className="text-foreground">$3,912.00</span></p>
-                      </div>
-                      <p className="text-[11px] italic text-[#8aa3b8] font-body mt-1">Paralegal selects correct value</p>
-                    </>
-                  ) : (
-                    <p className="text-[12px] italic text-[#8aa3b8] font-body">{f.source}</p>
-                  )}
+                  <p className="text-[12px] italic text-[#8aa3b8] font-body">{f.source}</p>
                 </div>
               ))}
+
+              {/* Interactive conflict row */}
+              <div
+                className="rounded-lg p-3 transition-colors duration-200 cursor-pointer"
+                style={{ background: conflictHovered ? 'rgba(139,92,246,0.08)' : 'transparent' }}
+                onMouseEnter={() => setConflictHovered(true)}
+                onMouseLeave={() => { if (!resolvedValue) setConflictHovered(false); }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] text-[#8aa3b8] font-body">Net Monthly Pay</p>
+                    <p className="text-[15px] text-foreground font-medium font-body">
+                      {resolvedValue || '$3,744.00'}
+                    </p>
+                  </div>
+                  {resolvedValue ? (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-body bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)] flex items-center gap-1 transition-all duration-300">
+                      <CheckCircle2 className="w-3 h-3" /> Resolved
+                    </span>
+                  ) : (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-body" style={{ background: 'rgba(139,92,246,0.15)', color: 'rgb(168,85,247)' }}>
+                      Conflict
+                    </span>
+                  )}
+                </div>
+                {!resolvedValue && (
+                  <p className="text-[12px] italic font-body mt-1" style={{ color: 'rgb(168,85,247)' }}>Conflict detected</p>
+                )}
+
+                {/* Expandable conflict details */}
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxHeight: (conflictHovered || resolvedValue) ? '200px' : '0px',
+                    opacity: (conflictHovered || resolvedValue) ? 1 : 0,
+                  }}
+                >
+                  <div className="mt-3 ml-1 space-y-2">
+                    <label
+                      className="flex items-center gap-2 text-[12px] font-body text-[#8aa3b8] cursor-pointer"
+                      onClick={() => handleResolve('$3,744.00')}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${resolvedValue === '$3,744.00' ? 'border-primary bg-primary' : 'border-[#8aa3b8]'}`}>
+                        {resolvedValue === '$3,744.00' && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                      </span>
+                      Pay Stub Feb 2026: <span className="text-foreground">$3,744.00</span>
+                    </label>
+                    <label
+                      className="flex items-center gap-2 text-[12px] font-body text-[#8aa3b8] cursor-pointer"
+                      onClick={() => handleResolve('$3,912.00')}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${resolvedValue === '$3,912.00' ? 'border-primary bg-primary' : 'border-[#8aa3b8]'}`}>
+                        {resolvedValue === '$3,912.00' && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                      </span>
+                      Pay Stub Mar 2026: <span className="text-foreground">$3,912.00</span>
+                    </label>
+                    <p className="text-[11px] italic text-[#8aa3b8] font-body mt-1">
+                      {resolvedValue ? 'Value updated' : 'Select the correct value'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-4">
             Conflicts across documents detected and flagged automatically.
           </p>
+          {!hintDismissed && (
+            <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-2 italic transition-opacity duration-300">
+              ↑ Try hovering the conflict row
+            </p>
+          )}
         </div>
 
         {/* Right — form list */}
@@ -289,6 +397,91 @@ const AIFormFillingSection = () => {
     </section>
   );
 };
+
+/* ────── Founder Story Card ────── */
+const FounderStoryCard = () => {
+  const [ref, visible] = useScrollReveal<HTMLDivElement>();
+  const reduced = usePrefersReducedMotion();
+  const style: React.CSSProperties = reduced ? {} : {
+    opacity: visible ? 1 : 0,
+    transform: visible ? 'translateY(0)' : 'translateY(20px)',
+    transition: 'opacity 0.5s ease-out, transform 0.5s ease-out',
+  };
+
+  return (
+    <section className="px-6 py-12 max-w-3xl mx-auto">
+      <div
+        ref={ref}
+        className="rounded-xl p-8 md:px-10"
+        style={{
+          background: '#111f2e',
+          borderLeft: '3px solid #00c2a8',
+          ...style,
+        }}
+      >
+        <p className="text-[12px] uppercase tracking-[0.15em] text-primary font-body font-medium mb-4">
+          Why we built this
+        </p>
+        <h3 className="font-display font-bold text-xl md:text-2xl text-foreground mb-4 leading-snug">
+          I filed Chapter 7 myself. I know what the process feels like.
+        </h3>
+        <div className="text-[16px] font-body font-light leading-[1.8] space-y-4" style={{ color: '#c8d8e8' }}>
+          <p>
+            In late 2024, I went through my own bankruptcy filing. I sat across from my attorney and watched his paralegal manually type my information from a stack of documents into federal forms — one field at a time.
+          </p>
+          <p>
+            I thought: there has to be a better way.
+          </p>
+          <p>
+            ClearPath is what I built. Document collection that actually guides clients through the process, and AI that reads every approved document and pre-fills all 15 federal forms automatically. So attorneys can focus on the legal work — not the data entry.
+          </p>
+        </div>
+        <p className="mt-6 text-sm font-body font-medium text-[#8aa3b8] flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+          Jose Nevada, Founder · Hamilton, Ohio
+        </p>
+      </div>
+    </section>
+  );
+};
+
+/* ────── ROI Calculator Card ────── */
+const ROICard = () => (
+  <div className="rounded-xl p-6 md:p-7" style={{ background: '#111f2e', border: '0.5px solid rgba(0,194,168,0.2)' }}>
+    <p className="text-[14px] uppercase tracking-[0.1em] text-primary font-display font-bold mb-5">
+      Professional Plan ROI — 25 Cases/Month
+    </p>
+    <div className="space-y-3 text-[13px] md:text-[14px] font-body">
+      {[
+        ['Hours saved per case', '8.5 hrs'],
+        ['Total hours saved/month', '212 hrs'],
+        ['Paralegal rate', '× $50/hr'],
+      ].map(([label, value]) => (
+        <div key={label} className="flex justify-between">
+          <span className="text-[#8aa3b8]">{label}</span>
+          <span className="text-foreground font-medium">{value}</span>
+        </div>
+      ))}
+      <div className="border-t border-foreground/10 my-2" />
+      <div className="flex justify-between">
+        <span className="text-[#8aa3b8]">Labor saved per month</span>
+        <span className="text-foreground font-medium">$10,600</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-[#8aa3b8]">ClearPath Professional</span>
+        <span className="text-foreground font-medium">− $399</span>
+      </div>
+      <div className="border-t border-foreground/10 my-2" />
+      <div className="flex justify-between items-baseline">
+        <span className="font-display font-bold text-lg md:text-xl text-primary">Net savings/month</span>
+        <span className="font-display font-bold text-lg md:text-xl text-primary">$10,201</span>
+      </div>
+    </div>
+    <p className="text-[12px] italic text-[#8aa3b8] font-body mt-4">
+      Based on $50/hr paralegal rate. Individual results vary.
+    </p>
+  </div>
+);
 
 /* ────── Main Component ────── */
 const MarketingLanding = () => {
@@ -346,7 +539,7 @@ const MarketingLanding = () => {
     };
   };
 
-  // How-it-works sequential animation (now 4 steps → steps 1-9: c1, l1, c2, l2, c3, l3, c4, t1-t4)
+  // How-it-works sequential animation
   const [howStep, setHowStep] = useState(0);
   useEffect(() => {
     if (!howVisible || reduced) { if (howVisible) setHowStep(9); return; }
@@ -365,6 +558,13 @@ const MarketingLanding = () => {
     { num: '4', title: 'Review, Approve & File', desc: 'Paralegals review extracted data in minutes. Attorney approves. Court-ready packet generated with pre-filled forms included — one click.', circleStep: 7, textStep: 7 },
   ];
 
+  /* Section background colors */
+  const sectionBg = {
+    aiFormFilling: '#0f1f2e',
+    howItWorks: '#0a1520',
+    clientWizard: '#0a1520',
+  };
+
   return (
     <div className="min-h-screen" style={{ lineHeight: '1.7' }}>
       {/* Nav */}
@@ -379,10 +579,10 @@ const MarketingLanding = () => {
       </nav>
 
       {/* Hero */}
-      <section className="px-6 pt-20 md:pt-28 pb-10 md:pb-14 text-center max-w-4xl mx-auto relative">
+      <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative">
         {/* Subtle radial gradient for hero */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)' }} />
-        <h1 className="font-display font-extrabold text-4xl md:text-[3.5rem] text-foreground leading-tight relative landing-heading-glow" style={heroStagger(0)}>
+        <h1 className="font-display font-extrabold text-[42px] md:text-[3.5rem] text-foreground leading-tight relative landing-heading-glow" style={heroStagger(0)}>
           The bankruptcy firm that still<br />
           types data into federal forms<br />
           <span className="text-primary">is leaving money on the table.</span>
@@ -403,6 +603,7 @@ const MarketingLanding = () => {
           ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ Setup in 5 minutes
         </p>
 
+        <SocialProofBar />
         <DashboardMockup visible={heroLoaded} />
         <StatsBar />
       </section>
@@ -471,16 +672,17 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* AI Form Filling — NEW SECTION */}
-      <AIFormFillingSection />
+      {/* AI Form Filling */}
+      <div style={{ background: sectionBg.aiFormFilling }}>
+        <AIFormFillingSection />
+      </div>
 
       <SectionDivider />
 
       {/* How it works */}
-      <section id="features" className="px-6 py-12 max-w-5xl mx-auto">
+      <section id="features" className="px-6 py-12 max-w-5xl mx-auto" style={{ background: sectionBg.howItWorks }}>
         <h2 className="font-display font-extrabold text-3xl text-foreground text-center mb-12 landing-heading-glow">How it works</h2>
         <div ref={howRef} className="grid grid-cols-1 md:grid-cols-4 gap-0 items-start relative">
-          {/* Dashed connector lines (desktop) */}
           {[0, 1, 2].map(i => (
             <div
               key={i}
@@ -555,7 +757,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Client experience */}
-      <section className="px-6 py-12 max-w-5xl mx-auto">
+      <section className="px-6 py-12 max-w-5xl mx-auto" style={{ background: sectionBg.clientWizard }}>
         <div className="text-center mb-10">
           <h2 className="font-display font-extrabold text-3xl text-foreground mb-3 landing-heading-glow">Your clients will actually finish</h2>
           <p className="text-[#8aa3b8] font-body max-w-2xl mx-auto">
@@ -605,17 +807,8 @@ const MarketingLanding = () => {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="px-6 py-12 max-w-3xl mx-auto">
-        <div className="surface-card p-8 border-l-4 border-primary">
-          <p className="text-lg md:text-xl text-foreground font-body italic leading-relaxed">
-            "We used to spend two weeks collecting documents by email. With ClearPath we have everything we need in three days."
-          </p>
-          <p className="mt-5 text-sm text-[#8aa3b8] italic font-body">
-            Join the firms already using ClearPath
-          </p>
-        </div>
-      </section>
+      {/* Founder Story — replaces old testimonial */}
+      <FounderStoryCard />
 
       <SectionDivider />
 
@@ -719,26 +912,49 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Final CTA */}
-      <section className="px-6 py-16 md:py-20">
+      {/* Final CTA — Redesigned */}
+      <section
+        className="px-6 py-16 md:py-20"
+        style={{
+          background: 'linear-gradient(135deg, #0a1a18 0%, #0d1b2a 50%, #0a1520 100%)',
+        }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 10% 20%, rgba(0,194,168,0.06) 0%, transparent 50%)' }} />
         <div
           ref={ctaRef}
-          className="max-w-3xl mx-auto text-center rounded-2xl bg-primary/[0.06] border border-primary/10 px-8 py-14"
-          style={revealStyle(ctaVisible, { y: 20, scale: 0.97 })}
+          className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center relative"
+          style={revealStyle(ctaVisible, { y: 20 })}
         >
-          <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-4 landing-heading-glow">
-            Your next case could take<br />one hour instead of ten.
-          </h2>
-          <p className="text-[#8aa3b8] font-body mb-8 max-w-xl mx-auto">
-            Start your free 14-day trial. No credit card. No commitment.<br />
-            Set up your firm in under 5 minutes.
-          </p>
-          <Button size="lg" onClick={() => navigate('/signup')} className="cta-shimmer relative overflow-hidden landing-btn-glow">Start Free — No Card Needed</Button>
+          {/* Left */}
+          <div>
+            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground leading-[1.1] landing-heading-glow">
+              Your next case could take<br />one hour instead of ten.
+            </h2>
+            <p className="text-[#8aa3b8] font-body font-light text-[17px] mt-4 max-w-lg">
+              Start your free 14-day trial. No credit card. No commitment.<br />
+              Set up your firm in under 5 minutes.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => navigate('/signup')}
+              className="mt-8 cta-shimmer relative overflow-hidden landing-btn-glow"
+            >
+              Start Free — No Card Needed
+            </Button>
+            <p className="text-[13px] text-[#8aa3b8] font-body mt-4">
+              14-day free trial · Cancel anytime · Setup in 5 minutes
+            </p>
+          </div>
+
+          {/* Right — ROI card */}
+          <div>
+            <ROICard />
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-8" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+      <footer className="px-6 py-8" style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col items-center md:items-start gap-1">
             <div className="flex items-center gap-3">

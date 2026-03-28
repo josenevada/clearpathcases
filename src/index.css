@@ -247,10 +247,14 @@
     transform: scaleX(1);
   }
 
-  /* Mockup border pulse */
-  @keyframes mockup-border-pulse {
-    0%, 100% { border-color: hsl(172 100% 38% / 0.3); }
-    50% { border-color: hsl(172 100% 38% / 0.6); }
+  /* Mockup border pulse — smooth 2.5s loop */
+  @keyframes mockup-border-animate {
+    0%, 100% { border-color: rgba(0,194,168,0.2); }
+    50% { border-color: rgba(0,194,168,0.5); }
+  }
+
+  .mockup-border-animate {
+    animation: mockup-border-animate 2.5s ease-in-out infinite;
   }
 
   /* Pulse dot for extraction indicator */
