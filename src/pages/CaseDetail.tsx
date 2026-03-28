@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -102,6 +102,11 @@ const CaseDetail = () => {
   const [naTarget, setNaTarget] = useState<string | null>(null);
   const [naReason, setNaReason] = useState('');
   const [naCustomReason, setNaCustomReason] = useState('');
+  // PROMPT 5: Add custom document inline form state
+  const [addDocCategory, setAddDocCategory] = useState<string | null>(null);
+  const [addDocName, setAddDocName] = useState('');
+  const [addDocDesc, setAddDocDesc] = useState('');
+  const [addDocRequired, setAddDocRequired] = useState(true);
 
   useEffect(() => {
     if (!caseId) return;
