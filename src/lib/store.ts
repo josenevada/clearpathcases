@@ -76,6 +76,7 @@ export interface ChecklistItem {
   notApplicableReason?: string;
   notApplicableMarkedBy?: string;
   notApplicableAt?: string;
+  isCustom?: boolean;
 }
 
 export interface ActivityLogEntry {
