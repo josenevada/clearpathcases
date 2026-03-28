@@ -1175,6 +1175,29 @@ const ClientWizard = () => {
                 <p className="text-muted-foreground text-lg font-body leading-relaxed">
                   {currentItem.description}
                 </p>
+                {/* Credit Counseling Provider link */}
+                {currentItem.label === 'Credit Counseling Certificate' && (() => {
+                  try {
+                    const cp = JSON.parse(localStorage.getItem('cp_counseling_provider') || '{}');
+                    if (cp.providerLink) {
+                      return (
+                        <div className="surface-card p-4 mt-3 space-y-1">
+                          <p className="text-sm font-medium text-foreground">
+                            Your firm recommends: <a href={cp.providerLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{cp.providerName || cp.providerLink}</a>
+                          </p>
+                          {cp.attorneyCode && (
+                            <p className="text-xs text-muted-foreground">Attorney code: <span className="font-mono font-bold text-foreground">{cp.attorneyCode}</span></p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="surface-card border-warning/30 bg-warning/5 p-4 mt-3">
+                        <p className="text-sm text-warning">Your firm hasn't set a credit counseling provider yet — contact your attorney for the correct link.</p>
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
               </header>
 
               <button
