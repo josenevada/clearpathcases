@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare, Search, X } from 'lucide-react';
+import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare, Search, X, FileCheck } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -138,6 +138,9 @@ const ParalegalDashboard = () => {
           </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/paralegal/packets')} className="gap-1.5 border-primary/20 text-primary hover:bg-primary/5">
+            <FileCheck className="w-3.5 h-3.5" /> Packets
           </Button>
           {!isAdminViewing && (
             <Button onClick={handleNewCase}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban } from 'lucide-react';
@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import DocumentsTab from '@/components/case/DocumentsTab';
+import BuildPacketTab from '@/components/case/BuildPacketTab';
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
@@ -49,7 +50,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
-type TabType = 'checklist' | 'client-info' | 'documents' | 'activity';
+type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet';
 
 const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
   const [state, setState] = useState<'idle' | 'success'>('idle');
@@ -79,6 +80,8 @@ const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
 const CaseDetail = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as TabType) || 'checklist';
   const { user } = useAuth();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
@@ -91,7 +94,7 @@ const CaseDetail = () => {
   const [activeCorrectionTarget, setActiveCorrectionTarget] = useState<{ itemId: string; fileId: string } | null>(null);
   const [selectedCorrectionReason, setSelectedCorrectionReason] = useState('');
   const [correctionDetails, setCorrectionDetails] = useState('');
-  const [activeTab, setActiveTab] = useState<TabType>('checklist');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
@@ -481,6 +484,7 @@ const CaseDetail = () => {
               { key: 'client-info' as TabType, label: 'Client Info' },
               { key: 'documents' as TabType, label: 'Documents' },
               { key: 'activity' as TabType, label: 'Activity' },
+              { key: 'packet' as TabType, label: 'Build Packet', dot: true },
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -491,7 +495,10 @@ const CaseDetail = () => {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab.label}
+                <span className="flex items-center gap-1.5">
+                  {tab.label}
+                  {'dot' in tab && tab.dot && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                </span>
               </button>
             ))}
           </div>
@@ -981,6 +988,10 @@ const CaseDetail = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {activeTab === 'packet' && (
+          <BuildPacketTab caseData={caseData} onRefresh={refresh} />
         )}
       </main>
 
