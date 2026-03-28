@@ -40,10 +40,12 @@ import {
   calculateProgress,
   isItemEffectivelyComplete,
   CATEGORIES,
+  CH13_MILESTONES,
   type Case,
   type ChecklistItem,
   type UploadedFile,
   type FileReviewStatus,
+  type MilestoneEntry,
 } from '@/lib/store';
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
 import { supabase } from '@/integrations/supabase/client';
@@ -558,9 +560,13 @@ const CaseDetail = () => {
             <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)} className="gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/20">
               <Trash2 className="w-3 h-3" /> Delete
             </Button>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Ch.{caseData.chapterType}
-            </span>
+             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+               caseData.chapterType === '13'
+                 ? 'bg-warning/10 text-warning border border-warning/20'
+                 : 'bg-primary/10 text-primary border border-primary/20'
+             }`}>
+               Ch.{caseData.chapterType}
+             </span>
             <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
               {caseData.urgency.replace('-', ' ')}
             </Badge>
