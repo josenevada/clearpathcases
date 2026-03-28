@@ -551,7 +551,7 @@ export const buildDefaultChecklist = (): ChecklistItem[] => [
 
   // Step 5: Personal Identification
   item('Personal Identification', 'Government-Issued Photo ID', 'Upload a clear photo of your driver\'s license, passport, or state ID.', 'The court needs to verify your identity before your case can be filed. A simple photo of your ID is all we need.'),
-  item('Personal Identification', 'Social Security Number', 'Enter your 9-digit Social Security number. It\'s encrypted and stored securely — only your attorney\'s office can see it.', 'Your SSN goes on every page of the bankruptcy petition. It\'s required by the court, but we keep it locked down tight.'),
+  item('Personal Identification', 'Social Security Card', 'Upload a photo or scan of your Social Security card. A clear photo taken with your phone works perfectly.', 'Your SSN goes on every page of the bankruptcy petition. It\'s required by the court — uploading the card itself helps your attorney verify accuracy.'),
 
   // Step 6: Agreements & Confirmation
   item('Agreements & Confirmation', 'Credit Counseling Certificate', 'Upload your certificate from an approved credit counseling course.', 'Federal law says everyone has to complete a short counseling session before filing. Most people do it online in under an hour.'),
