@@ -12,7 +12,9 @@ export type ActivityEventType =
   | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated'
   | 'ssn_viewed' | 'client_info_updated' | 'notification_sent' | 'document_validated'
   | 'item_not_applicable' | 'case_deleted' | 'notifications_paused'
-  | 'item_added' | 'item_removed';
+  | 'item_added' | 'item_removed'
+  | 'extraction_triggered_auto' | 'extraction_triggered_manual' | 'extraction_complete' | 'extraction_failed'
+  | 'field_overridden' | 'conflict_resolved' | 'forms_generated' | 'forms_approved' | 'share_link_created';
 
 export interface FileValidationResult {
   isCorrectDocumentType: boolean;
