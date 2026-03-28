@@ -965,6 +965,48 @@ const CaseDetail = () => {
                               </div>
                             );
                           })}
+
+                          {/* PROMPT 5: Add custom document button */}
+                          {viewRole === 'paralegal' && (
+                            <div className="border-t border-border px-4 py-3">
+                              {addDocCategory === category ? (
+                                <div className="space-y-3">
+                                  <Input
+                                    value={addDocName}
+                                    onChange={e => setAddDocName(e.target.value)}
+                                    placeholder="Document name (required)"
+                                    className="bg-input border-border rounded-[10px] text-sm"
+                                    autoFocus
+                                  />
+                                  <Input
+                                    value={addDocDesc}
+                                    onChange={e => setAddDocDesc(e.target.value)}
+                                    placeholder="Instructions for the client (optional)"
+                                    className="bg-input border-border rounded-[10px] text-sm"
+                                  />
+                                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <input type="checkbox" checked={addDocRequired} onChange={e => setAddDocRequired(e.target.checked)} className="accent-primary" />
+                                    Required
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => handleAddCustomDoc(category)} disabled={!addDocName.trim()}>
+                                      Add to checklist
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => { setAddDocCategory(null); setAddDocName(''); setAddDocDesc(''); }}>
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setAddDocCategory(category)}
+                                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                                >
+                                  <Plus className="w-3.5 h-3.5" /> Add document to this section
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
