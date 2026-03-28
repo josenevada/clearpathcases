@@ -5,6 +5,11 @@ import { FileCheck, AlertTriangle, Briefcase, Download, ArrowLeft, Settings, Sea
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import PlanBadge from '@/components/PlanBadge';
