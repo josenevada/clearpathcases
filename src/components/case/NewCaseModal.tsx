@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { CalendarIcon, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { CalendarIcon, ArrowRight, ArrowLeft, Check, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -20,9 +23,11 @@ import {
   createCase, updateCase, getFirmSettings, buildCustomChecklist,
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
+import { useAuth } from '@/lib/auth';
 import { sendClientWelcome } from '@/lib/notifications';
 import { sendWelcomeSms } from '@/lib/sms';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 interface NewCaseModalProps {
   open: boolean;
@@ -42,6 +47,13 @@ interface BasicInfo {
   assignedAttorney: string;
 }
 
+interface TeamMember {
+  id: string;
+  full_name: string;
+  role: string;
+  email: string;
+}
+
 const INTAKE_QUESTIONS = [
   { key: 'ownsRealEstate' as const, question: 'Does this client own real estate?' },
   { key: 'ownsVehicle' as const, question: 'Does this client own a vehicle?' },
@@ -53,8 +65,32 @@ const INTAKE_QUESTIONS = [
 
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const firmSettings = getFirmSettings();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamLoaded, setTeamLoaded] = useState(false);
+
+  // PROMPT 4: Load team members from database
+  useEffect(() => {
+    if (!open || teamLoaded) return;
+    const loadTeam = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('id, full_name, role, email')
+        .in('role', ['paralegal', 'attorney', 'admin']);
+      setTeamMembers(data || []);
+      setTeamLoaded(true);
+    };
+    loadTeam();
+  }, [open, teamLoaded]);
+
+  const paralegals = teamMembers.filter(m => m.role === 'paralegal' || m.role === 'admin');
+  const attorneys = teamMembers.filter(m => m.role === 'attorney' || m.role === 'admin');
+
+  // Auto-select if only one member
+  const defaultParalegal = paralegals.length === 1 ? paralegals[0].full_name : (firmSettings.defaultParalegal || '');
+  const defaultAttorney = attorneys.length === 1 ? attorneys[0].full_name : (firmSettings.defaultAttorney || '');
 
   const [info, setInfo] = useState<BasicInfo>({
     clientName: '',
@@ -64,9 +100,20 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     courtCaseNumber: '',
     chapterType: '7',
     filingDeadline: undefined,
-    assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
-    assignedAttorney: firmSettings.defaultAttorney || 'David Park',
+    assignedParalegal: defaultParalegal,
+    assignedAttorney: defaultAttorney,
   });
+
+  // Update defaults when team loads
+  useEffect(() => {
+    if (teamLoaded) {
+      setInfo(prev => ({
+        ...prev,
+        assignedParalegal: prev.assignedParalegal || defaultParalegal,
+        assignedAttorney: prev.assignedAttorney || defaultAttorney,
+      }));
+    }
+  }, [teamLoaded, defaultParalegal, defaultAttorney]);
 
   const [answers, setAnswers] = useState<Record<string, boolean | undefined>>({});
   const [questionIdx, setQuestionIdx] = useState(0);
@@ -115,8 +162,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setInfo({
       clientName: '', clientEmail: '', clientPhone: '', clientDob: '', courtCaseNumber: '',
       chapterType: '7', filingDeadline: undefined,
-      assignedParalegal: firmSettings.defaultParalegal || 'Sarah Johnson',
-      assignedAttorney: firmSettings.defaultAttorney || 'David Park',
+      assignedParalegal: defaultParalegal,
+      assignedAttorney: defaultAttorney,
     });
     setAnswers({});
     setQuestionIdx(0);
@@ -156,14 +203,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       checklist: customChecklist,
     });
 
-    // Update case with case_code and client_dob in localStorage
     const updatedCase = updateCase(newCase.id, (c) => ({
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
     }));
 
-    // Sync case to Supabase so the client portal can find it
     try {
       await supabase.from('cases').upsert({
         id: newCase.id,
@@ -182,7 +227,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         ready_to_file: false,
       });
 
-      // Sync checklist items to Supabase so client wizard can load them
       const checklistRows = newCase.checklist.map((item, idx) => ({
         id: item.id,
         case_id: newCase.id,
@@ -206,7 +250,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     onCreated(newCase);
     resetAndClose();
 
-    // Send welcome notification (email)
     const caseForNotification = updatedCase || { ...newCase, caseCode };
     sendClientWelcome(caseForNotification).then(result => {
       const channels = [];
@@ -222,7 +265,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       toast.error('Case created but welcome notification failed to send.');
     });
 
-    // Send welcome SMS (Trigger 1)
     sendWelcomeSms(
       info.clientPhone || undefined,
       info.clientName,
@@ -238,7 +280,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     <>
       <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(true); }}>
         <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto border-border bg-background p-0">
-          {/* Progress bar */}
           <div className="h-1 bg-secondary w-full">
             <div
               className="h-full bg-primary transition-all duration-300"
@@ -268,7 +309,15 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   transition={{ duration: 0.2 }}
                   className="mt-6"
                 >
-                  <Step1Form info={info} setInfo={setInfo} />
+                  <Step1Form
+                    info={info}
+                    setInfo={setInfo}
+                    paralegals={paralegals}
+                    attorneys={attorneys}
+                    currentUserId={user?.id}
+                    currentUserName={user?.fullName}
+                    currentUserRole={user?.role}
+                  />
                   <div className="flex justify-end mt-6">
                     <Button onClick={() => { setStep(2); setQuestionIdx(0); setShowSummary(false); }} disabled={!step1Valid}>
                       Next <ArrowRight className="w-4 h-4 ml-1" />
@@ -318,7 +367,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                       </button>
                     </div>
 
-                    {/* Dot indicators */}
                     <div className="flex justify-center gap-2 mt-8">
                       {INTAKE_QUESTIONS.map((_, i) => (
                         <button
@@ -413,9 +461,65 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   );
 };
 
-const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo) => void }) => {
+// PROMPT 4: Step1Form with live team member dropdowns
+const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, currentUserName, currentUserRole }: {
+  info: BasicInfo;
+  setInfo: (i: BasicInfo) => void;
+  paralegals: TeamMember[];
+  attorneys: TeamMember[];
+  currentUserId?: string;
+  currentUserName?: string;
+  currentUserRole?: string;
+}) => {
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
+  };
+
+  const renderTeamSelect = (
+    label: string,
+    value: string,
+    onChange: (v: string) => void,
+    members: TeamMember[],
+    role: string,
+  ) => {
+    if (members.length === 0) {
+      return (
+        <div className="space-y-1.5">
+          <Label className="text-muted-foreground text-sm">{label}</Label>
+          <div className="mt-1 flex items-center gap-2">
+            <Input disabled placeholder={`No ${role}s on the team yet`} className="bg-input border-border rounded-[10px] flex-1" />
+            <Link to="/paralegal/settings/firm/team" className="text-xs text-primary hover:underline whitespace-nowrap flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add team member
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1.5">
+        <Label className="text-muted-foreground text-sm">{label}</Label>
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className="mt-1 bg-input border-border rounded-[10px]">
+            <SelectValue placeholder={`Select ${role}`} />
+          </SelectTrigger>
+          <SelectContent>
+            {/* Current user first with (You) label */}
+            {members
+              .sort((a, b) => {
+                if (a.id === currentUserId) return -1;
+                if (b.id === currentUserId) return 1;
+                return a.full_name.localeCompare(b.full_name);
+              })
+              .map(m => (
+                <SelectItem key={m.id} value={m.full_name}>
+                  {m.full_name}{m.id === currentUserId ? ' (You)' : ''}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
   };
 
   return (
@@ -517,22 +621,8 @@ const Step1Form = ({ info, setInfo }: { info: BasicInfo; setInfo: (i: BasicInfo)
         <p className="text-xs text-muted-foreground mt-1">You can add this later once the court assigns it.</p>
       </div>
       <div />
-      <div>
-        <Label className="text-muted-foreground text-sm">Assigned Paralegal</Label>
-        <Input
-          value={info.assignedParalegal}
-          onChange={e => update('assignedParalegal', e.target.value)}
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
-      </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">Assigned Attorney</Label>
-        <Input
-          value={info.assignedAttorney}
-          onChange={e => update('assignedAttorney', e.target.value)}
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
-      </div>
+      {renderTeamSelect('Assigned Paralegal', info.assignedParalegal, v => update('assignedParalegal', v), paralegals, 'paralegal')}
+      {renderTeamSelect('Assigned Attorney', info.assignedAttorney, v => update('assignedAttorney', v), attorneys, 'attorney')}
     </div>
   );
 };

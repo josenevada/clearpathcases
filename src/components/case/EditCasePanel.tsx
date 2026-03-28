@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Check } from 'lucide-react';
+import { X, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { updateCase, addActivityEntry, type Case, type ChapterType } from '@/lib/store';
+import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 interface EditCasePanelProps {
   caseData: Case;
@@ -19,7 +24,14 @@ interface EditCasePanelProps {
   actorName: string;
 }
 
+interface TeamMember {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
 const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCasePanelProps) => {
+  const { user } = useAuth();
   const [clientName, setClientName] = useState(caseData.clientName);
   const [clientEmail, setClientEmail] = useState(caseData.clientEmail);
   const [clientPhone, setClientPhone] = useState(caseData.clientPhone || '');
@@ -30,6 +42,23 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
   const [assignedAttorney, setAssignedAttorney] = useState(caseData.assignedAttorney);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  // PROMPT 4: Load team members
+  useEffect(() => {
+    if (!open) return;
+    const loadTeam = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('id, full_name, role')
+        .in('role', ['paralegal', 'attorney', 'admin']);
+      setTeamMembers(data || []);
+    };
+    loadTeam();
+  }, [open]);
+
+  const paralegals = teamMembers.filter(m => m.role === 'paralegal' || m.role === 'admin');
+  const attorneys = teamMembers.filter(m => m.role === 'attorney' || m.role === 'admin');
 
   useEffect(() => {
     if (open) {
@@ -59,7 +88,6 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
     setSaving(true);
     setError(null);
     try {
-      // Update in Supabase
       const { error: dbError } = await supabase
         .from('cases')
         .update({
@@ -76,7 +104,6 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
 
       if (dbError) throw new Error(dbError.message);
 
-      // Log court case number change
       const oldCCN = caseData.courtCaseNumber || '';
       if (courtCaseNumber && courtCaseNumber !== oldCCN) {
         addActivityEntry(caseData.id, {
@@ -85,7 +112,6 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
           actorName,
           description: `${actorName} added court case number ${courtCaseNumber}`,
         });
-        // Sync to Supabase activity log
         await supabase.from('activity_log').insert({
           case_id: caseData.id,
           event_type: 'case_updated',
@@ -95,7 +121,6 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
         });
       }
 
-      // Update in localStorage
       const updated = updateCase(caseData.id, c => ({
         ...c,
         clientName,
@@ -127,14 +152,57 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
 
   if (!open) return null;
 
+  const renderTeamSelect = (
+    label: string,
+    value: string,
+    onChange: (v: string) => void,
+    members: TeamMember[],
+    role: string,
+  ) => {
+    if (members.length === 0) {
+      return (
+        <div className="space-y-1.5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
+          <div className="flex items-center gap-2">
+            <Input value={value} onChange={e => onChange(e.target.value)} className="bg-input border-border rounded-[10px] flex-1" />
+            <Link to="/paralegal/settings/firm/team" className="text-xs text-primary hover:underline whitespace-nowrap flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1.5">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className="bg-input border-border rounded-[10px]">
+            <SelectValue placeholder={`Select ${role}`} />
+          </SelectTrigger>
+          <SelectContent>
+            {members
+              .sort((a, b) => {
+                if (a.id === user?.id) return -1;
+                if (b.id === user?.id) return 1;
+                return a.full_name.localeCompare(b.full_name);
+              })
+              .map(m => (
+                <SelectItem key={m.id} value={m.full_name}>
+                  {m.full_name}{m.id === user?.id ? ' (You)' : ''}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  };
+
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Panel */}
       <div className="fixed right-0 top-0 z-50 h-full w-full max-w-[420px] border-l border-border bg-card shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="font-display text-lg font-bold text-foreground">Edit Case</h2>
           <button onClick={onClose} className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
@@ -142,7 +210,6 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
           </button>
         </div>
 
-        {/* Fields */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Client Full Name</Label>
@@ -201,22 +268,14 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
             <Input value={courtCaseNumber} onChange={e => setCourtCaseNumber(e.target.value)} placeholder="Assigned by court after filing — e.g. 24-12345-ABC" className="bg-input border-border rounded-[10px]" />
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Assigned Paralegal</Label>
-            <Input value={assignedParalegal} onChange={e => setAssignedParalegal(e.target.value)} className="bg-input border-border rounded-[10px]" />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Assigned Attorney</Label>
-            <Input value={assignedAttorney} onChange={e => setAssignedAttorney(e.target.value)} className="bg-input border-border rounded-[10px]" />
-          </div>
+          {renderTeamSelect('Assigned Paralegal', assignedParalegal, setAssignedParalegal, paralegals, 'paralegal')}
+          {renderTeamSelect('Assigned Attorney', assignedAttorney, setAssignedAttorney, attorneys, 'attorney')}
 
           {error && (
             <p className="text-sm text-destructive font-body">{error}</p>
           )}
         </div>
 
-        {/* Footer */}
         <div className="border-t border-border px-6 py-4 flex gap-3">
           <Button onClick={handleSave} disabled={!hasChanges || saving} className="flex-1">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}

@@ -1,13 +1,15 @@
+// STAFF FACING — subscription-gated for paralegal/attorney access
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Clock, Settings, LogOut, Search, X, FileCheck, Send } from 'lucide-react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Plus, Clock, Settings, LogOut, Search, X, FileCheck, Send, Mail, Phone, AlertCircle } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, differenceInDays } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Logo from '@/components/Logo';
 import NewCaseModal from '@/components/case/NewCaseModal';
 import TrialBanner from '@/components/TrialBanner';
@@ -140,8 +142,21 @@ const ParalegalDashboard = () => {
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
 
-  if (!subLoading && !subscribed && status === 'trial_expired') {
-    return <SubscriptionGate />;
+  // PROMPT 1: Show upgrade interstitial with client-portal-safe message when trial expired
+  if (!subLoading && !subscribed && (status === 'trial_expired' || status === 'canceled' || status === 'inactive')) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+        <Logo size="lg" />
+        <h1 className="font-display font-bold text-3xl text-foreground mt-8 mb-2">Your account is paused</h1>
+        <p className="text-muted-foreground font-body mb-4 text-center max-w-md">
+          Upgrade to continue managing cases.
+        </p>
+        <p className="text-sm text-muted-foreground font-body mb-10 text-center max-w-md">
+          Note: your clients can still access their intake portals and upload documents while your account is paused.
+        </p>
+        <SubscriptionGate />
+      </div>
+    );
   }
 
   return (
@@ -314,6 +329,7 @@ const ParalegalDashboard = () => {
 const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case; index: number; onNavigate: () => void; onSendLink: () => void }) => {
   const progress = calculateProgress(caseData);
   const hasRecentResubmission = caseHasRecentResubmission(caseData);
+  const navigate = useNavigate();
 
   const docsUploaded = caseData.checklist.reduce((s, i) => s + i.files.length, 0);
   const docsApproved = caseData.checklist.reduce((s, i) => s + i.files.filter(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden').length, 0);
@@ -331,14 +347,27 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
     normal: 'urgency-normal',
   }[caseData.urgency];
 
+  const hasPhone = !!caseData.clientPhone;
+  const hasEmail = !!caseData.clientEmail;
+  const hasBothMissing = !hasPhone && !hasEmail;
+
   const handleSendReminder = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // PROMPT 2: Contact validation before sending
+    if (hasBothMissing) return; // button is disabled
+
     try {
       const result = await sendSmartReminder(caseData);
       const channels = [];
       if (result.email.status === 'sent') channels.push('email');
       if (result.sms.status === 'sent') channels.push('SMS');
-      if (channels.length > 0) {
+
+      if (!hasPhone && hasEmail) {
+        toast.warning(`Reminder sent by email only — no phone number on file for this client`);
+      } else if (!hasEmail && hasPhone) {
+        toast.warning(`Reminder sent by SMS only — no email address on file for this client`);
+      } else if (channels.length > 0) {
         toast.success(`Reminder sent to ${caseData.clientName} via ${channels.join(' and ')}`);
       } else {
         toast.success(`Reminder queued for ${caseData.clientName}`);
@@ -373,6 +402,43 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             )}
           </div>
 
+          {/* Contact indicators — PROMPT 2 */}
+          <div className="flex items-center gap-2 mb-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!hasEmail) navigate(`/paralegal/case/${caseData.id}`);
+                  }}
+                  className="flex items-center"
+                >
+                  <Mail className={`w-3 h-3 ${hasEmail ? 'text-success' : 'text-destructive'}`} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{hasEmail ? caseData.clientEmail : 'No email on file — edit case to add'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!hasPhone) navigate(`/paralegal/case/${caseData.id}`);
+                  }}
+                  className="flex items-center"
+                >
+                  <Phone className={`w-3 h-3 ${hasPhone ? 'text-success' : 'text-destructive'}`} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{hasPhone ? caseData.clientPhone : 'No phone on file — edit case to add'}</TooltipContent>
+            </Tooltip>
+            {hasBothMissing && (
+              <span className="flex items-center gap-1 text-[10px] text-destructive">
+                <AlertCircle className="w-3 h-3" /> No contact info
+              </span>
+            )}
+          </div>
+
           {/* Progress bar */}
           <div className="flex items-center gap-2 mb-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
@@ -399,15 +465,25 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           >
             View case
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSendReminder}
-            className="text-primary hover:text-primary"
-          >
-            <Send className="w-3.5 h-3.5 mr-1" />
-            Remind
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSendReminder}
+                  className="text-primary hover:text-primary"
+                  disabled={hasBothMissing}
+                >
+                  <Send className="w-3.5 h-3.5 mr-1" />
+                  Remind
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {hasBothMissing && (
+              <TooltipContent>No contact info on file — edit this case to add a phone or email</TooltipContent>
+            )}
+          </Tooltip>
         </div>
       </div>
     </motion.div>

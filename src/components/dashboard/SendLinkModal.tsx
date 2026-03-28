@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Send, Check } from 'lucide-react';
+import { Copy, Send, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -22,6 +22,9 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
 
   const portalLink = `${window.location.origin}/client/${caseData.caseCode || caseData.id}`;
   const firstName = caseData.clientName.split(' ')[0];
+  const hasPhone = !!caseData.clientPhone;
+  const hasEmail = !!caseData.clientEmail;
+  const hasBothMissing = !hasPhone && !hasEmail;
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(portalLink);
@@ -31,13 +34,24 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
   };
 
   const handleSend = async () => {
+    // PROMPT 2: Contact validation on send
+    if (hasBothMissing) {
+      toast.error('No contact info on file — add a phone or email to this case first.');
+      return;
+    }
+
     setSending(true);
     try {
       const result = await sendSmartReminder(caseData);
       const channels = [];
       if (result.email.status === 'sent') channels.push('email');
       if (result.sms.status === 'sent') channels.push('SMS');
-      if (channels.length > 0) {
+
+      if (!hasPhone && hasEmail) {
+        toast.warning(`Link sent by email only — no phone number on file for ${caseData.clientName}`);
+      } else if (!hasEmail && hasPhone) {
+        toast.warning(`Link sent by SMS only — no email address on file for ${caseData.clientName}`);
+      } else if (channels.length > 0) {
         toast.success(`Link sent to ${caseData.clientName} via ${channels.join(' and ')}.`);
       } else {
         toast.success(`Link queued for ${caseData.clientName}.`);
@@ -64,6 +78,13 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
+          {hasBothMissing && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              No contact info on file. Add a phone or email to this case before sending.
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground font-body">Client portal URL</label>
             <div className="flex items-center gap-2">
@@ -89,7 +110,7 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
               <Copy className="w-4 h-4 mr-1.5" />
               {copied ? 'Copied!' : 'Copy link'}
             </Button>
-            <Button className="flex-1" onClick={handleSend} disabled={sending}>
+            <Button className="flex-1" onClick={handleSend} disabled={sending || hasBothMissing}>
               <Send className="w-4 h-4 mr-1.5" />
               {sending ? 'Sending…' : 'Send now'}
             </Button>

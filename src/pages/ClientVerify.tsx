@@ -1,3 +1,4 @@
+// CLIENT FACING — no billing UI permitted
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -40,14 +41,12 @@ const ClientVerify = () => {
   useEffect(() => {
     if (!caseCode) return;
 
-    // Check for existing valid session (sessionStorage — same tab only)
     const existingSession = getClientSession(caseCode);
     if (existingSession?.verified) {
       navigate(`/client-portal/${caseCode}/${existingSession.caseId}`, { replace: true });
       return;
     }
 
-    // Verify case code exists
     const checkCase = async () => {
       const { data } = await supabase
         .from('cases')
@@ -77,7 +76,6 @@ const ClientVerify = () => {
     e.preventDefault();
     if (!caseCode || !dob) return;
 
-    // Validate DOB before submitting
     const validationError = validateDob(dob);
     if (validationError) {
       setDobError(validationError);
@@ -97,7 +95,6 @@ const ClientVerify = () => {
       return;
     }
 
-    // Compare DOB
     if (data.client_dob === dob) {
       setClientSession(caseCode, data.id);
       navigate(`/client-portal/${caseCode}/${data.id}`, { replace: true });
