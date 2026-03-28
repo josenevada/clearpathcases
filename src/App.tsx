@@ -96,6 +96,11 @@ const App = () => {
                     <FirmSettings />
                   </ProtectedRoute>
                 } />
+                <Route path="/paralegal/settings/:group/:page" element={
+                  <ProtectedRoute>
+                    <FirmSettings />
+                  </ProtectedRoute>
+                } />
                 <Route path="/paralegal/packets" element={
                   <ProtectedRoute>
                     <Packets />

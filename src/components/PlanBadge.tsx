@@ -36,7 +36,7 @@ const PlanBadge = () => {
         }`}>
           {activeCaseCount} of {limits.activeCases} active cases used
           {usagePercent >= 1 && (
-            <Link to="/paralegal/settings?tab=billing" className="ml-1 underline text-primary hover:text-primary/80">
+            <Link to="/paralegal/settings/account/billing" className="ml-1 underline text-primary hover:text-primary/80">
               Upgrade
             </Link>
           )}

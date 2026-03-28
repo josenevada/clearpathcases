@@ -34,7 +34,7 @@ const UpgradeModal = ({ open, onOpenChange, featureName, description }: UpgradeM
             className="w-full"
             onClick={() => {
               onOpenChange(false);
-              navigate('/paralegal/settings?tab=billing');
+              navigate('/paralegal/settings/account/billing');
             }}
           >
             Upgrade Plan
