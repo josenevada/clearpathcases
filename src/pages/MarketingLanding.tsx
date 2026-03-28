@@ -538,11 +538,11 @@ const MarketingLanding = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)', border: 'none' }} />
         <h1
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
-          style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '800px' }}
+          style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '720px' }}
         >
-          The bankruptcy firm that still<br />
-          types data into federal forms<br />
-          <span className="text-primary">is leaving money on the table.</span>
+          While other firms<br />
+          are still typing,<br />
+          <span className="text-primary">yours is filing.</span>
         </h1>
         <p
           className="mt-6 text-[15px] md:text-lg text-[#8aa3b8] font-body font-light max-w-2xl mx-auto relative"
