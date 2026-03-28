@@ -592,6 +592,60 @@ const CaseDetail = () => {
         </div>
       </header>
 
+      {/* CH.13 Milestone Timeline */}
+      {caseData.chapterType === '13' && caseData.milestones && (
+        <div className="border-b border-border bg-secondary/20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4">
+            <div className="flex items-center gap-1.5 mb-3">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Chapter 13 Milestones</span>
+            </div>
+            <div className="flex items-center gap-0 overflow-x-auto pb-1">
+              {caseData.milestones.map((ms, i) => {
+                const isCompleted = ms.completed;
+                const isUpcoming = !isCompleted && (i === 0 || caseData.milestones![i - 1]?.completed);
+                return (
+                  <div key={ms.name} className="flex items-center flex-shrink-0">
+                    <button
+                      className="flex flex-col items-center gap-1.5 group"
+                      onClick={() => {
+                        const newDate = ms.date ? undefined : new Date().toISOString().split('T')[0];
+                        const toggled = !ms.completed;
+                        updateCase(caseData.id, c => ({
+                          ...c,
+                          milestones: c.milestones?.map((m, idx) => idx === i ? { ...m, completed: toggled, date: toggled ? (m.date || new Date().toISOString().split('T')[0]) : m.date } : m),
+                        }));
+                        refresh();
+                      }}
+                    >
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                        isCompleted
+                          ? 'bg-success text-success-foreground'
+                          : isUpcoming
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground border border-border'
+                      }`}>
+                        {isCompleted ? '✓' : i + 1}
+                      </div>
+                      <span className={`text-[9px] font-body text-center max-w-[72px] leading-tight ${
+                        isCompleted ? 'text-success font-bold' : isUpcoming ? 'text-primary font-bold' : 'text-muted-foreground'
+                      }`}>
+                        {ms.name}
+                      </span>
+                      {ms.date && (
+                        <span className="text-[8px] text-muted-foreground">{ms.date}</span>
+                      )}
+                    </button>
+                    {i < caseData.milestones!.length - 1 && (
+                      <div className={`w-6 h-0.5 mx-0.5 flex-shrink-0 ${isCompleted ? 'bg-success' : 'bg-border'}`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex gap-0">
