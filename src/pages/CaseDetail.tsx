@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import DocumentsTab from '@/components/case/DocumentsTab';
+import BuildPacketTab from '@/components/case/BuildPacketTab';
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
@@ -49,7 +50,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
-type TabType = 'checklist' | 'client-info' | 'documents' | 'activity';
+type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet';
 
 const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
   const [state, setState] = useState<'idle' | 'success'>('idle');
@@ -481,6 +482,7 @@ const CaseDetail = () => {
               { key: 'client-info' as TabType, label: 'Client Info' },
               { key: 'documents' as TabType, label: 'Documents' },
               { key: 'activity' as TabType, label: 'Activity' },
+              { key: 'packet' as TabType, label: 'Build Packet', dot: true },
             ]).map(tab => (
               <button
                 key={tab.key}
