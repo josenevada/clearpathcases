@@ -41,7 +41,7 @@ const WhiteLabelTab = () => {
         <div className="surface-card p-8 text-center">
           <Lock className="w-8 h-8 mx-auto text-muted-foreground/50 mb-3" />
           <p className="text-sm text-muted-foreground font-body mb-1">White label branding is available on the Firm plan.</p>
-          <a href="/paralegal/settings?tab=billing" className="text-sm text-primary hover:underline font-body">Upgrade to Firm</a>
+          <a href="/paralegal/settings/account/billing" className="text-sm text-primary hover:underline font-body">Upgrade to Firm</a>
         </div>
       </div>
     );
