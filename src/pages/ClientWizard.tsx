@@ -442,6 +442,7 @@ const ClientWizard = () => {
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
   const isSSNEntry = false; // SSN is now a document upload step, not a text entry
   const isSSNUpload = currentItem && (currentItem.label === SSN_LABEL || currentItem.label === SSN_LABEL_LEGACY);
+  const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
   const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
   const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
