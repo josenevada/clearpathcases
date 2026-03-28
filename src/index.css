@@ -286,3 +286,102 @@
     }
   }
 }
+
+/* ═══════════════════════════════════════════════
+   PART 2 — App-wide design consistency
+   Applied to dashboard, case pages, settings, wizard, auth
+   NOT applied to the landing page (it has its own styles)
+   ═══════════════════════════════════════════════ */
+
+/* ── App card system ── */
+.app-card {
+  background: hsl(210 45% 11%);
+  border: 0.5px solid hsl(0 0% 100% / 0.08);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-card-interactive:hover {
+  border-color: hsl(172 100% 38% / 0.2);
+  box-shadow: 0 4px 24px hsl(0 0% 0% / 0.2);
+}
+
+/* ── App badge system ── */
+.app-badge {
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+}
+.app-badge-success {
+  background: hsl(142 71% 45% / 0.15);
+  color: hsl(142 71% 45%);
+  border: 0.5px solid hsl(142 71% 45% / 0.2);
+}
+.app-badge-warning {
+  background: hsl(36 91% 55% / 0.15);
+  color: hsl(36 91% 55%);
+  border: 0.5px solid hsl(36 91% 55% / 0.2);
+}
+.app-badge-error {
+  background: hsl(0 100% 71% / 0.15);
+  color: hsl(0 100% 71%);
+  border: 0.5px solid hsl(0 100% 71% / 0.2);
+}
+.app-badge-info {
+  background: hsl(172 100% 38% / 0.15);
+  color: hsl(172 100% 38%);
+  border: 0.5px solid hsl(172 100% 38% / 0.2);
+}
+.app-badge-neutral {
+  background: hsl(207 25% 63% / 0.15);
+  color: hsl(207 25% 63%);
+  border: 0.5px solid hsl(207 25% 63% / 0.2);
+}
+
+/* ── App table rows ── */
+.app-table-row {
+  background: transparent;
+  border-bottom: 0.5px solid hsl(0 0% 100% / 0.05);
+  transition: background 0.15s ease;
+}
+.app-table-row:hover {
+  background: hsl(0 0% 100% / 0.03);
+}
+
+/* ── PART 3 — Client wizard overrides ── */
+.wizard-card {
+  background: hsl(210 45% 12%);
+  border: 0.5px solid hsl(0 0% 100% / 0.08);
+  border-radius: 12px;
+}
+
+.wizard-upload-zone {
+  border: 2px dashed hsl(172 100% 38% / 0.3);
+  background: hsl(172 100% 38% / 0.04);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.wizard-upload-zone:hover,
+.wizard-upload-zone.dragging {
+  border-style: solid;
+  border-color: hsl(172 100% 38%);
+  background: hsl(172 100% 38% / 0.08);
+}
+
+.wizard-why-link {
+  color: hsl(172 100% 38%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+}
+.wizard-why-link:hover {
+  text-decoration: underline;
+}

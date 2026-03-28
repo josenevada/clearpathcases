@@ -4,6 +4,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
+  Building, Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -424,8 +425,10 @@ const MarketingLanding = () => {
   };
 
   const [beforeAfterRef, beforeAfterVisible] = useScrollReveal<HTMLDivElement>();
+  const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
+  const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
   const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
@@ -643,6 +646,52 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
+      {/* Wizard Section */}
+      <section className="px-6 py-16 max-w-5xl mx-auto">
+        <div ref={wizRef} className="text-center mb-12" style={revealStyle(wizVisible)}>
+          <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
+            Clients upload everything.<br />
+            <span className="text-primary">Without a single email from you.</span>
+          </h2>
+          <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
+            ClearPath sends your client a secure link. They follow a guided step-by-step<br className="hidden sm:block" />
+            wizard — one document at a time, on any device, with plain English instructions.<br className="hidden sm:block" />
+            No account required. No confusion. No chasing.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients are guided through each document with plain English instructions, mobile camera capture, and a "Why do we need this?" explanation for every step. Completion rates are dramatically higher than email checklists.' },
+            { icon: Building, title: 'Bank statements in seconds', desc: 'Clients connect their bank directly via Plaid — no downloading, no scanning, no uploading. Statements arrive instantly and are automatically validated. Available on Professional and Firm plans.' },
+            { icon: Shield, title: 'Wrong documents rejected instantly', desc: 'Every upload is reviewed by AI the moment it arrives. Blurry photo, wrong year, wrong document type — the client is notified immediately and guided to fix it before it ever reaches your review queue.' },
+          ].map((c, i) => (
+            <div
+              key={c.title}
+              className="p-7 rounded-xl transition-all duration-200"
+              style={{
+                background: '#111f2e',
+                border: '0.5px solid rgba(255,255,255,0.08)',
+                ...revealStyle(wizVisible, { delay: 0.1 + i * 0.08, y: 16 }),
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,194,168,0.25)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+              }}
+            >
+              <c.icon className="w-7 h-7 text-primary mb-4" />
+              <h3 className="font-body font-semibold text-[17px] text-foreground mb-2">{c.title}</h3>
+              <p className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{c.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SectionDivider />
+
       {/* AI Form Filling */}
       <div style={{ background: sectionBg.aiFormFilling }}>
         <AIFormFillingSection />
@@ -651,7 +700,7 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* How it works */}
-      <section id="features" className="px-6 py-16 max-w-5xl mx-auto" style={{ background: sectionBg.howItWorks }}>
+      <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>How it works</h2>
         <div ref={howRef} className="grid grid-cols-1 md:grid-cols-4 gap-0 items-start relative">
           {[0, 1, 2].map(i => (
@@ -738,6 +787,82 @@ const MarketingLanding = () => {
               <p className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <SectionDivider />
+
+      {/* Packet Section */}
+      <section className="px-6 py-16 max-w-5xl mx-auto">
+        <div ref={pktRef} className="text-center mb-12" style={revealStyle(pktVisible)}>
+          <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
+            Court-ready in one click.<br />
+            <span className="text-primary">Not one afternoon.</span>
+          </h2>
+          <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
+            When documents are approved and forms are filled, ClearPath assembles your<br className="hidden sm:block" />
+            complete court filing packet automatically — organized, redacted, and ready.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+          {/* Left — feature list */}
+          <div className="space-y-4" style={revealStyle(pktVisible, { delay: 0.1, x: -30, y: 0 })}>
+            {[
+              'SSN automatically redacted from all documents',
+              'Documents organized by schedule and category',
+              'Pre-filled federal forms included when attorney-approved',
+              'Packet version history — every generated packet saved',
+              'One-click download as compiled PDF or organized ZIP',
+              'Attorney certification page auto-populated with firm details',
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-[15px] text-[#8aa3b8] font-body" style={{ lineHeight: '1.7' }}>{item}</span>
+              </div>
+            ))}
+          </div>
+          {/* Right — packet preview card */}
+          <div
+            className="rounded-xl p-6"
+            style={{
+              background: '#111f2e',
+              border: '0.5px solid rgba(0,194,168,0.2)',
+              ...revealStyle(pktVisible, { delay: 0.2, x: 30, y: 0 }),
+            }}
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span className="font-body font-semibold text-sm text-foreground">Court Packet — Rodriguez, Maria</span>
+              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full font-body" style={{ background: 'rgba(34,197,94,0.15)', color: 'rgb(34,197,94)' }}>Ready to Generate</span>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                'Voluntary Petition (B101)',
+                'Schedules A/B through H',
+                'Schedule I & J — Income & Expenses',
+                'Statement of Financial Affairs',
+                'Pre-filled Federal Forms (15 forms)',
+                'Credit Counseling Certificate',
+                'Supporting Documents (23 files)',
+              ].map((s, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-primary/60 flex-shrink-0" />
+                  <span className="text-[14px] text-foreground font-body">✓ {s}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6">
+              <button
+                className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 font-body font-semibold text-sm text-primary-foreground bg-primary cursor-default"
+              >
+                <Package className="w-4 h-4" />
+                Generate Packet
+              </button>
+              <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-3">
+                SSN redacted · Attorney certified · Version 1
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
