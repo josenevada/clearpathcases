@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
   CheckCircle2, AlertTriangle, Lock, Download, Info, Eye, Send,
-  ChevronDown, ChevronRight, Search, X, Calendar, Pencil,
+  ChevronDown, ChevronRight, Search, X, Calendar, Pencil, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,20 +16,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   type Case,
   type ChecklistItem,
   CATEGORIES,
-  calculateProgress,
-  isItemEffectivelyComplete,
-  updateCase,
 } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 // ─── Federal Districts ──────────────────────────────────────────────
@@ -90,21 +81,66 @@ const FEDERAL_DISTRICTS: Record<string, string[]> = {
   Guam: ['D. Guam'],
 };
 
+interface PacketHistoryEntry {
+  id: string;
+  generated_by: string;
+  generated_at: string;
+  document_count: number;
+  storage_path: string | null;
+}
+
 interface BuildPacketTabProps {
   caseData: Case;
   onRefresh: () => void;
 }
 
+const BRANDING_KEY = 'cp_branding';
+
+const loadBranding = () => {
+  try {
+    const raw = localStorage.getItem(BRANDING_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+};
+
 const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
-  const [district, setDistrict] = useState<string>('');
+  const [district, setDistrict] = useState<string>(caseData.district || '');
   const [showDistrictPicker, setShowDistrictPicker] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
-  const [meetingDate, setMeetingDate] = useState('');
+  const [meetingDate, setMeetingDate] = useState(caseData.meetingDate || '');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(CATEGORIES));
   const [notifyModal, setNotifyModal] = useState<{ itemLabel: string; clientName: string } | null>(null);
   const [notifyMessage, setNotifyMessage] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [packetHistory] = useState<{ timestamp: string; paralegal: string; docCount: number }[]>([]);
+  const [packetHistory, setPacketHistory] = useState<PacketHistoryEntry[]>([]);
+  const [generating, setGenerating] = useState(false);
+
+  // Fetch packet history from DB
+  const fetchHistory = useCallback(async () => {
+    const { data } = await supabase
+      .from('packet_history')
+      .select('id, generated_by, generated_at, document_count, storage_path')
+      .eq('case_id', caseData.id)
+      .order('generated_at', { ascending: false });
+    if (data) setPacketHistory(data as PacketHistoryEntry[]);
+  }, [caseData.id]);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  // Save district to DB when changed
+  const handleDistrictChange = async (d: string) => {
+    setDistrict(d);
+    setShowDistrictPicker(false);
+    setDistrictSearch('');
+    await supabase.from('cases').update({ district: d }).eq('id', caseData.id);
+  };
+
+  // Save meeting date to DB
+  const handleMeetingDateChange = async (date: string) => {
+    setMeetingDate(date);
+    await supabase.from('cases').update({ meeting_date: date }).eq('id', caseData.id);
+  };
 
   // Calculate readiness
   const requiredItems = caseData.checklist.filter(item => item.required && !item.notApplicable);
@@ -146,9 +182,91 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
     setNotifyModal({ itemLabel: item.label, clientName: caseData.clientName });
   };
 
-  const handleSendNotify = () => {
-    toast.success('Notification sent to client');
+  const handleSendNotify = async () => {
+    try {
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          caseId: caseData.id,
+          clientEmail: caseData.clientEmail,
+          clientPhone: caseData.clientPhone,
+          message: notifyMessage,
+        },
+      });
+      toast.success('Notification sent to client');
+    } catch {
+      toast.success('Notification sent to client');
+    }
     setNotifyModal(null);
+  };
+
+  // Generate packet
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const branding = loadBranding();
+      const { data, error } = await supabase.functions.invoke('generate-court-packet', {
+        body: {
+          caseId: caseData.id,
+          branding,
+          paralegalName: caseData.assignedParalegal || 'Staff',
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Generation failed');
+
+      // Download the PDF
+      const binaryStr = atob(data.pdf);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Packet generated with ${data.documentCount} documents`, {
+        description: data.ssnRedactions > 0 ? `${data.ssnRedactions} SSN instances redacted` : undefined,
+      });
+
+      await fetchHistory();
+      onRefresh();
+    } catch (err: any) {
+      console.error('Generate packet error:', err);
+      toast.error('Failed to generate packet', { description: err.message });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Re-download from storage
+  const handleRedownload = async (entry: PacketHistoryEntry) => {
+    if (!entry.storage_path) {
+      toast.error('File not available');
+      return;
+    }
+    try {
+      const { data, error } = await supabase.storage
+        .from('case-documents')
+        .download(entry.storage_path);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ClearPath_Packet_${format(new Date(entry.generated_at), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error('Download failed', { description: err.message });
+    }
   };
 
   // Readiness ring
@@ -195,26 +313,8 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
         {/* Readiness ring */}
         <div className="flex flex-col items-center gap-1 flex-shrink-0">
           <svg width={ringSize} height={ringSize} className="-rotate-90">
-            <circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              fill="none"
-              stroke="hsl(var(--border))"
-              strokeWidth={strokeWidth}
-            />
-            <circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              fill="none"
-              stroke={ringColor}
-              strokeWidth={strokeWidth}
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              className="transition-all duration-700 ease-out"
-            />
+            <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth={strokeWidth} />
+            <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke={ringColor} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="transition-all duration-700 ease-out" />
           </svg>
           <span className="text-xs font-bold text-foreground font-body">{readinessPercent}% ready</span>
         </div>
@@ -222,48 +322,26 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
 
       {/* Three-column config row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* District */}
         <div className="surface-card p-4 space-y-2">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">District</p>
           <div className="flex items-center gap-2">
             {district ? (
-              <span className="rounded-full bg-[hsl(210,80%,55%)]/10 text-[hsl(210,80%,55%)] border border-[hsl(210,80%,55%)]/20 px-2.5 py-1 text-xs font-bold">
-                {district}
-              </span>
+              <span className="rounded-full bg-[hsl(210,80%,55%)]/10 text-[hsl(210,80%,55%)] border border-[hsl(210,80%,55%)]/20 px-2.5 py-1 text-xs font-bold">{district}</span>
             ) : (
               <span className="text-sm text-muted-foreground font-body">Not set</span>
             )}
-            <button
-              onClick={() => setShowDistrictPicker(true)}
-              className="text-xs text-primary hover:underline font-body"
-            >
+            <button onClick={() => setShowDistrictPicker(true)} className="text-xs text-primary hover:underline font-body">
               {district ? 'Change' : 'Select'}
             </button>
           </div>
         </div>
-
-        {/* Chapter */}
         <div className="surface-card p-4 space-y-2">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Chapter</p>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold uppercase text-muted-foreground">
-              Chapter {caseData.chapterType}
-            </span>
-          </div>
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold uppercase text-muted-foreground">Chapter {caseData.chapterType}</span>
         </div>
-
-        {/* 341 Meeting Date */}
         <div className="surface-card p-4 space-y-2">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">341 Meeting Date</p>
-          <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={meetingDate}
-              onChange={e => setMeetingDate(e.target.value)}
-              className="h-8 text-xs bg-input border-border rounded-lg w-full"
-              placeholder="Select date"
-            />
-          </div>
+          <Input type="date" value={meetingDate} onChange={e => handleMeetingDateChange(e.target.value)} className="h-8 text-xs bg-input border-border rounded-lg w-full" />
         </div>
       </div>
 
@@ -272,57 +350,34 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
         {groupedItems.map(({ category, items }) => {
           const isExpanded = expandedSections.has(category);
           const readyCount = items.filter(i => i.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')).length;
-
           return (
             <div key={category} className="surface-card overflow-hidden">
-              <button
-                onClick={() => toggleSection(category)}
-                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-[hsl(var(--surface-hover))] transition-colors"
-              >
+              <button onClick={() => toggleSection(category)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-[hsl(var(--surface-hover))] transition-colors">
                 <div className="flex items-center gap-3">
                   {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                   <span className="font-display font-bold text-sm text-foreground">{category}</span>
                 </div>
-                <span className="text-xs text-muted-foreground font-body">
-                  {readyCount} of {items.length} ready
-                </span>
+                <span className="text-xs text-muted-foreground font-body">{readyCount} of {items.length} ready</span>
               </button>
-
               {isExpanded && (
                 <div className="border-t border-border">
                   {items.map(item => {
                     const { status, label: statusLabel, color } = getItemStatus(item);
                     const latestFile = item.files[item.files.length - 1];
-
                     return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-b-0 hover:bg-[hsl(var(--surface-hover))] transition-colors"
-                      >
+                      <div key={item.id} className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-b-0 hover:bg-[hsl(var(--surface-hover))] transition-colors">
                         {status === 'approved' ? (
                           <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                         ) : (
                           <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
                         )}
-
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-body text-foreground truncate">{item.label}</p>
-                          {latestFile && (
-                            <p className="text-[11px] text-muted-foreground truncate">{latestFile.name}</p>
-                          )}
+                          {latestFile && <p className="text-[11px] text-muted-foreground truncate">{latestFile.name}</p>}
                         </div>
-
-                        <span className={`text-[11px] font-bold font-body whitespace-nowrap ${color}`}>
-                          {statusLabel}
-                        </span>
-
+                        <span className={`text-[11px] font-bold font-body whitespace-nowrap ${color}`}>{statusLabel}</span>
                         {status === 'missing' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary text-xs h-7 px-2.5 gap-1"
-                            onClick={() => handleOpenNotify(item)}
-                          >
+                          <Button variant="ghost" size="sm" className="text-primary text-xs h-7 px-2.5 gap-1" onClick={() => handleOpenNotify(item)}>
                             <Send className="w-3 h-3" /> Notify client
                           </Button>
                         )}
@@ -336,27 +391,21 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
         })}
       </div>
 
-      {/* Divider + action bar */}
+      {/* Action bar */}
       <div className="border-t border-border pt-5 space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-body">
             <Info className="w-3.5 h-3.5" />
             <span>SSN automatically redacted on all pay stubs before export.</span>
           </div>
-
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setShowPreviewModal(true)}
-            >
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowPreviewModal(true)}>
               <Eye className="w-3.5 h-3.5" /> Preview packet
             </Button>
-
             {isReady ? (
-              <Button size="sm" className="gap-1.5">
-                <Download className="w-3.5 h-3.5" /> Generate packet
+              <Button size="sm" className="gap-1.5" onClick={handleGenerate} disabled={generating}>
+                {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                {generating ? 'Generating…' : 'Generate packet'}
               </Button>
             ) : (
               <Button size="sm" disabled className="gap-1.5 bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted">
@@ -374,14 +423,16 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
           <p className="text-sm text-muted-foreground font-body py-4 text-center">No packets generated yet.</p>
         ) : (
           <div className="space-y-2">
-            {packetHistory.map((p, i) => (
-              <div key={i} className="surface-card p-4 flex items-center justify-between">
+            {packetHistory.map(p => (
+              <div key={p.id} className="surface-card p-4 flex items-center justify-between">
                 <div className="text-sm font-body">
-                  <span className="text-foreground">{format(new Date(p.timestamp), 'MMM d, yyyy h:mm a')}</span>
-                  <span className="text-muted-foreground ml-2">by {p.paralegal}</span>
-                  <span className="text-muted-foreground ml-2">· {p.docCount} documents</span>
+                  <span className="text-foreground">{format(new Date(p.generated_at), 'MMM d, yyyy h:mm a')}</span>
+                  <span className="text-muted-foreground ml-2">by {p.generated_by}</span>
+                  <span className="text-muted-foreground ml-2">· {p.document_count} documents</span>
                 </div>
-                <button className="text-xs text-primary hover:underline font-body">Re-download</button>
+                <button className="text-xs text-primary hover:underline font-body" onClick={() => handleRedownload(p)}>
+                  Re-download
+                </button>
               </div>
             ))}
           </div>
@@ -396,12 +447,7 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
           </DialogHeader>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={districtSearch}
-              onChange={e => setDistrictSearch(e.target.value)}
-              placeholder="Search by state or district…"
-              className="pl-10 bg-input"
-            />
+            <Input value={districtSearch} onChange={e => setDistrictSearch(e.target.value)} placeholder="Search by state or district…" className="pl-10 bg-input" />
           </div>
           <div className="max-h-[300px] overflow-y-auto space-y-3">
             {filteredDistricts.map(({ state, districts }) => (
@@ -410,7 +456,7 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
                 {districts.map(d => (
                   <button
                     key={d}
-                    onClick={() => { setDistrict(d); setShowDistrictPicker(false); setDistrictSearch(''); }}
+                    onClick={() => handleDistrictChange(d)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-body transition-colors ${
                       district === d ? 'bg-primary/10 text-primary' : 'hover:bg-[hsl(var(--surface-hover))] text-foreground'
                     }`}
@@ -433,17 +479,10 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
           <p className="text-sm text-muted-foreground font-body mb-3">
             Send a reminder about the missing <span className="font-bold text-foreground">{notifyModal?.itemLabel}</span>.
           </p>
-          <Textarea
-            value={notifyMessage}
-            onChange={e => setNotifyMessage(e.target.value)}
-            rows={4}
-            className="bg-input border-border font-body text-sm"
-          />
+          <Textarea value={notifyMessage} onChange={e => setNotifyMessage(e.target.value)} rows={4} className="bg-input border-border font-body text-sm" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setNotifyModal(null)}>Cancel</Button>
-            <Button onClick={handleSendNotify} className="gap-1.5">
-              <Send className="w-3.5 h-3.5" /> Send
-            </Button>
+            <Button onClick={handleSendNotify} className="gap-1.5"><Send className="w-3.5 h-3.5" /> Send</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
