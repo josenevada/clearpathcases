@@ -130,7 +130,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const isDirty = info.clientName || info.clientEmail || Object.keys(answers).length > 0;
 
-  const step1Valid = info.clientName && info.clientEmail && info.filingDeadline;
+  const isJointFiling = answers.filingJointly === true;
+  const step1Valid = info.clientName && info.clientEmail && info.filingDeadline &&
+    (!isJointFiling || (info.spouseName && info.spouseEmail && info.spouseDob));
 
   const allAnswered = INTAKE_QUESTIONS.every(q => answers[q.key] !== undefined);
 
@@ -202,8 +204,11 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const handleCreate = async () => {
     const caseCode = generateCaseCode(info.clientName);
+    const displayName = isJointFiling && info.spouseName
+      ? `${info.clientName.split(' ')[0]} & ${info.spouseName.split(' ')[0]} ${info.clientName.split(' ').slice(-1)[0]}`
+      : info.clientName;
     const newCase = createCase({
-      clientName: info.clientName,
+      clientName: displayName,
       clientEmail: info.clientEmail,
       clientPhone: info.clientPhone || undefined,
       chapterType: info.chapterType,
