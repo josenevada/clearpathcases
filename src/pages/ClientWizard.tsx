@@ -36,7 +36,7 @@ const pageTransition = {
 
 const MILESTONE_THRESHOLDS = [25, 50, 75, 100];
 const MILESTONE_MESSAGES = [
-  'You're off to a great start. Every document you upload brings you one step closer to a fresh start.',
+  "You're off to a great start. Every document you upload brings you one step closer to a fresh start.",
   "You're halfway there — that's a big deal. Keep going, you're doing amazing.",
   'Almost there! Your attorney will have nearly everything they need to move forward.',
   "You did it — your documents are ready for review. We'll be in touch soon.",
