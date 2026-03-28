@@ -121,6 +121,8 @@ export interface Case {
   closedAt?: string;
   retentionNotifiedAt?: string;
   retentionDeleteScheduledAt?: string;
+  district?: string;
+  meetingDate?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────
