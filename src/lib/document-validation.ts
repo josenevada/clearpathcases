@@ -37,6 +37,7 @@ export function getExpectedDocType(label: string): string {
   if (lower.includes('tax return')) return 'tax return';
   if (lower.includes('bank') || lower.includes('checking') || lower.includes('savings')) return 'bank statement';
   if (lower.includes('credit card')) return 'credit card statement';
+  if (lower.includes('digital wallet') || lower.includes('venmo') || lower.includes('paypal') || lower.includes('cash app')) return 'digital wallet statement';
   if (lower.includes('id') || lower.includes('license') || lower.includes('passport')) return 'government id';
   // Fallback: use the label itself
   return label;
