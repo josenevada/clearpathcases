@@ -21,6 +21,7 @@ const LABEL_TO_DOC_TYPE: Record<string, string> = {
   'Tax Returns (Last 2 Years)': 'tax return',
   'Checking/Savings Statements (Last 6 Months)': 'bank statement',
   'Credit Card Statements (Last 3 Months)': 'credit card statement',
+  'Digital Wallet Statements': 'digital wallet statement',
   'Government-Issued Photo ID': 'government id',
   'Drivers License or State ID': 'government id',
   "Driver's License or State ID": 'government id',
@@ -36,6 +37,7 @@ export function getExpectedDocType(label: string): string {
   if (lower.includes('tax return')) return 'tax return';
   if (lower.includes('bank') || lower.includes('checking') || lower.includes('savings')) return 'bank statement';
   if (lower.includes('credit card')) return 'credit card statement';
+  if (lower.includes('digital wallet') || lower.includes('venmo') || lower.includes('paypal') || lower.includes('cash app')) return 'digital wallet statement';
   if (lower.includes('id') || lower.includes('license') || lower.includes('passport')) return 'government id';
   // Fallback: use the label itself
   return label;

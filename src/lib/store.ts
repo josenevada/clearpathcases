@@ -534,6 +534,7 @@ export const buildDefaultChecklist = (): ChecklistItem[] => [
 
   // Step 2: Bank & Financial Accounts
   item('Bank & Financial Accounts', 'Checking/Savings Statements (Last 6 Months)', 'Upload bank statements for all checking and savings accounts.', 'The court needs to see your account activity to understand your financial transactions and current balances.'),
+  item('Bank & Financial Accounts', 'Digital Wallet Statements', 'Used Venmo, PayPal, or Cash App in the last 12 months? Statements from these accounts are required for your filing.', 'Federal bankruptcy law requires full disclosure of all financial accounts including digital wallets. The trustee reviews all money movement from the past 12 months. Missing these accounts can put your case at risk.'),
   item('Bank & Financial Accounts', 'Investment/Retirement Statements', 'Upload statements for any investment or retirement accounts.', 'These documents help determine what assets may be exempt from the bankruptcy estate.', false),
 
   // Step 3: Debts & Credit

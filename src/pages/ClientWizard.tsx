@@ -14,6 +14,7 @@ import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
+import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
@@ -415,6 +416,7 @@ const ClientWizard = () => {
   const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
+  const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
   const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
@@ -1397,6 +1399,25 @@ const ClientWizard = () => {
                     </button>
                   </div>
                 </div>
+              ) : isDigitalWallet && !currentItemHasOpenCorrection ? (
+                <DigitalWalletStep
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                  clientPhone={caseData.clientPhone}
+                  checklistItemId={currentItem.id}
+                  files={currentItem.files}
+                  onFileAdd={(file: File) => {
+                    const existing = currentItem.files.find(f => f.name === file.name);
+                    if (existing) {
+                      setPendingDuplicate({ file, existingFileId: existing.id });
+                    } else {
+                      handleFileAdd(file);
+                    }
+                  }}
+                  onFileDelete={handleFileDelete}
+                  onFilePreview={(f) => setPreviewFile({ name: f.name, dataUrl: f.dataUrl })}
+                  onMarkNA={() => handleClientNA("Client indicated they don't use any digital wallet apps")}
+                />
               ) : isMultiUpload && multiConfig ? (
                 <div className="space-y-4">
                   {currentItemHasOpenCorrection && currentItem.correctionRequest && (
@@ -1665,6 +1686,21 @@ const ClientWizard = () => {
                 size="lg"
                 className="w-full"
                 disabled={!currentItem.completed && currentItem.files.length === 0 && currentItem.required}
+              >
+                Continue →
+              </Button>
+            ) : isDigitalWallet && !currentItemHasOpenCorrection ? (
+              <Button
+                onClick={() => {
+                  if (currentItem.completed || currentItem.notApplicable) {
+                    checkMilestoneAndAdvance(caseData);
+                  } else {
+                    handleContinueMultiUpload();
+                  }
+                }}
+                size="lg"
+                className="w-full"
+                disabled={!currentItem.completed && !currentItem.notApplicable && currentItem.files.length === 0 && currentItem.required}
               >
                 Continue →
               </Button>
