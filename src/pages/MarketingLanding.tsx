@@ -165,7 +165,7 @@ const StatsBar = () => {
               ...(reduced ? {} : { opacity: visible ? 1 : 0, transition: `opacity 0.4s ease-out ${i * 0.1}s` }),
             }}
           >
-            <p className="font-display font-extrabold text-[36px] md:text-[52px] text-primary" style={{ letterSpacing: '-0.02em', lineHeight: '1' }}>
+            <p className="font-display font-bold text-[36px] md:text-[52px] text-primary" style={{ letterSpacing: '-0.01em', lineHeight: '1' }}>
               <CountUp target={s.value} started={visible} prefix={s.prefix} suffix={s.suffix} />
             </p>
             <p className="text-xs text-[#8aa3b8] font-body mt-2 leading-snug">{s.label}</p>
@@ -217,7 +217,7 @@ const AIFormFillingSection = () => {
       style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(0,194,168,0.05) 0%, transparent 65%)' }}
     >
       <div className="text-center mb-12" style={revealStyle(0)}>
-        <h2 className="font-display font-extrabold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.02em' }}>
+        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
           Your paralegals should review forms.<br />
           <span className="text-primary">Not type them.</span>
         </h2>
@@ -534,8 +534,8 @@ const MarketingLanding = () => {
       <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative">
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)' }} />
         <h1
-          className="font-display font-extrabold text-[36px] md:text-[56px] text-foreground relative landing-heading-glow"
-          style={{ ...heroStagger(0), letterSpacing: '-0.02em', lineHeight: '1.05' }}
+          className="font-display font-bold text-[36px] md:text-[58px] text-foreground relative landing-heading-glow"
+          style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.1' }}
         >
           The bankruptcy firm that still<br />
           types data into federal forms<br />
@@ -652,7 +652,7 @@ const MarketingLanding = () => {
 
       {/* How it works */}
       <section id="features" className="px-6 py-16 max-w-5xl mx-auto" style={{ background: sectionBg.howItWorks }}>
-        <h2 className="font-display font-extrabold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.02em', lineHeight: '1.1' }}>How it works</h2>
+        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>How it works</h2>
         <div ref={howRef} className="grid grid-cols-1 md:grid-cols-4 gap-0 items-start relative">
           {[0, 1, 2].map(i => (
             <div
@@ -745,7 +745,7 @@ const MarketingLanding = () => {
 
       {/* Pricing */}
       <section id="pricing" className="px-6 py-16 max-w-6xl mx-auto">
-        <h2 className="font-display font-extrabold text-[28px] md:text-[40px] text-foreground text-center mb-4 landing-heading-glow" style={{ letterSpacing: '-0.02em', lineHeight: '1.1' }}>
+        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-4 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
           An investment that pays for itself<br />in the first week.
         </h2>
         <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">14-day free trial on every plan. No credit card required.</p>
@@ -789,7 +789,7 @@ const MarketingLanding = () => {
 
       {/* FAQ */}
       <section className="px-6 py-16 max-w-3xl mx-auto">
-        <h2 className="font-display font-extrabold text-[28px] md:text-[40px] text-foreground text-center mb-3 landing-heading-glow" style={{ letterSpacing: '-0.02em', lineHeight: '1.1' }}>Common questions</h2>
+        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-3 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>Common questions</h2>
         <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mb-10">Everything bankruptcy firms want to know before getting started.</p>
         <div ref={faqRef}>
           <Accordion type="single" collapsible className="space-y-2">
@@ -835,8 +835,8 @@ const MarketingLanding = () => {
           {/* Left */}
           <div>
             <h2
-              className="font-display font-extrabold text-[36px] md:text-[44px] text-foreground landing-heading-glow"
-              style={{ letterSpacing: '-0.02em', lineHeight: '1.05' }}
+              className="font-display font-bold text-[36px] md:text-[44px] text-foreground landing-heading-glow"
+              style={{ letterSpacing: '-0.01em', lineHeight: '1.05' }}
             >
               Your next case could take<br />one hour instead of ten.
             </h2>

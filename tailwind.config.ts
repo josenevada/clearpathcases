@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Syne", "sans-serif"],
+        display: ["Playfair Display", "serif"],
         body: ["DM Sans", "sans-serif"],
       },
       colors: {
