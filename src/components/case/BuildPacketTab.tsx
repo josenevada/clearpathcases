@@ -415,6 +415,11 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
         })}
       </div>
 
+      {/* AI Form Data integration note */}
+      {caseData.chapterType === '7' && (
+        <FormDataPacketNote caseId={caseData.id} />
+      )}
+
       {/* Action bar */}
       <div className="border-t border-border pt-5 space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
