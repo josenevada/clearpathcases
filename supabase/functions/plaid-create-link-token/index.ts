@@ -39,6 +39,10 @@ serve(async (req) => {
         ? 'https://development.plaid.com'
         : 'https://sandbox.plaid.com';
 
+    const today = new Date();
+    const sixMonthsAgo = new Date(today);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
     const response = await fetch(`${plaidHost}/link/token/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -48,6 +52,10 @@ serve(async (req) => {
         user: { client_user_id: case_id },
         client_name: 'ClearPath',
         products: ['statements'],
+        statements: {
+          start_date: sixMonthsAgo.toISOString().split('T')[0],
+          end_date: today.toISOString().split('T')[0],
+        },
         country_codes: ['US'],
         language: 'en',
         webhook: 'https://yourclearpath.app/api/plaid-webhook',
