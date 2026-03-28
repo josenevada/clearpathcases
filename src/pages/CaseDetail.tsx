@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban } from 'lucide-react';
@@ -94,7 +94,7 @@ const CaseDetail = () => {
   const [activeCorrectionTarget, setActiveCorrectionTarget] = useState<{ itemId: string; fileId: string } | null>(null);
   const [selectedCorrectionReason, setSelectedCorrectionReason] = useState('');
   const [correctionDetails, setCorrectionDetails] = useState('');
-  const [activeTab, setActiveTab] = useState<TabType>('checklist');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
