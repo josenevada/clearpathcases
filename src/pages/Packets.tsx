@@ -5,6 +5,11 @@ import { FileCheck, AlertTriangle, Briefcase, Download, ArrowLeft, Settings, Sea
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import PlanBadge from '@/components/PlanBadge';
@@ -21,6 +26,7 @@ const Packets = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [batchExporting, setBatchExporting] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
 
   useEffect(() => {
     setCases(getAllCases());
@@ -76,17 +82,14 @@ const Packets = () => {
   };
 
   const handleBatchExport = async () => {
-    if (readyCases.length === 0) {
-      toast('No cases ready', { description: 'All cases must have approved documents to generate packets.' });
-      return;
-    }
-
+    setShowBatchConfirm(false);
     setBatchExporting(true);
     setBatchProgress({ current: 0, total: readyCases.length });
 
     const zip = new JSZip();
     const branding = loadBranding();
     let successCount = 0;
+    const failedCases: string[] = [];
 
     for (let i = 0; i < readyCases.length; i++) {
       const c = readyCases[i];
@@ -103,6 +106,7 @@ const Packets = () => {
 
         if (error || !data?.success) {
           console.error(`Failed for case ${c.clientName}:`, error || data?.error);
+          failedCases.push(c.clientName);
           continue;
         }
 
@@ -115,6 +119,7 @@ const Packets = () => {
         successCount++;
       } catch (err) {
         console.error(`Batch export error for ${c.clientName}:`, err);
+        failedCases.push(c.clientName);
       }
     }
 
@@ -122,9 +127,14 @@ const Packets = () => {
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const dateStr = format(new Date(), 'yyyy-MM-dd');
       saveAs(zipBlob, `ClearPath_Packets_${dateStr}.zip`);
-      toast.success(`Exported ${successCount} packet${successCount > 1 ? 's' : ''}`);
+
+      if (failedCases.length > 0) {
+        toast.warning(`${successCount} of ${readyCases.length} packets exported. The following cases had errors: ${failedCases.join(', ')}. Check those cases for missing documents.`);
+      } else {
+        toast.success(`${successCount} packet${successCount > 1 ? 's' : ''} exported successfully`);
+      }
     } else {
-      toast.error('No packets could be generated');
+      toast.error('No packets could be generated. Please check the cases for missing documents and try again.');
     }
 
     setBatchExporting(false);
@@ -192,18 +202,33 @@ const Packets = () => {
                 {readyCases.length} ready to generate
               </p>
             </div>
-            <Button onClick={handleBatchExport} disabled={batchExporting || readyCases.length === 0}>
-              {batchExporting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                  {batchProgress.current}/{batchProgress.total}
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-1.5" /> Batch export
-                </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    onClick={() => readyCases.length > 0 ? setShowBatchConfirm(true) : undefined}
+                    disabled={batchExporting || activeCases.length === 0}
+                  >
+                    {batchExporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                        Generating {batchProgress.current} of {batchProgress.total}…
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-1.5" /> Batch export
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {activeCases.length === 0 && (
+                <TooltipContent>No active cases yet — create your first case to get started</TooltipContent>
               )}
-            </Button>
+              {activeCases.length > 0 && readyCases.length === 0 && (
+                <TooltipContent>No cases are ready to export yet — {missingCases.length} cases have missing documents</TooltipContent>
+              )}
+            </Tooltip>
           </div>
 
           {/* Metric cards */}
@@ -310,6 +335,22 @@ const Packets = () => {
           )}
         </motion.div>
       </main>
+
+      {/* Batch export confirmation */}
+      <AlertDialog open={showBatchConfirm} onOpenChange={setShowBatchConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export packets for {readyCases.length} ready case{readyCases.length !== 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will generate and download a ZIP file containing {readyCases.length} court packet{readyCases.length !== 1 ? 's' : ''}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchExport}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
