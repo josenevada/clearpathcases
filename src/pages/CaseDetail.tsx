@@ -680,7 +680,12 @@ const CaseDetail = () => {
                                   ) : (
                                     <div className="w-5 h-5 flex-shrink-0 rounded-full border-2 border-muted-foreground/30" />
                                   )}
-                                  <span className={`flex-1 text-sm ${item.notApplicable ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{item.label}</span>
+                                  <span className={`flex-1 text-sm ${item.notApplicable ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                    {item.label}
+                                    {(item as any).isCustom && (
+                                      <Badge className="ml-1.5 bg-primary/10 text-primary border-primary/20 text-[9px] px-1.5 py-0">Custom</Badge>
+                                    )}
+                                  </span>
                                   {item.notApplicable ? (
                                     <Badge className="bg-muted text-muted-foreground border-border text-[10px]">N/A</Badge>
                                   ) : (
@@ -688,6 +693,14 @@ const CaseDetail = () => {
                                   )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
                                   {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}
+                                  {(item as any).isCustom && viewRole === 'paralegal' && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteCustomDoc(item); }}
+                                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
                                 </button>
 
                                 <AnimatePresence>
