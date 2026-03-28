@@ -243,6 +243,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
+      milestones: info.chapterType === '13' ? buildCh13Milestones() : undefined,
     }));
 
     try {
