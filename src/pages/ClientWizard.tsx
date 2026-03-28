@@ -364,16 +364,10 @@ const ClientWizard = () => {
       setEmployerAddress('');
       setEmploymentStatus(null);
     }
-    if (item && item.label === SSN_LABEL) {
-      // Load existing SSN from textEntry if previously saved
-      setSsnValue(item.textEntry?.employerName || ''); // reusing employerName field for SSN value storage in textEntry
-      setSsnVisible(false);
-      setSsnError('');
-    } else {
-      setSsnValue('');
-      setSsnVisible(false);
-      setSsnError('');
-    }
+    // SSN is now a file upload step, no special text-entry handling needed
+    setSsnValue('');
+    setSsnVisible(false);
+    setSsnError('');
     setPendingDuplicate(null);
     setShowNaFlow(false);
     setNaClientReason(null);
