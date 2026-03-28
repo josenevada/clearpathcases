@@ -425,8 +425,10 @@ const MarketingLanding = () => {
   };
 
   const [beforeAfterRef, beforeAfterVisible] = useScrollReveal<HTMLDivElement>();
+  const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
+  const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
   const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
