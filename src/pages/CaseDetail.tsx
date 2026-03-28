@@ -668,7 +668,7 @@ const CaseDetail = () => {
                             const isExpanded = expandedItem === item.id;
 
                             return (
-                              <div key={item.id} className="border-t border-border">
+                              <div key={item.id} className="border-t border-border group">
                                 <button
                                   onClick={() => setExpandedItem(isExpanded ? null : item.id)}
                                   className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[hsl(var(--surface-hover))]"
