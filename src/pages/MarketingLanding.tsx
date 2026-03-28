@@ -85,13 +85,14 @@ const DashboardMockup = ({ visible }: { visible: boolean }) => {
       };
 
   return (
-    <div ref={ref} className="relative mt-12 max-w-3xl mx-auto" style={baseStyle}>
+    <div ref={ref} className="relative mt-12 max-w-3xl mx-auto" style={{ ...baseStyle, overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none' }}>
       <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-primary/15 blur-3xl rounded-full pointer-events-none" />
       <div
-        className="surface-card overflow-hidden relative z-10 mockup-border-animate pb-4"
+        className="surface-card relative z-10 mockup-border-animate pb-4"
         style={{
           border: '1px solid hsl(172 100% 38% / 0.3)',
           boxShadow: '0 32px 80px rgba(0,0,0,0.4), 0 0 40px rgba(0,194,168,0.06)',
+          overflow: 'visible',
         }}
       >
         <div className="flex items-center gap-2 px-5 py-3 border-b border-border/60">
@@ -215,7 +216,7 @@ const AIFormFillingSection = () => {
     <section
       className="px-6 py-16 max-w-5xl mx-auto"
       ref={ref}
-      style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(0,194,168,0.05) 0%, transparent 65%)' }}
+      style={{ background: 'hsl(var(--background))' }}
     >
       <div className="text-center mb-12" style={revealStyle(0)}>
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
@@ -514,7 +515,7 @@ const MarketingLanding = () => {
   ];
 
   return (
-    <div className="min-h-screen" style={{ lineHeight: '1.7', border: 'none', outline: 'none', boxShadow: 'none' }}>
+    <div className="min-h-screen" style={{ lineHeight: '1.7', background: 'hsl(var(--background))', overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none', boxShadow: 'none' }}>
       {/* Nav */}
       <nav
         className="sticky top-0 z-50 px-6 py-3 flex items-center justify-between"
@@ -534,8 +535,7 @@ const MarketingLanding = () => {
       </nav>
 
       {/* Hero */}
-      <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative" style={{ border: 'none' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)', border: 'none' }} />
+      <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative" style={{ background: 'hsl(var(--background))', overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none' }}>
         <h1
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
           style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '720px' }}
