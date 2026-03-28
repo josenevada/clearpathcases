@@ -202,18 +202,33 @@ const Packets = () => {
                 {readyCases.length} ready to generate
               </p>
             </div>
-            <Button onClick={handleBatchExport} disabled={batchExporting || readyCases.length === 0}>
-              {batchExporting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                  {batchProgress.current}/{batchProgress.total}
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-1.5" /> Batch export
-                </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    onClick={() => readyCases.length > 0 ? setShowBatchConfirm(true) : undefined}
+                    disabled={batchExporting || activeCases.length === 0}
+                  >
+                    {batchExporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                        Generating {batchProgress.current} of {batchProgress.total}…
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-1.5" /> Batch export
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {activeCases.length === 0 && (
+                <TooltipContent>No active cases yet — create your first case to get started</TooltipContent>
               )}
-            </Button>
+              {activeCases.length > 0 && readyCases.length === 0 && (
+                <TooltipContent>No cases are ready to export yet — {missingCases.length} cases have missing documents</TooltipContent>
+              )}
+            </Tooltip>
           </div>
 
           {/* Metric cards */}
