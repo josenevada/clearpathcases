@@ -323,6 +323,15 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
             </div>
           )}
         </div>
+
+        {/* Readiness ring */}
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          <svg width={ringSize} height={ringSize} className="-rotate-90">
+            <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth={strokeWidth} />
+            <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke={ringColor} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="transition-all duration-700 ease-out" />
+          </svg>
+          <span className="text-xs font-bold text-foreground font-body">{readinessPercent}% ready</span>
+        </div>
       </motion.div>
 
       {/* Three-column config row */}
