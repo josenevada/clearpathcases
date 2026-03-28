@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { FormDataPacketNote } from './FormDataPacketNote';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
@@ -414,6 +415,11 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
           );
         })}
       </div>
+
+      {/* AI Form Data integration note */}
+      {caseData.chapterType === '7' && (
+        <FormDataPacketNote caseId={caseData.id} />
+      )}
 
       {/* Action bar */}
       <div className="border-t border-border pt-5 space-y-4">

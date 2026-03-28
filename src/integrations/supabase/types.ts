@@ -87,6 +87,91 @@ export type Database = {
           },
         ]
       }
+      case_extracted_data: {
+        Row: {
+          case_id: string
+          confidence: string | null
+          conflict_detected: boolean | null
+          conflict_sources: string[] | null
+          extracted_at: string | null
+          field_key: string
+          field_label: string
+          field_value: string | null
+          form_reference: string
+          id: string
+          manually_overridden: boolean | null
+          notes: string | null
+          override_at: string | null
+          override_by: string | null
+          override_value: string | null
+          section_label: string
+          source_document_name: string | null
+          source_file_id: string | null
+        }
+        Insert: {
+          case_id: string
+          confidence?: string | null
+          conflict_detected?: boolean | null
+          conflict_sources?: string[] | null
+          extracted_at?: string | null
+          field_key: string
+          field_label: string
+          field_value?: string | null
+          form_reference: string
+          id?: string
+          manually_overridden?: boolean | null
+          notes?: string | null
+          override_at?: string | null
+          override_by?: string | null
+          override_value?: string | null
+          section_label: string
+          source_document_name?: string | null
+          source_file_id?: string | null
+        }
+        Update: {
+          case_id?: string
+          confidence?: string | null
+          conflict_detected?: boolean | null
+          conflict_sources?: string[] | null
+          extracted_at?: string | null
+          field_key?: string
+          field_label?: string
+          field_value?: string | null
+          form_reference?: string
+          id?: string
+          manually_overridden?: boolean | null
+          notes?: string | null
+          override_at?: string | null
+          override_by?: string | null
+          override_value?: string | null
+          section_label?: string
+          source_document_name?: string | null
+          source_file_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_extracted_data_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_extracted_data_override_by_fkey"
+            columns: ["override_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_extracted_data_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
           assigned_attorney: string | null
@@ -567,6 +652,126 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Relationships: []
+      }
+      form_extraction_runs: {
+        Row: {
+          case_id: string
+          completed_at: string | null
+          conflicts_detected: number | null
+          error_message: string | null
+          fields_extracted: number | null
+          fields_high_confidence: number | null
+          fields_low_confidence: number | null
+          fields_medium_confidence: number | null
+          id: string
+          started_at: string | null
+          status: string | null
+          trigger_type: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          case_id: string
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          error_message?: string | null
+          fields_extracted?: number | null
+          fields_high_confidence?: number | null
+          fields_low_confidence?: number | null
+          fields_medium_confidence?: number | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          trigger_type?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          error_message?: string | null
+          fields_extracted?: number | null
+          fields_high_confidence?: number | null
+          fields_low_confidence?: number | null
+          fields_medium_confidence?: number | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          trigger_type?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_extraction_runs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_extraction_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_federal_forms: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          case_id: string
+          form_code: string
+          form_title: string
+          generated_at: string | null
+          id: string
+          included_in_packet: boolean | null
+          storage_path: string
+          version: number | null
+          watermark_status: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          case_id: string
+          form_code: string
+          form_title: string
+          generated_at?: string | null
+          id?: string
+          included_in_packet?: boolean | null
+          storage_path: string
+          version?: number | null
+          watermark_status?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          case_id?: string
+          form_code?: string
+          form_title?: string
+          generated_at?: string | null
+          id?: string
+          included_in_packet?: boolean | null
+          storage_path?: string
+          version?: number | null
+          watermark_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_federal_forms_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_federal_forms_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notes: {
         Row: {
