@@ -93,7 +93,7 @@ const DocumentHelpPanel = ({
         className="flex items-center gap-1.5 text-primary text-sm hover:text-primary/80 transition-colors font-body"
       >
         <HelpCircle className="w-4 h-4" />
-        Not sure what this is or where to find it?
+        Not sure what this is or where to find it? We can help.
       </button>
 
       <AnimatePresence>
