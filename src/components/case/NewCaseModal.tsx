@@ -132,6 +132,17 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [questionIdx, setQuestionIdx] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
 
+  // Build chapter-aware question list
+  const INTAKE_QUESTIONS = useMemo(() => {
+    const base = [...BASE_INTAKE_QUESTIONS];
+    if (info.chapterType === '13') {
+      // Insert CH.13 questions after the real estate question
+      const realEstateIdx = base.findIndex(q => q.key === 'ownsRealEstate');
+      base.splice(realEstateIdx + 1, 0, ...CH13_EXTRA_QUESTIONS);
+    }
+    return base;
+  }, [info.chapterType]);
+
   const isDirty = info.clientName || info.clientEmail || Object.keys(answers).length > 0;
 
   const isJointFiling = answers.filingJointly === true;
@@ -147,12 +158,13 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     hasRetirement: answers.hasRetirement ?? false,
     hasStudentLoans: answers.hasStudentLoans ?? false,
     filingJointly: answers.filingJointly ?? false,
+    mortgageInArrears: answers.mortgageInArrears ?? false,
   };
 
   const customChecklist = useMemo(() => {
     if (!allAnswered) return [];
-    return buildCustomChecklist(intakeAnswers);
-  }, [allAnswered, ...Object.values(answers)]);
+    return buildCustomChecklist(intakeAnswers, info.chapterType);
+  }, [allAnswered, info.chapterType, ...Object.values(answers)]);
 
   const categorySummary = useMemo(() => {
     const map: Record<string, number> = {};
