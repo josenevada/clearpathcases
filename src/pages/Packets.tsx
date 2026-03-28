@@ -26,6 +26,7 @@ const Packets = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [batchExporting, setBatchExporting] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
 
   useEffect(() => {
     setCases(getAllCases());
