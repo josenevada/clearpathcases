@@ -1220,6 +1220,10 @@ const CaseDetail = () => {
         {activeTab === 'packet' && (
           <BuildPacketTab caseData={caseData} onRefresh={refresh} />
         )}
+
+        {activeTab === 'form-data' && (
+          <FormDataTab caseData={caseData} onRefresh={refresh} />
+        )}
       </main>
 
       <EditCasePanel
