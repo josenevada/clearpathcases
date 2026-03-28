@@ -206,6 +206,59 @@
     animation: shimmer-sweep 0.6s ease-in-out;
   }
 
+  /* Landing page button glow */
+  .landing-btn-glow {
+    box-shadow: 0 0 20px rgba(0,194,168,0.25);
+    transition: all 0.2s ease;
+  }
+  .landing-btn-glow:hover {
+    box-shadow: 0 0 30px rgba(0,194,168,0.35);
+    transform: scale(1.02);
+  }
+
+  /* Landing heading subtle glow */
+  .landing-heading-glow {
+    text-shadow: 0 0 40px rgba(0,194,168,0.15);
+  }
+
+  /* Landing card hover */
+  .landing-card-hover {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .landing-card-hover:hover {
+    border-color: rgba(0,194,168,0.3) !important;
+    box-shadow: 0 0 24px rgba(0,194,168,0.08);
+  }
+
+  /* Nav link underline animation */
+  .nav-link-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1.5px;
+    background: hsl(172 100% 38%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+  }
+  .nav-link-underline:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Mockup border pulse */
+  @keyframes mockup-border-pulse {
+    0%, 100% { border-color: hsl(172 100% 38% / 0.3); }
+    50% { border-color: hsl(172 100% 38% / 0.6); }
+  }
+
+  /* Pulse dot for extraction indicator */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
   /* Respect reduced motion globally */
   @media (prefers-reduced-motion: reduce) {
     .pricing-glow {
@@ -213,6 +266,9 @@
     }
     .cta-shimmer::after {
       display: none;
+    }
+    .landing-btn-glow:hover {
+      transform: none;
     }
   }
 }
