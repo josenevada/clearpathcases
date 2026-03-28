@@ -1,5 +1,5 @@
 // ─── Contextual document help content ────────────────────────────────
-// Pre-written plain English help for each document type in the wizard.
+// Warm, plain-English help for each document type in the wizard.
 
 export interface DocumentHelpContent {
   whatIsThis: string;
@@ -10,75 +10,83 @@ export interface DocumentHelpContent {
 export const DOCUMENT_HELP: Record<string, DocumentHelpContent> = {
   'Pay Stubs (Last 2 Months)': {
     whatIsThis:
-      'A pay stub is the document your employer gives you each time you get paid. It shows how much you earned, how much was taken out for taxes, and your year-to-date totals. Most employers call it a pay stub or earnings statement.',
+      'A pay stub is the slip you get every payday. It shows what you earned, what was taken out for taxes, and your year-to-date totals. Your employer might call it an earnings statement.',
     whereToFind:
-      'Check your email for a message from your employer\'s payroll system — many companies send pay stubs digitally. Log into your company\'s HR or payroll portal such as ADP, Paychex, Gusto, or Workday. If you receive paper pay stubs, check your files or ask your employer for copies.',
+      'Check your email — a lot of companies send these digitally now. You can also log into your payroll portal (like ADP, Gusto, or Workday) and download them. If you get paper stubs, check your files at home or ask your employer for copies.',
     whatItLooksLike:
-      'It is usually one page showing your name, your employer\'s name, the pay period dates, your gross pay, deductions, and net pay. It often has a section that tears off or is labeled "earnings statement."',
+      'Usually one page with your name, your employer\'s name, the pay period, gross pay, deductions, and net pay. Sometimes it has a perforated tear-off section.',
   },
   'W-2s (Last 2 Years)': {
     whatIsThis:
-      'A W-2 is a tax form your employer sends you every January. It shows your total earnings for the previous year and how much was withheld for federal and state taxes. You need this to file your taxes each year.',
+      'Your W-2 is a tax form your employer sends you each January. It sums up everything you earned that year and how much was withheld for taxes. You use it to file your taxes.',
     whereToFind:
-      'Check your email inbox for a message sent in January or February from your employer or their payroll provider. Log into your company\'s HR portal and look for a "Tax Documents" section. Check any mail you received between January and March. If you cannot find it, contact your HR or payroll department and ask for a copy — they are required by law to provide one. You can also request a wage and income transcript directly from the IRS at irs.gov/individuals/get-transcript.',
+      'Check your email from January or February — your employer or payroll company probably sent it. You can also log into your HR portal and look under "Tax Documents." If you can\'t find it, call your HR department — they\'re required to give you a copy. You can also get a free transcript from the IRS at irs.gov/individuals/get-transcript.',
     whatItLooksLike:
-      'It is a single page with numbered boxes from 1 to 20. Your employer\'s name and address appear at the top left. Your name and Social Security number appear at the bottom left. The tax year appears prominently at the top.',
+      'A single page with numbered boxes. Your employer\'s info is at the top left, your name and Social Security number at the bottom left, and the tax year is printed prominently at the top.',
   },
   'Checking/Savings Statements (Last 6 Months)': {
     whatIsThis:
-      'A bank statement is a monthly summary from your bank showing all the money that came in and went out of your account during that month. We need the last six months of statements for all checking and savings accounts.',
+      'A bank statement is a monthly summary from your bank showing all the money that came in and went out. We need the last six months for every checking and savings account you have.',
     whereToFind:
-      'Log into your bank\'s website or mobile app and look for a "Statements" or "Documents" section. Most banks let you download PDF statements going back at least one year. Common banks include Chase (chase.com), Bank of America (bankofamerica.com), Wells Fargo (wellsfargo.com), and Chime (chime.com). If you cannot find them online, call your bank\'s customer service line and ask them to email you your last six months of statements.',
+      'Log into your bank\'s website or app and look for "Statements" or "Documents." Most banks let you download PDFs going back at least a year. If you bank with Chase, Bank of America, Wells Fargo, Chime, or anyone else — it\'s usually in the same spot. Can\'t find them? Call the number on the back of your debit card and ask.',
     whatItLooksLike:
-      'It is usually several pages showing your account number, your name, the statement period dates, a summary of your balance, and a list of every transaction.',
+      'Usually a few pages showing your account number, name, statement dates, opening and closing balance, and a list of every transaction that month.',
   },
   'Tax Returns (Last 2 Years)': {
     whatIsThis:
-      'A tax return is the form you filed with the IRS showing your income and taxes for a given year. We need your returns for the last two years. This is the document you or your tax preparer completed — not the W-2 your employer sent you.',
+      'This is the form you (or your tax preparer) filed with the IRS — not the W-2 your employer sent you. We need the full return for the last two years.',
     whereToFind:
-      'If you filed online through TurboTax, H&R Block, TaxAct, or a similar service, log into your account and download your return as a PDF. If you used a tax preparer, contact them and ask for a copy. If you cannot find it, you can download a free transcript of your tax return directly from the IRS at irs.gov/individuals/get-transcript — select "Tax Return Transcript" and choose the year you need.',
+      'If you used TurboTax, H&R Block, or another online service, log in and download your return as a PDF. If you used a tax preparer, give them a call. If you can\'t find it anywhere, you can get a free transcript from the IRS at irs.gov/individuals/get-transcript.',
     whatItLooksLike:
-      'It is usually multiple pages starting with Form 1040. Your name and address appear at the top. Your total income and tax owed or refunded appear near the middle. It may have additional schedules attached.',
+      'Multiple pages starting with Form 1040. Your name and address are at the top, and your total income and taxes are in the middle. There might be extra schedules attached.',
   },
   'Credit Card Statements (Last 3 Months)': {
     whatIsThis:
-      'A credit card statement is the monthly bill from your credit card company showing your balance, minimum payment, and all transactions for that month. We need the last three months of statements for every credit card you have.',
+      'Your credit card statement is the monthly bill showing your balance, minimum payment, and everything you charged that month. We need the last three months for every card you have.',
     whereToFind:
-      'Log into each credit card\'s website or app and look for a "Statements" or "Documents" section. Common issuers include Chase, Capital One, Citi, American Express, Discover, and Bank of America. Download the PDF statement for each of the last three months. If you cannot find them online, call the number on the back of your card and ask for your last three statements to be emailed to you.',
+      'Log into each card\'s website or app and look for "Statements." Chase, Capital One, Citi, Amex, Discover — they all have them. Download the PDF for each of the last three months. If you can\'t find them, call the number on the back of your card.',
     whatItLooksLike:
-      'It shows your name, account number (partially masked), statement date, balance, minimum payment due, and a list of all purchases and payments during the month.',
+      'Shows your name, a partially masked account number, the statement date, your balance, minimum payment, and a list of all charges and payments.',
   },
   "Driver's License or State ID": {
     whatIsThis:
-      'We need a clear photo of a valid government-issued photo ID to verify your identity. This can be your driver\'s license, state ID card, or passport.',
+      'We just need a clear photo of a government-issued ID to confirm your identity. A driver\'s license, state ID, or passport all work.',
     whereToFind:
-      'This is your physical ID card. Take a clear photo of the front of your driver\'s license or state ID in good lighting. Make sure all four corners are visible and the text is readable. If your ID is expired, you can still submit it — just let your attorney\'s office know. If you do not have a photo ID, contact your attorney\'s office before continuing.',
+      'Grab your physical ID and take a clear photo in good lighting. Make sure all four corners are visible and the text is easy to read. Expired? That\'s usually fine — just let your attorney\'s office know.',
     whatItLooksLike:
-      'A driver\'s license or state ID is a small card with your photo, name, address, date of birth, and an expiration date. A passport is a booklet — photograph the photo page which shows your picture and personal information.',
+      'Your driver\'s license or state ID is a small card with your photo, name, address, and date of birth. If using a passport, photograph the page with your picture on it.',
   },
   'Government-Issued Photo ID': {
     whatIsThis:
-      'We need a clear photo of a valid government-issued photo ID to verify your identity. This can be your driver\'s license, state ID card, or passport.',
+      'We just need a clear photo of a government-issued ID to confirm your identity. A driver\'s license, state ID, or passport all work.',
     whereToFind:
-      'This is your physical ID card. Take a clear photo of the front of your driver\'s license or state ID in good lighting. Make sure all four corners are visible and the text is readable. If your ID is expired, you can still submit it — just let your attorney\'s office know. If you do not have a photo ID, contact your attorney\'s office before continuing.',
+      'Grab your physical ID and take a clear photo in good lighting. Make sure all four corners are visible and the text is easy to read. Expired? That\'s usually fine — just let your attorney\'s office know.',
     whatItLooksLike:
-      'A driver\'s license or state ID is a small card with your photo, name, address, date of birth, and an expiration date. A passport is a booklet — photograph the photo page which shows your picture and personal information.',
+      'Your driver\'s license or state ID is a small card with your photo, name, address, and date of birth. If using a passport, photograph the page with your picture on it.',
   },
   'Drivers License or State ID': {
     whatIsThis:
-      'We need a clear photo of a valid government-issued photo ID to verify your identity. This can be your driver\'s license, state ID card, or passport.',
+      'We just need a clear photo of a government-issued ID to confirm your identity. A driver\'s license, state ID, or passport all work.',
     whereToFind:
-      'This is your physical ID card. Take a clear photo of the front of your driver\'s license or state ID in good lighting. Make sure all four corners are visible and the text is readable. If your ID is expired, you can still submit it — just let your attorney\'s office know. If you do not have a photo ID, contact your attorney\'s office before continuing.',
+      'Grab your physical ID and take a clear photo in good lighting. Make sure all four corners are visible and the text is easy to read. Expired? That\'s usually fine — just let your attorney\'s office know.',
     whatItLooksLike:
-      'A driver\'s license or state ID is a small card with your photo, name, address, date of birth, and an expiration date. A passport is a booklet — photograph the photo page which shows your picture and personal information.',
+      'Your driver\'s license or state ID is a small card with your photo, name, address, and date of birth. If using a passport, photograph the page with your picture on it.',
   },
   'Mortgage Statement': {
     whatIsThis:
-      'A mortgage statement is the monthly bill from your mortgage lender showing how much you owe on your home loan, your monthly payment amount, and your current balance. If you rent instead of own, you do not need this.',
+      'Your mortgage statement is the monthly bill from your home loan company. It shows your balance, monthly payment, and how much goes to principal versus interest. If you rent, you don\'t need this one.',
     whereToFind:
-      'Log into your mortgage servicer\'s website or app. Common servicers include Mr. Cooper, Rocket Mortgage, Wells Fargo Home Mortgage, Chase Mortgage, and Nationstar. Look for a "Statements" or "Payment History" section and download your most recent statement as a PDF. If you cannot find it online, call your mortgage servicer and ask them to email you your most recent statement.',
+      'Log into your mortgage servicer\'s website — Mr. Cooper, Rocket Mortgage, Wells Fargo, Chase, etc. Look for "Statements" or "Payment History" and download the most recent one. You can also call and ask them to email it.',
     whatItLooksLike:
-      'It shows your name, property address, loan number, current balance, next payment amount and due date, and a breakdown of principal and interest.',
+      'Shows your name, property address, loan number, current balance, and your next payment amount and due date.',
+  },
+  'Digital Wallet Statements': {
+    whatIsThis:
+      'If you\'ve used apps like Venmo, PayPal, or Cash App in the last year, those count as financial accounts. The court needs to see the transaction history, just like a bank account.',
+    whereToFind:
+      'Each app lets you download your statements or transaction history. We\'ll walk you through exactly how to get them — just expand the app cards on this page.',
+    whatItLooksLike:
+      'Usually a PDF or CSV file showing your transactions, dates, amounts, and who you sent money to or received money from.',
   },
 };
 
@@ -96,6 +104,8 @@ export function getDocumentHelp(label: string): DocumentHelpContent | null {
   if (lower.includes('license') || lower.includes('state id') || lower.includes('photo id') || lower.includes('government'))
     return DOCUMENT_HELP["Driver's License or State ID"];
   if (lower.includes('mortgage')) return DOCUMENT_HELP['Mortgage Statement'];
+  if (lower.includes('digital wallet') || lower.includes('venmo') || lower.includes('paypal') || lower.includes('cash app'))
+    return DOCUMENT_HELP['Digital Wallet Statements'];
 
   return null;
 }
@@ -104,12 +114,12 @@ export function getDocumentHelp(label: string): DocumentHelpContent | null {
 export function getValidationHelpMessage(validationStatus: string, suggestion?: string): string | null {
   if (validationStatus === 'warning') {
     if (suggestion?.toLowerCase().includes('year') || suggestion?.toLowerCase().includes('old')) {
-      return 'This looks like it might be from the wrong year — here\'s how to find the correct one.';
+      return 'Hmm, this looks like it might be from the wrong year. Here\'s how to find the right one.';
     }
-    return 'Something about this document didn\'t look quite right — here\'s what we\'re looking for.';
+    return 'Something about this document doesn\'t look quite right. Here\'s what we\'re looking for.';
   }
   if (validationStatus === 'failed') {
-    return 'This might not be the right document — here\'s what we\'re looking for and what it looks like.';
+    return 'This might not be the right document. No worries — here\'s what it should look like so you can find the right one.';
   }
   return null;
 }

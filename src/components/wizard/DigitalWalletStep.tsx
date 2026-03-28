@@ -330,9 +330,9 @@ const DigitalWalletStep = ({
       >
         <UploadCloud className="w-10 h-10 text-primary mb-3" />
         <span className="text-foreground font-medium text-sm">
-          {files.length > 0 ? 'Add another file or drag it here' : 'Tap to upload or drag file'}
+          {files.length > 0 ? 'Add another file' : 'Tap to upload your file'}
         </span>
-        <span className="text-xs text-muted-foreground mt-1">PDF or CSV · Max 25MB</span>
+        <span className="text-xs text-muted-foreground mt-1">PDF or CSV · Up to 25MB</span>
         <input
           ref={fileInputRef}
           type="file"

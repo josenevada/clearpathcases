@@ -141,10 +141,10 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
         <UploadCloud className="w-10 h-10 text-primary mb-3" />
         <span className="text-foreground font-medium text-sm">
           {hasFiles
-            ? `Add another ${config.singularLabel} or drag it here`
-            : `Tap to upload or drag file`}
+            ? `Add another ${config.singularLabel}`
+            : `Tap to upload your file`}
         </span>
-        <span className="text-xs text-muted-foreground mt-1">PDF, JPG, or PNG · Max 25MB</span>
+        <span className="text-xs text-muted-foreground mt-1">PDF, JPG, or PNG · Up to 25MB</span>
         <input
           ref={fileInputRef}
           type="file"
