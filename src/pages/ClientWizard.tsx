@@ -24,8 +24,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name & Address';
-const SSN_LABEL = 'Social Security Number';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === SSN_LABEL;
+const SSN_LABEL = 'Social Security Card';
+const SSN_LABEL_LEGACY = 'Social Security Number';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
@@ -58,7 +59,8 @@ const WARM_SUBTITLES: Record<string, string> = {
   'Vehicle Title or Registration': 'If you own a car, we just need proof of ownership — title or registration works.',
   'Property Deed': 'If you own any property, upload the deed so we can make sure the right protections apply.',
   'Government-Issued Photo ID': 'We just need to confirm who you are — a driver\'s license or passport works perfectly.',
-  'Social Security Number': 'This is required on all court paperwork. It\'s encrypted and only your attorney can see it.',
+  'Social Security Card': 'Upload a photo or scan of your Social Security card. A clear photo taken with your phone works perfectly.',
+  'Social Security Number': 'Upload a photo or scan of your Social Security card. A clear photo taken with your phone works perfectly.',
   'Credit Counseling Certificate': 'This is a quick online course the court requires before filing — most people finish in under an hour.',
   'Financial Disclosure Confirmation': 'Just confirming that everything you\'ve shared so far is accurate to the best of your knowledge.',
   'Assets Disclosure Confirmation': 'One more confirmation — that you\'ve told us about everything you own.',
@@ -362,16 +364,10 @@ const ClientWizard = () => {
       setEmployerAddress('');
       setEmploymentStatus(null);
     }
-    if (item && item.label === SSN_LABEL) {
-      // Load existing SSN from textEntry if previously saved
-      setSsnValue(item.textEntry?.employerName || ''); // reusing employerName field for SSN value storage in textEntry
-      setSsnVisible(false);
-      setSsnError('');
-    } else {
-      setSsnValue('');
-      setSsnVisible(false);
-      setSsnError('');
-    }
+    // SSN is now a file upload step, no special text-entry handling needed
+    setSsnValue('');
+    setSsnVisible(false);
+    setSsnError('');
     setPendingDuplicate(null);
     setShowNaFlow(false);
     setNaClientReason(null);
@@ -444,7 +440,8 @@ const ClientWizard = () => {
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
-  const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
+  const isSSNEntry = false; // SSN is now a document upload step, not a text entry
+  const isSSNUpload = currentItem && (currentItem.label === SSN_LABEL || currentItem.label === SSN_LABEL_LEGACY);
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
   const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
@@ -1178,6 +1175,29 @@ const ClientWizard = () => {
                 <p className="text-muted-foreground text-lg font-body leading-relaxed">
                   {currentItem.description}
                 </p>
+                {/* Credit Counseling Provider link */}
+                {currentItem.label === 'Credit Counseling Certificate' && (() => {
+                  try {
+                    const cp = JSON.parse(localStorage.getItem('cp_counseling_provider') || '{}');
+                    if (cp.providerLink) {
+                      return (
+                        <div className="surface-card p-4 mt-3 space-y-1">
+                          <p className="text-sm font-medium text-foreground">
+                            Your firm recommends: <a href={cp.providerLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{cp.providerName || cp.providerLink}</a>
+                          </p>
+                          {cp.attorneyCode && (
+                            <p className="text-xs text-muted-foreground">Attorney code: <span className="font-mono font-bold text-foreground">{cp.attorneyCode}</span></p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="surface-card border-warning/30 bg-warning/5 p-4 mt-3">
+                        <p className="text-sm text-warning">Your firm hasn't set a credit counseling provider yet — contact your attorney for the correct link.</p>
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
               </header>
 
               <button

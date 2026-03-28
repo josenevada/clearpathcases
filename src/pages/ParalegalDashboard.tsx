@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, AlertCircle, Clock, Settings, LogOut, ChevronDown, MessageSquare, Search, X, FileCheck } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, Search, X, FileCheck, Send } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,9 @@ import NewCaseModal from '@/components/case/NewCaseModal';
 import TrialBanner from '@/components/TrialBanner';
 import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionGate from '@/components/SubscriptionGate';
+import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
+import StatsBar from '@/components/dashboard/StatsBar';
+import SendLinkModal from '@/components/dashboard/SendLinkModal';
 import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
@@ -33,6 +36,9 @@ const ParalegalDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [statsFilter, setStatsFilter] = useState<string | null>(null);
+  const [sendLinkCase, setSendLinkCase] = useState<Case | null>(null);
+  const [showSendLink, setShowSendLink] = useState(false);
 
   const planLimits = getPlanLimits(plan);
   const activeCaseCount = cases.filter(c => c.status !== 'filed' && c.status !== 'closed').length;
@@ -47,7 +53,6 @@ const ParalegalDashboard = () => {
 
   const isAdminViewing = !!sessionStorage.getItem('admin_viewing_firm');
 
-  // Session persistence check — redirect if no valid session after 3s
   useEffect(() => {
     const timer = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -78,6 +83,13 @@ const ParalegalDashboard = () => {
     navigate('/login');
   };
 
+  const handleCaseCreated = (c: Case) => {
+    setCases(getAllCases());
+    // Show send link modal for newly created case
+    setSendLinkCase(c);
+    setShowSendLink(true);
+  };
+
   const filterBySearch = (list: Case[]) => {
     if (!searchTerm.trim()) return list;
     const term = searchTerm.toLowerCase();
@@ -88,9 +100,28 @@ const ParalegalDashboard = () => {
     );
   };
 
+  const filterByStats = (list: Case[]) => {
+    if (!statsFilter) return list;
+    switch (statsFilter) {
+      case 'active':
+        return list.filter(c => c.status !== 'filed' && c.status !== 'closed');
+      case 'pending':
+        return list.filter(c => c.checklist.some(item => item.files.some(f => f.reviewStatus === 'pending')));
+      case 'deadlines':
+        return list.filter(c => {
+          const d = differenceInDays(new Date(c.filingDeadline), new Date());
+          return d >= 0 && d <= 7;
+        });
+      case 'ready':
+        return list.filter(c => c.readyToFile);
+      default:
+        return list;
+    }
+  };
+
   const activeCases = [...cases].filter(c => c.status !== 'filed' && c.status !== 'closed');
   const completedCases = cases.filter(c => c.status === 'filed' || c.status === 'closed');
-  const filteredActive = filterBySearch(activeCases);
+  const filteredActive = filterByStats(filterBySearch(activeCases));
   const filteredCompleted = filterBySearch(completedCases);
 
   const sortedCases = [...filteredActive].sort((a, b) => {
@@ -109,14 +140,12 @@ const ParalegalDashboard = () => {
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
 
-  // Show subscription gate if trial expired
   if (!subLoading && !subscribed && status === 'trial_expired') {
     return <SubscriptionGate />;
   }
 
   return (
     <div className="min-h-screen">
-      {/* Trial countdown banner */}
       {status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
         <TrialBanner daysLeft={daysLeft} />
       )}
@@ -155,6 +184,22 @@ const ParalegalDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        {/* Onboarding checklist */}
+        <OnboardingChecklist
+          hasCases={cases.length > 0}
+          hasSentLink={localStorage.getItem('cp_link_sent') === 'true'}
+          onNewCase={handleNewCase}
+          onSendLink={() => {
+            if (cases.length > 0) {
+              setSendLinkCase(cases[0]);
+              setShowSendLink(true);
+            }
+          }}
+        />
+
+        {/* Stats bar */}
+        <StatsBar cases={cases} onFilter={setStatsFilter} activeFilter={statsFilter} />
+
         {/* Search bar */}
         {(cases.length > 0) && (
           <div className="relative mb-4">
@@ -174,30 +219,40 @@ const ParalegalDashboard = () => {
         )}
 
         {sortedCases.length === 0 && filteredCompleted.length === 0 ? (
-          searchTerm ? (
+          searchTerm || statsFilter ? (
             <div className="py-20 text-center">
-              <p className="text-sm text-muted-foreground font-body">No cases match your search.</p>
+              <p className="text-sm text-muted-foreground font-body">No cases match your filters.</p>
+              {statsFilter && (
+                <Button variant="ghost" size="sm" className="mt-2" onClick={() => setStatsFilter(null)}>
+                  Clear filter
+                </Button>
+              )}
+            </div>
+          ) : cases.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
+              <p className="mb-6 text-sm text-muted-foreground font-body">Create your first case to get started.</p>
+              {!isAdminViewing && (
+                <Button size="lg" onClick={handleNewCase}>
+                  <Plus className="w-4 h-4 mr-1" /> New Case
+                </Button>
+              )}
             </div>
           ) : (
-          <div className="py-20 text-center">
-            <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
-            <p className="mb-6 text-sm text-muted-foreground font-body">Create your first case to get started.</p>
-            {!isAdminViewing && (
-              <Button size="lg" onClick={handleNewCase}>
-                <Plus className="w-4 h-4 mr-1" /> New Case
-              </Button>
-            )}
-          </div>
+            <div className="py-10 text-center">
+              <p className="text-sm text-muted-foreground font-body">No active cases.</p>
+            </div>
           )
         ) : (
           <div className="space-y-3">
-            {sortedCases.length === 0 && !searchTerm && (
-              <div className="py-10 text-center">
-                <p className="text-sm text-muted-foreground font-body">No active cases.</p>
-              </div>
-            )}
             {sortedCases.map((caseRecord, index) => (
-              <CaseRow key={caseRecord.id} caseData={caseRecord} index={index} onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)} />
+              <CaseCard
+                key={caseRecord.id}
+                caseData={caseRecord}
+                index={index}
+                onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)}
+                onSendLink={() => { setSendLinkCase(caseRecord); setShowSendLink(true); }}
+              />
             ))}
 
             {filteredCompleted.length > 0 && (
@@ -206,7 +261,7 @@ const ParalegalDashboard = () => {
                   onClick={() => setShowCompleted(!showCompleted)}
                   className="flex w-full items-center gap-2 rounded-lg px-4 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-secondary/50"
                 >
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-0' : '-rotate-90'}`} />
+                  <span className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-0' : '-rotate-90'}`}>▾</span>
                   Completed Cases
                   <Badge variant="secondary" className="ml-1 text-xs">{filteredCompleted.length}</Badge>
                 </button>
@@ -243,7 +298,8 @@ const ParalegalDashboard = () => {
         )}
       </main>
 
-      <NewCaseModal open={showNewCase} onOpenChange={setShowNewCase} onCreated={() => setCases(getAllCases())} />
+      <NewCaseModal open={showNewCase} onOpenChange={setShowNewCase} onCreated={handleCaseCreated} />
+      <SendLinkModal open={showSendLink} onOpenChange={setShowSendLink} caseData={sendLinkCase} />
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
@@ -254,18 +310,20 @@ const ParalegalDashboard = () => {
   );
 };
 
-const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: number; onNavigate: () => void }) => {
+// ─── Case Card ───────────────────────────────────────────────────────
+const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case; index: number; onNavigate: () => void; onSendLink: () => void }) => {
   const progress = calculateProgress(caseData);
-  const hasFlags = caseData.checklist.some(item => item.flaggedForAttorney);
   const hasRecentResubmission = caseHasRecentResubmission(caseData);
 
-  // Find last SMS/notification sent
-  const lastSmsEntry = [...caseData.activityLog]
-    .filter(e => e.eventType === 'reminder_sent' || e.description?.toLowerCase().includes('sms'))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-  const lastSmsText = lastSmsEntry
-    ? `Last contacted via SMS ${formatDistanceToNow(new Date(lastSmsEntry.timestamp), { addSuffix: true })}`
-    : null;
+  const docsUploaded = caseData.checklist.reduce((s, i) => s + i.files.length, 0);
+  const docsApproved = caseData.checklist.reduce((s, i) => s + i.files.filter(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden').length, 0);
+  const daysUntilDeadline = differenceInDays(new Date(caseData.filingDeadline), new Date());
+
+  const deadlineColorClass = daysUntilDeadline < 7
+    ? 'text-destructive'
+    : daysUntilDeadline < 14
+      ? 'text-warning'
+      : 'text-primary';
 
   const urgencyClass = {
     critical: 'urgency-critical',
@@ -273,44 +331,22 @@ const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: numbe
     normal: 'urgency-normal',
   }[caseData.urgency];
 
-  const getAction = () => {
-    if (hasRecentResubmission) {
-      return { label: 'Review Update', variant: 'warning' as const, action: onNavigate };
+  const handleSendReminder = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const result = await sendSmartReminder(caseData);
+      const channels = [];
+      if (result.email.status === 'sent') channels.push('email');
+      if (result.sms.status === 'sent') channels.push('SMS');
+      if (channels.length > 0) {
+        toast.success(`Reminder sent to ${caseData.clientName} via ${channels.join(' and ')}`);
+      } else {
+        toast.success(`Reminder queued for ${caseData.clientName}`);
+      }
+    } catch {
+      toast.error('Failed to send reminder.');
     }
-    if (caseData.urgency === 'critical' && progress < 100) {
-      return {
-        label: 'Send Reminder',
-        variant: 'warning' as const,
-        action: async () => {
-          try {
-            const result = await sendSmartReminder(caseData);
-            const channels = [];
-            if (result.email.status === 'sent') channels.push('email');
-            if (result.sms.status === 'sent') channels.push('SMS');
-            if (channels.length > 0) {
-              toast.success(`Reminder sent to ${caseData.clientName} via ${channels.join(' and ')}`);
-            } else {
-              toast.success(`Reminder queued for ${caseData.clientName}`);
-            }
-          } catch {
-            toast.error('Failed to send reminder. Please try again.');
-          }
-        },
-      };
-    }
-    if (hasFlags) {
-      return { label: 'Review Flags', variant: 'outline' as const, action: onNavigate };
-    }
-    if (progress === 100 && !caseData.readyToFile) {
-      return { label: 'Mark Ready', variant: 'success' as const, action: onNavigate };
-    }
-    if (caseData.readyToFile) {
-      return { label: 'Filed ✓', variant: 'ghost' as const, action: onNavigate };
-    }
-    return { label: 'View Case', variant: 'outline' as const, action: onNavigate };
   };
-
-  const action = getAction();
 
   return (
     <motion.div
@@ -322,7 +358,7 @@ const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: numbe
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2 flex-wrap">
+          <div className="mb-2 flex items-center gap-2 flex-wrap">
             <h3 className="font-display text-lg font-bold text-foreground">{caseData.clientName}</h3>
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Ch.{caseData.chapterType}
@@ -336,38 +372,41 @@ const CaseRow = ({ caseData, index, onNavigate }: { caseData: Case; index: numbe
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-secondary">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-              </div>
-              <span>{progress}%</span>
+
+          {/* Progress bar */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
             </div>
-            <span className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground tabular-nums">{progress}%</span>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>{docsUploaded} uploaded</span>
+            <span className="text-success">{docsApproved} approved</span>
+            <span className={`flex items-center gap-1 ${deadlineColorClass}`}>
               <Clock className="w-3 h-3" />
-              {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
+              {daysUntilDeadline > 0 ? `${daysUntilDeadline}d left` : daysUntilDeadline === 0 ? 'Due today' : 'Overdue'}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-xs mt-1">
-            <MessageSquare className="w-3 h-3" />
-            {lastSmsText ? (
-              <span className="text-muted-foreground">{lastSmsText}</span>
-            ) : (
-              <span className="text-warning">Awaiting first contact</span>
-            )}
-          </div>
         </div>
-        <div className="flex flex-shrink-0 items-center gap-3">
-          {(hasFlags || hasRecentResubmission) && <AlertCircle className={`w-5 h-5 ${hasRecentResubmission ? 'text-warning' : 'text-warning'}`} />}
+        <div className="flex flex-shrink-0 items-center gap-2">
           <Button
-            variant={action.variant}
+            variant="outline"
             size="sm"
-            onClick={event => {
-              event.stopPropagation();
-              action.action();
-            }}
+            onClick={(e) => { e.stopPropagation(); onNavigate(); }}
           >
-            {action.label}
+            View case
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSendReminder}
+            className="text-primary hover:text-primary"
+          >
+            <Send className="w-3.5 h-3.5 mr-1" />
+            Remind
           </Button>
         </div>
       </div>
