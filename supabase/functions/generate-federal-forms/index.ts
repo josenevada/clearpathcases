@@ -8,6 +8,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const TEMPLATE_FILES: Record<string, string> = {
+  B101: "form_b_101_0624_fillable_clean (1).pdf",
+  B106AB: "form_b106ab.pdf",
+  B106C: "b_106c_0425-form.pdf",
+  B106D: "form_b106d.pdf",
+  B106EF: "form_b106ef.pdf",
+  B106G: "form_b106g.pdf",
+  B106H: "form_b106h.pdf",
+  B106I: "form_b106i.pdf",
+  B106J: "form_b106j.pdf",
+  B106Sum: "form_b106sum.pdf",
+  B106Dec: "form_b106dec.pdf",
+  B107: "b_107_0425-form.pdf",
+  B108: "form_b108.pdf",
+  B122A1: "b_122a-1.pdf",
+  B122A2: "b_122a-2_0425-form.pdf",
+};
+
 const FORM_TITLES: Record<string, string> = {
   B101: "Voluntary Petition for Individuals Filing for Bankruptcy",
   B106AB: "Schedule A/B: Property",
@@ -109,96 +127,30 @@ serve(async (req) => {
 
     for (const formCode of formsToGenerate) {
       try {
-        // Try to load blank template from storage
+        const templateFileName = TEMPLATE_FILES[formCode];
         let pdfDoc: any;
-        const { data: templateBytes, error: templateError } = await supabase.storage
-          .from("form-templates")
-          .download(`forms/federal/ch7/${formCode}.pdf`);
 
-        if (templateError || !templateBytes) {
-          // Create a placeholder PDF if template not uploaded yet
-          pdfDoc = await PDFDocument.create();
-          const page = pdfDoc.addPage([612, 792]);
-          const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-          const bodyFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-          page.drawText(`${formCode} — ${FORM_TITLES[formCode] || formCode}`, {
-            x: 50,
-            y: 720,
-            size: 14,
-            font,
-            color: rgb(0.05, 0.1, 0.16),
-          });
-
-          page.drawText("PLACEHOLDER — Upload official PDF template to enable form filling", {
-            x: 50,
-            y: 690,
-            size: 10,
-            font: bodyFont,
-            color: rgb(0.5, 0.5, 0.5),
-          });
-
-          // List extracted fields for this form
-          const formFields = (extractedData || []).filter(
-            (f: any) => f.form_reference === formCode
-          );
-          let yPos = 650;
-          for (const f of formFields) {
-            if (yPos < 80) {
-              const newPage = pdfDoc.addPage([612, 792]);
-              yPos = 720;
-            }
-            const val = f.manually_overridden ? f.override_value : f.field_value;
-            page.drawText(`${f.field_label}: ${val || "—"}`, {
-              x: 70,
-              y: yPos,
-              size: 9,
-              font: bodyFont,
-              color: rgb(0.2, 0.2, 0.2),
-            });
-            yPos -= 16;
-          }
+        if (!templateFileName) {
+          // No template mapping — create placeholder
+          pdfDoc = await createPlaceholderPdf(formCode, extractedData);
         } else {
-          // Load the real template and fill AcroForm fields
-          pdfDoc = await PDFDocument.load(await templateBytes.arrayBuffer());
-          try {
-            const form = pdfDoc.getForm();
-            // Fill fields based on form code
-            // NOTE: Exact PDF field names must be discovered via discover-pdf-fields
-            // These are logical mappings that need updating after field discovery
-            if (formCode === "B101") {
-              safeFill(form, "Debtor1_FirstName", fieldMap["debtor_legal_name_first"]);
-              safeFill(form, "Debtor1_MiddleName", fieldMap["debtor_legal_name_middle"]);
-              safeFill(form, "Debtor1_LastName", fieldMap["debtor_legal_name_last"]);
-              safeFill(form, "Debtor1_SSN_Last4", fieldMap["ssn_last_four"]);
-              safeFill(form, "Debtor1_Street", fieldMap["debtor_id_address"]);
-              safeFill(form, "Debtor1_Employer", fieldMap["employer_name"]);
-              safeFill(form, "CreditCounseling_Provider", fieldMap["credit_counseling_provider"]);
-              safeFill(form, "CreditCounseling_Date", fieldMap["credit_counseling_date"]);
-              safeCheck(form, "Chapter7_Checkbox", true);
+          const { data: templateBytes, error: templateError } = await supabase.storage
+            .from("form-templates")
+            .download(templateFileName);
+
+          if (templateError || !templateBytes) {
+            pdfDoc = await createPlaceholderPdf(formCode, extractedData);
+          } else {
+            pdfDoc = await PDFDocument.load(await templateBytes.arrayBuffer());
+            try {
+              const form = pdfDoc.getForm();
+              fillFormFields(form, formCode, fieldMap);
+            } catch {
+              // PDF has no form fields — continue with watermark only
             }
-            if (formCode === "B106I") {
-              safeFill(form, "Debtor1_Occupation", fieldMap["occupation"]);
-              safeFill(form, "Debtor1_Employer_Name", fieldMap["employer_name"]);
-              safeFill(form, "Debtor1_Employer_Street", fieldMap["employer_street"]);
-              safeFill(form, "Debtor1_Employer_City", fieldMap["employer_city"]);
-              safeFill(form, "Debtor1_Employer_State", fieldMap["employer_state"]);
-              safeFill(form, "Debtor1_Employer_Zip", fieldMap["employer_zip"]);
-              safeFill(form, "Debtor1_GrossMonthly", fieldMap["gross_monthly_calculated"]);
-              safeFill(form, "Debtor1_Deduction_FedTax", fieldMap["deduction_federal_tax"]);
-              safeFill(form, "Debtor1_Deduction_StateTax", fieldMap["deduction_state_tax"]);
-              safeFill(form, "Debtor1_Deduction_SS", fieldMap["deduction_ss"]);
-              safeFill(form, "Debtor1_Deduction_Medicare", fieldMap["deduction_medicare"]);
-              safeFill(form, "Debtor1_Deduction_Health", fieldMap["deduction_health_insurance"]);
-              safeFill(form, "Debtor1_Deduction_Retirement", fieldMap["deduction_retirement_401k"]);
-            }
-            // Additional form codes follow the same pattern — fill after field discovery
-          } catch {
-            // PDF has no form fields — continue with watermark only
           }
         }
 
-        // Add DRAFT watermark
         await addWatermark(pdfDoc, "DRAFT");
         const pdfBytes = await pdfDoc.save();
 
@@ -214,7 +166,6 @@ serve(async (req) => {
         const newVersion = (existing?.[0]?.version ?? 0) + 1;
         const storagePath = `cases/${case_id}/forms/ch7/${formCode}_v${newVersion}.pdf`;
 
-        // Upload to storage
         await supabase.storage
           .from("federal-forms")
           .upload(storagePath, pdfBytes, {
@@ -222,7 +173,6 @@ serve(async (req) => {
             upsert: false,
           });
 
-        // Save record
         const { data: record } = await supabase
           .from("generated_federal_forms")
           .insert({
@@ -272,3 +222,64 @@ serve(async (req) => {
     );
   }
 });
+
+async function createPlaceholderPdf(formCode: string, extractedData: any[]) {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([612, 792]);
+  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const bodyFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  page.drawText(`${formCode} — ${FORM_TITLES[formCode] || formCode}`, {
+    x: 50, y: 720, size: 14, font, color: rgb(0.05, 0.1, 0.16),
+  });
+
+  page.drawText("PLACEHOLDER — Upload official PDF template to enable form filling", {
+    x: 50, y: 690, size: 10, font: bodyFont, color: rgb(0.5, 0.5, 0.5),
+  });
+
+  const formFields = (extractedData || []).filter((f: any) => f.form_reference === formCode);
+  let yPos = 650;
+  for (const f of formFields) {
+    if (yPos < 80) {
+      pdfDoc.addPage([612, 792]);
+      yPos = 720;
+    }
+    const val = f.manually_overridden ? f.override_value : f.field_value;
+    page.drawText(`${f.field_label}: ${val || "—"}`, {
+      x: 70, y: yPos, size: 9, font: bodyFont, color: rgb(0.2, 0.2, 0.2),
+    });
+    yPos -= 16;
+  }
+
+  return pdfDoc;
+}
+
+function fillFormFields(form: any, formCode: string, fieldMap: Record<string, string>) {
+  if (formCode === "B101") {
+    safeFill(form, "Debtor1_FirstName", fieldMap["debtor_legal_name_first"]);
+    safeFill(form, "Debtor1_MiddleName", fieldMap["debtor_legal_name_middle"]);
+    safeFill(form, "Debtor1_LastName", fieldMap["debtor_legal_name_last"]);
+    safeFill(form, "Debtor1_SSN_Last4", fieldMap["ssn_last_four"]);
+    safeFill(form, "Debtor1_Street", fieldMap["debtor_id_address"]);
+    safeFill(form, "Debtor1_Employer", fieldMap["employer_name"]);
+    safeFill(form, "CreditCounseling_Provider", fieldMap["credit_counseling_provider"]);
+    safeFill(form, "CreditCounseling_Date", fieldMap["credit_counseling_date"]);
+    safeCheck(form, "Chapter7_Checkbox", true);
+  }
+  if (formCode === "B106I") {
+    safeFill(form, "Debtor1_Occupation", fieldMap["occupation"]);
+    safeFill(form, "Debtor1_Employer_Name", fieldMap["employer_name"]);
+    safeFill(form, "Debtor1_Employer_Street", fieldMap["employer_street"]);
+    safeFill(form, "Debtor1_Employer_City", fieldMap["employer_city"]);
+    safeFill(form, "Debtor1_Employer_State", fieldMap["employer_state"]);
+    safeFill(form, "Debtor1_Employer_Zip", fieldMap["employer_zip"]);
+    safeFill(form, "Debtor1_GrossMonthly", fieldMap["gross_monthly_calculated"]);
+    safeFill(form, "Debtor1_Deduction_FedTax", fieldMap["deduction_federal_tax"]);
+    safeFill(form, "Debtor1_Deduction_StateTax", fieldMap["deduction_state_tax"]);
+    safeFill(form, "Debtor1_Deduction_SS", fieldMap["deduction_ss"]);
+    safeFill(form, "Debtor1_Deduction_Medicare", fieldMap["deduction_medicare"]);
+    safeFill(form, "Debtor1_Deduction_Health", fieldMap["deduction_health_insurance"]);
+    safeFill(form, "Debtor1_Deduction_Retirement", fieldMap["deduction_retirement_401k"]);
+  }
+  // Additional form codes — field names need updating after running discover-pdf-fields
+}
