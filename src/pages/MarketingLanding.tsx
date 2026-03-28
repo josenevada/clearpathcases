@@ -216,7 +216,7 @@ const AIFormFillingSection = () => {
     <section
       className="px-6 py-16 max-w-5xl mx-auto"
       ref={ref}
-      style={{ background: 'hsl(var(--background))' }}
+      
     >
       <div className="text-center mb-12" style={revealStyle(0)}>
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
@@ -232,7 +232,7 @@ const AIFormFillingSection = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left — form extraction card */}
         <div style={revealStyle(0.1)}>
-          <div className="rounded-xl p-4 md:p-6" style={{ background: '#111f2e', border: '1px solid rgba(0,194,168,0.15)' }}>
+          <div className="p-4 md:p-6" style={{ background: '#0f2035', border: '0.5px solid rgba(0,194,168,0.25)', borderRadius: '12px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
             <div className="flex items-center gap-2 mb-5">
               <span className="w-2 h-2 rounded-full bg-primary" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
               <span className="font-display font-bold text-sm text-foreground">B106I — Schedule I: Income</span>
@@ -472,7 +472,7 @@ const MarketingLanding = () => {
 
   /* Section background colors */
   const sectionBg = {
-    aiFormFilling: '#0f1f2e',
+    aiFormFilling: '#0d1b2a',
     howItWorks: '#0a1520',
   };
 
