@@ -478,8 +478,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   );
 };
 
-// PROMPT 4: Step1Form with live team member dropdowns
-const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, currentUserName, currentUserRole }: {
+// PROMPT 4 + PROMPT 6: Step1Form with live team member dropdowns and joint filing spouse fields
+const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, currentUserName, currentUserRole, isJointFiling, onToggleJoint }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
   paralegals: TeamMember[];
@@ -487,6 +487,8 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
   currentUserId?: string;
   currentUserName?: string;
   currentUserRole?: string;
+  isJointFiling?: boolean;
+  onToggleJoint?: (v: boolean) => void;
 }) => {
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
