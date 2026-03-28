@@ -107,8 +107,11 @@
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
     @apply border-border;
+    border-width: 0;
   }
 
   body {

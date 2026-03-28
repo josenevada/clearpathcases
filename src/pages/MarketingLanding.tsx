@@ -514,7 +514,7 @@ const MarketingLanding = () => {
   ];
 
   return (
-    <div className="min-h-screen" style={{ lineHeight: '1.7' }}>
+    <div className="min-h-screen" style={{ lineHeight: '1.7', border: 'none', outline: 'none', boxShadow: 'none' }}>
       {/* Nav */}
       <nav
         className="sticky top-0 z-50 px-6 py-3 flex items-center justify-between"
