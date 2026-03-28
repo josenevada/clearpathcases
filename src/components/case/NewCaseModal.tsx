@@ -59,17 +59,22 @@ interface TeamMember {
   email: string;
 }
 
-const BASE_INTAKE_QUESTIONS = [
-  { key: 'ownsRealEstate' as const, question: 'Does this client own real estate?' },
-  { key: 'ownsVehicle' as const, question: 'Does this client own a vehicle?' },
-  { key: 'selfEmployed' as const, question: 'Is this client self-employed or do they own a business?' },
-  { key: 'hasRetirement' as const, question: 'Does this client have retirement or investment accounts?' },
-  { key: 'hasStudentLoans' as const, question: 'Does this client have student loans?' },
-  { key: 'filingJointly' as const, question: 'Is this client filing jointly with a spouse?' },
+interface IntakeQuestionDef {
+  key: string;
+  question: string;
+}
+
+const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
+  { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
+  { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
+  { key: 'selfEmployed', question: 'Is this client self-employed or do they own a business?' },
+  { key: 'hasRetirement', question: 'Does this client have retirement or investment accounts?' },
+  { key: 'hasStudentLoans', question: 'Does this client have student loans?' },
+  { key: 'filingJointly', question: 'Is this client filing jointly with a spouse?' },
 ];
 
-const CH13_EXTRA_QUESTIONS = [
-  { key: 'mortgageInArrears' as const, question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
+const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
+  { key: 'mortgageInArrears', question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
 ];
 
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
