@@ -14,6 +14,7 @@ import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
+import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
