@@ -1117,8 +1117,8 @@ const ClientWizard = () => {
         }`}>
           <AlertTriangle className="w-4 h-4 inline mr-2" />
           {caseData.urgency === 'critical'
-            ? `Your filing date is in ${daysLeft} days. Please complete your documents today.`
-            : 'Your filing date is coming up. Finishing soon keeps everything on track.'}
+            ? `Your filing date is in ${daysLeft} days — let's try to wrap up today so nothing gets delayed.`
+            : 'Your filing date is coming up soon. Finishing these last items keeps your case on track.'}
         </div>
       )}
 
@@ -1133,11 +1133,13 @@ const ClientWizard = () => {
             />
           ) : showMilestone !== null ? (
             <motion.div key="milestone" {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="text-6xl mb-6">{showMilestone === 100 ? '🎉' : showMilestone >= 75 ? '🚀' : showMilestone >= 50 ? '💪' : '⭐'}</div>
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-10 h-10 text-primary" />
+              </div>
               <h2 className="font-display text-3xl font-bold text-foreground mb-4">
-                {showMilestone}% Complete
+                {showMilestone}% done
               </h2>
-              <p className="text-muted-foreground text-lg mb-8">
+              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
                 {MILESTONE_MESSAGES[MILESTONE_THRESHOLDS.indexOf(showMilestone)]}
               </p>
               {showMilestone < 100 && (
