@@ -527,14 +527,31 @@ const CaseDetail = () => {
           <Link to="/paralegal" className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="w-4 h-4" /> Dashboard
           </Link>
-          <div className="flex flex-1 items-center gap-3 flex-wrap">
-            <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
-            <span className="font-mono text-xs text-muted-foreground">{caseData.id}</span>
-            {caseData.courtCaseNumber && (
-              <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-mono text-muted-foreground border border-border">
-                {caseData.courtCaseNumber}
-              </span>
-            )}
+           <div className="flex flex-1 items-center gap-3 flex-wrap">
+             <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
+             {caseData.courtCaseNumber ? (
+               <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-mono text-muted-foreground border border-border">
+                 {caseData.courtCaseNumber}
+               </span>
+             ) : (
+               <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] italic text-muted-foreground border border-border">
+                 Pending court assignment
+               </span>
+             )}
+             <button
+               onClick={() => {
+                 const num = prompt('Enter court case number:', caseData.courtCaseNumber || '');
+                 if (num !== null) {
+                   updateCase(caseData.id, c => ({ ...c, courtCaseNumber: num.trim() || undefined }));
+                   supabase.from('cases').update({ court_case_number: num.trim() || null }).eq('id', caseData.id);
+                   refresh();
+                   toast.success(num.trim() ? 'Court case number updated' : 'Court case number cleared');
+                 }
+               }}
+               className="text-muted-foreground hover:text-foreground transition-colors"
+             >
+               <Pencil className="w-3 h-3" />
+             </button>
             <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
               <Pencil className="w-3 h-3" /> Edit Case
             </Button>

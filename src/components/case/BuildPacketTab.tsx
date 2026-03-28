@@ -306,17 +306,21 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
                 {district}
               </span>
             )}
+            {caseData.courtCaseNumber ? (
+              <span className="text-xs font-mono">Case No: {caseData.courtCaseNumber}</span>
+            ) : (
+              <span className="text-xs italic text-muted-foreground">Case No: Pending court assignment</span>
+            )}
             <span>Filing deadline: {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}</span>
           </div>
-        </div>
-
-        {/* Readiness ring */}
-        <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          <svg width={ringSize} height={ringSize} className="-rotate-90">
-            <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth={strokeWidth} />
-            <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke={ringColor} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="transition-all duration-700 ease-out" />
-          </svg>
-          <span className="text-xs font-bold text-foreground font-body">{readinessPercent}% ready</span>
+          {!caseData.courtCaseNumber && (
+            <div className="flex items-center gap-2 mt-2 p-2.5 rounded-lg bg-warning/10 border border-warning/20">
+              <AlertTriangle className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+              <p className="text-xs text-warning font-body">
+                Court case number not yet assigned — you can still generate a draft packet. The cover page will show "Pending court assignment."
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -425,17 +429,29 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
           <div className="space-y-2">
             {packetHistory.map(p => (
               <div key={p.id} className="surface-card p-4 flex items-center justify-between">
-                <div className="text-sm font-body">
-                  <span className="text-foreground">{format(new Date(p.generated_at), 'MMM d, yyyy h:mm a')}</span>
-                  <span className="text-muted-foreground ml-2">by {p.generated_by}</span>
-                  <span className="text-muted-foreground ml-2">· {p.document_count} documents</span>
+                <div className="flex items-center gap-3">
+                  <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" title="This packet is archived and cannot be modified. It reflects the documents at the time of generation." />
+                  <div className="text-sm font-body">
+                    <span className="text-foreground">{format(new Date(p.generated_at), 'MMM d, yyyy h:mm a')}</span>
+                    <span className="text-muted-foreground ml-2">by {p.generated_by}</span>
+                    <span className="text-muted-foreground ml-2">· {p.document_count} documents</span>
+                  </div>
                 </div>
-                <button className="text-xs text-primary hover:underline font-body" onClick={() => handleRedownload(p)}>
-                  Re-download
-                </button>
+                {p.storage_path ? (
+                  <button className="text-xs text-primary hover:underline font-body" onClick={() => handleRedownload(p)}>
+                    Re-download
+                  </button>
+                ) : (
+                  <span className="text-xs text-destructive font-body">Archive unavailable — file may have been deleted. Contact support.</span>
+                )}
               </div>
             ))}
           </div>
+        )}
+        {packetHistory.length > 0 && (
+          <p className="text-[10px] text-muted-foreground font-body italic">
+            Packet history reflects documents at time of generation and cannot be changed.
+          </p>
         )}
       </div>
 
