@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -102,6 +102,11 @@ const CaseDetail = () => {
   const [naTarget, setNaTarget] = useState<string | null>(null);
   const [naReason, setNaReason] = useState('');
   const [naCustomReason, setNaCustomReason] = useState('');
+  // PROMPT 5: Add custom document inline form state
+  const [addDocCategory, setAddDocCategory] = useState<string | null>(null);
+  const [addDocName, setAddDocName] = useState('');
+  const [addDocDesc, setAddDocDesc] = useState('');
+  const [addDocRequired, setAddDocRequired] = useState(true);
 
   useEffect(() => {
     if (!caseId) return;
@@ -416,6 +421,94 @@ const CaseDetail = () => {
     refresh();
   };
 
+  // PROMPT 5: Add custom document to a category
+  const handleAddCustomDoc = async (category: string) => {
+    if (!addDocName.trim()) {
+      toast.error('Please enter a document name.');
+      return;
+    }
+    const newItemId = Math.random().toString(36).substr(2, 9);
+    const sortOrder = caseData.checklist.filter(i => i.category === category).length;
+
+    // Add to localStorage
+    updateCase(caseData.id, c => ({
+      ...c,
+      checklist: [...c.checklist, {
+        id: newItemId,
+        category,
+        label: addDocName.trim(),
+        description: addDocDesc.trim(),
+        whyWeNeedThis: '',
+        required: addDocRequired,
+        files: [],
+        flaggedForAttorney: false,
+        completed: false,
+        isCustom: true,
+      } as any],
+    }));
+
+    // Sync to Supabase
+    await supabase.from('checklist_items').insert({
+      id: newItemId,
+      case_id: caseData.id,
+      category,
+      label: addDocName.trim(),
+      description: addDocDesc.trim(),
+      why_we_need_this: '',
+      required: addDocRequired,
+      completed: false,
+      sort_order: sortOrder,
+      input_type: 'file',
+    });
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_added',
+      actorRole: 'paralegal',
+      actorName: user?.fullName || 'Staff',
+      description: `Added custom document "${addDocName.trim()}" to ${category}`,
+      itemId: newItemId,
+    });
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_added',
+      actor_role: 'paralegal',
+      actor_name: user?.fullName || 'Staff',
+      description: `Added custom document "${addDocName.trim()}" to ${category}`,
+      item_id: newItemId,
+    });
+
+    setAddDocCategory(null);
+    setAddDocName('');
+    setAddDocDesc('');
+    setAddDocRequired(true);
+    toast.success(`"${addDocName.trim()}" added to checklist`);
+    refresh();
+  };
+
+  const handleDeleteCustomDoc = async (item: ChecklistItem) => {
+    // Remove from localStorage
+    updateCase(caseData.id, c => ({
+      ...c,
+      checklist: c.checklist.filter(i => i.id !== item.id),
+    }));
+
+    // Remove from Supabase
+    await supabase.from('checklist_items').delete().eq('id', item.id);
+    await supabase.from('files').delete().eq('checklist_item_id', item.id);
+
+    addActivityEntry(caseData.id, {
+      eventType: 'item_removed',
+      actorRole: 'paralegal',
+      actorName: user?.fullName || 'Staff',
+      description: `Removed custom document "${item.label}"`,
+      itemId: item.id,
+    });
+
+    toast.success(`"${item.label}" removed from checklist`);
+    refresh();
+  };
+
   const groupedActivity = caseData.activityLog
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .reduce<{ label: string; entries: typeof caseData.activityLog }[]>((groups, entry) => {
@@ -575,7 +668,7 @@ const CaseDetail = () => {
                             const isExpanded = expandedItem === item.id;
 
                             return (
-                              <div key={item.id} className="border-t border-border">
+                              <div key={item.id} className="border-t border-border group">
                                 <button
                                   onClick={() => setExpandedItem(isExpanded ? null : item.id)}
                                   className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[hsl(var(--surface-hover))]"
@@ -587,7 +680,12 @@ const CaseDetail = () => {
                                   ) : (
                                     <div className="w-5 h-5 flex-shrink-0 rounded-full border-2 border-muted-foreground/30" />
                                   )}
-                                  <span className={`flex-1 text-sm ${item.notApplicable ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{item.label}</span>
+                                  <span className={`flex-1 text-sm ${item.notApplicable ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                    {item.label}
+                                    {(item as any).isCustom && (
+                                      <Badge className="ml-1.5 bg-primary/10 text-primary border-primary/20 text-[9px] px-1.5 py-0">Custom</Badge>
+                                    )}
+                                  </span>
                                   {item.notApplicable ? (
                                     <Badge className="bg-muted text-muted-foreground border-border text-[10px]">N/A</Badge>
                                   ) : (
@@ -595,6 +693,14 @@ const CaseDetail = () => {
                                   )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
                                   {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}
+                                  {(item as any).isCustom && viewRole === 'paralegal' && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteCustomDoc(item); }}
+                                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
                                 </button>
 
                                 <AnimatePresence>
@@ -872,6 +978,48 @@ const CaseDetail = () => {
                               </div>
                             );
                           })}
+
+                          {/* PROMPT 5: Add custom document button */}
+                          {viewRole === 'paralegal' && (
+                            <div className="border-t border-border px-4 py-3">
+                              {addDocCategory === category ? (
+                                <div className="space-y-3">
+                                  <Input
+                                    value={addDocName}
+                                    onChange={e => setAddDocName(e.target.value)}
+                                    placeholder="Document name (required)"
+                                    className="bg-input border-border rounded-[10px] text-sm"
+                                    autoFocus
+                                  />
+                                  <Input
+                                    value={addDocDesc}
+                                    onChange={e => setAddDocDesc(e.target.value)}
+                                    placeholder="Instructions for the client (optional)"
+                                    className="bg-input border-border rounded-[10px] text-sm"
+                                  />
+                                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <input type="checkbox" checked={addDocRequired} onChange={e => setAddDocRequired(e.target.checked)} className="accent-primary" />
+                                    Required
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => handleAddCustomDoc(category)} disabled={!addDocName.trim()}>
+                                      Add to checklist
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => { setAddDocCategory(null); setAddDocName(''); setAddDocDesc(''); }}>
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setAddDocCategory(category)}
+                                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                                >
+                                  <Plus className="w-3.5 h-3.5" /> Add document to this section
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
