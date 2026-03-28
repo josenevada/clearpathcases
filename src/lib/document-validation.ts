@@ -21,6 +21,7 @@ const LABEL_TO_DOC_TYPE: Record<string, string> = {
   'Tax Returns (Last 2 Years)': 'tax return',
   'Checking/Savings Statements (Last 6 Months)': 'bank statement',
   'Credit Card Statements (Last 3 Months)': 'credit card statement',
+  'Digital Wallet Statements': 'digital wallet statement',
   'Government-Issued Photo ID': 'government id',
   'Drivers License or State ID': 'government id',
   "Driver's License or State ID": 'government id',
