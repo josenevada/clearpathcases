@@ -23,10 +23,9 @@ function countSSNMatches(text: string): number {
   return count;
 }
 
-function formatCaseNumber(caseId: string, createdAt: string): string {
-  const year = new Date(createdAt).getFullYear();
-  const short = caseId.replace(/-/g, "").slice(0, 5).toUpperCase();
-  return `${year}-${short}`;
+function formatCaseNumber(caseData: any): string {
+  if (caseData.court_case_number) return caseData.court_case_number;
+  return "Pending court assignment";
 }
 
 const SECTION_ORDER = [
@@ -141,7 +140,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const caseNumber = formatCaseNumber(caseData.id, caseData.created_at);
+    const caseNumber = formatCaseNumber(caseData);
     const now = new Date();
 
     // Cover page text
