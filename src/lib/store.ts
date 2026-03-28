@@ -11,7 +11,8 @@ export type ActivityEventType =
   | 'file_overridden' | 'file_deleted' | 'item_flagged' | 'milestone_reached' | 'checkpoint_completed'
   | 'case_created' | 'case_ready' | 'reminder_sent' | 'status_change' | 'case_updated'
   | 'ssn_viewed' | 'client_info_updated' | 'notification_sent' | 'document_validated'
-  | 'item_not_applicable' | 'case_deleted' | 'notifications_paused';
+  | 'item_not_applicable' | 'case_deleted' | 'notifications_paused'
+  | 'item_added' | 'item_removed';
 
 export interface FileValidationResult {
   isCorrectDocumentType: boolean;
