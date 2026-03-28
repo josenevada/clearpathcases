@@ -416,6 +416,7 @@ const ClientWizard = () => {
   const isSSNEntry = currentItem && currentItem.label === SSN_LABEL;
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
+  const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
   const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
