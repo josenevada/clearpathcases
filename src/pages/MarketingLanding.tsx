@@ -1,547 +1,629 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Link as LinkIcon, Upload, Sparkles, CheckCircle, Shield, FileText,
-  ClipboardList, Package, Building, Layers, Lock, Archive, Database,
-  ArrowRight, Menu, X,
+  FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
+  ArrowRight, Upload, Lock, Shield, CheckCircle, Clock, ChevronDown,
+  Plus, Minus, Sparkles, MessageSquare, ClipboardList,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Logo from '@/components/Logo';
+import PricingCards from '@/components/PricingCards';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import type { PlanKey } from '@/lib/stripe';
+import {
+  useScrollReveal,
+  usePrefersReducedMotion,
+  useIsMobileAnimation,
+} from '@/hooks/use-scroll-reveal';
 
-/* ─── colors (used inline, matching design spec) ─── */
-const C = {
-  navy: '#0d1b2a',
-  navyAlt: '#0a1520',
-  card: '#111f2e',
-  teal: '#00c2a8',
-  amber: '#f5a623',
-  white: '#f0f4f8',
-  muted: '#8aa3b8',
-  border: 'rgba(255,255,255,0.08)',
-  borderLight: 'rgba(255,255,255,0.06)',
-  footer: '#070f18',
-};
+/* ────── helpers ────── */
+const SectionDivider = () => (
+  <div className="max-w-5xl mx-auto px-6">
+    <div className="h-px w-full bg-foreground/[0.06]" />
+  </div>
+);
 
-/* ─── Intersection Observer hook (fire once) ─── */
-function useReveal(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null!);
-  const [visible, setVisible] = useState(false);
+/** Animated counter that counts from 0 to target */
+const CountUp = ({ target, duration = 1500, started }: { target: string; duration?: number; started: boolean }) => {
+  const [display, setDisplay] = useState('0');
+  const reduced = usePrefersReducedMotion();
+
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true);
-      return;
-    }
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return [ref, visible] as const;
-}
+    if (!started) { setDisplay('0'); return; }
+    if (reduced) { setDisplay(target); return; }
 
-/* ─── CountUp ─── */
-const CountUp = ({ target, prefix = '', suffix = '', started }: { target: number; prefix?: string; suffix?: string; started: boolean }) => {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!started) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setVal(target); return; }
-    const dur = 1500;
+    // Check if target is purely numeric (possibly with %)
+    const numMatch = target.match(/^([\d.]+)(.*)$/);
+    if (!numMatch) { setDisplay(target); return; }
+    const numTarget = parseFloat(numMatch[1]);
+    const suffix = numMatch[2] || '';
+    const isInt = Number.isInteger(numTarget);
     const start = performance.now();
-    const isFloat = !Number.isInteger(target);
+
     const tick = (now: number) => {
-      const p = Math.min((now - start) / dur, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(isFloat ? parseFloat((eased * target).toFixed(1)) : Math.round(eased * target));
-      if (p < 1) requestAnimationFrame(tick);
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out: 1 - (1 - t)^3
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = eased * numTarget;
+      setDisplay((isInt ? Math.round(current) : current.toFixed(1)) + suffix);
+      if (progress < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-  }, [started, target]);
-  return <>{prefix}{val}{suffix}</>;
+  }, [started, target, duration, reduced]);
+
+  return <>{display}</>;
 };
 
-/* ─── Reveal wrapper ─── */
-const Reveal = ({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) => {
-  const [ref, vis] = useReveal();
+/* ────── Dashboard Mockup (hero) ────── */
+const DashboardMockup = ({ visible }: { visible: boolean }) => {
+  const reduced = usePrefersReducedMotion();
+  const isMobile = useIsMobileAnimation();
+  const cases = [
+    { name: 'Maria Rodriguez', chapter: '7', urgency: 'critical', progress: 85, docs: '6 of 8' },
+    { name: 'James Chen', chapter: '13', urgency: 'at-risk', progress: 45, docs: '3 of 8' },
+    { name: 'Robert Kim', chapter: '7', urgency: 'normal', progress: 100, docs: '8 of 8' },
+  ];
+  const urgencyColors: Record<string, string> = {
+    critical: 'bg-destructive/15 text-destructive border-destructive/25',
+    'at-risk': 'bg-[hsl(36_91%_55%/0.15)] text-[hsl(36_91%_55%)] border-[hsl(36_91%_55%/0.25)]',
+    normal: 'bg-muted text-muted-foreground border-border',
+  };
+
+  const baseStyle = reduced
+    ? {}
+    : {
+        opacity: visible ? 1 : 0,
+        transform: visible
+          ? 'translateY(0)'
+          : isMobile
+            ? 'translateY(0)'
+            : 'translateY(100px)',
+        transition: 'opacity 0.5s ease-out, transform 0.5s ease-out',
+      };
+
   return (
-    <div ref={ref} className={className} style={{
-      opacity: vis ? 1 : 0,
-      transform: vis ? 'translateY(0)' : 'translateY(30px)',
-      transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
-    }}>
-      {children}
+    <div className="relative mt-14 max-w-3xl mx-auto" style={baseStyle}>
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-primary/15 blur-3xl rounded-full pointer-events-none" />
+      <div className="surface-card overflow-hidden relative z-10">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-border/60">
+          <div className="flex gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[hsl(36_91%_55%/0.6)]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary/50" />
+          </div>
+          <span className="text-[11px] text-muted-foreground ml-2 font-body">ClearPath — Active Cases</span>
+        </div>
+        <div className="divide-y divide-border/40">
+          {cases.map((c, i) => {
+            const rowStyle = reduced
+              ? {}
+              : {
+                  opacity: visible ? 1 : 0,
+                  transform: visible ? 'translateX(0)' : isMobile ? 'translateX(0)' : 'translateX(-20px)',
+                  transition: `opacity 0.35s ease-out ${0.5 + i * 0.15}s, transform 0.35s ease-out ${0.5 + i * 0.15}s`,
+                };
+            return (
+              <div key={c.name} className="flex items-center gap-4 px-5 py-3.5" style={rowStyle}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                  <p className="text-xs text-muted-foreground">Chapter {c.chapter}</p>
+                </div>
+                <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${urgencyColors[c.urgency]}`}>
+                  {c.urgency === 'at-risk' ? 'At Risk' : c.urgency}
+                </span>
+                <div className="w-28 hidden sm:block">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                    <span>{c.docs} docs</span>
+                    <span>{c.progress}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${c.progress}%` }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
 
-/* ─── Hero FormData Mockup ─── */
-const FormDataMockup = () => {
-  const fields = [
-    { label: 'Gross Monthly Income', value: '$4,833.00', confidence: 'High', color: C.teal, source: 'Pay Stub — March 2026' },
-    { label: 'Employer Name', value: 'Midwest Auto Group', confidence: 'High', color: C.teal, source: 'Pay Stub — March 2026' },
-    { label: 'Federal Tax Deduction', value: '$483.30 / $512.00', confidence: 'Conflict', color: '#a855f7', source: 'Pay Stub vs. Tax Return', isConflict: true },
+/* ────── Stats Bar ────── */
+const StatsBar = () => {
+  const [ref, visible] = useScrollReveal<HTMLDivElement>(0.3);
+  const reduced = usePrefersReducedMotion();
+  const stats = [
+    { value: 'Just days', label: 'Average document collection time — firms report significant time savings', countable: false },
+    { value: 'High', label: 'Client completion rate — guided step by step', countable: false },
+    { value: 'Zero', label: 'Filing deadlines missed — with automated reminders', countable: false },
   ];
+
   return (
-    <div className="w-full max-w-md" style={{ background: C.card, border: `0.5px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
-      <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.border}` }}>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ background: C.teal, animation: 'pulse 2s infinite' }} />
-          <span className="font-display font-bold text-sm" style={{ color: C.white }}>B106I — Schedule I: Income</span>
-        </div>
-        <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ color: C.teal, background: 'rgba(0,194,168,0.1)' }}>Extraction Complete</span>
-      </div>
-      <div className="divide-y" style={{ borderColor: C.border }}>
-        {fields.map((f) => (
-          <div key={f.label} className="px-5 py-3 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs" style={{ color: C.muted }}>{f.label}</p>
-              <p className="text-sm font-medium" style={{ color: C.white }}>{f.value}</p>
-              <p className="text-[10px] italic" style={{ color: C.muted }}>from: {f.source}</p>
-            </div>
-            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full whitespace-nowrap"
-              style={{ color: f.color, background: `${f.color}20`, border: `1px solid ${f.color}30` }}>
-              {f.confidence}
-            </span>
+    <div ref={ref} className="max-w-3xl mx-auto mt-10">
+      <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] flex flex-col sm:flex-row items-center justify-center divide-y sm:divide-y-0 sm:divide-x divide-foreground/[0.08] py-4 sm:py-0">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="flex-1 text-center py-4 sm:py-5 px-6"
+            style={reduced ? {} : { opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease-out' }}
+          >
+            <p className="font-display font-bold text-2xl text-primary">
+              {s.value}
+            </p>
+            <p className="text-xs text-muted-foreground font-body mt-1">{s.label}</p>
           </div>
         ))}
       </div>
-      <div className="px-5 py-2.5 flex items-center gap-2" style={{ background: `${C.amber}15`, borderTop: `1px solid ${C.amber}30` }}>
-        <span className="text-xs font-medium" style={{ color: C.amber }}>⚠ Attorney Review Required — 1 conflict detected</span>
-      </div>
     </div>
   );
 };
 
-/* ═══════════════════════════════════════ MAIN ═══════════════════════════════════════ */
+/* ────── Client Wizard Phone Mockup ────── */
+const ClientWizardMockup = () => (
+  <div className="w-[280px] mx-auto md:mx-0 flex-shrink-0">
+    <div className="rounded-[2rem] border-2 border-foreground/[0.12] bg-background p-3 shadow-xl">
+      <div className="rounded-[1.4rem] overflow-hidden border border-border/60 bg-card">
+        <div className="flex items-center justify-center py-2 px-4">
+          <div className="w-20 h-1 rounded-full bg-foreground/20" />
+        </div>
+        <div className="px-4 pb-5 pt-2 space-y-3">
+          <p className="text-[10px] text-muted-foreground font-body">Step 3 of 8</p>
+          <h4 className="font-display font-bold text-sm text-foreground leading-snug">Most recent pay stubs</h4>
+          <button className="flex items-center gap-1.5 text-[11px] text-primary font-body">
+            <ChevronDown className="w-3 h-3" />
+            Why do we need this?
+          </button>
+          <div className="border border-dashed border-primary/30 rounded-lg bg-primary/[0.04] flex flex-col items-center justify-center py-6 gap-2">
+            <Upload className="w-5 h-5 text-primary/60" />
+            <p className="text-[10px] text-muted-foreground font-body">Tap to upload or take a photo</p>
+          </div>
+          <div className="rounded-full bg-primary py-2 text-center">
+            <span className="text-xs font-bold text-primary-foreground">Continue</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ────── Main Component ────── */
 const MarketingLanding = () => {
   const navigate = useNavigate();
-  const [mobileNav, setMobileNav] = useState(false);
-  const [annual, setAnnual] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  const reduced = usePrefersReducedMotion();
+  const isMobile = useIsMobileAnimation();
 
-  /* Hero stagger */
-  const [heroIn, setHeroIn] = useState(false);
-  useEffect(() => { requestAnimationFrame(() => setHeroIn(true)); }, []);
-  const hs = (step: number): React.CSSProperties => ({
-    opacity: heroIn ? 1 : 0,
-    transform: heroIn ? 'translateY(0)' : 'translateY(24px)',
-    transition: `opacity 0.5s ease-out ${step * 0.1}s, transform 0.5s ease-out ${step * 0.1}s`,
-  });
-
-  /* Stats reveal */
-  const [statsRef, statsVis] = useReveal(0.3);
-
-  const goSignup = () => navigate('/signup');
-  const goLogin = () => navigate('/login');
-
-  const scrollTo = (id: string) => {
-    setMobileNav(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  const handlePlan = (plan: PlanKey) => {
+    sessionStorage.setItem('selected_plan', plan);
+    navigate('/signup');
   };
 
-  const navLinks = [
-    { label: 'Features', id: 'features' },
-    { label: 'How It Works', id: 'how-it-works' },
-    { label: 'Pricing', id: 'pricing' },
-    { label: 'Security', id: 'security' },
-  ];
+  // Hero staggered entrance state
+  const [heroLoaded, setHeroLoaded] = useState(false);
+  useEffect(() => {
+    if (reduced) { setHeroLoaded(true); return; }
+    const t = requestAnimationFrame(() => setHeroLoaded(true));
+    return () => cancelAnimationFrame(t);
+  }, [reduced]);
+
+  // Stagger helper: returns inline style for hero elements
+  const heroStagger = (step: number) => {
+    if (reduced) return {};
+    const delay = step * 0.06;
+    return {
+      opacity: heroLoaded ? 1 : 0,
+      transform: heroLoaded ? 'translateY(0)' : isMobile ? 'none' : 'translateY(20px)',
+      transition: `opacity 0.4s ease-out ${delay}s, transform 0.4s ease-out ${delay}s`,
+    };
+  };
+
+  // Scroll reveal refs for various sections
+  const [beforeAfterRef, beforeAfterVisible] = useScrollReveal<HTMLDivElement>();
+  const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
+  const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
+  const [clientRef, clientVisible] = useScrollReveal<HTMLDivElement>();
+  const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
+  const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
+  const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
+
+  // Reveal style helper
+  const revealStyle = (
+    isVisible: boolean,
+    opts?: { delay?: number; x?: number; y?: number; scale?: number },
+  ): React.CSSProperties => {
+    if (reduced) return {};
+    const { delay = 0, x = 0, y = isMobile ? 0 : 40, scale = 1 } = opts || {};
+    const transforms: string[] = [];
+    if (y && !isMobile) transforms.push(`translateY(${isVisible ? 0 : y}px)`);
+    if (x && !isMobile) transforms.push(`translateX(${isVisible ? 0 : x}px)`);
+    if (scale !== 1 && !isMobile) transforms.push(`scale(${isVisible ? 1 : scale})`);
+    return {
+      opacity: isVisible ? 1 : 0,
+      transform: transforms.length ? transforms.join(' ') : undefined,
+      transition: `opacity 0.4s ease-out ${delay}s, transform 0.4s ease-out ${delay}s`,
+    };
+  };
+
+  // How-it-works sequential animation
+  const [howStep, setHowStep] = useState(0);
+  useEffect(() => {
+    if (!howVisible || reduced) { if (howVisible) setHowStep(7); return; }
+    // Steps: 1=circle1, 2=line1, 3=circle2, 4=line2, 5=circle3
+    let step = 0;
+    const delays = [0, 150, 300, 450, 600, 750, 900];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i <= 7; i++) {
+      timers.push(setTimeout(() => setHowStep(i), delays[i - 1]));
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [howVisible, reduced]);
 
   return (
-    <div className="min-h-screen" style={{ background: C.navy, color: C.white }}>
-      {/* ══ NAV ══ */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between"
-        style={{ background: 'rgba(13,27,42,0.85)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.borderLight}` }}>
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollTo('hero')}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M4 8l10-4 10 4-10 4-10-4z" fill={C.teal} opacity="0.8"/><path d="M4 14l10 4 10-4" stroke={C.teal} strokeWidth="2" fill="none"/><path d="M4 20l10 4 10-4" stroke={C.teal} strokeWidth="2" fill="none" opacity="0.5"/></svg>
-          <span className="font-display font-[800] text-xl" style={{ color: C.white }}>ClearPath</span>
+    <div className="min-h-screen">
+      {/* Nav */}
+      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md px-6 py-3 flex items-center justify-between">
+        <Logo size="sm" />
+        <div className="flex items-center gap-4">
+          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground hidden sm:block">Features</a>
+          <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground hidden sm:block">Pricing</a>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
+          <Button size="sm" onClick={() => navigate('/signup')}>Start Free Trial</Button>
         </div>
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map(l => (
-            <button key={l.id} onClick={() => scrollTo(l.id)}
-              className="text-sm font-body relative pb-1 group"
-              style={{ color: C.muted }}>
-              {l.label}
-              <span className="absolute bottom-0 left-0 w-full h-0.5 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" style={{ background: C.teal }} />
-            </button>
-          ))}
-        </div>
-        <div className="hidden md:flex items-center gap-3">
-          <button onClick={goLogin} className="text-sm font-body px-4 py-2 rounded-md border transition-colors"
-            style={{ color: C.white, borderColor: 'rgba(255,255,255,0.2)' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = C.teal)}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)')}>
-            Sign In
-          </button>
-          <button onClick={goSignup} className="text-sm font-body font-medium px-5 py-2 rounded-md transition-shadow"
-            style={{ background: C.teal, color: C.navy, boxShadow: `0 0 20px rgba(0,194,168,0.3)` }}>
-            Start Free Trial
-          </button>
-        </div>
-        {/* Mobile hamburger */}
-        <button className="md:hidden" onClick={() => setMobileNav(!mobileNav)}>
-          {mobileNav ? <X size={24} style={{ color: C.white }} /> : <Menu size={24} style={{ color: C.white }} />}
-        </button>
       </nav>
 
-      {/* Mobile nav overlay */}
-      {mobileNav && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-8" style={{ background: C.navy }}>
-          {navLinks.map(l => (
-            <button key={l.id} onClick={() => scrollTo(l.id)} className="font-display font-bold text-2xl" style={{ color: C.white }}>{l.label}</button>
-          ))}
-          <button onClick={() => { setMobileNav(false); goLogin(); }} className="font-body text-lg" style={{ color: C.muted }}>Sign In</button>
-          <button onClick={() => { setMobileNav(false); goSignup(); }} className="font-body font-medium text-lg px-8 py-3 rounded-md" style={{ background: C.teal, color: C.navy }}>Start Free Trial</button>
-        </div>
-      )}
-
-      {/* ══ HERO ══ */}
-      <section id="hero" className="relative pt-28 md:pt-40 pb-20 md:pb-28 px-6 overflow-hidden" style={{ minHeight: '100vh' }}>
-        {/* Radial gradient */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse 80% 60% at 15% 20%, rgba(0,194,168,0.04), transparent)` }} />
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center gap-12 md:gap-16 relative">
-          {/* Left */}
-          <div className="flex-[3] min-w-0">
-            <div style={hs(0)}>
-              <span className="inline-flex items-center gap-1.5 text-xs font-body font-medium px-3 py-1 rounded-full border" style={{ color: C.teal, borderColor: `${C.teal}40`, background: `${C.teal}10` }}>
-                ⚡ Built for bankruptcy law firms
-              </span>
-            </div>
-            <h1 className="font-display font-[800] text-[44px] md:text-[72px] leading-[1.05] mt-6" style={{ ...hs(1), color: C.white }}>
-              Your firm files faster.<br />
-              <span style={{ color: C.teal }}>Your clients stress less.</span>
-            </h1>
-            <p className="font-body font-light text-lg md:text-xl mt-6 max-w-[520px] leading-relaxed" style={{ ...hs(2), color: C.muted }}>
-              ClearPath guides bankruptcy clients through document collection, then automatically pre-fills all 15 federal Ch.7 forms using AI — so your paralegals review, not retype.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-8" style={hs(3)}>
-              <button onClick={goSignup} className="font-body font-medium text-base px-8 py-4 rounded-md transition-shadow"
-                style={{ background: C.teal, color: C.navy, boxShadow: `0 0 20px rgba(0,194,168,0.3)` }}>
-                Start Your Free Trial
-              </button>
-              <button onClick={() => scrollTo('how-it-works')} className="font-body text-base px-6 py-4 rounded-md border flex items-center gap-2 transition-colors"
-                style={{ color: C.white, borderColor: 'rgba(255,255,255,0.2)' }}>
-                See How It Works <ArrowRight size={16} />
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-5 mt-6 text-sm font-body" style={{ ...hs(4), color: C.muted }}>
-              <span>✓ 14-day free trial</span>
-              <span>✓ No credit card required</span>
-              <span>✓ Cancel anytime</span>
-            </div>
-          </div>
-          {/* Right - Mockup */}
-          <div className="flex-[2] flex justify-center" style={hs(2)}>
-            <FormDataMockup />
-          </div>
-        </div>
-      </section>
-
-      {/* ══ SOCIAL PROOF ══ */}
-      <section className="py-12 md:py-16 px-6" style={{ background: C.navyAlt }}>
-        <p className="text-center text-xs font-body uppercase tracking-[0.2em]" style={{ color: C.muted }}>
-          Trusted by bankruptcy law firms across the country
+      {/* Hero */}
+      <section className="px-6 pt-20 md:pt-28 pb-10 md:pb-14 text-center max-w-4xl mx-auto">
+        <h1 className="font-display font-bold text-4xl md:text-6xl text-foreground leading-tight" style={heroStagger(0)}>
+          Your clients have the documents.{' '}
+          <span className="text-primary" style={heroStagger(1)}>We help them send them.</span>
+        </h1>
+        <p
+          className="mt-6 text-lg text-muted-foreground font-body max-w-2xl mx-auto"
+          style={heroStagger(4)}
+        >
+          No more chasing clients over email. No more documents arriving in the wrong format. No more wondering what's missing.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 mt-6">
-          {['Harmon & Velez Law', 'Phoenix Fresh Start', 'Midwest Debt Relief', 'Cutler Legal Group', 'Summit Bankruptcy'].map((n, i) => (
-            <span key={n} className="font-display font-bold text-base md:text-lg" style={{ color: `${C.muted}80`, opacity: 0.6 + i * 0.05 }}>{n}</span>
-          ))}
+        <div className="mt-8 flex items-center justify-center gap-4 flex-wrap" style={heroStagger(6)}>
+          <Button size="lg" onClick={() => navigate('/signup')}>Start Free Trial</Button>
+          <Button size="lg" variant="ghost" onClick={() => setShowDemo(true)} className="group">Watch a 2-Minute Demo <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" /></Button>
         </div>
+        <p className="mt-6 text-sm text-muted-foreground" style={heroStagger(8)}>
+          Designed for Chapter 7 and Chapter 13 bankruptcy practices.
+        </p>
+
+        <DashboardMockup visible={heroLoaded} />
+        <StatsBar />
       </section>
 
-      {/* ══ BEFORE/AFTER ══ */}
-      <section className="py-20 md:py-28 px-6" style={{ background: C.navy }}>
-        <div className="max-w-[1200px] mx-auto">
-          <Reveal className="text-center mb-14">
-            <h2 className="font-display font-[800] text-3xl md:text-5xl" style={{ color: C.white }}>Bankruptcy intake hasn't changed in 20 years.</h2>
-            <p className="font-body font-light text-lg mt-3" style={{ color: C.muted }}>Until now.</p>
-          </Reveal>
-          <div className="grid md:grid-cols-2 gap-6">
-            <Reveal>
-              <div className="h-full p-7 rounded-xl" style={{ background: '#130f0f', border: '1px solid rgba(255,107,107,0.2)' }}>
-                <span className="text-xs font-body font-bold uppercase tracking-[0.15em]" style={{ color: '#ff6b6b' }}>Before</span>
-                <ul className="mt-5 space-y-3.5">
-                  {[
-                    'Email clients a 20-item document checklist and wait',
-                    'Chase missing documents for days',
-                    'Paralegals retype data from PDFs into federal forms',
-                    '7–11 hours of paralegal time per case',
-                    'Errors, omissions, and last-minute scrambles',
-                    'Court packets assembled by hand',
-                  ].map(t => (
-                    <li key={t} className="flex items-start gap-2.5 text-sm font-body" style={{ color: C.white }}>
-                      <span style={{ color: '#ff6b6b' }}>✗</span> {t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Reveal>
-            <Reveal delay={0.15}>
-              <div className="h-full p-7 rounded-xl" style={{ background: '#0a1a18', border: `1px solid rgba(0,194,168,0.2)` }}>
-                <span className="text-xs font-body font-bold uppercase tracking-[0.15em]" style={{ color: C.teal }}>With ClearPath</span>
-                <ul className="mt-5 space-y-3.5">
-                  {[
-                    'Client guided through uploads step by step — no emails',
-                    'AI validates every document instantly',
-                    'All 15 federal forms pre-filled from approved documents',
-                    '~1 hour of paralegal time per case',
-                    'Attorney reviews, approves, files — nothing retyped',
-                    'Court packet generated in one click',
-                  ].map(t => (
-                    <li key={t} className="flex items-start gap-2.5 text-sm font-body" style={{ color: C.white }}>
-                      <span style={{ color: C.teal }}>✓</span> {t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Reveal>
+      <SectionDivider />
+
+      {/* Before / After */}
+      <section className="px-6 py-12 max-w-5xl mx-auto">
+        <div ref={beforeAfterRef} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-4 items-stretch">
+          {/* Old way */}
+          <div
+            className="rounded-2xl bg-destructive/[0.04] border border-destructive/10 border-l-4 border-l-destructive/40 p-6"
+            style={revealStyle(beforeAfterVisible, { x: -60, y: 0 })}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">Before ClearPath</p>
+            <ul className="space-y-3.5">
+              {[
+                'Chasing clients over email for weeks',
+                'Documents arrive in the wrong format',
+                'No visibility into what\'s missing',
+                'Paralegals manually organizing files before filing',
+              ].map(t => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <XCircle className="w-4 h-4 text-destructive/70 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-foreground/70 font-body">{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Connector */}
+          <div
+            className="hidden md:flex flex-col items-center justify-center gap-2 px-2"
+            style={revealStyle(beforeAfterVisible, { delay: 0.4, y: 0 })}
+          >
+            <div className="w-px flex-1 bg-foreground/[0.08]" />
+            <div className="flex items-center gap-2">
+              <ArrowRight className="w-4 h-4 text-primary" />
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary text-center whitespace-nowrap">Your practice,<br />transformed</p>
+            <div className="w-px flex-1 bg-foreground/[0.08]" />
+          </div>
+          {/* Mobile connector */}
+          <div
+            className="flex md:hidden items-center justify-center gap-3 py-1"
+            style={revealStyle(beforeAfterVisible, { delay: 0.2, y: 0 })}
+          >
+            <div className="h-px flex-1 bg-foreground/[0.08]" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary whitespace-nowrap">Your practice, transformed</p>
+            <ArrowRight className="w-4 h-4 text-primary flex-shrink-0" />
+            <div className="h-px flex-1 bg-foreground/[0.08]" />
+          </div>
+          {/* ClearPath way */}
+          <div
+            className="rounded-2xl bg-primary/[0.04] border border-primary/10 border-l-4 border-l-primary/50 p-6"
+            style={revealStyle(beforeAfterVisible, { x: 60, y: 0 })}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">With ClearPath</p>
+            <ul className="space-y-3.5">
+              {[
+                'Clients guided step by step in plain English',
+                'Documents collected in the right format automatically',
+                'Real-time progress tracking per case',
+                'Court-ready filing packet generated in one click',
+              ].map(t => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-foreground/70 font-body">{t}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* ══ ROI STATS ══ */}
-      <section ref={statsRef} className="py-16 md:py-24 px-6" style={{ background: C.navyAlt }}>
-        <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+      <SectionDivider />
+
+      {/* How it works */}
+      <section id="features" className="px-6 py-12 max-w-5xl mx-auto">
+        <h2 className="font-display font-bold text-3xl text-foreground text-center mb-12">How it works</h2>
+        <div ref={howRef} className="grid grid-cols-1 md:grid-cols-3 gap-0 items-start relative">
+          {/* Dashed connector lines (desktop) */}
+          <div
+            className="hidden md:block absolute top-5 left-[calc(16.67%+20px)] right-[calc(50%+20px)] border-t-2 border-dashed border-primary/25 origin-left"
+            style={reduced ? {} : {
+              transform: howStep >= 2 ? 'scaleX(1)' : 'scaleX(0)',
+              transition: 'transform 0.3s ease-out',
+            }}
+          />
+          <div
+            className="hidden md:block absolute top-5 left-[calc(50%+20px)] right-[calc(16.67%+20px)] border-t-2 border-dashed border-primary/25 origin-left"
+            style={reduced ? {} : {
+              transform: howStep >= 4 ? 'scaleX(1)' : 'scaleX(0)',
+              transition: 'transform 0.3s ease-out',
+            }}
+          />
           {[
-            { target: 8.5, suffix: '', label: 'Hours saved per case', color: C.teal },
-            { target: 10600, prefix: '$', suffix: '', label: 'Monthly labor saved at Professional tier', color: C.teal },
-            { target: 26, suffix: 'x', label: 'Average ROI for Professional firms', color: C.amber },
-            { target: 15, suffix: '', label: 'Federal Ch.7 forms auto-filled by AI', color: C.teal },
-          ].map(s => (
-            <div key={s.label} className="text-center p-6 rounded-xl" style={{ background: C.card, border: `0.5px solid ${C.border}` }}>
-              <p className="font-display font-[800] text-4xl md:text-6xl" style={{ color: s.color }}>
-                <CountUp target={s.target} prefix={s.prefix} suffix={s.suffix} started={statsVis} />
-              </p>
-              <p className="font-body text-sm mt-2" style={{ color: C.muted }}>{s.label}</p>
+            { num: '1', title: 'Create a case', desc: 'A paralegal sets up the case and the system generates a secure client link in seconds.', circleStep: 1, textStep: 1 },
+            { num: '2', title: 'Client uploads documents', desc: 'The client follows a guided step-by-step walkthrough on any device, one document at a time.', circleStep: 3, textStep: 3 },
+            { num: '3', title: 'Review and file', desc: 'The paralegal reviews documents, requests corrections if needed, and exports a court-ready filing packet in one click.', circleStep: 5, textStep: 5 },
+          ].map((step, i) => (
+            <div key={step.num} className="flex flex-col items-center text-center px-6 py-4 relative z-10">
+              <div
+                className="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4"
+                style={reduced ? {} : {
+                  transform: howStep >= step.circleStep ? 'scale(1)' : isMobile ? 'scale(1)' : 'scale(0)',
+                  opacity: howStep >= step.circleStep ? 1 : 0,
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out',
+                }}
+              >
+                <span className="font-display font-bold text-sm text-primary-foreground">{step.num}</span>
+              </div>
+              <div style={reduced ? {} : { opacity: howStep >= step.textStep ? 1 : 0, transition: 'opacity 0.3s ease-out' }}>
+                <h3 className="font-display font-bold text-base text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground font-body max-w-xs">{step.desc}</p>
+              </div>
+              {i < 2 && (
+                <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
+              )}
             </div>
           ))}
         </div>
       </section>
 
-      {/* ══ HOW IT WORKS ══ */}
-      <section id="how-it-works" className="py-20 md:py-28 px-6" style={{ background: C.navy }}>
-        <div className="max-w-[1200px] mx-auto">
-          <Reveal className="text-center mb-16">
-            <h2 className="font-display font-[800] text-3xl md:text-5xl" style={{ color: C.white }}>From intake to court packet — automated.</h2>
-          </Reveal>
-          <div className="grid md:grid-cols-4 gap-8 relative">
-            {/* Connector line (desktop) */}
-            <div className="hidden md:block absolute top-8 left-[12.5%] right-[12.5%] h-0.5" style={{ background: `${C.teal}30` }} />
-            {[
-              { icon: LinkIcon, title: 'Send the Link', desc: 'Create a case in seconds. Send your client a secure intake link via email or SMS. No login required for clients.' },
-              { icon: Upload, title: 'Client Uploads', desc: 'Your client is guided through every document one at a time with clear instructions, mobile camera capture, and AI validation.' },
-              { icon: Sparkles, title: 'AI Extracts', desc: "Once documents are approved, ClearPath's AI reads every document and extracts data into all 15 federal bankruptcy forms automatically." },
-              { icon: CheckCircle, title: 'Review & File', desc: 'Paralegals review extracted fields in minutes. Attorney approves. Court-ready packet generated with one click.' },
-            ].map((step, i) => (
-              <Reveal key={step.title} delay={i * 0.1} className="text-center relative z-10">
-                <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ background: `${C.teal}15`, border: `2px solid ${C.teal}40` }}>
-                  <step.icon size={24} style={{ color: C.teal }} />
-                </div>
-                <h3 className="font-display font-bold text-lg mb-2" style={{ color: C.white }}>{step.title}</h3>
-                <p className="font-body text-sm leading-relaxed" style={{ color: C.muted }}>{step.desc}</p>
-              </Reveal>
-            ))}
-          </div>
+      <SectionDivider />
+
+      {/* Feature cards */}
+      <section className="px-6 py-12 max-w-5xl mx-auto">
+        <div ref={featureRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { icon: FileText, title: 'Clients actually finish', desc: 'A guided step-by-step portal that walks clients through every document they need to upload. Adapts to each client\'s situation automatically.' },
+            { icon: LayoutDashboard, title: 'Know exactly where every case stands', desc: 'Every case in one place, sorted by urgency. See who\'s done, who\'s stalled, and what needs your attention today.' },
+            { icon: PackageCheck, title: 'Go from documents to filing in one click', desc: 'Download an organized ZIP or compiled PDF of all approved documents, ready for court, in one click.' },
+            { icon: Sparkles, title: 'AI catches mistakes before they reach you', desc: 'Every uploaded document is validated instantly — wrong year, wrong file, wrong document type — and the client is guided to fix it before it lands in your review queue.' },
+            { icon: MessageSquare, title: 'Clients stay on track automatically', desc: 'Automated SMS and email nudges bring clients back when they go quiet — timed to their behavior, written in plain English, with a direct link back to exactly where they left off.' },
+            { icon: ClipboardList, title: 'Full audit trail on every case', desc: 'Every upload, approval, correction, and client interaction is logged with a timestamp and actor — so you always know exactly what happened and when.' },
+          ].map((f, i) => (
+            <div
+              key={f.title}
+              className="surface-card p-6 transition-[border-color,transform] duration-150 md:hover:-translate-y-1 md:hover:border-primary/30"
+              style={revealStyle(featureVisible, { delay: i * 0.1, y: 40 })}
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                <f.icon className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground mb-2">{f.title}</h3>
+              <p className="text-muted-foreground text-sm font-body">{f.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ══ FEATURES ══ */}
-      <section id="features" className="py-20 md:py-28 px-6" style={{ background: C.navyAlt }}>
-        <div className="max-w-[1200px] mx-auto">
-          <Reveal className="text-center mb-14">
-            <h2 className="font-display font-[800] text-3xl md:text-5xl" style={{ color: C.white }}>Everything your firm needs.<br />Nothing it doesn't.</h2>
-          </Reveal>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: Shield, title: 'AI Document Validation', desc: 'Gemini Vision AI reviews every uploaded document and rejects invalid files instantly — no more blurry photos or wrong documents.' },
-              { icon: FileText, title: 'Automatic Form Filling', desc: 'All 15 Chapter 7 federal forms pre-filled from approved documents. B101 through B122A-2. Attorney reviews, not paralegals.' },
-              { icon: ClipboardList, title: 'Client Intake Wizard', desc: 'A guided, mobile-first experience that walks clients through every document with instructions, tips, and real-time progress.' },
-              { icon: Package, title: 'Court Packet Builder', desc: 'One-click court packet generation with SSN redaction, document organization, and attorney certification — ready to file.' },
-              { icon: Building, title: 'Plaid Bank Connection', desc: 'Clients connect bank accounts directly via Plaid for instant statement retrieval — no downloads, no uploads.' },
-              { icon: Layers, title: 'Chapter 7 & 13 Support', desc: 'Full support for both chapters with chapter-specific document checklists, forms, and milestone tracking.' },
-            ].map((f, i) => (
-              <Reveal key={f.title} delay={i * 0.08}>
-                <div className="h-full p-7 rounded-xl" style={{ background: C.card, border: `0.5px solid ${C.border}` }}>
-                  <f.icon size={28} style={{ color: C.teal }} className="mb-4" />
-                  <h3 className="font-display font-bold text-lg mb-2" style={{ color: C.white }}>{f.title}</h3>
-                  <p className="font-body text-sm leading-relaxed" style={{ color: C.muted }}>{f.desc}</p>
-                </div>
-              </Reveal>
-            ))}
+      <SectionDivider />
+
+      {/* Client experience */}
+      <section className="px-6 py-12 max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <h2 className="font-display font-bold text-3xl text-foreground mb-3">Your clients will actually finish</h2>
+          <p className="text-muted-foreground font-body max-w-2xl mx-auto">
+            ClearPath guides them through every document in plain English — one step at a time, on any device.
+          </p>
+        </div>
+        <div ref={clientRef} className="flex flex-col md:flex-row items-center gap-10 md:gap-14 justify-center">
+          <div style={revealStyle(clientVisible, { x: -60, y: 0 })}>
+            <ClientWizardMockup />
           </div>
+          <ul className="space-y-5 max-w-sm">
+            {[
+              'No confusing legal jargon',
+              'Works on any phone or computer',
+              'Saves progress automatically',
+              'Clients know exactly what to do next',
+            ].map((item, i) => (
+              <li
+                key={item}
+                className="flex items-start gap-3"
+                style={revealStyle(clientVisible, { delay: i * 0.08, x: 30, y: 0 })}
+              >
+                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-foreground font-body">{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      {/* ══ PRICING ══ */}
-      <section id="pricing" className="py-20 md:py-28 px-6" style={{ background: C.navy }}>
-        <div className="max-w-[1200px] mx-auto">
-          <Reveal className="text-center mb-10">
-            <h2 className="font-display font-[800] text-3xl md:text-5xl" style={{ color: C.white }}>Straightforward pricing.<br />Extraordinary ROI.</h2>
-            <p className="font-body font-light text-lg mt-3" style={{ color: C.muted }}>Every plan includes a 14-day free trial. No credit card required.</p>
-          </Reveal>
-          {/* Toggle */}
-          <div className="flex items-center justify-center gap-3 mb-12">
-            <span className="font-body text-sm" style={{ color: annual ? C.muted : C.white }}>Monthly</span>
-            <button onClick={() => setAnnual(!annual)} className="relative w-14 h-7 rounded-full transition-colors" style={{ background: annual ? C.teal : 'rgba(255,255,255,0.15)' }}>
-              <div className="absolute top-0.5 w-6 h-6 rounded-full transition-transform" style={{ background: annual ? C.navy : C.white, left: annual ? 'calc(100% - 1.625rem)' : '0.125rem' }} />
-            </button>
-            <span className="font-body text-sm" style={{ color: annual ? C.white : C.muted }}>Annual <span className="font-medium" style={{ color: C.teal }}>(2 months free)</span></span>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {[
-              {
-                name: 'Starter', price: annual ? 149 : 179, subtitle: 'For solo practitioners getting started', popular: false,
-                features: ['Up to 8 active cases', 'Client intake wizard', 'AI document validation', 'Manual document upload', 'Basic case management', 'Email support'],
-              },
-              {
-                name: 'Professional', price: annual ? 332 : 399, subtitle: 'For growing firms ready to scale', popular: true,
-                roi: 'Saves ~$10,600/mo in paralegal time',
-                features: ['Up to 25 active cases', 'Everything in Starter', 'AI form filling — all 15 federal forms', 'Court packet generation', 'Plaid bank connection', 'Priority support'],
-              },
-              {
-                name: 'Firm', price: annual ? 916 : 1099, subtitle: 'For high-volume practices', popular: false,
-                features: ['Up to 60 active cases', 'Everything in Professional', 'White label client portal', 'Custom firm branding', 'Dedicated onboarding', 'SLA support'],
-              },
-            ].map((plan) => (
-              <Reveal key={plan.name}>
-                <div className="relative h-full flex flex-col p-7 rounded-xl"
-                  style={{
-                    background: C.card,
-                    border: plan.popular ? `1px solid ${C.teal}40` : `0.5px solid ${C.border}`,
-                    boxShadow: plan.popular ? `0 0 30px rgba(0,194,168,0.15)` : 'none',
-                  }}>
-                  {plan.popular && (
-                    <span className="absolute -top-3 right-6 text-[11px] font-body font-bold uppercase px-3 py-1 rounded-full"
-                      style={{ background: C.amber, color: C.navy }}>Most Popular</span>
-                  )}
-                  <h3 className="font-display font-bold text-xl" style={{ color: C.white }}>{plan.name}</h3>
-                  <div className="mt-2">
-                    <span className="font-display font-[800] text-4xl" style={{ color: C.white }}>${plan.price}</span>
-                    <span className="font-body text-sm" style={{ color: C.muted }}>/mo</span>
-                  </div>
-                  <p className="font-body text-sm mt-1" style={{ color: C.muted }}>{plan.subtitle}</p>
-                  {plan.roi && (
-                    <span className="inline-block mt-3 text-xs font-body font-medium px-3 py-1.5 rounded-md" style={{ background: `${C.amber}20`, color: C.amber }}>{plan.roi}</span>
-                  )}
-                  <ul className="mt-5 space-y-2.5 flex-1">
-                    {plan.features.map(f => (
-                      <li key={f} className="flex items-start gap-2 text-sm font-body" style={{ color: C.muted }}>
-                        <CheckCircle size={14} style={{ color: C.teal, marginTop: 3, flexShrink: 0 }} /> {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <button onClick={goSignup} className="w-full mt-6 font-body font-medium text-sm py-3 rounded-md transition-shadow"
-                    style={plan.popular
-                      ? { background: C.teal, color: C.navy, boxShadow: `0 0 20px rgba(0,194,168,0.3)` }
-                      : { background: 'transparent', color: C.teal, border: `1px solid ${C.teal}40` }}>
-                    Start Free Trial
-                  </button>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-          <p className="text-center font-body text-sm mt-8" style={{ color: C.muted }}>
-            Need more than 60 cases? → Enterprise pricing available. <button onClick={() => window.location.href = 'mailto:hello@yourclearpath.app'} className="underline" style={{ color: C.teal }}>Contact us</button>.<br />
-            Overage: $25/case over your plan limit.
+      <SectionDivider />
+
+      {/* Trust bar */}
+      <section className="border-t border-foreground/[0.06] border-b border-b-foreground/[0.06]">
+        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          {[
+            { icon: Lock, text: 'Bank-level encryption' },
+            { icon: Shield, text: 'Documents stored securely' },
+            { icon: CheckCircle, text: 'Files encrypted in transit and at rest' },
+            { icon: Clock, text: 'Automatic deadline tracking' },
+          ].map(item => (
+            <div key={item.text} className="flex items-center gap-2">
+              <item.icon className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-body">{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="px-6 py-12 max-w-3xl mx-auto">
+        <div className="surface-card p-8 border-l-4 border-primary">
+          <p className="text-lg md:text-xl text-foreground font-body italic leading-relaxed">
+            "We used to spend two weeks collecting documents by email. With ClearPath we have everything we need in three days."
+          </p>
+          <p className="mt-5 text-sm text-muted-foreground italic font-body">
+            Join the firms already using ClearPath
           </p>
         </div>
       </section>
 
-      {/* ══ SECURITY ══ */}
-      <section id="security" className="py-20 md:py-28 px-6" style={{ background: C.navyAlt }}>
-        <div className="max-w-[1200px] mx-auto">
-          <Reveal className="text-center mb-14">
-            <h2 className="font-display font-[800] text-3xl md:text-[40px]" style={{ color: C.white }}>Built for the security standards<br />law firms demand.</h2>
-          </Reveal>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+      <SectionDivider />
+
+      {/* Pricing */}
+      <section id="pricing" className="px-6 py-12 max-w-6xl mx-auto">
+        <h2 className="font-display font-bold text-3xl text-foreground text-center mb-4">Simple, transparent pricing</h2>
+        <p className="text-muted-foreground text-center mb-12 font-body">14-day free trial on every plan. No credit card required.</p>
+        <div ref={pricingRef}>
+          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />
+        </div>
+        <p className="text-center text-xs text-muted-foreground font-body mt-8">
+          Your data is protected with bank-level encryption.{' '}
+          <a href="/security" className="text-primary hover:underline">Learn more</a>
+        </p>
+      </section>
+
+      <SectionDivider />
+
+      {/* FAQ */}
+      <section className="px-6 py-12 max-w-3xl mx-auto">
+        <h2 className="font-display font-bold text-3xl text-foreground text-center mb-3">Common questions</h2>
+        <p className="text-muted-foreground font-body text-center mb-10">Everything bankruptcy firms want to know before getting started.</p>
+        <div ref={faqRef}>
+          <Accordion type="single" collapsible className="space-y-2">
             {[
-              { icon: Shield, title: 'SSL A+ Rating', desc: 'Independently verified A+ SSL rating via Qualys. TLS 1.3 enforced.' },
-              { icon: Lock, title: 'SOC 2 Ready', desc: 'Infrastructure and access controls built to SOC 2 standards from day one.' },
-              { icon: Archive, title: '7-Year Retention', desc: 'Automatic data retention policy matching federal bankruptcy recordkeeping requirements.' },
-              { icon: Database, title: 'Encrypted Storage', desc: 'All documents encrypted at rest and in transit. Zero third-party data sharing.' },
-            ].map((s, i) => (
-              <Reveal key={s.title} delay={i * 0.08}>
-                <div className="text-center p-6 rounded-xl" style={{ background: C.card, border: `0.5px solid ${C.border}` }}>
-                  <s.icon size={28} style={{ color: C.teal }} className="mx-auto mb-3" />
-                  <h3 className="font-display font-bold text-base mb-1.5" style={{ color: C.white }}>{s.title}</h3>
-                  <p className="font-body text-sm leading-relaxed" style={{ color: C.muted }}>{s.desc}</p>
-                </div>
-              </Reveal>
+              {
+                q: 'How do clients access their document portal?',
+                a: 'When you create a case in ClearPath the system generates a unique secure link for your client. You share that link with them by email or text. They click it, verify their identity with their date of birth, and are guided through uploading their documents step by step — no account creation required.',
+              },
+              {
+                q: 'Do clients need to create an account?',
+                a: 'No. Clients access their portal through a unique secure link and verify their identity with their date of birth. There is no username or password for clients to manage. This removes the biggest barrier to getting documents submitted quickly.',
+              },
+              {
+                q: 'What happens if a client uploads the wrong document?',
+                a: 'ClearPath uses AI validation to detect common mistakes — wrong document type, wrong year, illegible files — and alerts the client immediately with plain English guidance on what to fix. If a paralegal catches an issue during review they can request a correction with one click and the client receives an email and text notification with a direct link to fix it.',
+              },
+              {
+                q: 'Is client data secure?',
+                a: 'All documents are encrypted in transit and at rest using AES-256 encryption. Files are stored on secure AWS infrastructure. Client portal links are unique and access requires date of birth verification. We take data security seriously and are working toward formal SOC 2 compliance.',
+              },
+              {
+                q: 'Can we customize the document checklist for our firm?',
+                a: 'Yes. In your firm settings you can turn individual document requirements on or off, mark items as optional, add custom document types specific to your practice, and configure intake questions that automatically personalize each client\'s checklist based on their situation — whether they own property, have a vehicle, are self-employed, and more.',
+              },
+            ].map((item, i) => (
+              <AccordionItem
+                key={i}
+                value={`faq-${i}`}
+                className="border border-border/60 rounded-xl px-5 data-[state=open]:bg-foreground/[0.02]"
+                style={revealStyle(faqVisible, { delay: i * 0.06, y: 20 })}
+              >
+                <AccordionTrigger className="hover:no-underline py-5 [&>svg]:hidden">
+                  <span className="text-left font-body text-sm font-medium text-foreground">{item.q}</span>
+                  <Plus className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-4 block [[data-state=open]_&]:hidden" />
+                  <Minus className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-4 hidden [[data-state=open]_&]:block" />
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground font-body leading-relaxed pb-5 overflow-hidden transition-all duration-[250ms] ease-in-out">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         </div>
       </section>
 
-      {/* ══ TESTIMONIALS ══ */}
-      <section className="py-20 md:py-28 px-6" style={{ background: C.navy }}>
-        <div className="max-w-[1200px] mx-auto">
-          <Reveal className="text-center mb-14">
-            <h2 className="font-display font-[800] text-3xl md:text-[40px]" style={{ color: C.white }}>What firms are saying.</h2>
-          </Reveal>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { quote: 'ClearPath cut our intake process from two days to two hours. The AI form filling alone is worth ten times what we pay.', attr: '— Managing Attorney, Phoenix AZ' },
-              { quote: "Our paralegals used to spend half their week chasing documents. Now they spend that time on work that actually requires their expertise.", attr: '— Bankruptcy Paralegal, 8-attorney firm' },
-              { quote: "The court packets come out cleaner than what we were producing manually. I don't know how we did this without it.", attr: '— Solo Bankruptcy Practitioner, Ohio' },
-            ].map((t, i) => (
-              <Reveal key={i} delay={i * 0.1}>
-                <div className="h-full p-7 rounded-xl flex flex-col" style={{ background: C.card, border: `0.5px solid ${C.border}` }}>
-                  <p className="font-body font-light italic text-base leading-relaxed flex-1" style={{ color: C.white }}>"{t.quote}"</p>
-                  <p className="font-body font-medium text-sm mt-4" style={{ color: C.muted }}>{t.attr}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+      <SectionDivider />
+
+      {/* Final CTA */}
+      <section className="px-6 py-16 md:py-20">
+        <div
+          ref={ctaRef}
+          className="max-w-3xl mx-auto text-center rounded-2xl bg-primary/[0.06] border border-primary/10 px-8 py-14"
+          style={revealStyle(ctaVisible, { y: 20, scale: 0.97 })}
+        >
+          <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-4">Ready to stop chasing documents?</h2>
+          <p className="text-muted-foreground font-body mb-8 max-w-xl mx-auto">Join ClearPath and get your first case set up in minutes.</p>
+          <Button size="lg" onClick={() => navigate('/signup')} className="cta-shimmer relative overflow-hidden">Start Free — No Card Needed</Button>
         </div>
       </section>
 
-      {/* ══ FINAL CTA ══ */}
-      <section className="py-20 md:py-28 px-6" style={{ background: `linear-gradient(135deg, ${C.teal}15, ${C.navy})` }}>
-        <Reveal className="max-w-[800px] mx-auto text-center">
-          <h2 className="font-display font-[800] text-3xl md:text-[56px] leading-tight" style={{ color: C.white }}>
-            Your next case could take<br />one hour instead of ten.
-          </h2>
-          <p className="font-body font-light text-lg mt-5" style={{ color: `${C.white}cc` }}>
-            Start your free 14-day trial. No credit card. No commitment.<br />Set up your firm in under 5 minutes.
-          </p>
-          <button onClick={goSignup} className="font-display font-bold text-lg px-12 py-5 rounded-lg mt-8 transition-transform hover:scale-[1.02]"
-            style={{ background: C.white, color: C.navy }}>
-            Start Free Trial
-          </button>
-          <p className="font-body text-sm mt-5" style={{ color: C.muted }}>14-day free trial · Cancel anytime · Setup in 5 minutes</p>
-        </Reveal>
-      </section>
-
-      {/* ══ FOOTER ══ */}
-      <footer className="py-16 px-6" style={{ background: C.footer, borderTop: `1px solid ${C.borderLight}` }}>
-        <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-10">
-          <div>
-            <span className="font-display font-[800] text-lg" style={{ color: C.white }}>ClearPath</span>
-            <p className="font-body text-sm mt-2" style={{ color: C.muted }}>Bankruptcy intake, automated.</p>
+      {/* Footer */}
+      <footer className="border-t border-border px-6 py-8">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" />
+            <span className="text-sm text-muted-foreground font-body">Bankruptcy document intake, simplified.</span>
           </div>
-          <div>
-            <p className="font-body font-medium text-sm mb-3" style={{ color: C.white }}>Product</p>
-            {[{ l: 'Features', id: 'features' }, { l: 'Pricing', id: 'pricing' }, { l: 'Security', to: '/security' }].map(x => (
-              <button key={x.l} onClick={() => 'to' in x ? navigate(x.to!) : scrollTo(x.id!)} className="block font-body text-sm mb-1.5 hover:underline" style={{ color: C.muted }}>{x.l}</button>
-            ))}
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="/privacy" className="hover:text-foreground">Privacy Policy</a>
+            <a href="/terms" className="hover:text-foreground">Terms of Service</a>
+            <a href="/security" className="hover:text-foreground">Security</a>
+            <a href="/login" className="hover:text-foreground">Sign In</a>
           </div>
-          <div>
-            <p className="font-body font-medium text-sm mb-3" style={{ color: C.white }}>Legal</p>
-            {[{ l: 'Privacy Policy', to: '/privacy' }, { l: 'Terms of Service', to: '/terms' }].map(x => (
-              <button key={x.l} onClick={() => navigate(x.to)} className="block font-body text-sm mb-1.5 hover:underline" style={{ color: C.muted }}>{x.l}</button>
-            ))}
-          </div>
-          <div>
-            <p className="font-body font-medium text-sm mb-3" style={{ color: C.white }}>Contact</p>
-            <a href="mailto:hello@yourclearpath.app" className="block font-body text-sm mb-1.5 hover:underline" style={{ color: C.muted }}>hello@yourclearpath.app</a>
-            <a href="mailto:support@yourclearpath.app" className="block font-body text-sm mb-1.5 hover:underline" style={{ color: C.muted }}>support@yourclearpath.app</a>
-          </div>
-        </div>
-        <div className="max-w-[1200px] mx-auto mt-12 pt-6" style={{ borderTop: `1px solid ${C.borderLight}` }}>
-          <p className="text-center font-body text-[13px]" style={{ color: C.muted }}>© 2026 ClearPath. All rights reserved.</p>
         </div>
       </footer>
 
-      {/* Pulse keyframe for mockup */}
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+      {/* Demo Modal */}
+      {showDemo && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowDemo(false)}>
+          <div className="surface-card max-w-3xl w-full p-6 relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowDemo(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="font-display font-bold text-xl text-foreground mb-4">Product Demo</h3>
+            <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center">
+              <p className="text-muted-foreground font-body">Demo video coming soon</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
