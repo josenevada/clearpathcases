@@ -82,17 +82,14 @@ const Packets = () => {
   };
 
   const handleBatchExport = async () => {
-    if (readyCases.length === 0) {
-      toast('No cases ready', { description: 'All cases must have approved documents to generate packets.' });
-      return;
-    }
-
+    setShowBatchConfirm(false);
     setBatchExporting(true);
     setBatchProgress({ current: 0, total: readyCases.length });
 
     const zip = new JSZip();
     const branding = loadBranding();
     let successCount = 0;
+    const failedCases: string[] = [];
 
     for (let i = 0; i < readyCases.length; i++) {
       const c = readyCases[i];
@@ -109,6 +106,7 @@ const Packets = () => {
 
         if (error || !data?.success) {
           console.error(`Failed for case ${c.clientName}:`, error || data?.error);
+          failedCases.push(c.clientName);
           continue;
         }
 
@@ -121,6 +119,7 @@ const Packets = () => {
         successCount++;
       } catch (err) {
         console.error(`Batch export error for ${c.clientName}:`, err);
+        failedCases.push(c.clientName);
       }
     }
 
@@ -128,9 +127,14 @@ const Packets = () => {
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const dateStr = format(new Date(), 'yyyy-MM-dd');
       saveAs(zipBlob, `ClearPath_Packets_${dateStr}.zip`);
-      toast.success(`Exported ${successCount} packet${successCount > 1 ? 's' : ''}`);
+
+      if (failedCases.length > 0) {
+        toast.warning(`${successCount} of ${readyCases.length} packets exported. The following cases had errors: ${failedCases.join(', ')}. Check those cases for missing documents.`);
+      } else {
+        toast.success(`${successCount} packet${successCount > 1 ? 's' : ''} exported successfully`);
+      }
     } else {
-      toast.error('No packets could be generated');
+      toast.error('No packets could be generated. Please check the cases for missing documents and try again.');
     }
 
     setBatchExporting(false);
