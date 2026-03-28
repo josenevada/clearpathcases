@@ -13,6 +13,7 @@ import TeamTab from '@/components/settings/TeamTab';
 import DataRetentionTab from '@/components/settings/DataRetentionTab';
 import SupportTab from '@/components/settings/SupportTab';
 import WhiteLabelTab from '@/components/settings/WhiteLabelTab';
+import BrandingTab from '@/components/settings/BrandingTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
@@ -79,6 +80,7 @@ const FirmSettings = () => {
               <TabsTrigger value="retention" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Data Retention</TabsTrigger>
               <TabsTrigger value="support" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Support</TabsTrigger>
               <TabsTrigger value="whitelabel" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">White Label</TabsTrigger>
+              <TabsTrigger value="branding" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-body">Branding</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><FirmProfileTab /></TabsContent>
             <TabsContent value="templates"><DocumentTemplatesTab /></TabsContent>
@@ -132,6 +134,7 @@ const FirmSettings = () => {
             <TabsContent value="retention"><DataRetentionTab /></TabsContent>
             <TabsContent value="support"><SupportTab /></TabsContent>
             <TabsContent value="whitelabel"><WhiteLabelTab /></TabsContent>
+            <TabsContent value="branding"><BrandingTab /></TabsContent>
           </Tabs>
         </motion.div>
       </main>

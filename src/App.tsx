@@ -20,6 +20,7 @@ import CaseDetail from "./pages/CaseDetail";
 import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Security from "./pages/Security";
+import Packets from "./pages/Packets";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import InviteSignup from "./pages/InviteSignup";
@@ -93,6 +94,11 @@ const App = () => {
                 <Route path="/paralegal/settings" element={
                   <ProtectedRoute>
                     <FirmSettings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/paralegal/packets" element={
+                  <ProtectedRoute>
+                    <Packets />
                   </ProtectedRoute>
                 } />
 
