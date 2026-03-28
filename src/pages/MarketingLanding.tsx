@@ -534,8 +534,8 @@ const MarketingLanding = () => {
       <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative">
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(0,194,168,0.04) 0%, transparent 60%)' }} />
         <h1
-          className="font-display font-extrabold text-[36px] md:text-[56px] text-foreground relative landing-heading-glow"
-          style={{ ...heroStagger(0), letterSpacing: '-0.02em', lineHeight: '1.05' }}
+          className="font-display font-bold text-[36px] md:text-[58px] text-foreground relative landing-heading-glow"
+          style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.1' }}
         >
           The bankruptcy firm that still<br />
           types data into federal forms<br />
