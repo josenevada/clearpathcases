@@ -1689,6 +1689,21 @@ const ClientWizard = () => {
               >
                 Continue →
               </Button>
+            ) : isDigitalWallet && !currentItemHasOpenCorrection ? (
+              <Button
+                onClick={() => {
+                  if (currentItem.completed || currentItem.notApplicable) {
+                    checkMilestoneAndAdvance(caseData);
+                  } else {
+                    handleContinueMultiUpload();
+                  }
+                }}
+                size="lg"
+                className="w-full"
+                disabled={!currentItem.completed && !currentItem.notApplicable && currentItem.files.length === 0 && currentItem.required}
+              >
+                Continue →
+              </Button>
             ) : isMultiUpload ? (
               <Button
                 onClick={handleContinueMultiUpload}
