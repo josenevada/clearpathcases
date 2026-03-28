@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileCheck, AlertTriangle, Briefcase, Download, ArrowLeft, Settings, LogOut, Search, X } from 'lucide-react';
+import { FileCheck, AlertTriangle, Briefcase, Download, ArrowLeft, Settings, Search, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import PlanBadge from '@/components/PlanBadge';
-import { getAllCases, calculateProgress, type Case } from '@/lib/store';
-import { useAuth } from '@/lib/auth';
+import { getAllCases, type Case } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 const Packets = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [batchExporting, setBatchExporting] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     setCases(getAllCases());
@@ -64,6 +67,102 @@ const Packets = () => {
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const loadBranding = () => {
+    try {
+      const raw = localStorage.getItem('cp_branding');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  };
+
+  const handleBatchExport = async () => {
+    if (readyCases.length === 0) {
+      toast('No cases ready', { description: 'All cases must have approved documents to generate packets.' });
+      return;
+    }
+
+    setBatchExporting(true);
+    setBatchProgress({ current: 0, total: readyCases.length });
+
+    const zip = new JSZip();
+    const branding = loadBranding();
+    let successCount = 0;
+
+    for (let i = 0; i < readyCases.length; i++) {
+      const c = readyCases[i];
+      setBatchProgress({ current: i + 1, total: readyCases.length });
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-court-packet', {
+          body: {
+            caseId: c.id,
+            branding,
+            paralegalName: c.assignedParalegal || 'Staff',
+          },
+        });
+
+        if (error || !data?.success) {
+          console.error(`Failed for case ${c.clientName}:`, error || data?.error);
+          continue;
+        }
+
+        const binaryStr = atob(data.pdf);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let j = 0; j < binaryStr.length; j++) {
+          bytes[j] = binaryStr.charCodeAt(j);
+        }
+        zip.file(data.fileName, bytes);
+        successCount++;
+      } catch (err) {
+        console.error(`Batch export error for ${c.clientName}:`, err);
+      }
+    }
+
+    if (successCount > 0) {
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const dateStr = format(new Date(), 'yyyy-MM-dd');
+      saveAs(zipBlob, `ClearPath_Packets_${dateStr}.zip`);
+      toast.success(`Exported ${successCount} packet${successCount > 1 ? 's' : ''}`);
+    } else {
+      toast.error('No packets could be generated');
+    }
+
+    setBatchExporting(false);
+  };
+
+  const handleSingleGenerate = async (c: Case, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const branding = loadBranding();
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-court-packet', {
+        body: {
+          caseId: c.id,
+          branding,
+          paralegalName: c.assignedParalegal || 'Staff',
+        },
+      });
+      if (error || !data?.success) throw new Error(data?.error || 'Failed');
+
+      const binaryStr = atob(data.pdf);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Packet generated');
+    } catch (err: any) {
+      toast.error('Generation failed', { description: err.message });
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <header className="relative flex items-center justify-between border-b border-border px-6 py-4">
@@ -93,10 +192,17 @@ const Packets = () => {
                 {readyCases.length} ready to generate
               </p>
             </div>
-            <Button
-              onClick={() => toast('Coming soon', { description: 'Batch export is not yet available.' })}
-            >
-              <Download className="w-4 h-4 mr-1.5" /> Batch export
+            <Button onClick={handleBatchExport} disabled={batchExporting || readyCases.length === 0}>
+              {batchExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  {batchProgress.current}/{batchProgress.total}
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-1.5" /> Batch export
+                </>
+              )}
             </Button>
           </div>
 
@@ -154,7 +260,6 @@ const Packets = () => {
             <div className="space-y-2">
               {filteredCases.map(c => {
                 const { percent, missing, isReady } = getCaseReadiness(c);
-
                 return (
                   <motion.div
                     key={c.id}
@@ -163,12 +268,9 @@ const Packets = () => {
                     className="surface-card p-4 flex flex-col sm:flex-row sm:items-center gap-4 cursor-pointer hover:border-primary/30 transition-colors"
                     onClick={() => navigate(`/paralegal/case/${c.id}?tab=packet`)}
                   >
-                    {/* Avatar */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${getAvatarColor(c.clientName)}`}>
                       {getInitials(c.clientName)}
                     </div>
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold font-body text-foreground truncate">{c.clientName}</p>
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-body">
@@ -177,35 +279,22 @@ const Packets = () => {
                         <span>Deadline: {format(new Date(c.filingDeadline), 'MMM d')}</span>
                       </div>
                     </div>
-
-                    {/* Progress bar */}
                     <div className="w-full sm:w-32 flex-shrink-0">
                       <div className="h-1.5 rounded-full bg-border overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${isReady ? 'bg-primary' : 'bg-warning'}`}
-                          style={{ width: `${percent}%` }}
-                        />
+                        <div className={`h-full rounded-full transition-all duration-500 ${isReady ? 'bg-primary' : 'bg-warning'}`} style={{ width: `${percent}%` }} />
                       </div>
                       <p className="text-[10px] text-muted-foreground font-body mt-1 text-right">{percent}%</p>
                     </div>
-
-                    {/* Status badge */}
                     <div className="flex-shrink-0">
                       {isReady ? (
-                        <Badge className="bg-primary/10 text-primary border-primary/20 rounded-full text-[10px] font-bold">
-                          Ready
-                        </Badge>
+                        <Badge className="bg-primary/10 text-primary border-primary/20 rounded-full text-[10px] font-bold">Ready</Badge>
                       ) : (
-                        <Badge className="bg-warning/10 text-warning border-warning/20 rounded-full text-[10px] font-bold">
-                          {missing} missing
-                        </Badge>
+                        <Badge className="bg-warning/10 text-warning border-warning/20 rounded-full text-[10px] font-bold">{missing} missing</Badge>
                       )}
                     </div>
-
-                    {/* Generate button */}
                     <div className="flex-shrink-0">
                       {isReady ? (
-                        <Button size="sm" className="gap-1.5 text-xs" onClick={e => { e.stopPropagation(); toast.success('Packet generation coming soon'); }}>
+                        <Button size="sm" className="gap-1.5 text-xs" onClick={e => handleSingleGenerate(c, e)}>
                           <Download className="w-3 h-3" /> Generate
                         </Button>
                       ) : (
