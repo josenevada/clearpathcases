@@ -107,21 +107,21 @@ const Packets = () => {
                 <FileCheck className="w-4 h-4 text-primary" />
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Ready to generate</p>
               </div>
-              <p className="text-2xl font-display font-bold text-primary">{readyCases.length}</p>
+              <p className="text-2xl font-body font-bold text-primary tabular-nums">{readyCases.length}</p>
             </div>
             <div className="surface-card p-5 space-y-1">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-warning" />
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Missing documents</p>
               </div>
-              <p className="text-2xl font-display font-bold text-warning">{missingCases.length}</p>
+              <p className="text-2xl font-body font-bold text-warning tabular-nums">{missingCases.length}</p>
             </div>
             <div className="surface-card p-5 space-y-1">
               <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-muted-foreground" />
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold font-body">Total active cases</p>
               </div>
-              <p className="text-2xl font-display font-bold text-foreground">{activeCases.length}</p>
+              <p className="text-2xl font-body font-bold text-foreground tabular-nums">{activeCases.length}</p>
             </div>
           </div>
 
