@@ -80,19 +80,23 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
         return (
           <div
             key={key}
-            className={`relative flex flex-col px-6 py-6 rounded-2xl transition-all duration-200 ${plan.popular ? 'pricing-glow' : ''}`}
+            className={`relative flex flex-col px-6 py-6 rounded-2xl transition-all duration-200`}
             style={{
               border: plan.popular ? '1px solid rgba(0,194,168,0.5)' : '0.5px solid rgba(255,255,255,0.08)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+              boxShadow: plan.popular
+                ? 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 24px 2px rgba(0,194,168,0.2)'
+                : 'inset 0 1px 0 rgba(255,255,255,0.04)',
               background: 'hsl(var(--surface))',
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,194,168,0.3)';
-              (e.currentTarget as HTMLElement).style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 24px rgba(0,194,168,0.08)';
+              (e.currentTarget as HTMLElement).style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 30px 4px rgba(0,194,168,0.25)';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.borderColor = plan.popular ? 'rgba(0,194,168,0.5)' : 'rgba(255,255,255,0.08)';
-              (e.currentTarget as HTMLElement).style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04)';
+              (e.currentTarget as HTMLElement).style.boxShadow = plan.popular
+                ? 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 24px 2px rgba(0,194,168,0.2)'
+                : 'inset 0 1px 0 rgba(255,255,255,0.04)';
             }}
           >
             {plan.popular && (
