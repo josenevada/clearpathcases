@@ -331,6 +331,19 @@ const ParalegalDashboard = () => {
 
 // ─── Case Card ───────────────────────────────────────────────────────
 const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case; index: number; onNavigate: () => void; onSendLink: () => void }) => {
+  const [meansTestStatus, setMeansTestStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (caseData.chapterType !== '7') return;
+    supabase
+      .from('means_test_calculations')
+      .select('eligibility_result')
+      .eq('case_id', caseData.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setMeansTestStatus(data.eligibility_result);
+      });
+  }, [caseData.id, caseData.chapterType]);
   const progress = calculateProgress(caseData);
   const hasRecentResubmission = caseHasRecentResubmission(caseData);
   const navigate = useNavigate();
@@ -400,6 +413,31 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             }`}>
               Ch.{caseData.chapterType}
             </span>
+            {/* Means test status dot */}
+            {meansTestStatus && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={`w-2.5 h-2.5 rounded-full inline-block ${
+                    meansTestStatus === 'eligible_below_median' || meansTestStatus === 'eligible_above_median_passes'
+                      ? 'bg-success'
+                      : meansTestStatus === 'borderline'
+                      ? 'bg-warning'
+                      : meansTestStatus === 'presumption_of_abuse'
+                      ? 'bg-destructive'
+                      : ''
+                  }`} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  {meansTestStatus === 'eligible_below_median' || meansTestStatus === 'eligible_above_median_passes'
+                    ? 'Ch.7 Eligible'
+                    : meansTestStatus === 'borderline'
+                    ? 'Borderline — Review'
+                    : meansTestStatus === 'presumption_of_abuse'
+                    ? 'Presumption of Abuse'
+                    : 'Means Test'}
+                </TooltipContent>
+              </Tooltip>
+            )}
             {caseData.clientName.includes(' & ') && (
               <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] rounded-full">Joint</Badge>
             )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import FormDataTab from '@/components/case/FormDataTab';
+import MeansTestTab from '@/components/case/MeansTestTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag } from 'lucide-react';
@@ -53,7 +54,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type ViewRole = 'paralegal' | 'attorney';
-type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data';
+type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test';
 
 const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
   const [state, setState] = useState<'idle' | 'success'>('idle');
@@ -657,6 +658,7 @@ const CaseDetail = () => {
               { key: 'activity' as TabType, label: 'Activity' },
               { key: 'packet' as TabType, label: 'Build Packet', dot: true },
               ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
+              ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -1223,6 +1225,10 @@ const CaseDetail = () => {
 
         {activeTab === 'form-data' && (
           <FormDataTab caseData={caseData} onRefresh={refresh} />
+        )}
+
+        {activeTab === 'means-test' && (
+          <MeansTestTab caseData={caseData} onRefresh={refresh} />
         )}
       </main>
 
