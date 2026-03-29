@@ -1263,19 +1263,19 @@ const CaseDetail = () => {
           </div>
         )}
 
-        {activeTab === 'packet' && (
+        {activeTab === 'packet' && (isTrial || planLimits.courtPackets) && (
           <BuildPacketTab caseData={caseData} onRefresh={refresh} />
         )}
 
-        {activeTab === 'form-data' && (
+        {activeTab === 'form-data' && (isTrial || planLimits.aiFormFilling) && (
           <FormDataTab caseData={caseData} onRefresh={refresh} />
         )}
 
-        {activeTab === 'means-test' && (
+        {activeTab === 'means-test' && (isTrial || planLimits.meansTest) && (
           <MeansTestTab caseData={caseData} onRefresh={refresh} />
         )}
 
-        {activeTab === 'exemptions' && (
+        {activeTab === 'exemptions' && (isTrial || planLimits.exemptionOptimizer) && (
           <ExemptionsTab caseData={caseData} onRefresh={refresh} />
         )}
       </main>
