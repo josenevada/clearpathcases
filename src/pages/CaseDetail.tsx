@@ -658,6 +658,7 @@ const CaseDetail = () => {
               { key: 'activity' as TabType, label: 'Activity' },
               { key: 'packet' as TabType, label: 'Build Packet', dot: true },
               ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
+              ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -1224,6 +1225,10 @@ const CaseDetail = () => {
 
         {activeTab === 'form-data' && (
           <FormDataTab caseData={caseData} onRefresh={refresh} />
+        )}
+
+        {activeTab === 'means-test' && (
+          <MeansTestTab caseData={caseData} onRefresh={refresh} />
         )}
       </main>
 
