@@ -43,7 +43,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         const { data: userData } = await supabase
           .from('users')
           .select('firm_id')
-          .eq('email', session.user.email!)
+          .eq('id', session.user.id)
           .maybeSingle();
 
         if (!userData?.firm_id) return;
@@ -83,7 +83,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       const { data: userData } = await supabase
         .from('users')
         .select('firm_id')
-        .eq('email', session.user.email!)
+        .eq('id', session.user.id)
         .maybeSingle();
 
       if (userData?.firm_id) {

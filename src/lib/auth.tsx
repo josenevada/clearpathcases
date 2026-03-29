@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data } = await supabase
       .from('users')
       .select('*')
-      .eq('email', authUser.email!)
+      .eq('id', authUser.id)
       .maybeSingle();
 
     if (!data) return null;
