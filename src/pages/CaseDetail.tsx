@@ -658,31 +658,43 @@ const CaseDetail = () => {
       <div className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex gap-0">
-            {([
-              { key: 'checklist' as TabType, label: 'Checklist' },
-              { key: 'client-info' as TabType, label: 'Client Info' },
-              { key: 'documents' as TabType, label: 'Documents' },
-              { key: 'activity' as TabType, label: 'Activity' },
-              { key: 'packet' as TabType, label: 'Build Packet', dot: true },
-              ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
-              ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
-              ...(caseData.chapterType === '7' ? [{ key: 'exemptions' as TabType, label: 'Exemptions', dot: true }] : []),
-            ]).map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`border-b-2 px-5 py-3 text-sm font-bold font-body transition-all ${
-                  activeTab === tab.key
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {tab.label}
-                  {'dot' in tab && tab.dot && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                </span>
-              </button>
-            ))}
+            {(() => {
+              const isFeatureGated = (tabKey: string) => {
+                if (isTrial) return false;
+                const gatedPro = ['packet', 'form-data', 'means-test', 'exemptions'];
+                if (gatedPro.includes(tabKey)) return !planLimits.courtPackets;
+                return false;
+              };
+              return ([
+                { key: 'checklist' as TabType, label: 'Checklist' },
+                { key: 'client-info' as TabType, label: 'Client Info' },
+                { key: 'documents' as TabType, label: 'Documents' },
+                { key: 'activity' as TabType, label: 'Activity' },
+                { key: 'packet' as TabType, label: 'Build Packet', dot: true },
+                ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
+                ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
+                ...(caseData.chapterType === '7' ? [{ key: 'exemptions' as TabType, label: 'Exemptions', dot: true }] : []),
+              ]).map(tab => {
+                const locked = isFeatureGated(tab.key);
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`border-b-2 px-5 py-3 text-sm font-bold font-body transition-all ${
+                      activeTab === tab.key
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {locked && <Lock className="w-3 h-3" />}
+                      {tab.label}
+                      {'dot' in tab && tab.dot && !locked && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                    </span>
+                  </button>
+                );
+              });
+            })()}
           </div>
         </div>
       </div>
