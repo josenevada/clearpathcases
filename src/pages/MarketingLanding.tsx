@@ -145,9 +145,9 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 8.5, prefix: '', suffix: ' hrs', label: 'Saved per case vs. manual intake' },
-    { value: 10600, prefix: '$', suffix: '', label: 'Monthly labor saved at Professional tier' },
+    { value: 10001, prefix: '$', suffix: '', label: 'Monthly net savings at Professional tier' },
     { value: 26, prefix: '', suffix: 'x', label: 'Average ROI for Professional firms' },
-    { value: 15, prefix: '', suffix: '', label: 'Federal forms auto-filled by AI' },
+    { value: 3, prefix: '', suffix: '', label: 'Engines working for you: intake, forms & means test' },
   ];
 
   return (
@@ -339,6 +339,21 @@ const AIFormFillingSection = () => {
               </li>
             ))}
           </ul>
+          {/* Means test & exemption pills */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            {[
+              '⚡ Means Test Engine — Ch.7 eligibility calculated automatically',
+              '⚡ Exemption Optimizer — Maximum asset protection, every case',
+            ].map(pill => (
+              <span
+                key={pill}
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-[13px] font-body font-medium"
+                style={{ border: '0.5px solid rgba(0,194,168,0.3)', color: 'rgb(0,194,168)', background: 'rgba(0,194,168,0.06)' }}
+              >
+                {pill}
+              </span>
+            ))}
+          </div>
           <div className="mt-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body" style={{ background: 'rgba(251,191,36,0.12)', color: 'rgb(251,191,36)' }}>
             <Zap className="w-3 h-3" />
             Available on Professional &amp; Firm plans
@@ -466,7 +481,7 @@ const MarketingLanding = () => {
   const howSteps = [
     { num: '1', title: 'Create a Case', desc: 'A paralegal creates a case in seconds and sends the client a secure intake link via email or SMS. No client account required.', circleStep: 1, textStep: 1 },
     { num: '2', title: 'Client Uploads Documents', desc: 'The client follows a guided step-by-step walkthrough on any device — one document at a time, with AI validation on every upload.', circleStep: 3, textStep: 3 },
-    { num: '3', title: 'AI Extracts & Pre-fills', desc: 'Once all documents are approved, ClearPath\'s AI reads every file and pre-fills all 15 federal bankruptcy forms automatically. Conflicts flagged instantly.', circleStep: 5, textStep: 5 },
+    { num: '3', title: 'AI Does the Heavy Lifting', desc: 'Once documents are approved, ClearPath pre-fills all 15 federal forms, calculates the means test automatically, and runs exemption analysis to maximize asset protection. Your paralegal reviews in minutes.', circleStep: 5, textStep: 5 },
     { num: '4', title: 'Review, Approve & File', desc: 'Paralegals review extracted data in minutes. Attorney approves. Court-ready packet generated with pre-filled forms included — one click.', circleStep: 7, textStep: 7 },
   ];
 
