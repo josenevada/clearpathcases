@@ -331,6 +331,19 @@ const ParalegalDashboard = () => {
 
 // ─── Case Card ───────────────────────────────────────────────────────
 const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case; index: number; onNavigate: () => void; onSendLink: () => void }) => {
+  const [meansTestStatus, setMeansTestStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (caseData.chapterType !== '7') return;
+    supabase
+      .from('means_test_calculations')
+      .select('eligibility_result')
+      .eq('case_id', caseData.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setMeansTestStatus(data.eligibility_result);
+      });
+  }, [caseData.id, caseData.chapterType]);
   const progress = calculateProgress(caseData);
   const hasRecentResubmission = caseHasRecentResubmission(caseData);
   const navigate = useNavigate();
