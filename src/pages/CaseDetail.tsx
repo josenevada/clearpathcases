@@ -5,7 +5,7 @@ import MeansTestTab from '@/components/case/MeansTestTab';
 import ExemptionsTab from '@/components/case/ExemptionsTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +53,9 @@ import {
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useSubscription } from '@/lib/subscription';
+import { getPlanLimits, FEATURE_GATE_INFO } from '@/lib/plan-limits';
+import UpgradeModal from '@/components/UpgradeModal';
 
 type ViewRole = 'paralegal' | 'attorney';
 type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test' | 'exemptions';
@@ -88,6 +91,9 @@ const CaseDetail = () => {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabType) || 'checklist';
   const { user } = useAuth();
+  const { plan, status: subStatus } = useSubscription();
+  const planLimits = getPlanLimits(plan);
+  const isTrial = subStatus === 'trial';
   const [caseData, setCaseData] = useState<Case | null>(null);
   const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -652,36 +658,72 @@ const CaseDetail = () => {
       <div className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex gap-0">
-            {([
-              { key: 'checklist' as TabType, label: 'Checklist' },
-              { key: 'client-info' as TabType, label: 'Client Info' },
-              { key: 'documents' as TabType, label: 'Documents' },
-              { key: 'activity' as TabType, label: 'Activity' },
-              { key: 'packet' as TabType, label: 'Build Packet', dot: true },
-              ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
-              ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
-              ...(caseData.chapterType === '7' ? [{ key: 'exemptions' as TabType, label: 'Exemptions', dot: true }] : []),
-            ]).map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`border-b-2 px-5 py-3 text-sm font-bold font-body transition-all ${
-                  activeTab === tab.key
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {tab.label}
-                  {'dot' in tab && tab.dot && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                </span>
-              </button>
-            ))}
+            {(() => {
+              const isFeatureGated = (tabKey: string) => {
+                if (isTrial) return false;
+                const gatedPro = ['packet', 'form-data', 'means-test', 'exemptions'];
+                if (gatedPro.includes(tabKey)) return !planLimits.courtPackets;
+                return false;
+              };
+              return ([
+                { key: 'checklist' as TabType, label: 'Checklist' },
+                { key: 'client-info' as TabType, label: 'Client Info' },
+                { key: 'documents' as TabType, label: 'Documents' },
+                { key: 'activity' as TabType, label: 'Activity' },
+                { key: 'packet' as TabType, label: 'Build Packet', dot: true },
+                ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
+                ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
+                ...(caseData.chapterType === '7' ? [{ key: 'exemptions' as TabType, label: 'Exemptions', dot: true }] : []),
+              ]).map(tab => {
+                const locked = isFeatureGated(tab.key);
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`border-b-2 px-5 py-3 text-sm font-bold font-body transition-all ${
+                      activeTab === tab.key
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {locked && <Lock className="w-3 h-3" />}
+                      {tab.label}
+                      {'dot' in tab && tab.dot && !locked && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                    </span>
+                  </button>
+                );
+              });
+            })()}
           </div>
         </div>
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {/* Feature gate card for locked tabs */}
+        {(() => {
+          const gatedTabs = ['packet', 'form-data', 'means-test', 'exemptions'];
+          const isLocked = gatedTabs.includes(activeTab) && !isTrial && !planLimits.courtPackets;
+          if (!isLocked) return null;
+          const info = FEATURE_GATE_INFO[activeTab] || { name: activeTab, minTier: 'Professional', roi: '' };
+          return (
+            <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold font-heading text-foreground">{info.name}</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                {info.name} is available on {info.minTier} and above. Upgrade your plan to unlock this feature.
+              </p>
+              {info.roi && (
+                <p className="text-sm text-primary font-medium">{info.roi}</p>
+              )}
+              <Button onClick={() => navigate('/paralegal/settings')} className="bg-primary text-primary-foreground">
+                Upgrade Plan
+              </Button>
+            </div>
+          );
+        })()}
         {activeTab === 'client-info' && (
           <ClientInfoTab caseData={caseData} viewRole={viewRole} actorName={user?.fullName || 'Staff'} onRefresh={refresh} />
         )}
@@ -1221,19 +1263,19 @@ const CaseDetail = () => {
           </div>
         )}
 
-        {activeTab === 'packet' && (
+        {activeTab === 'packet' && (isTrial || planLimits.courtPackets) && (
           <BuildPacketTab caseData={caseData} onRefresh={refresh} />
         )}
 
-        {activeTab === 'form-data' && (
+        {activeTab === 'form-data' && (isTrial || planLimits.aiFormFilling) && (
           <FormDataTab caseData={caseData} onRefresh={refresh} />
         )}
 
-        {activeTab === 'means-test' && (
+        {activeTab === 'means-test' && (isTrial || planLimits.meansTest) && (
           <MeansTestTab caseData={caseData} onRefresh={refresh} />
         )}
 
-        {activeTab === 'exemptions' && (
+        {activeTab === 'exemptions' && (isTrial || planLimits.exemptionOptimizer) && (
           <ExemptionsTab caseData={caseData} onRefresh={refresh} />
         )}
       </main>

@@ -4,7 +4,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
-  Building, Package,
+  Building, Package, Brain, Calculator,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -145,9 +145,9 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 8.5, prefix: '', suffix: ' hrs', label: 'Saved per case vs. manual intake' },
-    { value: 10600, prefix: '$', suffix: '', label: 'Monthly labor saved at Professional tier' },
+    { value: 10001, prefix: '$', suffix: '', label: 'Monthly net savings at Professional tier' },
     { value: 26, prefix: '', suffix: 'x', label: 'Average ROI for Professional firms' },
-    { value: 15, prefix: '', suffix: '', label: 'Federal forms auto-filled by AI' },
+    { value: 3, prefix: '', suffix: '', label: 'Engines working for you: intake, forms & means test' },
   ];
 
   return (
@@ -339,6 +339,21 @@ const AIFormFillingSection = () => {
               </li>
             ))}
           </ul>
+          {/* Means test & exemption pills */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            {[
+              '⚡ Means Test Engine — Ch.7 eligibility calculated automatically',
+              '⚡ Exemption Optimizer — Maximum asset protection, every case',
+            ].map(pill => (
+              <span
+                key={pill}
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-[13px] font-body font-medium"
+                style={{ border: '0.5px solid rgba(0,194,168,0.3)', color: 'rgb(0,194,168)', background: 'rgba(0,194,168,0.06)' }}
+              >
+                {pill}
+              </span>
+            ))}
+          </div>
           <div className="mt-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body" style={{ background: 'rgba(251,191,36,0.12)', color: 'rgb(251,191,36)' }}>
             <Zap className="w-3 h-3" />
             Available on Professional &amp; Firm plans
@@ -380,12 +395,12 @@ const ROICard = () => (
       </div>
       <div className="flex justify-between">
         <span className="text-[#8aa3b8]">ClearPath Professional</span>
-        <span className="text-[#f0f4f8] font-medium">− $399</span>
+        <span className="text-[#f0f4f8] font-medium">− $599</span>
       </div>
       <div style={{ borderTop: '1px solid rgba(0,194,168,0.2)' }} className="my-2" />
       <div className="flex justify-between items-baseline">
         <span className="font-display font-bold text-[22px] text-primary">Net savings/month</span>
-        <span className="font-display font-bold text-[22px] text-primary">$10,201</span>
+        <span className="font-display font-bold text-[22px] text-primary">$10,001</span>
       </div>
     </div>
     <p className="text-[12px] italic text-[#8aa3b8] font-body mt-4">
@@ -466,7 +481,7 @@ const MarketingLanding = () => {
   const howSteps = [
     { num: '1', title: 'Create a Case', desc: 'A paralegal creates a case in seconds and sends the client a secure intake link via email or SMS. No client account required.', circleStep: 1, textStep: 1 },
     { num: '2', title: 'Client Uploads Documents', desc: 'The client follows a guided step-by-step walkthrough on any device — one document at a time, with AI validation on every upload.', circleStep: 3, textStep: 3 },
-    { num: '3', title: 'AI Extracts & Pre-fills', desc: 'Once all documents are approved, ClearPath\'s AI reads every file and pre-fills all 15 federal bankruptcy forms automatically. Conflicts flagged instantly.', circleStep: 5, textStep: 5 },
+    { num: '3', title: 'AI Does the Heavy Lifting', desc: 'Once documents are approved, ClearPath pre-fills all 15 federal forms, calculates the means test automatically, and runs exemption analysis to maximize asset protection. Your paralegal reviews in minutes.', circleStep: 5, textStep: 5 },
     { num: '4', title: 'Review, Approve & File', desc: 'Paralegals review extracted data in minutes. Attorney approves. Court-ready packet generated with pre-filled forms included — one click.', circleStep: 7, textStep: 7 },
   ];
 
@@ -630,7 +645,8 @@ const MarketingLanding = () => {
                 'Client guided through every document step by step — no emails',
                 'AI validates every document the moment it\'s uploaded',
                 'All 15 federal Ch.7 forms pre-filled automatically from approved documents',
-                '~1 hour of paralegal time per case',
+                '~1 hour total — paralegal + attorney combined',
+                'Means test and exemption analysis run automatically',
                 'Attorney reviews and approves — nothing retyped',
                 'Court-ready packet generated in one click',
               ].map(t => (
@@ -752,9 +768,10 @@ const MarketingLanding = () => {
             { icon: FileText, title: 'Clients actually finish', desc: 'A guided step-by-step portal that walks clients through every document they need to upload. Adapts to each client\'s situation automatically.' },
             { icon: LayoutDashboard, title: 'Know exactly where every case stands', desc: 'Every case in one place, sorted by urgency. See who\'s done, who\'s stalled, and what needs your attention today.' },
             { icon: PackageCheck, title: 'Court-ready packets in one click', desc: 'Download an organized ZIP or compiled PDF of all approved documents and pre-filled federal forms, ready for court, in one click.' },
-            { icon: Sparkles, title: 'AI Form Filling — All 15 Federal Forms', desc: 'ClearPath pre-fills every Ch.7 federal form from approved documents. B101 through B122A-2. Attorney reviews and approves — nothing retyped by hand.' },
+            { icon: Brain, title: 'Complete Pre-Filing Intelligence', desc: 'AI pre-fills all 15 federal Ch.7 forms, calculates means test eligibility automatically, and optimizes exemptions to protect maximum client assets. Attorney reviews and approves — nothing done by hand.' },
             { icon: MessageSquare, title: 'AI catches mistakes before they reach you', desc: 'Gemini Vision AI reviews every uploaded document the moment it arrives. Wrong document type, blurry photo, wrong year — rejected instantly before it reaches your review queue.' },
             { icon: ClipboardList, title: 'Full audit trail on every case', desc: 'Every upload, approval, correction, and client interaction is logged with a timestamp and actor — so you always know exactly what happened and when.' },
+            { icon: Calculator, title: 'Means Test Engine', desc: 'Automatically calculates B122A-1 and B122A-2 using IRS National and Local Standards. Determines Ch.7 eligibility, flags borderline cases, and recommends Chapter 7 vs 13 before the attorney opens the file.' },
           ].map((f, i) => (
             <div
               key={f.title}

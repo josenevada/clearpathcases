@@ -138,6 +138,11 @@ const ParalegalDashboard = () => {
   });
 
   const [showCompleted, setShowCompleted] = useState(false);
+  const [upgradeBannerDismissed, setUpgradeBannerDismissed] = useState(() => {
+    const dismissed = localStorage.getItem('upgrade_banner_dismissed');
+    if (!dismissed) return false;
+    return Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000;
+  });
 
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
@@ -159,10 +164,31 @@ const ParalegalDashboard = () => {
     );
   }
 
+  const showStarterBanner = plan === 'starter' && status === 'active' && !upgradeBannerDismissed;
+
   return (
     <div className="min-h-screen">
       {status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
         <TrialBanner daysLeft={daysLeft} />
+      )}
+      {showStarterBanner && (
+        <div
+          className="flex items-center justify-between px-6 py-3 text-[13px] font-body"
+          style={{ background: 'rgba(245,166,35,0.1)', borderLeft: '3px solid #f5a623' }}
+        >
+          <span className="text-foreground">
+            You're on the Starter plan. Unlock AI form filling, means test engine, and exemption optimizer on Professional.{' '}
+            <button onClick={() => navigate('/paralegal/settings')} className="text-primary font-medium hover:underline">
+              Upgrade for $599/mo →
+            </button>
+          </span>
+          <button
+            onClick={() => { setUpgradeBannerDismissed(true); localStorage.setItem('upgrade_banner_dismissed', String(Date.now())); }}
+            className="text-muted-foreground hover:text-foreground ml-4"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
       <header className="relative flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-6">

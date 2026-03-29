@@ -10,36 +10,40 @@ interface PlanDef {
   features: string[];
   popular?: boolean;
   roiCallout?: string;
+  note?: string;
 }
 
 const LANDING_PLANS: Record<string, PlanDef> = {
   starter: {
     name: 'Starter',
-    monthly: '$179',
-    annual: '$149',
-    subtitle: 'For solo practitioners and small firms',
+    monthly: '$199',
+    annual: '$166',
+    subtitle: 'For solo practitioners getting started',
     features: [
       'Up to 8 active cases',
       'Full client intake wizard',
       'AI document validation',
-      'Manual document upload',
+      'Automated SMS & email reminders',
       'Basic case management',
-      'Email & SMS reminders',
+      'Document checklist customization',
       '14-day free trial',
     ],
+    note: 'Court packets, AI form filling, and means test available on Professional',
   },
   professional: {
     name: 'Professional',
-    monthly: '$399',
-    annual: '$332',
+    monthly: '$599',
+    annual: '$499',
     subtitle: 'For growing firms ready to scale',
     popular: true,
-    roiCallout: 'Saves ~$10,600/mo',
+    roiCallout: 'Saves ~$10,600/mo in paralegal labor',
     features: [
       'Up to 25 active cases',
       'Everything in Starter',
       'AI form filling — all 15 federal forms',
-      'Court packet generation',
+      'Means test engine — Ch.7 eligibility auto-calculated',
+      'Exemption optimizer — maximize client asset protection',
+      'Court packet generation — one click',
       'Plaid bank connection',
       'Priority support',
       '14-day free trial',
@@ -47,8 +51,8 @@ const LANDING_PLANS: Record<string, PlanDef> = {
   },
   firm: {
     name: 'Firm',
-    monthly: '$1,099',
-    annual: '$916',
+    monthly: '$1,499',
+    annual: '$1,249',
     subtitle: 'For high-volume practices',
     features: [
       'Up to 60 active cases',
@@ -137,6 +141,9 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
                 </li>
               ))}
             </ul>
+            {plan.note && (
+              <p className="text-[12px] text-[#8aa3b8]/70 font-body mb-4 italic">{plan.note}</p>
+            )}
             <Button
               className={`w-full transition-all duration-200 ${!isCurrent && !plan.popular ? 'border border-foreground/20' : ''}`}
               variant={isCurrent ? 'outline' : plan.popular ? 'default' : 'outline'}
