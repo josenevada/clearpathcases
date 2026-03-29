@@ -213,7 +213,12 @@ const ExemptionsTab = ({ caseData, onRefresh }: ExemptionsTabProps) => {
         <Button onClick={() => setShowUpgrade(true)} className="bg-primary text-primary-foreground">
           Upgrade to Unlock
         </Button>
-        <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
+        <UpgradeModal
+          open={showUpgrade}
+          onOpenChange={setShowUpgrade}
+          featureName="Exemption Optimizer"
+          description="Automatically analyze assets against state and federal exemptions. Available on Professional and Firm plans."
+        />
       </div>
     );
   }
