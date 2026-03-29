@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import FormDataTab from '@/components/case/FormDataTab';
 import MeansTestTab from '@/components/case/MeansTestTab';
 import ExemptionsTab from '@/components/case/ExemptionsTab';
+import SignaturesTab from '@/components/case/SignaturesTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock } from 'lucide-react';
@@ -58,7 +59,7 @@ import { getPlanLimits, FEATURE_GATE_INFO } from '@/lib/plan-limits';
 import UpgradeModal from '@/components/UpgradeModal';
 
 type ViewRole = 'paralegal' | 'attorney';
-type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test' | 'exemptions';
+type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test' | 'exemptions' | 'signatures';
 
 const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
   const [state, setState] = useState<'idle' | 'success'>('idle');
@@ -661,7 +662,7 @@ const CaseDetail = () => {
             {(() => {
               const isFeatureGated = (tabKey: string) => {
                 if (isTrial) return false;
-                const gatedPro = ['packet', 'form-data', 'means-test', 'exemptions'];
+                const gatedPro = ['packet', 'form-data', 'means-test', 'exemptions', 'signatures'];
                 if (gatedPro.includes(tabKey)) return !planLimits.courtPackets;
                 return false;
               };
@@ -674,6 +675,7 @@ const CaseDetail = () => {
                 ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
                 ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
                 ...(caseData.chapterType === '7' ? [{ key: 'exemptions' as TabType, label: 'Exemptions', dot: true }] : []),
+                ...(caseData.chapterType === '7' ? [{ key: 'signatures' as TabType, label: 'Signatures', dot: true }] : []),
               ]).map(tab => {
                 const locked = isFeatureGated(tab.key);
                 return (
@@ -702,7 +704,7 @@ const CaseDetail = () => {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         {/* Feature gate card for locked tabs */}
         {(() => {
-          const gatedTabs = ['packet', 'form-data', 'means-test', 'exemptions'];
+          const gatedTabs = ['packet', 'form-data', 'means-test', 'exemptions', 'signatures'];
           const isLocked = gatedTabs.includes(activeTab) && !isTrial && !planLimits.courtPackets;
           if (!isLocked) return null;
           const info = FEATURE_GATE_INFO[activeTab] || { name: activeTab, minTier: 'Professional', roi: '' };
@@ -1277,6 +1279,10 @@ const CaseDetail = () => {
 
         {activeTab === 'exemptions' && (isTrial || planLimits.exemptionOptimizer) && (
           <ExemptionsTab caseData={caseData} onRefresh={refresh} />
+        )}
+
+        {activeTab === 'signatures' && (isTrial || planLimits.courtPackets) && (
+          <SignaturesTab caseData={caseData} onRefresh={refresh} />
         )}
       </main>
 

@@ -17,6 +17,7 @@ export interface PlanLimits {
   meansTest: boolean;
   exemptionOptimizer: boolean;
   batchExport: boolean;
+  eSignatures: boolean;
 }
 
 export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
@@ -35,6 +36,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     meansTest: false,
     exemptionOptimizer: false,
     batchExport: false,
+    eSignatures: false,
   },
   starter: {
     activeCases: 8,
@@ -51,6 +53,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     meansTest: false,
     exemptionOptimizer: false,
     batchExport: false,
+    eSignatures: false,
   },
   professional: {
     activeCases: 25,
@@ -67,6 +70,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     meansTest: true,
     exemptionOptimizer: true,
     batchExport: true,
+    eSignatures: true,
   },
   firm: {
     activeCases: 60,
@@ -83,6 +87,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     meansTest: true,
     exemptionOptimizer: true,
     batchExport: true,
+    eSignatures: true,
   },
 };
 
@@ -111,4 +116,5 @@ export const FEATURE_GATE_INFO: Record<string, { name: string; minTier: string; 
   'packet': { name: 'Court Packet Generation', minTier: 'Professional', roi: 'Replaces 1-2 hours of manual packet assembly per case' },
   'plaid': { name: 'Plaid Bank Connection', minTier: 'Professional', roi: 'Bank statements delivered instantly — no scanning required' },
   'white-label': { name: 'White Label Portal', minTier: 'Firm', roi: 'Your brand on every client touchpoint' },
+  'signatures': { name: 'E-Signatures', minTier: 'Professional', roi: 'Eliminates DocuSign — clients sign directly in ClearPath' },
 };

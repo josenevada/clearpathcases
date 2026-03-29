@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.analyze-exemptions]
 verify_jwt = false
+
+[functions.create-signature-request]
+verify_jwt = false
+
+[functions.process-signature]
+verify_jwt = false
+
+[functions.signature-reminders]
+verify_jwt = false
