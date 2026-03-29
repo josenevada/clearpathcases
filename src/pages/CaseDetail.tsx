@@ -91,6 +91,9 @@ const CaseDetail = () => {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabType) || 'checklist';
   const { user } = useAuth();
+  const { plan, status: subStatus } = useSubscription();
+  const planLimits = getPlanLimits(plan);
+  const isTrial = subStatus === 'trial';
   const [caseData, setCaseData] = useState<Case | null>(null);
   const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
