@@ -548,6 +548,137 @@ export type Database = {
         }
         Relationships: []
       }
+      exemption_analyses: {
+        Row: {
+          analysis_notes: string | null
+          attorney_approved: boolean | null
+          attorney_approved_at: string | null
+          attorney_approved_by: string | null
+          case_id: string
+          client_state: string
+          created_at: string | null
+          federal_total_protected: number | null
+          id: string
+          recommended_system: string
+          selected_system: string | null
+          state_total_protected: number | null
+          total_assets: number | null
+          total_exposed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_notes?: string | null
+          attorney_approved?: boolean | null
+          attorney_approved_at?: string | null
+          attorney_approved_by?: string | null
+          case_id: string
+          client_state: string
+          created_at?: string | null
+          federal_total_protected?: number | null
+          id?: string
+          recommended_system: string
+          selected_system?: string | null
+          state_total_protected?: number | null
+          total_assets?: number | null
+          total_exposed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_notes?: string | null
+          attorney_approved?: boolean | null
+          attorney_approved_at?: string | null
+          attorney_approved_by?: string | null
+          case_id?: string
+          client_state?: string
+          created_at?: string | null
+          federal_total_protected?: number | null
+          id?: string
+          recommended_system?: string
+          selected_system?: string | null
+          state_total_protected?: number | null
+          total_assets?: number | null
+          total_exposed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exemption_analyses_attorney_approved_by_fkey"
+            columns: ["attorney_approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exemption_analyses_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exemption_line_items: {
+        Row: {
+          analysis_id: string
+          asset_description: string
+          asset_type: string
+          asset_value: number
+          attorney_notes: string | null
+          attorney_override_amount: number | null
+          created_at: string | null
+          exemption_amount: number
+          exemption_name: string
+          exemption_statute: string | null
+          exemption_system: string
+          exposed_amount: number
+          id: string
+          protected_amount: number
+          status: string
+        }
+        Insert: {
+          analysis_id: string
+          asset_description: string
+          asset_type: string
+          asset_value?: number
+          attorney_notes?: string | null
+          attorney_override_amount?: number | null
+          created_at?: string | null
+          exemption_amount?: number
+          exemption_name: string
+          exemption_statute?: string | null
+          exemption_system: string
+          exposed_amount?: number
+          id?: string
+          protected_amount?: number
+          status: string
+        }
+        Update: {
+          analysis_id?: string
+          asset_description?: string
+          asset_type?: string
+          asset_value?: number
+          attorney_notes?: string | null
+          attorney_override_amount?: number | null
+          created_at?: string | null
+          exemption_amount?: number
+          exemption_name?: string
+          exemption_statute?: string | null
+          exemption_system?: string
+          exposed_amount?: number
+          id?: string
+          protected_amount?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exemption_line_items_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "exemption_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           case_id: string
