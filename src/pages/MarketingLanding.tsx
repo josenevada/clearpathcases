@@ -645,7 +645,8 @@ const MarketingLanding = () => {
                 'Client guided through every document step by step — no emails',
                 'AI validates every document the moment it\'s uploaded',
                 'All 15 federal Ch.7 forms pre-filled automatically from approved documents',
-                '~1 hour of paralegal time per case',
+                '~1 hour total — paralegal + attorney combined',
+                'Means test and exemption analysis run automatically',
                 'Attorney reviews and approves — nothing retyped',
                 'Court-ready packet generated in one click',
               ].map(t => (
@@ -767,9 +768,10 @@ const MarketingLanding = () => {
             { icon: FileText, title: 'Clients actually finish', desc: 'A guided step-by-step portal that walks clients through every document they need to upload. Adapts to each client\'s situation automatically.' },
             { icon: LayoutDashboard, title: 'Know exactly where every case stands', desc: 'Every case in one place, sorted by urgency. See who\'s done, who\'s stalled, and what needs your attention today.' },
             { icon: PackageCheck, title: 'Court-ready packets in one click', desc: 'Download an organized ZIP or compiled PDF of all approved documents and pre-filled federal forms, ready for court, in one click.' },
-            { icon: Sparkles, title: 'AI Form Filling — All 15 Federal Forms', desc: 'ClearPath pre-fills every Ch.7 federal form from approved documents. B101 through B122A-2. Attorney reviews and approves — nothing retyped by hand.' },
+            { icon: Brain, title: 'Complete Pre-Filing Intelligence', desc: 'AI pre-fills all 15 federal Ch.7 forms, calculates means test eligibility automatically, and optimizes exemptions to protect maximum client assets. Attorney reviews and approves — nothing done by hand.' },
             { icon: MessageSquare, title: 'AI catches mistakes before they reach you', desc: 'Gemini Vision AI reviews every uploaded document the moment it arrives. Wrong document type, blurry photo, wrong year — rejected instantly before it reaches your review queue.' },
             { icon: ClipboardList, title: 'Full audit trail on every case', desc: 'Every upload, approval, correction, and client interaction is logged with a timestamp and actor — so you always know exactly what happened and when.' },
+            { icon: Calculator, title: 'Means Test Engine', desc: 'Automatically calculates B122A-1 and B122A-2 using IRS National and Local Standards. Determines Ch.7 eligibility, flags borderline cases, and recommends Chapter 7 vs 13 before the attorney opens the file.' },
           ].map((f, i) => (
             <div
               key={f.title}
