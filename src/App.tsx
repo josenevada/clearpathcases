@@ -15,6 +15,7 @@ import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import ClientVerify from "./pages/ClientVerify";
 import ClientWizard from "./pages/ClientWizard";
+import ClientSign from "./pages/ClientSign";
 import ParalegalDashboard from "./pages/ParalegalDashboard";
 import CaseDetail from "./pages/CaseDetail";
 import FirmSettings from "./pages/FirmSettings";
@@ -79,6 +80,7 @@ const App = () => {
                 {/* Client routes */}
                 <Route path="/client/:caseCode" element={<ClientVerify />} />
                 <Route path="/client-portal/:caseCode/:caseId" element={<ClientWizard />} />
+                <Route path="/sign/:token" element={<ClientSign />} />
 
                 {/* Protected firm staff routes */}
                 <Route path="/paralegal" element={
