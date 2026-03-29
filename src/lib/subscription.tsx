@@ -40,12 +40,12 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Try reading directly from the firms table first (fast, no edge function needed)
-      const userEmail = session.user.email;
-      if (userEmail) {
+      const userId = session.user.id;
+      if (userId) {
         const { data: userRow } = await supabase
           .from('users')
           .select('firm_id')
-          .eq('email', userEmail)
+          .eq('id', userId)
           .maybeSingle();
 
         if (userRow?.firm_id) {
