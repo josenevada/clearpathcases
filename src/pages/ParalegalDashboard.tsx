@@ -138,6 +138,11 @@ const ParalegalDashboard = () => {
   });
 
   const [showCompleted, setShowCompleted] = useState(false);
+  const [upgradeBannerDismissed, setUpgradeBannerDismissed] = useState(() => {
+    const dismissed = localStorage.getItem('upgrade_banner_dismissed');
+    if (!dismissed) return false;
+    return Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000;
+  });
 
   const displayName = user?.fullName ?? 'Staff';
   const displayRole = user?.role === 'attorney' ? 'Attorney' : 'Paralegal';
@@ -159,11 +164,6 @@ const ParalegalDashboard = () => {
     );
   }
 
-  const [upgradeBannerDismissed, setUpgradeBannerDismissed] = useState(() => {
-    const dismissed = localStorage.getItem('upgrade_banner_dismissed');
-    if (!dismissed) return false;
-    return Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000;
-  });
   const showStarterBanner = plan === 'starter' && status === 'active' && !upgradeBannerDismissed;
 
   return (
