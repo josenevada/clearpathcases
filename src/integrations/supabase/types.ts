@@ -1186,6 +1186,180 @@ export type Database = {
           },
         ]
       }
+      signature_audit_log: {
+        Row: {
+          actor_name: string | null
+          actor_type: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          signature_request_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_type?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          signature_request_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          actor_name?: string | null
+          actor_type?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          signature_request_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_audit_log_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_requests: {
+        Row: {
+          attorney_id: string | null
+          attorney_ip_address: string | null
+          attorney_signed_at: string | null
+          attorney_typed_name: string | null
+          case_id: string
+          client_email: string | null
+          client_ip_address: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_signature_data: string | null
+          client_signed_at: string | null
+          client_token: string
+          client_token_expires_at: string
+          client_typed_name: string | null
+          client_user_agent: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_reminder_sent_at: string | null
+          reminder_count: number | null
+          signed_packet_path: string | null
+          spouse_email: string | null
+          spouse_ip_address: string | null
+          spouse_name: string | null
+          spouse_signature_data: string | null
+          spouse_signed_at: string | null
+          spouse_token: string | null
+          spouse_token_expires_at: string | null
+          spouse_typed_name: string | null
+          status: string | null
+          unsigned_packet_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attorney_id?: string | null
+          attorney_ip_address?: string | null
+          attorney_signed_at?: string | null
+          attorney_typed_name?: string | null
+          case_id: string
+          client_email?: string | null
+          client_ip_address?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_signature_data?: string | null
+          client_signed_at?: string | null
+          client_token: string
+          client_token_expires_at: string
+          client_typed_name?: string | null
+          client_user_agent?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          reminder_count?: number | null
+          signed_packet_path?: string | null
+          spouse_email?: string | null
+          spouse_ip_address?: string | null
+          spouse_name?: string | null
+          spouse_signature_data?: string | null
+          spouse_signed_at?: string | null
+          spouse_token?: string | null
+          spouse_token_expires_at?: string | null
+          spouse_typed_name?: string | null
+          status?: string | null
+          unsigned_packet_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attorney_id?: string | null
+          attorney_ip_address?: string | null
+          attorney_signed_at?: string | null
+          attorney_typed_name?: string | null
+          case_id?: string
+          client_email?: string | null
+          client_ip_address?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_signature_data?: string | null
+          client_signed_at?: string | null
+          client_token?: string
+          client_token_expires_at?: string
+          client_typed_name?: string | null
+          client_user_agent?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          reminder_count?: number | null
+          signed_packet_path?: string | null
+          spouse_email?: string | null
+          spouse_ip_address?: string | null
+          spouse_name?: string | null
+          spouse_signature_data?: string | null
+          spouse_signed_at?: string | null
+          spouse_token?: string | null
+          spouse_token_expires_at?: string | null
+          spouse_typed_name?: string | null
+          status?: string | null
+          unsigned_packet_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_requests_attorney_id_fkey"
+            columns: ["attorney_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_requests_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_invitations: {
         Row: {
           accepted_at: string | null
