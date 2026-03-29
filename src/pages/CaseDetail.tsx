@@ -700,6 +700,30 @@ const CaseDetail = () => {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {/* Feature gate card for locked tabs */}
+        {(() => {
+          const gatedTabs = ['packet', 'form-data', 'means-test', 'exemptions'];
+          const isLocked = gatedTabs.includes(activeTab) && !isTrial && !planLimits.courtPackets;
+          if (!isLocked) return null;
+          const info = FEATURE_GATE_INFO[activeTab] || { name: activeTab, minTier: 'Professional', roi: '' };
+          return (
+            <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold font-heading text-foreground">{info.name}</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                {info.name} is available on {info.minTier} and above. Upgrade your plan to unlock this feature.
+              </p>
+              {info.roi && (
+                <p className="text-sm text-primary font-medium">{info.roi}</p>
+              )}
+              <Button onClick={() => navigate('/paralegal/settings')} className="bg-primary text-primary-foreground">
+                Upgrade Plan
+              </Button>
+            </div>
+          );
+        })()}
         {activeTab === 'client-info' && (
           <ClientInfoTab caseData={caseData} viewRole={viewRole} actorName={user?.fullName || 'Staff'} onRefresh={refresh} />
         )}
