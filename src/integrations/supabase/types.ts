@@ -773,6 +773,203 @@ export type Database = {
           },
         ]
       }
+      means_test_calculations: {
+        Row: {
+          annualized_income: number | null
+          attorney_notes: string | null
+          attorney_reviewed: boolean | null
+          attorney_reviewed_at: string | null
+          attorney_reviewed_by: string | null
+          below_median: boolean | null
+          calculation_window_end: string | null
+          calculation_window_start: string | null
+          case_id: string
+          ch13_recommended: boolean | null
+          client_state: string | null
+          created_at: string | null
+          eligibility_notes: string | null
+          eligibility_result: string | null
+          filing_date: string | null
+          household_size: number | null
+          id: string
+          local_standard_housing: number | null
+          local_standard_utilities: number | null
+          local_standard_vehicle_operation: number | null
+          local_standard_vehicle_ownership: number | null
+          monthly_disposable_income: number | null
+          monthly_gross_wages: number | null
+          monthly_interest_dividends: number | null
+          monthly_net_business: number | null
+          monthly_other_income: number | null
+          monthly_pension_retirement: number | null
+          monthly_rental_income: number | null
+          monthly_social_security: number | null
+          monthly_unemployment: number | null
+          national_standard_food_clothing: number | null
+          national_standard_healthcare: number | null
+          other_necessary_expenses: number | null
+          presumption_arises: boolean | null
+          priority_debt_payments: number | null
+          secured_debt_payments: number | null
+          state_median_income: number | null
+          total_allowed_deductions: number | null
+          total_current_monthly_income: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          annualized_income?: number | null
+          attorney_notes?: string | null
+          attorney_reviewed?: boolean | null
+          attorney_reviewed_at?: string | null
+          attorney_reviewed_by?: string | null
+          below_median?: boolean | null
+          calculation_window_end?: string | null
+          calculation_window_start?: string | null
+          case_id: string
+          ch13_recommended?: boolean | null
+          client_state?: string | null
+          created_at?: string | null
+          eligibility_notes?: string | null
+          eligibility_result?: string | null
+          filing_date?: string | null
+          household_size?: number | null
+          id?: string
+          local_standard_housing?: number | null
+          local_standard_utilities?: number | null
+          local_standard_vehicle_operation?: number | null
+          local_standard_vehicle_ownership?: number | null
+          monthly_disposable_income?: number | null
+          monthly_gross_wages?: number | null
+          monthly_interest_dividends?: number | null
+          monthly_net_business?: number | null
+          monthly_other_income?: number | null
+          monthly_pension_retirement?: number | null
+          monthly_rental_income?: number | null
+          monthly_social_security?: number | null
+          monthly_unemployment?: number | null
+          national_standard_food_clothing?: number | null
+          national_standard_healthcare?: number | null
+          other_necessary_expenses?: number | null
+          presumption_arises?: boolean | null
+          priority_debt_payments?: number | null
+          secured_debt_payments?: number | null
+          state_median_income?: number | null
+          total_allowed_deductions?: number | null
+          total_current_monthly_income?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          annualized_income?: number | null
+          attorney_notes?: string | null
+          attorney_reviewed?: boolean | null
+          attorney_reviewed_at?: string | null
+          attorney_reviewed_by?: string | null
+          below_median?: boolean | null
+          calculation_window_end?: string | null
+          calculation_window_start?: string | null
+          case_id?: string
+          ch13_recommended?: boolean | null
+          client_state?: string | null
+          created_at?: string | null
+          eligibility_notes?: string | null
+          eligibility_result?: string | null
+          filing_date?: string | null
+          household_size?: number | null
+          id?: string
+          local_standard_housing?: number | null
+          local_standard_utilities?: number | null
+          local_standard_vehicle_operation?: number | null
+          local_standard_vehicle_ownership?: number | null
+          monthly_disposable_income?: number | null
+          monthly_gross_wages?: number | null
+          monthly_interest_dividends?: number | null
+          monthly_net_business?: number | null
+          monthly_other_income?: number | null
+          monthly_pension_retirement?: number | null
+          monthly_rental_income?: number | null
+          monthly_social_security?: number | null
+          monthly_unemployment?: number | null
+          national_standard_food_clothing?: number | null
+          national_standard_healthcare?: number | null
+          other_necessary_expenses?: number | null
+          presumption_arises?: boolean | null
+          priority_debt_payments?: number | null
+          secured_debt_payments?: number | null
+          state_median_income?: number | null
+          total_allowed_deductions?: number | null
+          total_current_monthly_income?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "means_test_calculations_attorney_reviewed_by_fkey"
+            columns: ["attorney_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "means_test_calculations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      means_test_income_months: {
+        Row: {
+          business_income: number | null
+          calculation_id: string
+          created_at: string | null
+          flagged_missing: boolean | null
+          has_coverage: boolean | null
+          id: string
+          month_label: string
+          month_year: string
+          other_income: number | null
+          source_documents: string[] | null
+          total_month: number | null
+          wages: number | null
+        }
+        Insert: {
+          business_income?: number | null
+          calculation_id: string
+          created_at?: string | null
+          flagged_missing?: boolean | null
+          has_coverage?: boolean | null
+          id?: string
+          month_label: string
+          month_year: string
+          other_income?: number | null
+          source_documents?: string[] | null
+          total_month?: number | null
+          wages?: number | null
+        }
+        Update: {
+          business_income?: number | null
+          calculation_id?: string
+          created_at?: string | null
+          flagged_missing?: boolean | null
+          has_coverage?: boolean | null
+          id?: string
+          month_label?: string
+          month_year?: string
+          other_income?: number | null
+          source_documents?: string[] | null
+          total_month?: number | null
+          wages?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "means_test_income_months_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "means_test_calculations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           author_name: string | null
