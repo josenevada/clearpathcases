@@ -395,12 +395,12 @@ const ROICard = () => (
       </div>
       <div className="flex justify-between">
         <span className="text-[#8aa3b8]">ClearPath Professional</span>
-        <span className="text-[#f0f4f8] font-medium">− $399</span>
+        <span className="text-[#f0f4f8] font-medium">− $599</span>
       </div>
       <div style={{ borderTop: '1px solid rgba(0,194,168,0.2)' }} className="my-2" />
       <div className="flex justify-between items-baseline">
         <span className="font-display font-bold text-[22px] text-primary">Net savings/month</span>
-        <span className="font-display font-bold text-[22px] text-primary">$10,201</span>
+        <span className="font-display font-bold text-[22px] text-primary">$10,001</span>
       </div>
     </div>
     <p className="text-[12px] italic text-[#8aa3b8] font-body mt-4">
