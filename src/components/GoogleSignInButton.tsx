@@ -48,7 +48,7 @@ const GoogleSignInButton = ({ label = 'Continue with Google' }: GoogleSignInButt
       const { data: existingUser } = await supabase
         .from('users')
         .select('role, firm_id')
-        .eq('email', session.user.email)
+        .eq('id', session.user.id)
         .maybeSingle();
 
       if (!existingUser?.firm_id) {

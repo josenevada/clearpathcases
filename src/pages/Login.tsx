@@ -49,7 +49,7 @@ const Login = () => {
             const { data: userData } = await supabase
               .from('users')
               .select('role')
-              .eq('email', session.user.email!)
+              .eq('id', session.user.id)
               .maybeSingle();
 
             if (userData?.role === 'super_admin') {
