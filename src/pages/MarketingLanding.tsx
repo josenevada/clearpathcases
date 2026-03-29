@@ -4,7 +4,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
-  Building, Package, Brain, Calculator,
+  Building, Package, Brain, Calculator, PenLine,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -482,7 +482,7 @@ const MarketingLanding = () => {
     { num: '1', title: 'Create a Case', desc: 'A paralegal creates a case in seconds and sends the client a secure intake link via email or SMS. No client account required.', circleStep: 1, textStep: 1 },
     { num: '2', title: 'Client Uploads Documents', desc: 'The client follows a guided step-by-step walkthrough on any device — one document at a time, with AI validation on every upload.', circleStep: 3, textStep: 3 },
     { num: '3', title: 'AI Does the Heavy Lifting', desc: 'Once documents are approved, ClearPath pre-fills all 15 federal forms, calculates the means test automatically, and runs exemption analysis to maximize asset protection. Your paralegal reviews in minutes.', circleStep: 5, textStep: 5 },
-    { num: '4', title: 'Review, Approve & File', desc: 'Paralegals review extracted data in minutes. Attorney approves. Court-ready packet generated with pre-filled forms included — one click.', circleStep: 7, textStep: 7 },
+    { num: '4', title: 'Review, Approve & File', desc: 'Paralegals review in minutes. Attorney approves. Client and attorney sign inside ClearPath. Court-ready packet generated — one click.', circleStep: 7, textStep: 7 },
   ];
 
   /* Section background colors */
@@ -649,6 +649,7 @@ const MarketingLanding = () => {
                 'Means test and exemption analysis run automatically',
                 'Attorney reviews and approves — nothing retyped',
                 'Court-ready packet generated in one click',
+                'Client and attorney sign all documents inside ClearPath — no DocuSign',
               ].map(t => (
                 <li key={t} className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -770,7 +771,7 @@ const MarketingLanding = () => {
             { icon: PackageCheck, title: 'Court-ready packets in one click', desc: 'Download an organized ZIP or compiled PDF of all approved documents and pre-filled federal forms, ready for court, in one click.' },
             { icon: Brain, title: 'Complete Pre-Filing Intelligence', desc: 'AI pre-fills all 15 federal Ch.7 forms, calculates means test eligibility automatically, and optimizes exemptions to protect maximum client assets. Attorney reviews and approves — nothing done by hand.' },
             { icon: MessageSquare, title: 'AI catches mistakes before they reach you', desc: 'Gemini Vision AI reviews every uploaded document the moment it arrives. Wrong document type, blurry photo, wrong year — rejected instantly before it reaches your review queue.' },
-            { icon: ClipboardList, title: 'Full audit trail on every case', desc: 'Every upload, approval, correction, and client interaction is logged with a timestamp and actor — so you always know exactly what happened and when.' },
+            { icon: PenLine, title: 'Built-in E-Signatures', desc: 'Client and attorney sign all required documents directly inside ClearPath. No DocuSign. No Adobe Sign. No switching platforms. Legally binding in all 50 states under ESIGN and UETA.' },
             { icon: Calculator, title: 'Means Test Engine', desc: 'Automatically calculates B122A-1 and B122A-2 using IRS National and Local Standards. Determines Ch.7 eligibility, flags borderline cases, and recommends Chapter 7 vs 13 before the attorney opens the file.' },
           ].map((f, i) => (
             <div
