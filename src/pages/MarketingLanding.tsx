@@ -4,7 +4,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
-  Building, Package,
+  Building, Package, Brain, Calculator,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
