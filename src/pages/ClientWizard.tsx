@@ -1254,6 +1254,7 @@ const ClientWizard = () => {
                 />
               )}
 
+              {isCheckpointItem ? (
                 <div className="space-y-6">
                   <div className="surface-card p-6">
                     <p className="text-foreground leading-relaxed">
