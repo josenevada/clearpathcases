@@ -11,6 +11,7 @@ import Logo from '@/components/Logo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
+import { useAuth } from '@/lib/auth';
 
 import OnboardingChecklistConfig from '@/components/onboarding/OnboardingChecklistConfig';
 
@@ -19,6 +20,7 @@ const STEPS = ['Create Account', 'Your Practice', 'Configure Checklist', 'First 
 const Signup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, session } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,6 +42,107 @@ const Signup = () => {
   const [filingDeadline, setFilingDeadline] = useState('');
 
   const [firmId, setFirmId] = useState<string | null>(null);
+  const isResumeOnboarding = searchParams.get('resume') === 'onboarding' && Boolean(session?.user) && !user;
+  const onboardingSessionUser = isResumeOnboarding ? session?.user ?? null : null;
+
+  useEffect(() => {
+    if (!onboardingSessionUser) return;
+    setFullName(onboardingSessionUser.user_metadata?.full_name || onboardingSessionUser.user_metadata?.name || '');
+    setEmail(onboardingSessionUser.email || '');
+  }, [onboardingSessionUser]);
+
+  const getAvailableSlug = async (name: string) => {
+    const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'clearpath-firm';
+    const { data, error } = await supabase
+      .from('firms')
+      .select('slug')
+      .ilike('slug', `${baseSlug}%`);
+
+    if (error) throw error;
+
+    const existingSlugs = new Set((data ?? []).map(row => row.slug).filter(Boolean));
+    if (!existingSlugs.has(baseSlug)) return baseSlug;
+
+    let suffix = 2;
+    while (existingSlugs.has(`${baseSlug}-${suffix}`)) {
+      suffix += 1;
+    }
+
+    return `${baseSlug}-${suffix}`;
+  };
+
+  const provisionWorkspace = async ({
+    accountUserId,
+    accountEmail,
+    accountName,
+    workspaceName,
+  }: {
+    accountUserId: string;
+    accountEmail: string;
+    accountName: string;
+    workspaceName: string;
+  }) => {
+    const { data: existingUser, error: existingUserError } = await supabase
+      .from('users')
+      .select('firm_id')
+      .eq('id', accountUserId)
+      .maybeSingle();
+
+    if (existingUserError) throw existingUserError;
+    if (existingUser?.firm_id) return existingUser.firm_id;
+
+    const { data: existingFirm, error: existingFirmError } = await supabase
+      .from('firms')
+      .select('id')
+      .eq('primary_contact_email', accountEmail)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingFirmError) throw existingFirmError;
+
+    let resolvedFirmId = existingFirm?.id;
+
+    if (!resolvedFirmId) {
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
+      const slug = await getAvailableSlug(workspaceName);
+
+      const { data: firmData, error: firmError } = await supabase
+        .from('firms')
+        .insert({
+          name: workspaceName,
+          primary_contact_name: accountName,
+          primary_contact_email: accountEmail,
+          slug,
+          subscription_status: 'trial',
+          trial_ends_at: trialEndsAt,
+          plan_name: selectedPlan,
+        })
+        .select('id')
+        .single();
+
+      if (firmError) throw firmError;
+      resolvedFirmId = firmData.id;
+    }
+
+    const { error: userError } = await supabase
+      .from('users')
+      .upsert(
+        {
+          id: accountUserId,
+          email: accountEmail,
+          full_name: accountName,
+          role: 'paralegal',
+          firm_id: resolvedFirmId,
+        },
+        { onConflict: 'id' }
+      );
+
+    if (userError) throw userError;
+
+    return resolvedFirmId;
+  };
 
   // Handle Google OAuth redirect — skip to step 1 (Your Practice) since account is already created
   useEffect(() => {
@@ -50,55 +153,28 @@ const Signup = () => {
     const googleUser = JSON.parse(raw);
     sessionStorage.removeItem('google_oauth_user');
 
-    // Auto-create firm and user record, then jump to step 1
     (async () => {
       setLoading(true);
       try {
-        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
         const defaultFirmName = googleUser.email.split('@')[1]?.split('.')[0] || 'My Firm';
-        const slug = defaultFirmName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
-
-        // Prompt for firm name — pre-fill and jump to a mini step
         setFullName(googleUser.fullName);
         setEmail(googleUser.email);
         setFirmName('');
 
-        // Create firm
-        const { data: firmData, error: firmError } = await supabase
-          .from('firms')
-          .insert({
-            name: defaultFirmName,
-            primary_contact_name: googleUser.fullName,
-            primary_contact_email: googleUser.email,
-            slug,
-            subscription_status: 'trial',
-            trial_ends_at: trialEndsAt,
-            plan_name: selectedPlan,
-          })
-          .select()
-          .single();
-        if (firmError) throw firmError;
-        setFirmId(firmData.id);
+        const resolvedFirmId = await provisionWorkspace({
+          accountUserId: googleUser.userId,
+          accountEmail: googleUser.email,
+          accountName: googleUser.fullName,
+          workspaceName: defaultFirmName,
+        });
 
-        // Create user record
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: googleUser.userId,
-            email: googleUser.email,
-            full_name: googleUser.fullName,
-            role: 'paralegal',
-            firm_id: firmData.id,
-          });
-        if (userError && !userError.message.includes('duplicate')) throw userError;
-
+        setFirmId(resolvedFirmId);
         sessionStorage.removeItem('selected_plan');
-        setStep(1); // Skip to "Your Practice"
+        setStep(1);
       } catch (err: any) {
         console.error('Google onboarding error:', err);
         toast.error(err.message || 'Failed to set up account');
-        setStep(0); // Fall back to step 1
+        setStep(0);
       } finally {
         setLoading(false);
       }
@@ -106,59 +182,60 @@ const Signup = () => {
   }, [searchParams]);
 
   const handleCreateAccount = async () => {
-    if (!fullName || !email || !password || !firmName) {
+    if (!fullName || !firmName || (!isResumeOnboarding && (!email || !password))) {
       toast.error('Please fill in all fields');
       return;
     }
+
     setLoading(true);
     try {
+      if (isResumeOnboarding) {
+        if (!onboardingSessionUser?.id || !email) {
+          throw new Error('Please sign in again to finish setup.');
+        }
+
+        const resolvedFirmId = await provisionWorkspace({
+          accountUserId: onboardingSessionUser.id,
+          accountEmail: email,
+          accountName: fullName,
+          workspaceName: firmName,
+        });
+
+        setFirmId(resolvedFirmId);
+        sessionStorage.removeItem('selected_plan');
+        setStep(1);
+        return;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { full_name: fullName },
-          emailRedirectTo: 'https://yourclearpath.app/login?verified=true',
+          emailRedirectTo: `${window.location.origin}/login?verified=true`,
         },
       });
       if (authError) throw authError;
 
-      // Wait for session to be fully established before proceeding
-      if (!authData.session) {
-        // Email confirmation required — session won't exist yet, but account is created
-        // We can still proceed with firm/user creation using the user id
+      const repeatedSignup = (authData.user?.identities ?? []).length === 0;
+      if (repeatedSignup) {
+        toast.error('This email already has an account. Sign in to finish setting up your workspace.');
+        navigate(`/login?resume=onboarding&email=${encodeURIComponent(email)}`);
+        return;
       }
 
-      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-      const slug = firmName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
+      if (!authData.user?.id) {
+        throw new Error('Failed to create account. Please try again.');
+      }
 
-      const { data: firmData, error: firmError } = await supabase
-        .from('firms')
-        .insert({
-          name: firmName,
-          primary_contact_name: fullName,
-          primary_contact_email: email,
-          slug,
-          subscription_status: 'trial',
-          trial_ends_at: trialEndsAt,
-          plan_name: selectedPlan,
-        })
-        .select()
-        .single();
-      if (firmError) throw firmError;
-      setFirmId(firmData.id);
+      const resolvedFirmId = await provisionWorkspace({
+        accountUserId: authData.user.id,
+        accountEmail: email,
+        accountName: fullName,
+        workspaceName: firmName,
+      });
 
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user?.id,
-          email,
-          full_name: fullName,
-          role: 'paralegal',
-          firm_id: firmData.id,
-        });
-      if (userError) throw userError;
-
+      setFirmId(resolvedFirmId);
       sessionStorage.removeItem('selected_plan');
       setStep(1);
     } catch (err: any) {
@@ -212,47 +289,69 @@ const Signup = () => {
         <AnimatePresence mode="wait">
           {step === 0 && (
             <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <h2 className="font-display font-bold text-2xl text-foreground">Create Your Account</h2>
-              <GoogleSignInButton label="Continue with Google" />
-              <OAuthDivider />
+              <h2 className="font-display font-bold text-2xl text-foreground">
+                {isResumeOnboarding ? 'Finish Setting Up Your Workspace' : 'Create Your Account'}
+              </h2>
+              {isResumeOnboarding && (
+                <p className="text-sm text-muted-foreground font-body">
+                  Your account already exists — finish the workspace setup and continue onboarding.
+                </p>
+              )}
+              {!isResumeOnboarding && (
+                <>
+                  <GoogleSignInButton label="Continue with Google" />
+                  <OAuthDivider />
+                </>
+              )}
               <div>
                 <Label className="font-body">Full Name</Label>
                 <Input className={inputClasses} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
               </div>
               <div>
                 <Label className="font-body">Work Email</Label>
-                <Input className={inputClasses} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@lawfirm.com" />
+                <Input
+                  className={`${inputClasses}${isResumeOnboarding ? ' opacity-60' : ''}`}
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="jane@lawfirm.com"
+                  disabled={isResumeOnboarding}
+                />
               </div>
-              <div>
-                <Label className="font-body">Password</Label>
-                <div className="relative">
-                  <Input
-                    className={`${inputClasses} pr-10`}
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              {!isResumeOnboarding && (
+                <div>
+                  <Label className="font-body">Password</Label>
+                  <div className="relative">
+                    <Input
+                      className={`${inputClasses} pr-10`}
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
               <div>
                 <Label className="font-body">Firm Name</Label>
                 <Input className={inputClasses} value={firmName} onChange={e => setFirmName(e.target.value)} placeholder="Smith & Associates" />
               </div>
               <Button className="w-full" onClick={handleCreateAccount} disabled={loading}>
-                {loading ? 'Creating…' : 'Create Account'}
+                {loading ? (isResumeOnboarding ? 'Finishing…' : 'Creating…') : (isResumeOnboarding ? 'Finish Setup' : 'Create Account')}
               </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                Already have an account? <a href="/login" className="text-primary hover:underline">Sign in</a>
-              </p>
+              {!isResumeOnboarding && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Already have an account? <a href="/login" className="text-primary hover:underline">Sign in</a>
+                </p>
+              )}
             </motion.div>
           )}
 
