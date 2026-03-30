@@ -779,6 +779,11 @@ export type Database = {
       }
       firms: {
         Row: {
+          branding_attorney_name: string | null
+          branding_bar_number: string | null
+          counseling_attorney_code: string | null
+          counseling_provider_link: string | null
+          counseling_provider_name: string | null
           created_at: string | null
           default_attorney: string | null
           default_paralegal: string | null
@@ -795,6 +800,11 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          branding_attorney_name?: string | null
+          branding_bar_number?: string | null
+          counseling_attorney_code?: string | null
+          counseling_provider_link?: string | null
+          counseling_provider_name?: string | null
           created_at?: string | null
           default_attorney?: string | null
           default_paralegal?: string | null
@@ -811,6 +821,11 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          branding_attorney_name?: string | null
+          branding_bar_number?: string | null
+          counseling_attorney_code?: string | null
+          counseling_provider_link?: string | null
+          counseling_provider_name?: string | null
           created_at?: string | null
           default_attorney?: string | null
           default_paralegal?: string | null
