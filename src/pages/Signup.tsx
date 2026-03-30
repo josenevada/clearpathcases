@@ -108,9 +108,14 @@ const Signup = () => {
       const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
       const slug = await getAvailableSlug(workspaceName);
 
-      const { data: firmData, error: firmError } = await supabase
+      // Generate firm ID client-side so we don't need .select() which triggers
+      // the SELECT RLS policy (fails because user has no users record yet)
+      resolvedFirmId = crypto.randomUUID();
+
+      const { error: firmError } = await supabase
         .from('firms')
         .insert({
+          id: resolvedFirmId,
           name: workspaceName,
           primary_contact_name: accountName,
           primary_contact_email: accountEmail,
@@ -118,12 +123,9 @@ const Signup = () => {
           subscription_status: 'trial',
           trial_ends_at: trialEndsAt,
           plan_name: selectedPlan,
-        })
-        .select('id')
-        .single();
+        });
 
       if (firmError) throw firmError;
-      resolvedFirmId = firmData.id;
     }
 
     const { error: userError } = await supabase
