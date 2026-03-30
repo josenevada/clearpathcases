@@ -162,10 +162,9 @@ const Signup = () => {
       }
 
       const resolvedFirmId = await provisionWorkspace({
-        accountUserId: authData.user.id,
-        accountEmail: email,
-        accountName: fullName,
-        workspaceName: firmName,
+        firmName,
+        fullName,
+        email,
       });
 
       setFirmId(resolvedFirmId);
