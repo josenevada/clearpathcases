@@ -1,0 +1,141 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Verify the caller is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing authorization" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify JWT with anon client
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: authUser }, error: authError } = await anonClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { firmName, fullName, email } = body;
+
+    if (!firmName || !fullName || !email) {
+      return new Response(JSON.stringify({ error: "Missing required fields: firmName, fullName, email" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Use service role client to bypass RLS
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    // Check if user already has a firm
+    const { data: existingUser } = await admin
+      .from("users")
+      .select("firm_id")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (existingUser?.firm_id) {
+      return new Response(JSON.stringify({ firmId: existingUser.firm_id }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Generate slug
+    const baseSlug = firmName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "clearpath-firm";
+    const { data: slugRows } = await admin
+      .from("firms")
+      .select("slug")
+      .ilike("slug", `${baseSlug}%`);
+    const existingSlugs = new Set((slugRows ?? []).map((r: any) => r.slug).filter(Boolean));
+    let slug = baseSlug;
+    if (existingSlugs.has(slug)) {
+      let suffix = 2;
+      while (existingSlugs.has(`${baseSlug}-${suffix}`)) suffix++;
+      slug = `${baseSlug}-${suffix}`;
+    }
+
+    const firmId = crypto.randomUUID();
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const selectedPlan = body.planName || "starter";
+
+    // Insert firm
+    const { error: firmError } = await admin.from("firms").insert({
+      id: firmId,
+      name: firmName,
+      primary_contact_name: fullName,
+      primary_contact_email: email,
+      slug,
+      subscription_status: "trial",
+      trial_ends_at: trialEndsAt,
+      plan_name: selectedPlan,
+    });
+
+    if (firmError) {
+      console.error("Firm insert error:", firmError);
+      return new Response(JSON.stringify({ error: "Failed to create workspace" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Insert user
+    const { error: userError } = await admin.from("users").upsert(
+      {
+        id: authUser.id,
+        email,
+        full_name: fullName,
+        role: "attorney",
+        firm_id: firmId,
+      },
+      { onConflict: "id" }
+    );
+
+    if (userError) {
+      console.error("User insert error:", userError);
+      // Rollback firm
+      await admin.from("firms").delete().eq("id", firmId);
+      return new Response(JSON.stringify({ error: "Failed to create user profile" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ firmId }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("provision-workspace error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
