@@ -103,6 +103,7 @@ const Signup = () => {
         setFirmName('');
 
         const resolvedFirmId = await provisionWorkspace({
+          userId: googleUser.userId,
           firmName: defaultFirmName,
           fullName: googleUser.fullName,
           email: googleUser.email,
