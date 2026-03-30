@@ -27,7 +27,12 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Auth error: ${userError.message}`);
+    if (userError) {
+      // Return unsubscribed instead of 500 for deleted/invalid users
+      return new Response(JSON.stringify({ subscribed: false, status: "unauthenticated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const user = userData.user;
     if (!user?.email) throw new Error("Not authenticated");
 
