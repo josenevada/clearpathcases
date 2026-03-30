@@ -13,6 +13,7 @@ import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
+import DocumentAgent from '@/components/wizard/DocumentAgent';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -1240,6 +1241,16 @@ const ClientWizard = () => {
                   hasFiles={currentItem.files.length > 0}
                   forceOpen={helpForceOpen}
                   onForceOpenHandled={() => setHelpForceOpen(false)}
+                />
+              )}
+
+              {/* AI Document Retrieval Agent */}
+              {!isCheckpointItem && !isTextEntry && (
+                <DocumentAgent
+                  documentCategory={currentItem.category}
+                  documentLabel={currentItem.label}
+                  caseId={caseData.id}
+                  onDocumentUploaded={() => {}}
                 />
               )}
 

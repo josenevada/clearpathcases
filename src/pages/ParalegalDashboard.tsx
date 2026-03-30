@@ -17,6 +17,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionGate from '@/components/SubscriptionGate';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import StatsBar from '@/components/dashboard/StatsBar';
+import IntakeAgentStats from '@/components/dashboard/IntakeAgentStats';
 import SendLinkModal from '@/components/dashboard/SendLinkModal';
 import { getAllCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
@@ -240,6 +241,9 @@ const ParalegalDashboard = () => {
 
         {/* Stats bar */}
         <StatsBar cases={cases} onFilter={setStatsFilter} activeFilter={statsFilter} />
+
+        {/* Intake Agent analytics */}
+        <IntakeAgentStats />
 
         {/* Search bar */}
         {(cases.length > 0) && (
