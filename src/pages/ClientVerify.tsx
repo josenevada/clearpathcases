@@ -48,12 +48,15 @@ const ClientVerify = () => {
     }
 
     const checkCase = async () => {
-      const { data } = await supabase
+      console.log('[ClientVerify] Looking up caseCode:', caseCode);
+      const { data, error } = await supabase
         .from('cases')
         .select('id')
         .eq('case_code', caseCode)
+        .neq('status', 'closed')
         .maybeSingle();
 
+      console.log('[ClientVerify] Query result:', { data, error });
       if (data) {
         setCaseId(data.id);
       }

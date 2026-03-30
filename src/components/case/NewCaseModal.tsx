@@ -249,6 +249,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     try {
       await supabase.from('cases').upsert({
         id: newCase.id,
+        firm_id: user?.firmId || null,
         client_name: info.clientName,
         client_email: info.clientEmail,
         client_phone: info.clientPhone || null,
