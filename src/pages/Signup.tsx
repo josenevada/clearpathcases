@@ -51,99 +51,32 @@ const Signup = () => {
     setEmail(onboardingSessionUser.email || '');
   }, [onboardingSessionUser]);
 
-  const getAvailableSlug = async (name: string) => {
-    const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'clearpath-firm';
-    const { data, error } = await supabase
-      .from('firms')
-      .select('slug')
-      .ilike('slug', `${baseSlug}%`);
-
-    if (error) throw error;
-
-    const existingSlugs = new Set((data ?? []).map(row => row.slug).filter(Boolean));
-    if (!existingSlugs.has(baseSlug)) return baseSlug;
-
-    let suffix = 2;
-    while (existingSlugs.has(`${baseSlug}-${suffix}`)) {
-      suffix += 1;
-    }
-
-    return `${baseSlug}-${suffix}`;
-  };
-
   const provisionWorkspace = async ({
-    accountUserId,
-    accountEmail,
-    accountName,
-    workspaceName,
+    firmName: wsFirmName,
+    fullName: wsFullName,
+    email: wsEmail,
   }: {
-    accountUserId: string;
-    accountEmail: string;
-    accountName: string;
-    workspaceName: string;
-  }) => {
-    const { data: existingUser, error: existingUserError } = await supabase
-      .from('users')
-      .select('firm_id')
-      .eq('id', accountUserId)
-      .maybeSingle();
+    firmName: string;
+    fullName: string;
+    email: string;
+  }): Promise<string> => {
+    const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
 
-    if (existingUserError) throw existingUserError;
-    if (existingUser?.firm_id) return existingUser.firm_id;
+    const { data, error } = await supabase.functions.invoke('provision-workspace', {
+      body: {
+        firmName: wsFirmName,
+        fullName: wsFullName,
+        email: wsEmail,
+        planName: selectedPlan,
+      },
+    });
 
-    const { data: existingFirm, error: existingFirmError } = await supabase
-      .from('firms')
-      .select('id')
-      .eq('primary_contact_email', accountEmail)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingFirmError) throw existingFirmError;
-
-    let resolvedFirmId = existingFirm?.id;
-
-    if (!resolvedFirmId) {
-      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-      const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
-      const slug = await getAvailableSlug(workspaceName);
-
-      // Generate firm ID client-side so we don't need .select() which triggers
-      // the SELECT RLS policy (fails because user has no users record yet)
-      resolvedFirmId = crypto.randomUUID();
-
-      const { error: firmError } = await supabase
-        .from('firms')
-        .insert({
-          id: resolvedFirmId,
-          name: workspaceName,
-          primary_contact_name: accountName,
-          primary_contact_email: accountEmail,
-          slug,
-          subscription_status: 'trial',
-          trial_ends_at: trialEndsAt,
-          plan_name: selectedPlan,
-        });
-
-      if (firmError) throw firmError;
+    if (error || !data?.firmId) {
+      const msg = data?.error || error?.message || 'Failed to set up workspace';
+      throw new Error(msg);
     }
 
-    const { error: userError } = await supabase
-      .from('users')
-      .upsert(
-        {
-          id: accountUserId,
-          email: accountEmail,
-          full_name: accountName,
-          role: 'paralegal',
-          firm_id: resolvedFirmId,
-        },
-        { onConflict: 'id' }
-      );
-
-    if (userError) throw userError;
-
-    return resolvedFirmId;
+    return data.firmId;
   };
 
   // Handle Google OAuth redirect — skip to step 1 (Your Practice) since account is already created
@@ -164,10 +97,9 @@ const Signup = () => {
         setFirmName('');
 
         const resolvedFirmId = await provisionWorkspace({
-          accountUserId: googleUser.userId,
-          accountEmail: googleUser.email,
-          accountName: googleUser.fullName,
-          workspaceName: defaultFirmName,
+          firmName: defaultFirmName,
+          fullName: googleUser.fullName,
+          email: googleUser.email,
         });
 
         setFirmId(resolvedFirmId);
@@ -197,10 +129,9 @@ const Signup = () => {
         }
 
         const resolvedFirmId = await provisionWorkspace({
-          accountUserId: onboardingSessionUser.id,
-          accountEmail: email,
-          accountName: fullName,
-          workspaceName: firmName,
+          firmName,
+          fullName,
+          email,
         });
 
         setFirmId(resolvedFirmId);
@@ -231,17 +162,18 @@ const Signup = () => {
       }
 
       const resolvedFirmId = await provisionWorkspace({
-        accountUserId: authData.user.id,
-        accountEmail: email,
-        accountName: fullName,
-        workspaceName: firmName,
+        firmName,
+        fullName,
+        email,
       });
 
       setFirmId(resolvedFirmId);
       sessionStorage.removeItem('selected_plan');
       setStep(1);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create account');
+      // Sign out to prevent broken authenticated state without firm/user records
+      await supabase.auth.signOut();
+      toast.error(err.message || 'Account setup failed — please try again');
     } finally {
       setLoading(false);
     }

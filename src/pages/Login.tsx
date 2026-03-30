@@ -57,9 +57,17 @@ const Login = () => {
           setTimeout(async () => {
             const { data: userData } = await supabase
               .from('users')
-              .select('role')
+              .select('role, firm_id')
               .eq('id', session.user.id)
               .maybeSingle();
+
+            // No user/firm record — account setup incomplete
+            if (!userData?.firm_id) {
+              await supabase.auth.signOut();
+              redirectingRef.current = false;
+              toast.error('Account setup incomplete. Please sign up again.');
+              return;
+            }
 
             if (userData?.role === 'super_admin') {
               navigate('/admin/dashboard', { replace: true });
