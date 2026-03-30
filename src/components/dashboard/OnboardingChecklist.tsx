@@ -1,48 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, X, Building2, Scale, BookOpen, Plus, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getFirmSettings } from '@/lib/store';
 
 interface OnboardingChecklistProps {
+  firmProfileComplete: boolean;
+  brandingComplete: boolean;
+  counselingComplete: boolean;
   hasCases: boolean;
   hasSentLink: boolean;
   onNewCase: () => void;
   onSendLink: () => void;
 }
 
-const DISMISSED_KEY = 'cp_onboarding_dismissed';
-
-const OnboardingChecklist = ({ hasCases, hasSentLink, onNewCase, onSendLink }: OnboardingChecklistProps) => {
+const OnboardingChecklist = ({ firmProfileComplete, brandingComplete, counselingComplete, hasCases, hasSentLink, onNewCase, onSendLink }: OnboardingChecklistProps) => {
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISSED_KEY) === 'true');
+  const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
-
-  const firmSettings = getFirmSettings();
-  const branding = (() => {
-    try { return JSON.parse(localStorage.getItem('cp_branding') || '{}'); } catch { return {}; }
-  })();
-  const counseling = (() => {
-    try { return JSON.parse(localStorage.getItem('cp_counseling_provider') || '{}'); } catch { return {}; }
-  })();
 
   const steps = [
     {
       label: 'Complete your firm profile',
-      done: Boolean(firmSettings.firmName && firmSettings.primaryContactEmail),
+      done: firmProfileComplete,
       action: () => navigate('/paralegal/settings/firm/profile'),
       icon: Building2,
     },
     {
       label: 'Add your attorney name and bar number',
-      done: Boolean(branding.attorneyName && branding.barNumber),
+      done: brandingComplete,
       action: () => navigate('/paralegal/settings/appearance/branding'),
       icon: Scale,
     },
     {
       label: 'Set your credit counseling provider link',
-      done: Boolean(counseling.providerLink),
+      done: counselingComplete,
       action: () => navigate('/paralegal/settings/case/questions'),
       icon: BookOpen,
     },
@@ -64,16 +55,14 @@ const OnboardingChecklist = ({ hasCases, hasSentLink, onNewCase, onSendLink }: O
   const totalCount = steps.length;
   const pct = Math.round((completedCount / totalCount) * 100);
 
-  // If all done, auto-dismiss
   if (completedCount === totalCount) {
-    localStorage.setItem(DISMISSED_KEY, 'true');
     return null;
   }
 
   return (
     <div className="surface-card p-6 mb-6 relative">
       <button
-        onClick={() => { setDismissed(true); localStorage.setItem(DISMISSED_KEY, 'true'); }}
+        onClick={() => setDismissed(true)}
         className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
       >
         <X className="w-4 h-4" />

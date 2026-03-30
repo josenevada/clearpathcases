@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Logo from '@/components/Logo';
-import { useAuth } from '@/lib/auth';
+import { consumeAuthSetupError, useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
@@ -34,6 +34,12 @@ const Login = () => {
     }
     if (searchParams.get('resume') === 'onboarding') {
       toast.info('Sign in to finish setting up your workspace.');
+    }
+
+    const authSetupError = consumeAuthSetupError();
+    if (authSetupError) {
+      setLoginError(authSetupError);
+      toast.error(authSetupError);
     }
   }, [searchParams]);
 

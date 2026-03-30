@@ -1,21 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getFirmSettings, saveFirmSettings, type FirmSettings } from '@/lib/store';
+import { getDefaultFirmSettings, type FirmSettings } from '@/lib/store';
+import { fetchFirmProfileSettings, saveFirmProfileSettings } from '@/lib/dashboard-data';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 
 const FirmProfileTab = () => {
-  const [form, setForm] = useState<FirmSettings>(getFirmSettings());
+  const { user } = useAuth();
+  const [form, setForm] = useState<FirmSettings>(getDefaultFirmSettings());
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    saveFirmSettings(form);
-    toast.success('Firm profile saved.');
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!user?.firmId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setForm(await fetchFirmProfileSettings(user.firmId));
+      } catch {
+        toast.error('Failed to load firm profile.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadSettings();
+  }, [user?.firmId]);
+
+  const handleSave = async () => {
+    if (!user?.firmId) return;
+
+    try {
+      await saveFirmProfileSettings(user.firmId, form);
+      toast.success('Firm profile saved.');
+    } catch {
+      toast.error('Failed to save firm profile.');
+    }
   };
 
   const update = (field: keyof FirmSettings, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground font-body animate-pulse">Loading firm profile…</div>;
+  }
 
   return (
     <div className="surface-card p-6">
