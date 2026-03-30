@@ -15,7 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(searchParams.get('email') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,6 +32,9 @@ const Login = () => {
     if (searchParams.get('expired') === 'true') {
       toast.error('Your session expired. Please sign in again.');
     }
+    if (searchParams.get('resume') === 'onboarding') {
+      toast.info('Sign in to finish setting up your workspace.');
+    }
   }, [searchParams]);
 
   // Central redirect handler — fires when auth state confirms a valid session
@@ -39,6 +42,12 @@ const Login = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session?.user && !redirectingRef.current) {
+          if (searchParams.get('resume') === 'onboarding') {
+            redirectingRef.current = true;
+            navigate('/signup?resume=onboarding', { replace: true });
+            return;
+          }
+
           // Skip redirect if user needs onboarding (Google OAuth new user)
           if (sessionStorage.getItem('google_oauth_needs_onboarding')) {
             return;
@@ -63,19 +72,21 @@ const Login = () => {
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   // If user is already authenticated (e.g. navigated back to /login), redirect
   useEffect(() => {
     if (user && !redirectingRef.current) {
       redirectingRef.current = true;
-      if (user.role === 'super_admin') {
+      if (searchParams.get('resume') === 'onboarding') {
+        navigate('/signup?resume=onboarding', { replace: true });
+      } else if (user.role === 'super_admin') {
         navigate('/admin/dashboard', { replace: true });
       } else {
         navigate('/paralegal', { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
