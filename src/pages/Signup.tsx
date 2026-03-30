@@ -171,7 +171,9 @@ const Signup = () => {
       sessionStorage.removeItem('selected_plan');
       setStep(1);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create account');
+      // Sign out to prevent broken authenticated state without firm/user records
+      await supabase.auth.signOut();
+      toast.error(err.message || 'Account setup failed — please try again');
     } finally {
       setLoading(false);
     }
