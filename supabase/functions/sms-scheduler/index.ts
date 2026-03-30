@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     const firstName = c.client_name.split(' ')[0];
-    const portalLink = `https://yourclearpath.app/client/${c.case_code || c.id}`;
+    const portalLink = `https://yourclearpath.app/client/${c.case_code}`;
     const filingDeadline = new Date(c.filing_deadline);
     const daysUntilDeadline = Math.ceil((filingDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 

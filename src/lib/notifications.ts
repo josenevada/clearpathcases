@@ -60,7 +60,7 @@ export const sendNotification = async (payload: NotificationPayload): Promise<No
 };
 
 export const sendClientWelcome = async (caseData: Case) => {
-  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}`;
+  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode}`;
   const contact = await getFreshContactInfo(caseData);
   return sendNotification({
     type: 'client_welcome',
@@ -73,7 +73,7 @@ export const sendClientWelcome = async (caseData: Case) => {
 };
 
 export const sendCorrectionRequest = async (caseData: Case, correctionReason: string, itemId: string) => {
-  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}?fix=${encodeURIComponent(itemId)}`;
+  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode}?fix=${encodeURIComponent(itemId)}`;
   const contact = await getFreshContactInfo(caseData);
   return sendNotification({
     type: 'correction_request',
@@ -103,7 +103,7 @@ export const sendFirmWelcome = async (email: string, firmName: string, setupLink
  * and sends both email and SMS.
  */
 export const sendSmartReminder = async (caseData: Case): Promise<NotificationResult> => {
-  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode || caseData.id}`;
+  const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode}`;
   const progress = calculateProgress(caseData);
   const daysLeft = differenceInDays(new Date(caseData.filingDeadline), new Date());
   const contact = await getFreshContactInfo(caseData);

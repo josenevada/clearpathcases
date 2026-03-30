@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const clientEmail = ci?.email || c.client_email;
     const clientPhone = ci?.phone || c.client_phone || null;
 
-    const portalLink = `https://yourclearpath.app/client/${c.case_code || c.id}`;
+    const portalLink = `https://yourclearpath.app/client/${c.case_code}`;
     const filingDeadline = new Date(c.filing_deadline);
     const daysUntilDeadline = Math.ceil((filingDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
