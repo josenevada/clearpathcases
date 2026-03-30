@@ -55,6 +55,50 @@ export type Database = {
           },
         ]
       }
+      agent_interactions: {
+        Row: {
+          case_id: string
+          deep_link_clicked: boolean | null
+          device_type: string | null
+          document_category: string
+          document_uploaded_after: boolean | null
+          gif_viewed: boolean | null
+          id: string
+          platform_selected: string | null
+          session_at: string | null
+        }
+        Insert: {
+          case_id: string
+          deep_link_clicked?: boolean | null
+          device_type?: string | null
+          document_category: string
+          document_uploaded_after?: boolean | null
+          gif_viewed?: boolean | null
+          id?: string
+          platform_selected?: string | null
+          session_at?: string | null
+        }
+        Update: {
+          case_id?: string
+          deep_link_clicked?: boolean | null
+          device_type?: string | null
+          document_category?: string
+          document_uploaded_after?: boolean | null
+          gif_viewed?: boolean | null
+          id?: string
+          platform_selected?: string | null
+          session_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_interactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attorney_notes: {
         Row: {
           case_id: string
