@@ -136,6 +136,7 @@ const Signup = () => {
         }
 
         const resolvedFirmId = await provisionWorkspace({
+          userId: onboardingSessionUser.id,
           firmName,
           fullName,
           email,
