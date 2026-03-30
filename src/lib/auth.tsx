@@ -21,11 +21,18 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_SETUP_ERROR_KEY = 'cp_auth_setup_error';
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+};
+
+export const consumeAuthSetupError = () => {
+  const message = sessionStorage.getItem(AUTH_SETUP_ERROR_KEY);
+  if (message) sessionStorage.removeItem(AUTH_SETUP_ERROR_KEY);
+  return message;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -51,34 +58,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   };
 
+  const clearAuthState = () => {
+    setUser(null);
+    setSession(null);
+  };
+
+  const hydrateSession = async (nextSession: Session | null) => {
+    setSession(nextSession);
+
+    if (!nextSession?.user) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const appUser = await fetchAppUser(nextSession.user);
+
+      if (!appUser?.firmId) {
+        sessionStorage.setItem(AUTH_SETUP_ERROR_KEY, 'Account setup incomplete. Please sign up again.');
+        await supabase.auth.signOut();
+        clearAuthState();
+        setLoading(false);
+        return;
+      }
+
+      setUser(appUser);
+    } catch {
+      sessionStorage.setItem(AUTH_SETUP_ERROR_KEY, 'Account setup incomplete. Please sign up again.');
+      await supabase.auth.signOut();
+      clearAuthState();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session?.user) {
-          // Use setTimeout to avoid Supabase deadlock
-          setTimeout(async () => {
-            const appUser = await fetchAppUser(session.user);
-            setUser(appUser);
-            setLoading(false);
-          }, 0);
-        } else {
-          setUser(null);
-          setLoading(false);
-        }
+      (_event, nextSession) => {
+        setLoading(true);
+        setTimeout(() => {
+          void hydrateSession(nextSession);
+        }, 0);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchAppUser(session.user).then(appUser => {
-          setUser(appUser);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
+      void hydrateSession(session);
     });
 
     return () => subscription.unsubscribe();

@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/lib/auth';
+import { fetchBrandingSettings, saveBrandingSettings } from '@/lib/dashboard-data';
 import { toast } from 'sonner';
 
 const BRANDING_KEY = 'cp_branding';
@@ -36,9 +38,29 @@ const saveBranding = (data: BrandingData) => {
 };
 
 const BrandingTab = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<BrandingData>(loadBranding);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const letterheadInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const loadPersistedBranding = async () => {
+      if (!user?.firmId) return;
+
+      try {
+        const persisted = await fetchBrandingSettings(user.firmId);
+        setData(prev => ({
+          ...prev,
+          attorneyName: persisted.attorneyName,
+          barNumber: persisted.barNumber,
+        }));
+      } catch {
+        toast.error('Failed to load branding settings.');
+      }
+    };
+
+    void loadPersistedBranding();
+  }, [user?.firmId]);
 
   const handleFileUpload = (field: 'firmLogoUrl' | 'letterheadUrl', file: File) => {
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
@@ -56,9 +78,19 @@ const BrandingTab = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    saveBranding(data);
-    toast.success('Branding settings saved');
+  const handleSave = async () => {
+    try {
+      saveBranding(data);
+      if (user?.firmId) {
+        await saveBrandingSettings(user.firmId, {
+          attorneyName: data.attorneyName,
+          barNumber: data.barNumber,
+        });
+      }
+      toast.success('Branding settings saved');
+    } catch {
+      toast.error('Failed to save branding settings.');
+    }
   };
 
   const handleClearFile = (field: 'firmLogoUrl' | 'letterheadUrl') => {

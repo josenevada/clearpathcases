@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { sendSmartReminder } from '@/lib/notifications';
 import { getFirmSettings, type Case } from '@/lib/store';
 import { toast } from 'sonner';
@@ -56,7 +57,13 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
       } else {
         toast.success(`Link queued for ${caseData.clientName}.`);
       }
-      localStorage.setItem('cp_link_sent', 'true');
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'notification_sent',
+        actor_role: 'paralegal',
+        actor_name: 'System',
+        description: `Client intake link sent for ${caseData.clientName}`,
+      });
       onOpenChange(false);
     } catch {
       toast.error('Something went wrong — please try again.');

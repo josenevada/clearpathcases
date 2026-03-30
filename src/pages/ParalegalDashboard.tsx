@@ -1,5 +1,5 @@
 // STAFF FACING — subscription-gated for paralegal/attorney access
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Plus, Clock, Settings, LogOut, Search, X, FileCheck, Send, Mail, Phone, AlertCircle } from 'lucide-react';
@@ -28,6 +28,7 @@ import { sendSmartReminder } from '@/lib/notifications';
 import { toast } from 'sonner';
 import PlanBadge from '@/components/PlanBadge';
 import UpgradeModal from '@/components/UpgradeModal';
+import { fetchDashboardData, type DashboardOnboardingState } from '@/lib/dashboard-data';
 
 const ParalegalDashboard = () => {
   const navigate = useNavigate();
@@ -42,6 +43,12 @@ const ParalegalDashboard = () => {
   const [statsFilter, setStatsFilter] = useState<string | null>(null);
   const [sendLinkCase, setSendLinkCase] = useState<Case | null>(null);
   const [showSendLink, setShowSendLink] = useState(false);
+  const [onboardingState, setOnboardingState] = useState<DashboardOnboardingState>({
+    firmProfileComplete: false,
+    brandingComplete: false,
+    counselingComplete: false,
+    hasSentLink: false,
+  });
 
   const planLimits = getPlanLimits(plan);
   const activeCaseCount = cases.filter(c => c.status !== 'filed' && c.status !== 'closed').length;
@@ -73,12 +80,31 @@ const ParalegalDashboard = () => {
     }
   }, [searchParams]);
 
+  const refreshDashboardData = useCallback(async () => {
+    if (!user?.firmId) {
+      setCases([]);
+      return;
+    }
+
+    try {
+      const data = await fetchDashboardData(user.firmId);
+      setCases(data.cases);
+      setOnboardingState(data.onboarding);
+    } catch (error) {
+      console.error('Failed to hydrate dashboard data:', error);
+      setCases(getAllCases());
+    }
+  }, [user?.firmId]);
+
   useEffect(() => {
-    const refreshCases = () => setCases(getAllCases());
-    refreshCases();
-    window.addEventListener('focus', refreshCases);
-    return () => window.removeEventListener('focus', refreshCases);
-  }, []);
+    void refreshDashboardData();
+    const handleFocus = () => {
+      void refreshDashboardData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refreshDashboardData]);
 
   const handleSignOut = async () => {
     sessionStorage.removeItem('admin_viewing_firm');
@@ -87,7 +113,7 @@ const ParalegalDashboard = () => {
   };
 
   const handleCaseCreated = (c: Case) => {
-    setCases(getAllCases());
+    void refreshDashboardData();
     // Show send link modal for newly created case
     setSendLinkCase(c);
     setShowSendLink(true);
@@ -228,8 +254,11 @@ const ParalegalDashboard = () => {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         {/* Onboarding checklist */}
         <OnboardingChecklist
+          firmProfileComplete={onboardingState.firmProfileComplete}
+          brandingComplete={onboardingState.brandingComplete}
+          counselingComplete={onboardingState.counselingComplete}
           hasCases={cases.length > 0}
-          hasSentLink={localStorage.getItem('cp_link_sent') === 'true'}
+          hasSentLink={onboardingState.hasSentLink}
           onNewCase={handleNewCase}
           onSendLink={() => {
             if (cases.length > 0) {

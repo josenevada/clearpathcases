@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GripVertical, ExternalLink } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getIntakeQuestions, saveIntakeQuestions, type IntakeQuestion } from '@/lib/store';
+import { useAuth } from '@/lib/auth';
+import { fetchCounselingSettings, saveCounselingSettings } from '@/lib/dashboard-data';
 import { toast } from 'sonner';
 
 const COUNSELING_KEY = 'cp_counseling_provider';
@@ -29,9 +31,24 @@ const saveCounselingProvider = (data: CounselingProvider) => {
 };
 
 const IntakeQuestionsTab = () => {
+  const { user } = useAuth();
   const [questions, setQuestions] = useState<IntakeQuestion[]>(getIntakeQuestions());
   const [dragItem, setDragItem] = useState<string | null>(null);
   const [counseling, setCounseling] = useState<CounselingProvider>(loadCounseling);
+
+  useEffect(() => {
+    const loadPersistedCounseling = async () => {
+      if (!user?.firmId) return;
+
+      try {
+        setCounseling(await fetchCounselingSettings(user.firmId));
+      } catch {
+        toast.error('Failed to load credit counseling settings.');
+      }
+    };
+
+    void loadPersistedCounseling();
+  }, [user?.firmId]);
 
   const persist = (items: IntakeQuestion[]) => {
     setQuestions(items);
@@ -60,9 +77,16 @@ const IntakeQuestionsTab = () => {
 
   const handleDragEnd = () => setDragItem(null);
 
-  const handleSaveCounseling = () => {
-    saveCounselingProvider(counseling);
-    toast.success('Credit counseling provider saved.');
+  const handleSaveCounseling = async () => {
+    try {
+      saveCounselingProvider(counseling);
+      if (user?.firmId) {
+        await saveCounselingSettings(user.firmId, counseling);
+      }
+      toast.success('Credit counseling provider saved.');
+    } catch {
+      toast.error('Failed to save credit counseling provider.');
+    }
   };
 
   const sorted = [...questions].sort((a, b) => a.order - b.order);
