@@ -14,38 +14,15 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Verify the caller is authenticated
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Verify JWT with anon client
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user: authUser }, error: authError } = await anonClient.auth.getUser();
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ error: "Invalid session" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const body = await req.json();
-    const { firmName, fullName, email } = body;
+    const { userId, firmName, fullName, email, planName } = body;
 
-    if (!firmName || !fullName || !email) {
-      return new Response(JSON.stringify({ error: "Missing required fields: firmName, fullName, email" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!userId || !firmName || !fullName || !email) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: userId, firmName, fullName, email" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Use service role client to bypass RLS
@@ -53,11 +30,20 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Verify the user actually exists in auth.users
+    const { data: authUser, error: authError } = await admin.auth.admin.getUserById(userId);
+    if (authError || !authUser?.user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid user ID" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check if user already has a firm
     const { data: existingUser } = await admin
       .from("users")
       .select("firm_id")
-      .eq("id", authUser.id)
+      .eq("id", userId)
       .maybeSingle();
 
     if (existingUser?.firm_id) {
@@ -83,7 +69,7 @@ Deno.serve(async (req) => {
 
     const firmId = crypto.randomUUID();
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-    const selectedPlan = body.planName || "starter";
+    const selectedPlan = planName || "starter";
 
     // Insert firm
     const { error: firmError } = await admin.from("firms").insert({
@@ -108,7 +94,7 @@ Deno.serve(async (req) => {
     // Insert user
     const { error: userError } = await admin.from("users").upsert(
       {
-        id: authUser.id,
+        id: userId,
         email,
         full_name: fullName,
         role: "attorney",

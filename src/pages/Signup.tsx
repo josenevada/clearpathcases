@@ -52,28 +52,34 @@ const Signup = () => {
   }, [onboardingSessionUser]);
 
   const provisionWorkspace = async ({
+    userId: wsUserId,
     firmName: wsFirmName,
     fullName: wsFullName,
     email: wsEmail,
   }: {
+    userId: string;
     firmName: string;
     fullName: string;
     email: string;
   }): Promise<string> => {
     const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-    const { data, error } = await supabase.functions.invoke('provision-workspace', {
-      body: {
+    const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: wsUserId,
         firmName: wsFirmName,
         fullName: wsFullName,
         email: wsEmail,
         planName: selectedPlan,
-      },
+      }),
     });
 
-    if (error || !data?.firmId) {
-      const msg = data?.error || error?.message || 'Failed to set up workspace';
-      throw new Error(msg);
+    const data = await res.json();
+    if (!res.ok || !data?.firmId) {
+      throw new Error(data?.error || 'Failed to set up workspace');
     }
 
     return data.firmId;
@@ -97,6 +103,7 @@ const Signup = () => {
         setFirmName('');
 
         const resolvedFirmId = await provisionWorkspace({
+          userId: googleUser.userId,
           firmName: defaultFirmName,
           fullName: googleUser.fullName,
           email: googleUser.email,
@@ -129,6 +136,7 @@ const Signup = () => {
         }
 
         const resolvedFirmId = await provisionWorkspace({
+          userId: onboardingSessionUser.id,
           firmName,
           fullName,
           email,
@@ -162,6 +170,7 @@ const Signup = () => {
       }
 
       const resolvedFirmId = await provisionWorkspace({
+        userId: authData.user.id,
         firmName,
         fullName,
         email,
