@@ -170,6 +170,7 @@ const Signup = () => {
       }
 
       const resolvedFirmId = await provisionWorkspace({
+        userId: authData.user.id,
         firmName,
         fullName,
         email,
