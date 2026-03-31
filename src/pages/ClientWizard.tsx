@@ -1835,8 +1835,7 @@ const ClientWizard = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center"
-            onClick={() => setShowMobileUploadOptions(false)}
-            onTouchEnd={(e) => {
+            onClick={(e) => {
               // Only close if tapping the backdrop itself, not children
               if (e.target === e.currentTarget) setShowMobileUploadOptions(false);
             }}
