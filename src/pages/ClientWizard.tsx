@@ -1827,6 +1827,39 @@ const ClientWizard = () => {
           </div>
         </div>
       )}
+      {/* Persistent hidden file inputs for mobile - outside AnimatePresence so they survive picker navigation */}
+      <input
+        ref={(el) => { (window as any).__mobileCamera = el; }}
+        type="file"
+        className="hidden"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => {
+          console.log('[UPLOAD DEBUG] Camera onChange fired, files:', e.target.files?.length);
+          const file = e.target.files?.[0];
+          if (!file) { console.log('[UPLOAD DEBUG] No file selected from camera'); return; }
+          console.log('[UPLOAD DEBUG] Camera file:', file.name, file.size, file.type);
+          handleFileAdd(file);
+          e.target.value = '';
+          setShowMobileUploadOptions(false);
+        }}
+      />
+      <input
+        ref={(el) => { (window as any).__mobileLibrary = el; }}
+        type="file"
+        className="hidden"
+        accept="image/*,.pdf,.jpg,.jpeg,.png"
+        onChange={(e) => {
+          console.log('[UPLOAD DEBUG] Library onChange fired, files:', e.target.files?.length);
+          const file = e.target.files?.[0];
+          if (!file) { console.log('[UPLOAD DEBUG] No file selected from library'); return; }
+          console.log('[UPLOAD DEBUG] Library file:', file.name, file.size, file.type);
+          handleFileAdd(file);
+          e.target.value = '';
+          setShowMobileUploadOptions(false);
+        }}
+      />
+
       {/* Mobile upload action sheet */}
       <AnimatePresence>
         {showMobileUploadOptions && (
@@ -1836,7 +1869,6 @@ const ClientWizard = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center"
             onClick={(e) => {
-              // Only close if tapping the backdrop itself, not children
               if (e.target === e.currentTarget) setShowMobileUploadOptions(false);
             }}
           >
@@ -1847,50 +1879,28 @@ const ClientWizard = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="w-full max-w-md bg-background rounded-t-2xl p-4 pb-8 space-y-2"
               onClick={(e) => e.stopPropagation()}
-              onTouchEnd={(e) => e.stopPropagation()}
             >
               <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
-              <label
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors cursor-pointer"
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+                onClick={() => {
+                  (window as any).__mobileCamera?.click();
+                }}
               >
                 <Camera className="w-5 h-5 text-primary" />
                 <span className="text-foreground font-medium">Take a Photo</span>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => {
-                    console.log('[UPLOAD DEBUG] Camera onChange fired, files:', e.target.files?.length);
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    // Process file before closing sheet
-                    handleFileAdd(file);
-                    e.target.value = '';
-                    setShowMobileUploadOptions(false);
-                  }}
-                />
-              </label>
-              <label
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors cursor-pointer"
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+                onClick={() => {
+                  (window as any).__mobileLibrary?.click();
+                }}
               >
                 <UploadCloud className="w-5 h-5 text-primary" />
                 <span className="text-foreground font-medium">Choose from Library</span>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*,.pdf"
-                  onChange={(e) => {
-                    console.log('[UPLOAD DEBUG] Library onChange fired, files:', e.target.files?.length);
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    // Process file before closing sheet
-                    handleFileAdd(file);
-                    e.target.value = '';
-                    setShowMobileUploadOptions(false);
-                  }}
-                />
-              </label>
+              </button>
               <button
                 onClick={() => setShowMobileUploadOptions(false)}
                 className="w-full p-3 text-center text-muted-foreground text-sm"
