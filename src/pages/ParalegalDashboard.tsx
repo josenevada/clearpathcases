@@ -19,7 +19,7 @@ import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import StatsBar from '@/components/dashboard/StatsBar';
 import IntakeAgentStats from '@/components/dashboard/IntakeAgentStats';
 import SendLinkModal from '@/components/dashboard/SendLinkModal';
-import { getAllCases, calculateProgress, type Case } from '@/lib/store';
+import { getAllCases, saveCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
 import { useSubscription } from '@/lib/subscription';
@@ -89,6 +89,7 @@ const ParalegalDashboard = () => {
     try {
       const data = await fetchDashboardData(user.firmId);
       setCases(data.cases);
+      saveCases(data.cases);
       setOnboardingState(data.onboarding);
     } catch (error) {
       console.error('Failed to hydrate dashboard data:', error);
