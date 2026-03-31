@@ -1011,6 +1011,20 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   return c;
                 });
 
+                // Sync deletion to Supabase
+                (async () => {
+                  try {
+                    await supabase.from('files').delete().eq('id', selectedFile.file.id);
+                    // If no files remain for this checklist item, mark it incomplete
+                    const remainingFiles = caseData.checklist.find(i => i.id === selectedFile.item.id)?.files.filter(f => f.id !== selectedFile.file.id) || [];
+                    if (remainingFiles.length === 0) {
+                      await supabase.from('checklist_items').update({ completed: false }).eq('id', selectedFile.item.id);
+                    }
+                  } catch (err) {
+                    console.error('Failed to sync file deletion to database:', err);
+                  }
+                })();
+
                 addActivityEntry(caseData.id, {
                   eventType: 'file_deleted',
                   actorRole: 'paralegal',
