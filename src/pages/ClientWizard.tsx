@@ -18,7 +18,7 @@ import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBan
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { getCase, updateCase, addActivityEntry, saveCases, getAllCases, CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { sendMomentumSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
