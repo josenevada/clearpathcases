@@ -588,6 +588,19 @@ const ClientWizard = () => {
       return c;
     });
     if (updated) setCaseData(updated);
+
+    // Sync deletion to Supabase
+    (async () => {
+      try {
+        await supabase.from('files').delete().eq('id', fileId);
+        const remaining = updated?.checklist.find(i => i.id === currentItem.id)?.files || [];
+        if (remaining.length === 0) {
+          await supabase.from('checklist_items').update({ completed: false }).eq('id', currentItem.id);
+        }
+      } catch (err) {
+        console.error('Failed to sync file deletion:', err);
+      }
+    })();
   };
 
   const handleSingleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

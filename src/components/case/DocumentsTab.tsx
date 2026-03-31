@@ -707,7 +707,16 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 ) : (
                   <div className="surface-card p-6 flex flex-col items-center gap-3">
                     <FileText className="w-16 h-16 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">No preview available</p>
+                    {selectedFile.file.uploadedBy === 'plaid' ? (
+                      <>
+                        <p className="text-sm text-muted-foreground font-medium">Plaid Placeholder Record</p>
+                        <p className="text-xs text-muted-foreground text-center max-w-xs">
+                          This file was logged during a Plaid sandbox connection. In production, actual bank statement PDFs will be retrieved and viewable here.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No preview available</p>
+                    )}
                   </div>
                 )}
 
@@ -1010,6 +1019,20 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   }
                   return c;
                 });
+
+                // Sync deletion to Supabase
+                (async () => {
+                  try {
+                    await supabase.from('files').delete().eq('id', selectedFile.file.id);
+                    // If no files remain for this checklist item, mark it incomplete
+                    const remainingFiles = caseData.checklist.find(i => i.id === selectedFile.item.id)?.files.filter(f => f.id !== selectedFile.file.id) || [];
+                    if (remainingFiles.length === 0) {
+                      await supabase.from('checklist_items').update({ completed: false }).eq('id', selectedFile.item.id);
+                    }
+                  } catch (err) {
+                    console.error('Failed to sync file deletion to database:', err);
+                  }
+                })();
 
                 addActivityEntry(caseData.id, {
                   eventType: 'file_deleted',
