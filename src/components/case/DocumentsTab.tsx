@@ -707,7 +707,16 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 ) : (
                   <div className="surface-card p-6 flex flex-col items-center gap-3">
                     <FileText className="w-16 h-16 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">No preview available</p>
+                    {selectedFile.file.uploadedBy === 'plaid' ? (
+                      <>
+                        <p className="text-sm text-muted-foreground font-medium">Plaid Placeholder Record</p>
+                        <p className="text-xs text-muted-foreground text-center max-w-xs">
+                          This file was logged during a Plaid sandbox connection. In production, actual bank statement PDFs will be retrieved and viewable here.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No preview available</p>
+                    )}
                   </div>
                 )}
 
