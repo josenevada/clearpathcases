@@ -76,6 +76,49 @@ const getProgressLabel = (progress: number): string => {
   return 'Let\'s get started — you\'ve got this.';
 };
 
+// ─── Image compression utility ────────────────────────────────────────
+const compressImage = (file: File, maxSizeMB: number = 1): Promise<File> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/') || file.size < maxSizeMB * 1024 * 1024) {
+      resolve(file);
+      return;
+    }
+
+    // Check for HEIC/HEIF
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    const img = new Image();
+
+    img.onload = () => {
+      const maxDim = 1500;
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+        else { width = Math.round(width * maxDim / height); height = maxDim; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+        else resolve(file);
+      }, 'image/jpeg', 0.82);
+    };
+
+    img.onerror = () => {
+      if (isHeic) {
+        toast.error("This photo format isn't supported. Please take a screenshot of it or save it as a JPEG first.");
+      }
+      resolve(file);
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 const ClientWizard = () => {
   const { caseId, caseCode } = useParams<{ caseId?: string; caseCode?: string }>();
   const resolvedCaseId = caseId || '';
@@ -112,188 +155,213 @@ const ClientWizard = () => {
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
   const targetFixItemId = searchParams.get('fix');
 
+  // Helper: update caseData in React state only (no localStorage)
+  const updateCaseLocal = useCallback((updater: (c: Case) => Case): Case | null => {
+    let result: Case | null = null;
+    setCaseData(prev => {
+      if (!prev) return prev;
+      const updated = updater({ ...prev, checklist: prev.checklist.map(ci => ({ ...ci, files: [...ci.files] })) });
+      result = updated;
+      return updated;
+    });
+    return result;
+  }, []);
+
+  // Helper: log activity to Supabase only
+  const logActivity = useCallback(async (caseIdVal: string, entry: { eventType: string; actorRole: string; actorName: string; description: string; itemId?: string }) => {
+    try {
+      await supabase.from('activity_log').insert({
+        case_id: caseIdVal,
+        event_type: entry.eventType,
+        actor_role: entry.actorRole,
+        actor_name: entry.actorName,
+        description: entry.description,
+        item_id: entry.itemId || null,
+      });
+    } catch (err) {
+      console.error('Failed to log activity:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!resolvedCaseId) return;
 
     const loadCase = async () => {
       setIsLoading(true);
       setLoadError(null);
-      // Try localStorage first (paralegal's browser or returning client)
-      let c = getCase(resolvedCaseId);
 
-      // If not in localStorage, fetch from Supabase (client on different device)
-      if (!c) {
-        try {
-          const { data: caseRow } = await supabase
-            .from('cases')
-            .select('*')
-            .eq('id', resolvedCaseId)
-            .maybeSingle();
+      try {
+        const { data: caseRow } = await supabase
+          .from('cases')
+          .select('*')
+          .eq('id', resolvedCaseId)
+          .maybeSingle();
 
-          if (!caseRow) {
-            setLoadError('Case not found. The link may be incorrect or expired.');
-            setIsLoading(false);
-            return;
-          }
-
-          const { data: checklistRows } = await supabase
-            .from('checklist_items')
-            .select('*')
-            .eq('case_id', resolvedCaseId)
-            .order('sort_order', { ascending: true });
-
-          const { data: fileRows } = await supabase
-            .from('files')
-            .select('*')
-            .eq('case_id', resolvedCaseId);
-
-          const { data: activityRows } = await supabase
-            .from('activity_log')
-            .select('*')
-            .eq('case_id', resolvedCaseId)
-            .order('created_at', { ascending: true });
-
-          // Build checklist items from Supabase data
-          const checklist: ChecklistItem[] = (checklistRows || []).map(row => {
-            const itemFiles = (fileRows || [])
-              .filter(f => f.checklist_item_id === row.id)
-              .map(f => ({
-                id: f.id,
-                name: f.file_name,
-                dataUrl: f.data_url || '',
-                uploadedAt: f.uploaded_at || new Date().toISOString(),
-                reviewStatus: (f.review_status || 'pending') as any,
-                reviewNote: f.review_note || undefined,
-                uploadedBy: (f.uploaded_by || 'client') as any,
-              }));
-
-            return {
-              id: row.id,
-              category: row.category,
-              label: row.label,
-              description: row.description || '',
-              whyWeNeedThis: row.why_we_need_this || '',
-              required: row.required ?? true,
-              files: itemFiles,
-              textEntry: row.text_value ? (row.text_value as any) : undefined,
-              flaggedForAttorney: row.flagged_for_attorney ?? false,
-              attorneyNote: row.attorney_note || undefined,
-              correctionRequest: row.correction_status ? {
-                reason: row.correction_reason || '',
-                details: row.correction_details || undefined,
-                requestedBy: row.correction_requested_by || '',
-                requestedAt: row.correction_requested_at || '',
-                targetFileId: row.correction_target_file_id || undefined,
-                status: row.correction_status as 'open' | 'resolved',
-              } : undefined,
-              resubmittedAt: row.resubmitted_at || undefined,
-              completed: row.completed ?? false,
-              notApplicable: (row as any).not_applicable ?? false,
-              notApplicableReason: (row as any).not_applicable_reason || undefined,
-              notApplicableMarkedBy: (row as any).not_applicable_marked_by || undefined,
-              notApplicableAt: (row as any).not_applicable_at || undefined,
-            };
-          });
-
-          const activityLog = (activityRows || []).map(row => ({
-            id: row.id,
-            eventType: row.event_type as any,
-            actorRole: (row.actor_role || 'system') as any,
-            actorName: row.actor_name || 'System',
-            description: row.description || '',
-            timestamp: row.created_at || new Date().toISOString(),
-            itemId: row.item_id || undefined,
-          }));
-
-          // Build the Case object
-          c = {
-            id: caseRow.id,
-            clientName: caseRow.client_name,
-            clientEmail: caseRow.client_email,
-            clientPhone: caseRow.client_phone || undefined,
-            clientDob: caseRow.client_dob || undefined,
-            caseCode: caseRow.case_code || undefined,
-            chapterType: caseRow.chapter_type as any,
-            assignedParalegal: caseRow.assigned_paralegal || '',
-            assignedAttorney: caseRow.assigned_attorney || '',
-            filingDeadline: caseRow.filing_deadline,
-            createdAt: caseRow.created_at || new Date().toISOString(),
-            lastClientActivity: caseRow.last_client_activity || undefined,
-            checklist,
-            activityLog,
-            notes: [],
-            checkpointsCompleted: [],
-            urgency: (caseRow.urgency || 'normal') as any,
-            status: (caseRow.status || 'active') as any,
-            readyToFile: caseRow.ready_to_file ?? false,
-            wizardStep: caseRow.wizard_step ?? 0,
-          };
-
-          // Save to localStorage for subsequent operations
-          const cases = getAllCases();
-          cases.push(c);
-          saveCases(cases);
-        } catch (err) {
-          console.error('Failed to load case from database:', err);
-          setLoadError('Could not load case data. Please refresh the page or contact your attorney\'s office.');
+        if (!caseRow) {
+          setLoadError('Case not found. The link may be incorrect or expired.');
           setIsLoading(false);
           return;
         }
-      }
 
-      setCaseData(c);
-      setIsLoading(false);
-      lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
+        const { data: checklistRows } = await supabase
+          .from('checklist_items')
+          .select('*')
+          .eq('case_id', resolvedCaseId)
+          .order('sort_order', { ascending: true });
 
-      if (targetFixItemId) {
-        const targetPosition = getChecklistItemPosition(c, targetFixItemId);
-        if (targetPosition) {
-          setCurrentCategoryIdx(targetPosition.categoryIdx);
-          setCurrentItemIdx(targetPosition.itemIdx);
-          return;
+        const { data: fileRows } = await supabase
+          .from('files')
+          .select('*')
+          .eq('case_id', resolvedCaseId);
+
+        const { data: activityRows } = await supabase
+          .from('activity_log')
+          .select('*')
+          .eq('case_id', resolvedCaseId)
+          .order('created_at', { ascending: true });
+
+        // Generate signed URLs for files that have storage_path
+        const filesWithUrls = await Promise.all((fileRows || []).map(async (f) => {
+          let displayUrl = f.data_url || '';
+          if (f.storage_path && (!f.data_url || f.data_url === '')) {
+            try {
+              const { data: signedUrlData } = await supabase.storage
+                .from('case-documents')
+                .createSignedUrl(f.storage_path, 3600);
+              if (signedUrlData?.signedUrl) {
+                displayUrl = signedUrlData.signedUrl;
+              }
+            } catch {
+              console.warn('Failed to generate signed URL for', f.storage_path);
+            }
+          }
+          return { ...f, displayUrl };
+        }));
+
+        // Build checklist items from Supabase data
+        const checklist: ChecklistItem[] = (checklistRows || []).map(row => {
+          const itemFiles = filesWithUrls
+            .filter(f => f.checklist_item_id === row.id)
+            .map(f => ({
+              id: f.id,
+              name: f.file_name,
+              dataUrl: f.displayUrl,
+              uploadedAt: f.uploaded_at || new Date().toISOString(),
+              reviewStatus: (f.review_status || 'pending') as any,
+              reviewNote: f.review_note || undefined,
+              uploadedBy: (f.uploaded_by || 'client') as any,
+            }));
+
+          return {
+            id: row.id,
+            category: row.category,
+            label: row.label,
+            description: row.description || '',
+            whyWeNeedThis: row.why_we_need_this || '',
+            required: row.required ?? true,
+            files: itemFiles,
+            textEntry: row.text_value ? (row.text_value as any) : undefined,
+            flaggedForAttorney: row.flagged_for_attorney ?? false,
+            attorneyNote: row.attorney_note || undefined,
+            correctionRequest: row.correction_status ? {
+              reason: row.correction_reason || '',
+              details: row.correction_details || undefined,
+              requestedBy: row.correction_requested_by || '',
+              requestedAt: row.correction_requested_at || '',
+              targetFileId: row.correction_target_file_id || undefined,
+              status: row.correction_status as 'open' | 'resolved',
+            } : undefined,
+            resubmittedAt: row.resubmitted_at || undefined,
+            completed: row.completed ?? false,
+            notApplicable: (row as any).not_applicable ?? false,
+            notApplicableReason: (row as any).not_applicable_reason || undefined,
+            notApplicableMarkedBy: (row as any).not_applicable_marked_by || undefined,
+            notApplicableAt: (row as any).not_applicable_at || undefined,
+          };
+        });
+
+        const activityLog = (activityRows || []).map(row => ({
+          id: row.id,
+          eventType: row.event_type as any,
+          actorRole: (row.actor_role || 'system') as any,
+          actorName: row.actor_name || 'System',
+          description: row.description || '',
+          timestamp: row.created_at || new Date().toISOString(),
+          itemId: row.item_id || undefined,
+        }));
+
+        const c: Case = {
+          id: caseRow.id,
+          clientName: caseRow.client_name,
+          clientEmail: caseRow.client_email,
+          clientPhone: caseRow.client_phone || undefined,
+          clientDob: caseRow.client_dob || undefined,
+          caseCode: caseRow.case_code || undefined,
+          chapterType: caseRow.chapter_type as any,
+          assignedParalegal: caseRow.assigned_paralegal || '',
+          assignedAttorney: caseRow.assigned_attorney || '',
+          filingDeadline: caseRow.filing_deadline,
+          createdAt: caseRow.created_at || new Date().toISOString(),
+          lastClientActivity: caseRow.last_client_activity || undefined,
+          checklist,
+          activityLog,
+          notes: [],
+          checkpointsCompleted: [],
+          urgency: (caseRow.urgency || 'normal') as any,
+          status: (caseRow.status || 'active') as any,
+          readyToFile: caseRow.ready_to_file ?? false,
+          wizardStep: caseRow.wizard_step ?? 0,
+        };
+
+        setCaseData(c);
+        setIsLoading(false);
+        lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
+
+        if (targetFixItemId) {
+          const targetPosition = getChecklistItemPosition(c, targetFixItemId);
+          if (targetPosition) {
+            setCurrentCategoryIdx(targetPosition.categoryIdx);
+            setCurrentItemIdx(targetPosition.itemIdx);
+            return;
+          }
         }
-      }
 
-      // Find the first category with incomplete items, skipping fully-done categories
-      let resumeCatIdx = 0;
-      let resumeItemIdx = 0;
-      let found = false;
-      for (let ci = 0; ci < CATEGORIES.length; ci++) {
-        const catItems = c.checklist.filter(item => item.category === CATEGORIES[ci]);
-        const firstIncomplete = catItems.findIndex(item => !isItemEffectivelyComplete(item));
-        if (firstIncomplete >= 0) {
-          resumeCatIdx = ci;
-          resumeItemIdx = firstIncomplete;
-          found = true;
-          break;
+        // Find the first category with incomplete items
+        let resumeCatIdx = 0;
+        let resumeItemIdx = 0;
+        let found = false;
+        for (let ci = 0; ci < CATEGORIES.length; ci++) {
+          const catItems = c.checklist.filter(item => item.category === CATEGORIES[ci]);
+          const firstIncomplete = catItems.findIndex(item => !isItemEffectivelyComplete(item));
+          if (firstIncomplete >= 0) {
+            resumeCatIdx = ci;
+            resumeItemIdx = firstIncomplete;
+            found = true;
+            break;
+          }
         }
-      }
-      // If all items are complete, go to last category last item
-      if (!found) {
-        resumeCatIdx = CATEGORIES.length - 1;
-        const lastCatItems = c.checklist.filter(item => item.category === CATEGORIES[resumeCatIdx]);
-        resumeItemIdx = Math.max(0, lastCatItems.length - 1);
-      }
-      setCurrentCategoryIdx(resumeCatIdx);
-      setCurrentItemIdx(resumeItemIdx);
+        if (!found) {
+          resumeCatIdx = CATEGORIES.length - 1;
+          const lastCatItems = c.checklist.filter(item => item.category === CATEGORIES[resumeCatIdx]);
+          resumeItemIdx = Math.max(0, lastCatItems.length - 1);
+        }
+        setCurrentCategoryIdx(resumeCatIdx);
+        setCurrentItemIdx(resumeItemIdx);
 
-      // Sync wizard_step to Supabase if it drifted
-      if (c.wizardStep !== resumeCatIdx) {
-        c.wizardStep = resumeCatIdx;
-        supabase.from('cases').update({ wizard_step: resumeCatIdx }).eq('id', c.id).then(() => {});
+        // Sync wizard_step to Supabase if it drifted
+        if (c.wizardStep !== resumeCatIdx) {
+          c.wizardStep = resumeCatIdx;
+          supabase.from('cases').update({ wizard_step: resumeCatIdx }).eq('id', c.id).then(() => {});
+        }
+      } catch (err) {
+        console.error('Failed to load case from database:', err);
+        setLoadError('Could not load case data. Please refresh the page or contact your attorney\'s office.');
+        setIsLoading(false);
       }
     };
 
     loadCase();
   }, [resolvedCaseId, navigate, targetFixItemId]);
-
-  // Move hook before the early return
-  const refreshCase = useCallback(() => {
-    if (!resolvedCaseId) return null;
-    const c = getCase(resolvedCaseId);
-    if (c) setCaseData(c);
-    return c;
-  }, [resolvedCaseId]);
 
   const triggerValidation = useCallback(async (fileId: string, dataUrl: string, itemLabel: string, caseIdForValidation: string) => {
     const expectedDocType = getExpectedDocType(itemLabel);
@@ -308,34 +376,43 @@ const ClientWizard = () => {
           suggestion: result.suggestion, validatorNotes: result.validator_notes,
           validationStatus: result.validation_status, validatedAt: result.validated_at,
         };
-        updateCase(caseIdForValidation, c => {
-          for (const ci of c.checklist) { const f = ci.files.find(fl => fl.id === fileId); if (f) { f.validationStatus = result.validation_status; f.validationResult = vr; break; } }
-          return c;
+        setCaseData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            checklist: prev.checklist.map(ci => ({
+              ...ci,
+              files: ci.files.map(fl => fl.id === fileId ? { ...fl, validationStatus: result.validation_status, validationResult: vr } : fl),
+            })),
+          };
         });
-        addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
-        // Auto-open help panel on validation warning/failure
+        logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
         if (result.validation_status === 'warning' || result.validation_status === 'failed') {
           setHelpForceOpen(true);
         }
-        refreshCase();
       } else {
-        addActivityEntry(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
+        logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
       }
     } catch { console.warn('Document validation failed silently'); }
     finally { setValidatingFiles(prev => { const next = new Set(prev); next.delete(fileId); return next; }); }
-  }, [refreshCase]);
+  }, [logActivity]);
 
   const handleValidationAction = useCallback((fileId: string, action: 'client-confirmed' | 'client-override', cRef: Case | null) => {
     if (!cRef) return;
-    updateCase(cRef.id, c => {
-      for (const ci of c.checklist) { const f = ci.files.find(fl => fl.id === fileId); if (f) { f.validationStatus = action; break; } }
-      return c;
+    setCaseData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        checklist: prev.checklist.map(ci => ({
+          ...ci,
+          files: ci.files.map(fl => fl.id === fileId ? { ...fl, validationStatus: action } : fl),
+        })),
+      };
     });
     if (action === 'client-override') {
-      addActivityEntry(cRef.id, { eventType: 'document_validated', actorRole: 'client', actorName: cRef.clientName, description: `${cRef.clientName.split(' ')[0]} uploaded despite validation warning`, itemId: fileId });
+      logActivity(cRef.id, { eventType: 'document_validated', actorRole: 'client', actorName: cRef.clientName, description: `${cRef.clientName.split(' ')[0]} uploaded despite validation warning`, itemId: fileId });
     }
-    refreshCase();
-  }, [refreshCase]);
+  }, [logActivity]);
 
   const jumpToItem = useCallback((itemId: string, cRef: Case | null) => {
     if (!cRef) return;
@@ -365,7 +442,6 @@ const ClientWizard = () => {
       setEmployerAddress('');
       setEmploymentStatus(null);
     }
-    // SSN is now a file upload step, no special text-entry handling needed
     setSsnValue('');
     setSsnVisible(false);
     setSsnError('');
@@ -374,26 +450,17 @@ const ClientWizard = () => {
     setNaClientReason(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
-  // ─── 90-second inactivity auto-show help ─────────────────────────
+  // ─── 90-second inactivity auto-show help
   useEffect(() => {
-    // Reset on item change
     setHelpForceOpen(false);
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-
-    // Only set timer on upload screens (not text entry or checkpoint)
     if (!caseData) return;
     const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
     const item = catItems[currentItemIdx];
     if (!item || isTextEntryItem(item.label) || (item.category === 'Agreements & Confirmation' && item.label.includes('Confirmation'))) return;
     if (item.completed) return;
-
-    inactivityTimerRef.current = setTimeout(() => {
-      setHelpForceOpen(true);
-    }, 90_000);
-
-    return () => {
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    };
+    inactivityTimerRef.current = setTimeout(() => { setHelpForceOpen(true); }, 90_000);
+    return () => { if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current); };
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
   if (isLoading || !caseData) {
@@ -441,7 +508,7 @@ const ClientWizard = () => {
   const isMultiUpload = currentItem && isMultiUploadItem(currentItem.label);
   const multiConfig = currentItem ? MULTI_UPLOAD_CONFIGS[currentItem.label] : undefined;
   const isTextEntry = currentItem && isTextEntryItem(currentItem.label);
-  const isSSNEntry = false; // SSN is now a document upload step, not a text entry
+  const isSSNEntry = false;
   const isSSNUpload = currentItem && (currentItem.label === SSN_LABEL || currentItem.label === SSN_LABEL_LEGACY);
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
@@ -459,20 +526,10 @@ const ClientWizard = () => {
           You already uploaded a file with this name. Do you want to replace it or keep both?
         </p>
         <div className="flex items-center gap-3">
-          <Button
-            size="sm"
-            onClick={() => {
-              handleFileAdd(pendingDuplicate.file, pendingDuplicate.existingFileId);
-            }}
-          >
+          <Button size="sm" onClick={() => { handleFileAdd(pendingDuplicate.file, pendingDuplicate.existingFileId); }}>
             Replace existing
           </Button>
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => {
-              handleFileAdd(pendingDuplicate.file);
-            }}
-          >
+          <button className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { handleFileAdd(pendingDuplicate.file); }}>
             Keep both
           </button>
         </div>
@@ -480,121 +537,176 @@ const ClientWizard = () => {
     );
   };
 
-  const handleFileAdd = (file: File, replaceFileId?: string) => {
+  const handleFileAdd = async (file: File, replaceFileId?: string) => {
     if (!currentItem) return;
-    // Reset inactivity timer on upload
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     setPendingDuplicate(null);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const newFile = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: file.name,
-        dataUrl: reader.result as string,
-        uploadedAt: new Date().toISOString(),
-        reviewStatus: 'pending' as const,
-        uploadedBy: 'client' as const,
-        validationStatus: 'validating' as const,
-      };
+    // Show compression message for large files
+    if (file.size > 4 * 1024 * 1024 && file.type.startsWith('image/')) {
+      toast('This file is a bit large. We\'re compressing it for you...', { duration: 3000 });
+    }
 
-      const updated = updateCase(caseData.id, c => {
-        const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
-        if (item) {
-          // If replacing, remove the old file first
+    // Check for HEIC/HEIF
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+    if (isHeic) {
+      toast('Converting your photo...', { duration: 3000 });
+    }
+
+    // Compress image if needed
+    const processedFile = await compressImage(file);
+
+    const newFileId = Math.random().toString(36).substr(2, 9);
+    const uploadedAt = new Date().toISOString();
+
+    // Upload to Supabase Storage
+    const storagePath = `${caseData.id}/${currentItem.id}/${Date.now()}-${processedFile.name}`;
+    const { error: storageError } = await supabase.storage
+      .from('case-documents')
+      .upload(storagePath, processedFile, { upsert: false });
+
+    if (storageError) {
+      console.error('Storage upload failed:', storageError);
+      toast.error('Upload failed. Please try again.');
+      return;
+    }
+
+    // Get a signed URL for immediate display
+    let displayUrl = '';
+    try {
+      const { data: signedUrlData } = await supabase.storage
+        .from('case-documents')
+        .createSignedUrl(storagePath, 3600);
+      if (signedUrlData?.signedUrl) {
+        displayUrl = signedUrlData.signedUrl;
+      }
+    } catch {
+      console.warn('Failed to get signed URL after upload');
+    }
+
+    const newFile = {
+      id: newFileId,
+      name: processedFile.name,
+      dataUrl: displayUrl,
+      uploadedAt,
+      reviewStatus: 'pending' as const,
+      uploadedBy: 'client' as const,
+      validationStatus: 'validating' as const,
+    };
+
+    // Update local React state
+    setCaseData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lastClientActivity: uploadedAt,
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          let updatedFiles = [...ci.files];
           if (replaceFileId) {
-            item.files = item.files.filter(f => f.id !== replaceFileId);
+            updatedFiles = updatedFiles.filter(f => f.id !== replaceFileId);
           }
           if (isMultiUpload || currentItemHasOpenCorrection) {
-            item.files = [...item.files, newFile];
-            item.completed = !currentItemHasOpenCorrection;
+            updatedFiles = [...updatedFiles, newFile];
           } else {
-            item.files = [newFile];
-            item.completed = true;
+            updatedFiles = [newFile];
           }
+          return {
+            ...ci,
+            files: updatedFiles,
+            completed: currentItemHasOpenCorrection ? ci.completed : true,
+          };
+        }),
+      };
+    });
+
+    // Sync to Supabase
+    (async () => {
+      try {
+        if (replaceFileId) {
+          // Delete old file from storage and DB
+          const { data: oldFile } = await supabase.from('files').select('storage_path').eq('id', replaceFileId).maybeSingle();
+          if (oldFile?.storage_path) {
+            await supabase.storage.from('case-documents').remove([oldFile.storage_path]);
+          }
+          await supabase.from('files').delete().eq('id', replaceFileId);
         }
-        c.lastClientActivity = new Date().toISOString();
-        return c;
-      });
+        await supabase.from('files').insert({
+          id: newFileId,
+          case_id: caseData.id,
+          checklist_item_id: currentItem.id,
+          file_name: processedFile.name,
+          storage_path: storagePath,
+          data_url: '',
+          uploaded_at: uploadedAt,
+          review_status: 'pending',
+          uploaded_by: 'client',
+        });
+        await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
+        await supabase.from('cases').update({ last_client_activity: uploadedAt }).eq('id', caseData.id);
+        await logActivity(caseData.id, {
+          eventType: 'file_upload',
+          actorRole: 'client',
+          actorName: caseData.clientName,
+          description: `${caseData.clientName.split(' ')[0]} uploaded ${processedFile.name} for ${currentItem.label}`,
+          itemId: currentItem.id,
+        });
+      } catch (err) {
+        console.error('Failed to sync file upload:', err);
+      }
+    })();
 
-      addActivityEntry(caseData.id, {
-        eventType: 'file_upload',
-        actorRole: 'client',
-        actorName: caseData.clientName,
-        description: `${caseData.clientName.split(' ')[0]} uploaded ${file.name} for ${currentItem.label}`,
-        itemId: currentItem.id,
-      });
+    // Trigger AI validation in the background (use signed URL for validation)
+    if (displayUrl) {
+      triggerValidation(newFileId, displayUrl, currentItem.label, caseData.id);
+    }
 
-      // Sync file upload and checklist status to Supabase
-      (async () => {
-        try {
-          await supabase.from('files').insert({
-            id: newFile.id,
-            case_id: caseData.id,
-            checklist_item_id: currentItem.id,
-            file_name: newFile.name,
-            data_url: newFile.dataUrl,
-            uploaded_at: newFile.uploadedAt,
-            review_status: 'pending',
-            uploaded_by: 'client',
-          });
-          await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
-          await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
-          await supabase.from('activity_log').insert({
-            case_id: caseData.id,
-            event_type: 'file_upload',
-            actor_role: 'client',
-            actor_name: caseData.clientName,
-            description: `${caseData.clientName.split(' ')[0]} uploaded ${file.name} for ${currentItem.label}`,
-            item_id: currentItem.id,
-          });
-        } catch (err) {
-          console.error('Failed to sync file upload:', err);
-        }
-      })();
-
-      // Trigger AI validation in the background
-      triggerValidation(newFile.id, newFile.dataUrl, currentItem.label, caseData.id);
-
-      if (updated) {
-        setCaseData(updated);
-        if (currentItemHasOpenCorrection) {
-          toast.success(`${file.name} added`, { duration: 1500 });
-          return;
-        }
-
-        if (!isMultiUpload) {
-          setShowSuccess(true);
+    if (!currentItemHasOpenCorrection) {
+      if (!isMultiUpload) {
+        setShowSuccess(true);
+        // Need to get updated caseData for milestone check
+        setCaseData(prev => {
+          if (!prev) return prev;
           setTimeout(() => {
             setShowSuccess(false);
-            checkMilestoneAndAdvance(updated);
+            checkMilestoneAndAdvance(prev);
           }, 1500);
-        } else {
-          toast.success(`${file.name} added`, { duration: 1500 });
-        }
+          return prev;
+        });
+      } else {
+        toast.success(`${processedFile.name} added`, { duration: 1500 });
       }
-    };
-    reader.readAsDataURL(file);
+    } else {
+      toast.success(`${processedFile.name} added`, { duration: 1500 });
+    }
   };
 
   const handleFileDelete = (fileId: string) => {
     if (!currentItem) return;
-    const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
-      if (item) {
-        item.files = item.files.filter(file => file.id !== fileId);
-        if (item.files.length === 0) item.completed = false;
-      }
-      return c;
+    setCaseData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          const updatedFiles = ci.files.filter(f => f.id !== fileId);
+          return { ...ci, files: updatedFiles, completed: updatedFiles.length > 0 ? ci.completed : false };
+        }),
+      };
     });
-    if (updated) setCaseData(updated);
 
     // Sync deletion to Supabase
     (async () => {
       try {
+        const { data: fileRecord } = await supabase.from('files').select('storage_path').eq('id', fileId).maybeSingle();
+        if (fileRecord?.storage_path) {
+          await supabase.storage.from('case-documents').remove([fileRecord.storage_path]);
+        }
         await supabase.from('files').delete().eq('id', fileId);
-        const remaining = updated?.checklist.find(i => i.id === currentItem.id)?.files || [];
-        if (remaining.length === 0) {
+        // Check if any files remain
+        const { data: remaining } = await supabase.from('files').select('id').eq('checklist_item_id', currentItem.id);
+        if (!remaining || remaining.length === 0) {
           await supabase.from('checklist_items').update({ completed: false }).eq('id', currentItem.id);
         }
       } catch (err) {
@@ -604,26 +716,19 @@ const ClientWizard = () => {
   };
 
   const handleSingleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('[UPLOAD DEBUG] handleSingleFileUpload fired');
     const file = event.target.files?.[0];
-    console.log('[UPLOAD DEBUG] file:', file?.name, 'size:', file?.size, 'type:', file?.type);
-    console.log('[UPLOAD DEBUG] currentItem:', currentItem?.label, 'id:', currentItem?.id);
-    if (!file || !currentItem) { 
-      console.warn('[UPLOAD DEBUG] Early return - file:', !!file, 'currentItem:', !!currentItem);
-      if (event.target) event.target.value = ''; 
-      return; 
+    if (!file || !currentItem) {
+      if (event.target) event.target.value = '';
+      return;
     }
 
-    // Check for duplicate filename on same checklist item
     const existingFile = currentItem.files.find(f => f.name === file.name);
     if (existingFile) {
-      console.log('[UPLOAD DEBUG] Duplicate detected:', file.name);
       setPendingDuplicate({ file, existingFileId: existingFile.id });
       event.target.value = '';
       return;
     }
 
-    console.log('[UPLOAD DEBUG] Calling handleFileAdd');
     handleFileAdd(file);
     event.target.value = '';
   };
@@ -632,18 +737,24 @@ const ClientWizard = () => {
     if (!currentItem || !hasPendingReplacement) return;
 
     const timestamp = new Date().toISOString();
-    const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
-      if (item) {
-        item.completed = true;
-        item.resubmittedAt = timestamp;
-        if (item.correctionRequest) item.correctionRequest.status = 'resolved';
-      }
-      c.lastClientActivity = timestamp;
-      return c;
+    setCaseData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lastClientActivity: timestamp,
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          return {
+            ...ci,
+            completed: true,
+            resubmittedAt: timestamp,
+            correctionRequest: ci.correctionRequest ? { ...ci.correctionRequest, status: 'resolved' as const } : undefined,
+          };
+        }),
+      };
     });
 
-    addActivityEntry(caseData.id, {
+    logActivity(caseData.id, {
       eventType: 'file_reupload',
       actorRole: 'client',
       actorName: caseData.clientName,
@@ -651,12 +762,21 @@ const ClientWizard = () => {
       itemId: currentItem.id,
     });
 
-    if (updated) {
-      setCaseData(updated);
-      setSearchParams({}, { replace: true });
-      toast.success('Replacement submitted for review.');
-      advanceToNext();
-    }
+    // Sync to Supabase
+    (async () => {
+      try {
+        await supabase.from('checklist_items').update({
+          completed: true,
+          resubmitted_at: timestamp,
+          correction_status: 'resolved',
+        }).eq('id', currentItem.id);
+        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+      } catch (err) { console.error('Failed to sync resubmission:', err); }
+    })();
+
+    setSearchParams({}, { replace: true });
+    toast.success('Replacement submitted for review.');
+    advanceToNext();
   };
 
   const handleContinueMultiUpload = () => {
@@ -679,7 +799,7 @@ const ClientWizard = () => {
 
   const handleLowCountConfirm = () => {
     setShowLowCountConfirm(false);
-    addActivityEntry(caseData.id, {
+    logActivity(caseData.id, {
       eventType: 'checkpoint_completed',
       actorRole: 'client',
       actorName: caseData.clientName,
@@ -692,15 +812,27 @@ const ClientWizard = () => {
   const handleCheckpointConfirm = () => {
     if (!currentItem) return;
 
-    const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(checklistItem => checklistItem.id === currentItem.id);
-      if (item) item.completed = true;
-      c.lastClientActivity = new Date().toISOString();
-      c.checkpointsCompleted = [...c.checkpointsCompleted, currentItem.id];
-      return c;
+    const timestamp = new Date().toISOString();
+    setCaseData(prev => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        lastClientActivity: timestamp,
+        checkpointsCompleted: [...prev.checkpointsCompleted, currentItem.id],
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          return { ...ci, completed: true };
+        }),
+      };
+      // Schedule milestone check
+      setTimeout(() => {
+        setCheckpointConfirmed(false);
+        checkMilestoneAndAdvance(updated);
+      }, 0);
+      return updated;
     });
 
-    addActivityEntry(caseData.id, {
+    logActivity(caseData.id, {
       eventType: 'checkpoint_completed',
       actorRole: 'client',
       actorName: caseData.clientName,
@@ -708,11 +840,18 @@ const ClientWizard = () => {
       itemId: currentItem.id,
     });
 
-    if (updated) {
-      setCaseData(updated);
-      setCheckpointConfirmed(false);
-      checkMilestoneAndAdvance(updated);
-    }
+    // Sync to Supabase
+    (async () => {
+      try {
+        await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
+        await supabase.from('checkpoints').insert({
+          case_id: caseData.id,
+          checkpoint_type: currentItem.label,
+          confirmed_by: caseData.clientName,
+        });
+        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+      } catch (err) { console.error('Failed to sync checkpoint:', err); }
+    })();
   };
 
   const checkMilestoneAndAdvance = (updated: Case) => {
@@ -731,7 +870,6 @@ const ClientWizard = () => {
     if (currentItemIdx < categoryItems.length - 1) {
       setCurrentItemIdx(currentItemIdx + 1);
     } else if (currentCategoryIdx < CATEGORIES.length - 1) {
-      // Check if all required items in current section are complete before advancing
       const requiredIncomplete = categoryItems.filter(item => item.required && !isItemEffectivelyComplete(item));
       if (requiredIncomplete.length > 0) {
         toast('Hang on — there are still a few things we need in this section before you can move on.', { duration: 4000 });
@@ -745,17 +883,19 @@ const ClientWizard = () => {
 
   const handleStepTransitionContinue = () => {
     if (showStepTransition === null || !caseData) return;
-    const completedStep = showStepTransition + 1; // 1-indexed
+    const completedStep = showStepTransition + 1;
     const nextCategory = showStepTransition + 1;
     setShowStepTransition(null);
     setCurrentCategoryIdx(nextCategory);
     setCurrentItemIdx(0);
-    updateCase(caseData.id, c => ({ ...c, wizardStep: nextCategory }));
-    // Persist wizard step to Supabase for cross-device persistence
-    supabase.from('cases').update({ wizard_step: nextCategory }).eq('id', caseData.id).then(() => {});
-    refreshCase();
 
-    // Trigger 3: Momentum Builder SMS
+    // Update local state
+    setCaseData(prev => prev ? { ...prev, wizardStep: nextCategory } : prev);
+
+    // Persist wizard step to Supabase
+    supabase.from('cases').update({ wizard_step: nextCategory }).eq('id', caseData.id).then(() => {});
+
+    // Trigger momentum SMS
     const updatedProgress = calculateProgress(caseData);
     if (updatedProgress < 100) {
       const nextStepName = CATEGORIES[nextCategory] || 'the next step';
@@ -785,25 +925,13 @@ const ClientWizard = () => {
 
   const handleSkip = () => {
     if (!currentItem) return;
-    addActivityEntry(caseData.id, {
+    logActivity(caseData.id, {
       eventType: 'checkpoint_completed',
       actorRole: 'client',
       actorName: caseData.clientName,
       description: `${caseData.clientName.split(' ')[0]} skipped ${currentItem.label}`,
       itemId: currentItem.id,
     });
-    (async () => {
-      try {
-        await supabase.from('activity_log').insert({
-          case_id: caseData.id,
-          event_type: 'checkpoint_completed',
-          actor_role: 'client',
-          actor_name: caseData.clientName,
-          description: `${caseData.clientName.split(' ')[0]} skipped ${currentItem.label}`,
-          item_id: currentItem.id,
-        });
-      } catch (err) { console.error('Failed to log skip:', err); }
-    })();
     toast('No worries — you can always come back to this one later.', { duration: 2000 });
     advanceToNext();
   };
@@ -819,20 +947,31 @@ const ClientWizard = () => {
     const timestamp = new Date().toISOString();
     const actorName = caseData.clientName;
 
-    const updated = updateCase(caseData.id, c => {
-      const found = c.checklist.find(ci => ci.id === currentItem.id);
-      if (found) {
-        found.notApplicable = true;
-        found.notApplicableReason = reason;
-        found.notApplicableMarkedBy = 'client';
-        found.notApplicableAt = timestamp;
-      }
-      c.lastClientActivity = timestamp;
-      return c;
+    setCaseData(prev => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        lastClientActivity: timestamp,
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          return {
+            ...ci,
+            notApplicable: true,
+            notApplicableReason: reason,
+            notApplicableMarkedBy: 'client',
+            notApplicableAt: timestamp,
+          };
+        }),
+      };
+      setShowNaFlow(false);
+      setNaClientReason(null);
+      toast.success('Got it — your attorney will be notified.', { duration: 2000 });
+      setTimeout(() => { checkMilestoneAndAdvance(updated); }, 800);
+      return updated;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_not_applicable' as any,
+    logActivity(caseData.id, {
+      eventType: 'item_not_applicable',
       actorRole: 'client',
       actorName,
       description: `${actorName.split(' ')[0]} indicated ${currentItem.label} is not applicable — ${reason}`,
@@ -848,27 +987,9 @@ const ClientWizard = () => {
           not_applicable_marked_by: 'client',
           not_applicable_at: timestamp,
         }).eq('id', currentItem.id);
-        await supabase.from('activity_log').insert({
-          case_id: caseData.id,
-          event_type: 'item_not_applicable',
-          actor_role: 'client',
-          actor_name: actorName,
-          description: `${actorName.split(' ')[0]} indicated ${currentItem.label} is not applicable — ${reason}`,
-          item_id: currentItem.id,
-        });
         await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
       } catch (err) { console.error('Failed to sync N/A:', err); }
     })();
-
-    if (updated) {
-      setCaseData(updated);
-      setShowNaFlow(false);
-      setNaClientReason(null);
-      toast.success('Got it — your attorney will be notified.', { duration: 2000 });
-      setTimeout(() => {
-        checkMilestoneAndAdvance(updated);
-      }, 800);
-    }
   };
 
   const handleDismissMilestone = () => {
@@ -883,7 +1004,6 @@ const ClientWizard = () => {
       completeCorrectionResubmission();
       return;
     }
-    // Soft-block: no file on required item → show help first
     if (!currentItem.completed && currentItem.required) {
       setHelpForceOpen(true);
       toast('Take your time — when you\'ve found it, just tap the upload area above.', { duration: 4000 });
@@ -897,69 +1017,91 @@ const ClientWizard = () => {
 
     if (employmentStatus === 'self-employed' || employmentStatus === 'not-employed') {
       const statusLabel = employmentStatus === 'self-employed' ? 'is self-employed' : 'is not currently employed';
-      const updated = updateCase(caseData.id, c => {
-        const item = c.checklist.find(ci => ci.id === currentItem.id);
-        if (item) {
-          item.textEntry = {
-            employerName: '',
-            selfEmployed: employmentStatus === 'self-employed',
-            notEmployed: employmentStatus === 'not-employed',
-            savedAt: new Date().toISOString(),
-          };
-          item.completed = true;
-        }
-        c.lastClientActivity = new Date().toISOString();
-        return c;
+      const textEntry = {
+        employerName: '',
+        selfEmployed: employmentStatus === 'self-employed',
+        notEmployed: employmentStatus === 'not-employed',
+        savedAt: new Date().toISOString(),
+      };
+
+      setCaseData(prev => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          lastClientActivity: new Date().toISOString(),
+          checklist: prev.checklist.map(ci => {
+            if (ci.id !== currentItem.id) return ci;
+            return { ...ci, textEntry, completed: true };
+          }),
+        };
+        setShowSuccess(true);
+        setTimeout(() => { setShowSuccess(false); checkMilestoneAndAdvance(updated); }, 1500);
+        return updated;
       });
-      addActivityEntry(caseData.id, {
+
+      logActivity(caseData.id, {
         eventType: 'checkpoint_completed',
         actorRole: 'client',
         actorName: caseData.clientName,
         description: `${caseData.clientName.split(' ')[0]} indicated ${caseData.clientName.split(' ')[0]} ${statusLabel}`,
         itemId: currentItem.id,
       });
-      if (updated) {
-        setCaseData(updated);
-        setShowSuccess(true);
-        setTimeout(() => {
-          setShowSuccess(false);
-          checkMilestoneAndAdvance(updated);
-        }, 1500);
-      }
+
+      // Sync to Supabase
+      (async () => {
+        try {
+          await supabase.from('checklist_items').update({
+            completed: true,
+            text_value: textEntry,
+          }).eq('id', currentItem.id);
+          await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+        } catch (err) { console.error('Failed to sync employer:', err); }
+      })();
       return;
     }
 
-    const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(ci => ci.id === currentItem.id);
-      if (item) {
-        item.textEntry = {
-          employerName: employerName.trim(),
-          employerAddress: employerAddress.trim() || undefined,
-          savedAt: new Date().toISOString(),
-        };
-        item.completed = true;
-      }
-      c.lastClientActivity = new Date().toISOString();
-      return c;
+    const textEntry = {
+      employerName: employerName.trim(),
+      employerAddress: employerAddress.trim() || undefined,
+      savedAt: new Date().toISOString(),
+    };
+
+    setCaseData(prev => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        lastClientActivity: new Date().toISOString(),
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          return { ...ci, textEntry, completed: true };
+        }),
+      };
+      setShowSuccess(true);
+      setTimeout(() => { setShowSuccess(false); checkMilestoneAndAdvance(updated); }, 1500);
+      return updated;
     });
-    addActivityEntry(caseData.id, {
+
+    logActivity(caseData.id, {
       eventType: 'checkpoint_completed',
       actorRole: 'client',
       actorName: caseData.clientName,
       description: `${caseData.clientName.split(' ')[0]} provided employer information: ${employerName.trim()}`,
       itemId: currentItem.id,
     });
-    if (updated) {
-      setCaseData(updated);
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        checkMilestoneAndAdvance(updated);
-      }, 1500);
-    }
+
+    // Sync to Supabase
+    (async () => {
+      try {
+        await supabase.from('checklist_items').update({
+          completed: true,
+          text_value: textEntry,
+        }).eq('id', currentItem.id);
+        await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+      } catch (err) { console.error('Failed to sync employer:', err); }
+    })();
   };
 
-  // ─── SSN helpers ─────────────────────────────────────────────────────
+  // ─── SSN helpers
   const formatSSN = (raw: string): string => {
     const digits = raw.replace(/\D/g, '').slice(0, 9);
     if (digits.length <= 3) return digits;
@@ -973,7 +1115,6 @@ const ClientWizard = () => {
 
   const handleSSNChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    // Only allow digits and dashes
     const cleaned = input.replace(/[^\d-]/g, '');
     const digits = cleaned.replace(/\D/g, '').slice(0, 9);
     setSsnValue(digits);
@@ -988,20 +1129,27 @@ const ClientWizard = () => {
     }
 
     const formatted = formatSSN(ssnValue);
-    const updated = updateCase(caseData.id, c => {
-      const item = c.checklist.find(ci => ci.id === currentItem.id);
-      if (item) {
-        item.textEntry = {
-          employerName: ssnDigits, // store raw digits in textEntry for local state
-          savedAt: new Date().toISOString(),
-        };
-        item.completed = true;
-      }
-      c.lastClientActivity = new Date().toISOString();
-      return c;
+    const textEntry = {
+      employerName: ssnDigits,
+      savedAt: new Date().toISOString(),
+    };
+
+    setCaseData(prev => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        lastClientActivity: new Date().toISOString(),
+        checklist: prev.checklist.map(ci => {
+          if (ci.id !== currentItem.id) return ci;
+          return { ...ci, textEntry, completed: true };
+        }),
+      };
+      setShowSuccess(true);
+      setTimeout(() => { setShowSuccess(false); checkMilestoneAndAdvance(updated); }, 1500);
+      return updated;
     });
 
-    addActivityEntry(caseData.id, {
+    logActivity(caseData.id, {
       eventType: 'checkpoint_completed',
       actorRole: 'client',
       actorName: caseData.clientName,
@@ -1029,30 +1177,19 @@ const ClientWizard = () => {
             phone: caseData.clientPhone || '',
           });
         }
-        // Also sync checklist item
         await supabase.from('checklist_items').update({
           completed: true,
-          text_value: { employerName: ssnDigits, savedAt: new Date().toISOString() },
+          text_value: textEntry,
         }).eq('id', currentItem.id);
       } catch (err) {
         console.error('Failed to sync SSN:', err);
       }
     })();
-
-    if (updated) {
-      setCaseData(updated);
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        checkMilestoneAndAdvance(updated);
-      }, 1500);
-    }
   };
 
   const showUrgencyBanner = caseData.urgency !== 'normal' && !showMilestone;
   const daysLeft = Math.max(0, Math.ceil((new Date(caseData.filingDeadline).getTime() - Date.now()) / 86400000));
 
-  // Check for pending items for warm nudge on completion screen
   const pendingCount = caseData.checklist.filter(i => !i.notApplicable && !isItemEffectivelyComplete(i)).length;
 
   if (progress === 100 && !showMilestone && !showSuccess) {
@@ -1438,33 +1575,34 @@ const ClientWizard = () => {
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
                     onSuccess={(plaidResult) => {
-                      // Update local state with plaid files
-                      const updated = updateCase(caseData.id, c => {
-                        const item = c.checklist.find(ci => ci.id === currentItem.id);
-                        if (item) {
-                          item.completed = true;
-                          // Add placeholder files to local state
-                          for (const acct of plaidResult.accounts) {
-                            for (let m = 0; m < 6; m++) {
-                              const d = new Date();
-                              d.setMonth(d.getMonth() - m);
-                              const monthName = d.toLocaleString('default', { month: 'long' });
-                              const year = d.getFullYear();
-                              item.files.push({
-                                id: Math.random().toString(36).substr(2, 9),
-                                name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
-                                dataUrl: '',
-                                uploadedAt: new Date().toISOString(),
-                                reviewStatus: 'pending',
-                                uploadedBy: 'plaid',
-                              });
+                      setCaseData(prev => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          lastClientActivity: new Date().toISOString(),
+                          checklist: prev.checklist.map(ci => {
+                            if (ci.id !== currentItem.id) return ci;
+                            const newFiles = [...ci.files];
+                            for (const acct of plaidResult.accounts) {
+                              for (let m = 0; m < 6; m++) {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() - m);
+                                const monthName = d.toLocaleString('default', { month: 'long' });
+                                const year = d.getFullYear();
+                                newFiles.push({
+                                  id: Math.random().toString(36).substr(2, 9),
+                                  name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
+                                  dataUrl: '',
+                                  uploadedAt: new Date().toISOString(),
+                                  reviewStatus: 'pending',
+                                  uploadedBy: 'plaid',
+                                });
+                              }
                             }
-                          }
-                        }
-                        c.lastClientActivity = new Date().toISOString();
-                        return c;
+                            return { ...ci, files: newFiles, completed: true };
+                          }),
+                        };
                       });
-                      if (updated) setCaseData(updated);
                     }}
                     onManualUploadClick={() => {}}
                     manualUploadContent={
@@ -1584,14 +1722,14 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                      accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf"
                       onChange={handleSingleFileUpload}
                     />
                     <input
                       ref={cameraInputRef}
                       type="file"
                       className="hidden"
-                      accept="image/jpeg,image/png"
+                      accept="image/*,.heic,.heif"
                       capture="environment"
                       onChange={handleSingleFileUpload}
                     />
@@ -1606,7 +1744,7 @@ const ClientWizard = () => {
                 <div className="space-y-2">
                   <div className="surface-card glow-success p-4 flex items-center gap-3">
                     {/* Thumbnail preview */}
-                    {currentItem.files[0].dataUrl?.startsWith('data:image') ? (
+                    {currentItem.files[0].dataUrl?.startsWith('data:image') || currentItem.files[0].dataUrl?.startsWith('http') ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); setPreviewFile({ name: currentItem.files[0].name, dataUrl: currentItem.files[0].dataUrl }); }}
                         className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-border hover:ring-2 hover:ring-primary/30 transition-all"
@@ -1632,7 +1770,7 @@ const ClientWizard = () => {
                     >
                       Replace
                     </button>
-                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleSingleFileUpload} />
+                    <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf" onChange={handleSingleFileUpload} />
                   </div>
                   {/* Validation status indicator */}
                   {currentItem.files.map(file => (
@@ -1689,14 +1827,14 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                      accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf"
                       onChange={handleSingleFileUpload}
                     />
                     <input
                       ref={cameraInputRef}
                       type="file"
                       className="hidden"
-                      accept="image/jpeg,image/png"
+                      accept="image/*,.heic,.heif"
                       capture="environment"
                       onChange={handleSingleFileUpload}
                     />
@@ -1827,18 +1965,16 @@ const ClientWizard = () => {
           </div>
         </div>
       )}
-      {/* Persistent hidden file inputs for mobile - outside AnimatePresence so they survive picker navigation */}
+      {/* Persistent hidden file inputs for mobile */}
       <input
         ref={(el) => { (window as any).__mobileCamera = el; }}
         type="file"
         className="hidden"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         capture="environment"
         onChange={(e) => {
-          console.log('[UPLOAD DEBUG] Camera onChange fired, files:', e.target.files?.length);
           const file = e.target.files?.[0];
-          if (!file) { console.log('[UPLOAD DEBUG] No file selected from camera'); return; }
-          console.log('[UPLOAD DEBUG] Camera file:', file.name, file.size, file.type);
+          if (!file) return;
           handleFileAdd(file);
           e.target.value = '';
           setShowMobileUploadOptions(false);
@@ -1848,12 +1984,10 @@ const ClientWizard = () => {
         ref={(el) => { (window as any).__mobileLibrary = el; }}
         type="file"
         className="hidden"
-        accept="image/*,.pdf,.jpg,.jpeg,.png"
+        accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf"
         onChange={(e) => {
-          console.log('[UPLOAD DEBUG] Library onChange fired, files:', e.target.files?.length);
           const file = e.target.files?.[0];
-          if (!file) { console.log('[UPLOAD DEBUG] No file selected from library'); return; }
-          console.log('[UPLOAD DEBUG] Library file:', file.name, file.size, file.type);
+          if (!file) return;
           handleFileAdd(file);
           e.target.value = '';
           setShowMobileUploadOptions(false);
@@ -1928,7 +2062,7 @@ const ClientWizard = () => {
               <X className="w-6 h-6 text-white" />
             </button>
             <p className="absolute top-5 left-4 text-white/70 text-sm truncate max-w-[60%]">{previewFile.name}</p>
-            {previewFile.dataUrl?.startsWith('data:image') ? (
+            {previewFile.dataUrl?.startsWith('data:image') || previewFile.dataUrl?.startsWith('http') ? (
               <img src={previewFile.dataUrl} alt={previewFile.name} className="max-w-full max-h-[85vh] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
             ) : previewFile.dataUrl?.startsWith('data:application/pdf') ? (
               <iframe src={previewFile.dataUrl} className="w-full max-w-3xl h-[85vh] rounded-lg bg-white" title={previewFile.name} onClick={e => e.stopPropagation()} />
@@ -1985,7 +2119,6 @@ const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRe
   const status = file.validationStatus;
   const result = file.validationResult;
 
-  // Show nothing if already confirmed/overridden or just pending without result
   if (status === 'client-confirmed' || status === 'client-override' || status === 'pending' || !status) {
     if (isValidating) {
       return (
