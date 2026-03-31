@@ -1837,26 +1837,37 @@ const ClientWizard = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
-              <button
-                onClick={() => {
-                  setShowMobileUploadOptions(false);
-                  cameraInputRef.current?.click();
-                }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+              <label
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors cursor-pointer"
               >
                 <Camera className="w-5 h-5 text-primary" />
                 <span className="text-foreground font-medium">Take a Photo</span>
-              </button>
-              <button
-                onClick={() => {
-                  setShowMobileUploadOptions(false);
-                  fileInputRef.current?.click();
-                }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/jpeg,image/png"
+                  capture="environment"
+                  onChange={(e) => {
+                    setShowMobileUploadOptions(false);
+                    handleSingleFileUpload(e);
+                  }}
+                />
+              </label>
+              <label
+                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors cursor-pointer"
               >
                 <UploadCloud className="w-5 h-5 text-primary" />
                 <span className="text-foreground font-medium">Choose from Library</span>
-              </button>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                  onChange={(e) => {
+                    setShowMobileUploadOptions(false);
+                    handleSingleFileUpload(e);
+                  }}
+                />
+              </label>
               <button
                 onClick={() => setShowMobileUploadOptions(false)}
                 className="w-full p-3 text-center text-muted-foreground text-sm"
