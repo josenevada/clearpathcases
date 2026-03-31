@@ -89,6 +89,7 @@ const ParalegalDashboard = () => {
     try {
       const data = await fetchDashboardData(user.firmId);
       setCases(data.cases);
+      saveCases(data.cases);
       setOnboardingState(data.onboarding);
     } catch (error) {
       console.error('Failed to hydrate dashboard data:', error);
