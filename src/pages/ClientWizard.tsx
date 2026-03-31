@@ -604,17 +604,26 @@ const ClientWizard = () => {
   };
 
   const handleSingleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[UPLOAD DEBUG] handleSingleFileUpload fired');
     const file = event.target.files?.[0];
-    if (!file || !currentItem) { if (event.target) event.target.value = ''; return; }
+    console.log('[UPLOAD DEBUG] file:', file?.name, 'size:', file?.size, 'type:', file?.type);
+    console.log('[UPLOAD DEBUG] currentItem:', currentItem?.label, 'id:', currentItem?.id);
+    if (!file || !currentItem) { 
+      console.warn('[UPLOAD DEBUG] Early return - file:', !!file, 'currentItem:', !!currentItem);
+      if (event.target) event.target.value = ''; 
+      return; 
+    }
 
     // Check for duplicate filename on same checklist item
     const existingFile = currentItem.files.find(f => f.name === file.name);
     if (existingFile) {
+      console.log('[UPLOAD DEBUG] Duplicate detected:', file.name);
       setPendingDuplicate({ file, existingFileId: existingFile.id });
       event.target.value = '';
       return;
     }
 
+    console.log('[UPLOAD DEBUG] Calling handleFileAdd');
     handleFileAdd(file);
     event.target.value = '';
   };
