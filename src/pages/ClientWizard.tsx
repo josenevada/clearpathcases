@@ -604,17 +604,26 @@ const ClientWizard = () => {
   };
 
   const handleSingleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[UPLOAD DEBUG] handleSingleFileUpload fired');
     const file = event.target.files?.[0];
-    if (!file || !currentItem) { if (event.target) event.target.value = ''; return; }
+    console.log('[UPLOAD DEBUG] file:', file?.name, 'size:', file?.size, 'type:', file?.type);
+    console.log('[UPLOAD DEBUG] currentItem:', currentItem?.label, 'id:', currentItem?.id);
+    if (!file || !currentItem) { 
+      console.warn('[UPLOAD DEBUG] Early return - file:', !!file, 'currentItem:', !!currentItem);
+      if (event.target) event.target.value = ''; 
+      return; 
+    }
 
     // Check for duplicate filename on same checklist item
     const existingFile = currentItem.files.find(f => f.name === file.name);
     if (existingFile) {
+      console.log('[UPLOAD DEBUG] Duplicate detected:', file.name);
       setPendingDuplicate({ file, existingFileId: existingFile.id });
       event.target.value = '';
       return;
     }
 
+    console.log('[UPLOAD DEBUG] Calling handleFileAdd');
     handleFileAdd(file);
     event.target.value = '';
   };
@@ -1827,6 +1836,10 @@ const ClientWizard = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center"
             onClick={() => setShowMobileUploadOptions(false)}
+            onTouchEnd={(e) => {
+              // Only close if tapping the backdrop itself, not children
+              if (e.target === e.currentTarget) setShowMobileUploadOptions(false);
+            }}
           >
             <motion.div
               initial={{ y: '100%' }}
@@ -1835,6 +1848,7 @@ const ClientWizard = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="w-full max-w-md bg-background rounded-t-2xl p-4 pb-8 space-y-2"
               onClick={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
             >
               <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
               <label
@@ -1845,11 +1859,16 @@ const ClientWizard = () => {
                 <input
                   type="file"
                   className="hidden"
-                  accept="image/jpeg,image/png"
+                  accept="image/*"
                   capture="environment"
                   onChange={(e) => {
+                    console.log('[UPLOAD DEBUG] Camera onChange fired, files:', e.target.files?.length);
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    // Process file before closing sheet
+                    handleFileAdd(file);
+                    e.target.value = '';
                     setShowMobileUploadOptions(false);
-                    handleSingleFileUpload(e);
                   }}
                 />
               </label>
@@ -1861,10 +1880,15 @@ const ClientWizard = () => {
                 <input
                   type="file"
                   className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+                  accept="image/*,.pdf"
                   onChange={(e) => {
+                    console.log('[UPLOAD DEBUG] Library onChange fired, files:', e.target.files?.length);
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    // Process file before closing sheet
+                    handleFileAdd(file);
+                    e.target.value = '';
                     setShowMobileUploadOptions(false);
-                    handleSingleFileUpload(e);
                   }}
                 />
               </label>
