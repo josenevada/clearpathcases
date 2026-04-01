@@ -86,7 +86,7 @@ const mapChecklist = async (rows: any[], fileRows: any[]): Promise<ChecklistItem
     };
   }));
 
-const mapCase = (caseRow: any, checklistRows: any[], fileRows: any[]): Case => ({
+const mapCase = async (caseRow: any, checklistRows: any[], fileRows: any[]): Promise<Case> => ({
   id: caseRow.id,
   clientName: caseRow.client_name,
   clientEmail: caseRow.client_email,
