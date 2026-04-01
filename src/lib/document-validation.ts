@@ -44,23 +44,41 @@ export function getExpectedDocType(label: string): string {
 }
 
 export async function validateDocument(
-  fileDataUrl: string,
+  fileDataUrlOrSignedUrl: string,
   expectedDocType: string,
   caseId: string,
 ): Promise<ValidationResult | null> {
   try {
-    // Extract base64 and mime type from data URL
-    const match = fileDataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) {
-      console.warn('Invalid data URL for validation');
+    let fileBase64: string;
+    let mimeType: string;
+
+    if (fileDataUrlOrSignedUrl.startsWith('data:')) {
+      const match = fileDataUrlOrSignedUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) {
+        console.warn('Invalid data URL for validation');
+        return null;
+      }
+      mimeType = match[1];
+      fileBase64 = match[2];
+    } else if (fileDataUrlOrSignedUrl.startsWith('http')) {
+      const response = await fetch(fileDataUrlOrSignedUrl);
+      if (!response.ok) {
+        console.warn('Failed to fetch file for validation:', response.status);
+        return null;
+      }
+      const blob = await response.blob();
+      mimeType = blob.type || 'image/jpeg';
+      const arrayBuffer = await blob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      uint8Array.forEach(byte => binary += String.fromCharCode(byte));
+      fileBase64 = btoa(binary);
+    } else {
+      console.warn('Unknown file URL format for validation');
       return null;
     }
 
-    const mimeType = match[1];
-    let fileBase64 = match[2];
-
-    // For very large files, truncate to ~1MB of base64 to keep request reasonable
-    const MAX_BASE64_LENGTH = 1_400_000; // ~1MB
+    const MAX_BASE64_LENGTH = 1_400_000;
     if (fileBase64.length > MAX_BASE64_LENGTH) {
       fileBase64 = fileBase64.substring(0, MAX_BASE64_LENGTH);
     }
