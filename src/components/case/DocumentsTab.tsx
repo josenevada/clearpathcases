@@ -60,6 +60,17 @@ const CATEGORY_SHORT: Record<string, string> = {
 
 const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong document type'];
 
+const getFileUrl = async (file: UploadedFile): Promise<string> => {
+  if (file.dataUrl) return file.dataUrl;
+  if (file.storagePath) {
+    const { data } = await supabase.storage
+      .from('case-documents')
+      .createSignedUrl(file.storagePath, 3600);
+    return data?.signedUrl || '';
+  }
+  return '';
+};
+
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const { plan } = useSubscription();
   const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
