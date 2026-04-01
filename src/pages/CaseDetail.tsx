@@ -37,7 +37,6 @@ import { sendCorrectionRequest } from '@/lib/notifications';
 import { sendCorrectionSms } from '@/lib/sms';
 import { useAuth } from '@/lib/auth';
 import {
-  getCase,
   updateCase,
   deleteCase,
   addActivityEntry,
