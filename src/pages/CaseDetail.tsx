@@ -529,7 +529,7 @@ const CaseDetail = () => {
     updateCase(caseData.id, c => ({
       ...c,
       notes: [...c.notes, {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         author: viewRole === 'paralegal' ? caseData.assignedParalegal : caseData.assignedAttorney,
         authorRole: viewRole,
         content: newNote,
@@ -549,7 +549,7 @@ const CaseDetail = () => {
       toast.error('Please enter a document name.');
       return;
     }
-    const newItemId = Math.random().toString(36).substr(2, 9);
+    const newItemId = crypto.randomUUID();
     const sortOrder = caseData.checklist.filter(i => i.category === category).length;
 
     // Add to localStorage
