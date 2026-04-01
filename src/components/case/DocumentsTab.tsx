@@ -292,7 +292,8 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         catPage.drawText(`  ${file.name} — ${format(new Date(file.uploadedAt), 'MMM d, yyyy')}`, { x: 85, y: yPos - 16, size: 9, font: helvetica, color: rgb(0.54, 0.64, 0.72) });
         yPos -= 40;
 
-        if (file.dataUrl && file.dataUrl.startsWith('data:')) {
+        const fileUrl = await getFileUrl(file);
+        if (fileUrl && fileUrl.startsWith('data:')) {
           try {
             if (file.dataUrl.includes('image/png')) {
               const imgBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
