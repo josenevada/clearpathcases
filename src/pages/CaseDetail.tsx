@@ -139,10 +139,15 @@ const CaseDetail = () => {
     const filesWithUrls = await Promise.all((fileRows || []).map(async (f: any) => {
       let displayUrl = f.data_url || '';
       if (f.storage_path && !displayUrl) {
-        const { data } = await supabase.storage
-          .from('case-documents')
-          .createSignedUrl(f.storage_path, 3600);
-        displayUrl = data?.signedUrl || '';
+        try {
+          const { data, error } = await supabase.storage
+            .from('case-documents')
+            .createSignedUrl(f.storage_path, 3600);
+          if (error) console.error('CaseDetail signed URL error:', f.storage_path, error);
+          displayUrl = data?.signedUrl || '';
+        } catch (e) {
+          console.error('CaseDetail signed URL exception:', e);
+        }
       }
       return { ...f, data_url: displayUrl };
     }));
