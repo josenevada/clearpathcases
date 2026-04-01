@@ -293,25 +293,48 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         yPos -= 40;
 
         const fileUrl = await getFileUrl(file);
-        if (fileUrl && fileUrl.startsWith('data:')) {
+        if (fileUrl) {
           try {
-            if (file.dataUrl.includes('image/png')) {
-              const imgBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-              const img = await pdfDoc.embedPng(imgBytes);
-              const imgPage = pdfDoc.addPage([612, 792]);
-              const scale = Math.min(512 / img.width, 692 / img.height);
-              imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
-            } else if (file.dataUrl.includes('image/jpeg') || file.dataUrl.includes('image/jpg')) {
-              const imgBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-              const img = await pdfDoc.embedJpg(imgBytes);
-              const imgPage = pdfDoc.addPage([612, 792]);
-              const scale = Math.min(512 / img.width, 692 / img.height);
-              imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
-            } else if (file.dataUrl.includes('application/pdf')) {
-              const pdfBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-              const srcDoc = await PDFDocument.load(pdfBytes);
-              const pages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-              pages.forEach(p => pdfDoc.addPage(p));
+            if (fileUrl.startsWith('data:')) {
+              if (fileUrl.includes('image/png')) {
+                const imgBytes = Uint8Array.from(atob(fileUrl.split(',')[1]), c => c.charCodeAt(0));
+                const img = await pdfDoc.embedPng(imgBytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (fileUrl.includes('image/jpeg') || fileUrl.includes('image/jpg')) {
+                const imgBytes = Uint8Array.from(atob(fileUrl.split(',')[1]), c => c.charCodeAt(0));
+                const img = await pdfDoc.embedJpg(imgBytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (fileUrl.includes('application/pdf')) {
+                const pdfBytes = Uint8Array.from(atob(fileUrl.split(',')[1]), c => c.charCodeAt(0));
+                const srcDoc = await PDFDocument.load(pdfBytes);
+                const pages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                pages.forEach(p => pdfDoc.addPage(p));
+              }
+            } else {
+              // Signed URL — fetch as blob
+              const resp = await fetch(fileUrl);
+              const blob = await resp.blob();
+              const arrayBuf = await blob.arrayBuffer();
+              const bytes = new Uint8Array(arrayBuf);
+              if (blob.type.includes('png')) {
+                const img = await pdfDoc.embedPng(bytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) {
+                const img = await pdfDoc.embedJpg(bytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (blob.type.includes('pdf')) {
+                const srcDoc = await PDFDocument.load(bytes);
+                const pages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                pages.forEach(p => pdfDoc.addPage(p));
+              }
             }
           } catch {
             // If embedding fails, the index entry is still listed
