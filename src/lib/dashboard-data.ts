@@ -156,13 +156,13 @@ export const fetchDashboardData = async (firmId: string): Promise<DashboardDataR
   const fileRows = filesResult.data || [];
 
   return {
-    cases: (caseRows || []).map((caseRow) =>
+    cases: await Promise.all((caseRows || []).map((caseRow) =>
       mapCase(
         caseRow,
         checklistRows.filter((row) => row.case_id === caseRow.id),
         fileRows.filter((row) => row.case_id === caseRow.id),
       ),
-    ),
+    )),
     onboarding: firmResult.data
       ? {
           firmProfileComplete: Boolean(firmResult.data.name && firmResult.data.primary_contact_email),
