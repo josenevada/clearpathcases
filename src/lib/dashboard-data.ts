@@ -31,19 +31,31 @@ const emptyOnboardingState: DashboardOnboardingState = {
   hasSentLink: false,
 };
 
-const mapChecklist = (rows: any[], fileRows: any[]): ChecklistItem[] =>
-  rows.map((row) => {
-    const files: UploadedFile[] = fileRows
-      .filter((file) => file.checklist_item_id === row.id)
-      .map((file) => ({
-        id: file.id,
-        name: file.file_name,
-        dataUrl: file.data_url || '',
-        uploadedAt: file.uploaded_at || new Date().toISOString(),
-        reviewStatus: file.review_status || 'pending',
-        reviewNote: file.review_note || undefined,
-        uploadedBy: file.uploaded_by || 'client',
-      }));
+const mapChecklist = async (rows: any[], fileRows: any[]): Promise<ChecklistItem[]> =>
+  Promise.all(rows.map(async (row) => {
+    const files: UploadedFile[] = await Promise.all(
+      fileRows
+        .filter((file: any) => file.checklist_item_id === row.id)
+        .map(async (file: any) => {
+          let displayUrl = file.data_url || '';
+          if (file.storage_path && !displayUrl) {
+            const { data } = await supabase.storage
+              .from('case-documents')
+              .createSignedUrl(file.storage_path, 3600);
+            displayUrl = data?.signedUrl || '';
+          }
+          return {
+            id: file.id,
+            name: file.file_name,
+            dataUrl: displayUrl,
+            storagePath: file.storage_path || undefined,
+            uploadedAt: file.uploaded_at || new Date().toISOString(),
+            reviewStatus: file.review_status || 'pending',
+            reviewNote: file.review_note || undefined,
+            uploadedBy: file.uploaded_by || 'client',
+          };
+        })
+    );
 
     return {
       id: row.id,
@@ -72,9 +84,9 @@ const mapChecklist = (rows: any[], fileRows: any[]): ChecklistItem[] =>
       notApplicableMarkedBy: row.not_applicable_marked_by || undefined,
       notApplicableAt: row.not_applicable_at || undefined,
     };
-  });
+  }));
 
-const mapCase = (caseRow: any, checklistRows: any[], fileRows: any[]): Case => ({
+const mapCase = async (caseRow: any, checklistRows: any[], fileRows: any[]): Promise<Case> => ({
   id: caseRow.id,
   clientName: caseRow.client_name,
   clientEmail: caseRow.client_email,
@@ -88,7 +100,7 @@ const mapCase = (caseRow: any, checklistRows: any[], fileRows: any[]): Case => (
   filingDeadline: caseRow.filing_deadline,
   createdAt: caseRow.created_at || new Date().toISOString(),
   lastClientActivity: caseRow.last_client_activity || undefined,
-  checklist: mapChecklist(checklistRows, fileRows),
+  checklist: await mapChecklist(checklistRows, fileRows),
   activityLog: [],
   notes: [],
   checkpointsCompleted: [],
@@ -144,13 +156,13 @@ export const fetchDashboardData = async (firmId: string): Promise<DashboardDataR
   const fileRows = filesResult.data || [];
 
   return {
-    cases: (caseRows || []).map((caseRow) =>
+    cases: await Promise.all((caseRows || []).map((caseRow) =>
       mapCase(
         caseRow,
         checklistRows.filter((row) => row.case_id === caseRow.id),
         fileRows.filter((row) => row.case_id === caseRow.id),
       ),
-    ),
+    )),
     onboarding: firmResult.data
       ? {
           firmProfileComplete: Boolean(firmResult.data.name && firmResult.data.primary_contact_email),

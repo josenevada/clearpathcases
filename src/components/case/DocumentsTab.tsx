@@ -60,6 +60,17 @@ const CATEGORY_SHORT: Record<string, string> = {
 
 const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong document type'];
 
+const getFileUrl = async (file: UploadedFile): Promise<string> => {
+  if (file.dataUrl) return file.dataUrl;
+  if (file.storagePath) {
+    const { data } = await supabase.storage
+      .from('case-documents')
+      .createSignedUrl(file.storagePath, 3600);
+    return data?.signedUrl || '';
+  }
+  return '';
+};
+
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const { plan } = useSubscription();
   const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
@@ -231,8 +242,9 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       const ext = file.name.split('.').pop() || 'pdf';
       const cleanName = `${clientLastName}-${docType}-${date}.${ext}`;
 
-      if (file.dataUrl) {
-        const response = await fetch(file.dataUrl);
+      const url = await getFileUrl(file);
+      if (url) {
+        const response = await fetch(url);
         const blob = await response.blob();
         zip.folder(folder)?.file(cleanName, blob);
       } else {
@@ -280,25 +292,49 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         catPage.drawText(`  ${file.name} — ${format(new Date(file.uploadedAt), 'MMM d, yyyy')}`, { x: 85, y: yPos - 16, size: 9, font: helvetica, color: rgb(0.54, 0.64, 0.72) });
         yPos -= 40;
 
-        if (file.dataUrl && file.dataUrl.startsWith('data:')) {
+        const fileUrl = await getFileUrl(file);
+        if (fileUrl) {
           try {
-            if (file.dataUrl.includes('image/png')) {
-              const imgBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-              const img = await pdfDoc.embedPng(imgBytes);
-              const imgPage = pdfDoc.addPage([612, 792]);
-              const scale = Math.min(512 / img.width, 692 / img.height);
-              imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
-            } else if (file.dataUrl.includes('image/jpeg') || file.dataUrl.includes('image/jpg')) {
-              const imgBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-              const img = await pdfDoc.embedJpg(imgBytes);
-              const imgPage = pdfDoc.addPage([612, 792]);
-              const scale = Math.min(512 / img.width, 692 / img.height);
-              imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
-            } else if (file.dataUrl.includes('application/pdf')) {
-              const pdfBytes = Uint8Array.from(atob(file.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-              const srcDoc = await PDFDocument.load(pdfBytes);
-              const pages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-              pages.forEach(p => pdfDoc.addPage(p));
+            if (fileUrl.startsWith('data:')) {
+              if (fileUrl.includes('image/png')) {
+                const imgBytes = Uint8Array.from(atob(fileUrl.split(',')[1]), c => c.charCodeAt(0));
+                const img = await pdfDoc.embedPng(imgBytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (fileUrl.includes('image/jpeg') || fileUrl.includes('image/jpg')) {
+                const imgBytes = Uint8Array.from(atob(fileUrl.split(',')[1]), c => c.charCodeAt(0));
+                const img = await pdfDoc.embedJpg(imgBytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (fileUrl.includes('application/pdf')) {
+                const pdfBytes = Uint8Array.from(atob(fileUrl.split(',')[1]), c => c.charCodeAt(0));
+                const srcDoc = await PDFDocument.load(pdfBytes);
+                const pages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                pages.forEach(p => pdfDoc.addPage(p));
+              }
+            } else {
+              // Signed URL — fetch as blob
+              const resp = await fetch(fileUrl);
+              const blob = await resp.blob();
+              const arrayBuf = await blob.arrayBuffer();
+              const bytes = new Uint8Array(arrayBuf);
+              if (blob.type.includes('png')) {
+                const img = await pdfDoc.embedPng(bytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) {
+                const img = await pdfDoc.embedJpg(bytes);
+                const imgPage = pdfDoc.addPage([612, 792]);
+                const scale = Math.min(512 / img.width, 692 / img.height);
+                imgPage.drawImage(img, { x: 50, y: 50, width: img.width * scale, height: img.height * scale });
+              } else if (blob.type.includes('pdf')) {
+                const srcDoc = await PDFDocument.load(bytes);
+                const pages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                pages.forEach(p => pdfDoc.addPage(p));
+              }
             }
           } catch {
             // If embedding fails, the index entry is still listed

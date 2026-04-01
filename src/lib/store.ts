@@ -33,6 +33,7 @@ export interface UploadedFile {
   id: string;
   name: string;
   dataUrl: string;
+  storagePath?: string;
   uploadedAt: string;
   reviewStatus: FileReviewStatus;
   reviewNote?: string;
