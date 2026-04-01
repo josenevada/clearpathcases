@@ -120,20 +120,131 @@ const CaseDetail = () => {
   const [addDocDesc, setAddDocDesc] = useState('');
   const [addDocRequired, setAddDocRequired] = useState(true);
 
+  const loadCaseFromSupabase = async (id: string) => {
+    const { data: caseRow } = await supabase
+      .from('cases')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!caseRow) { navigate('/paralegal'); return; }
+
+    const [{ data: checklistRows }, { data: fileRows }, { data: activityRows }, { data: noteRows }] = await Promise.all([
+      supabase.from('checklist_items').select('*').eq('case_id', id).order('sort_order', { ascending: true }),
+      supabase.from('files').select('*').eq('case_id', id),
+      supabase.from('activity_log').select('*').eq('case_id', id).order('created_at', { ascending: false }),
+      supabase.from('notes').select('*').eq('case_id', id).order('created_at', { ascending: false }),
+    ]);
+
+    // Generate signed URLs for files with storage_path
+    const filesWithUrls = await Promise.all((fileRows || []).map(async (f: any) => {
+      let displayUrl = f.data_url || '';
+      if (f.storage_path && !displayUrl) {
+        const { data } = await supabase.storage
+          .from('case-documents')
+          .createSignedUrl(f.storage_path, 3600);
+        displayUrl = data?.signedUrl || '';
+      }
+      return { ...f, data_url: displayUrl };
+    }));
+
+    const mapFiles = (itemId: string): UploadedFile[] =>
+      filesWithUrls
+        .filter((f: any) => f.checklist_item_id === itemId)
+        .map((f: any) => ({
+          id: f.id,
+          name: f.file_name,
+          dataUrl: f.data_url || '',
+          storagePath: f.storage_path || undefined,
+          uploadedAt: f.uploaded_at || new Date().toISOString(),
+          reviewStatus: f.review_status || 'pending',
+          reviewNote: f.review_note || undefined,
+          uploadedBy: f.uploaded_by || 'client',
+        }));
+
+    const checklist: ChecklistItem[] = (checklistRows || []).map((row: any) => ({
+      id: row.id,
+      category: row.category,
+      label: row.label,
+      description: row.description || '',
+      whyWeNeedThis: row.why_we_need_this || '',
+      required: row.required ?? true,
+      files: mapFiles(row.id),
+      flaggedForAttorney: row.flagged_for_attorney ?? false,
+      attorneyNote: row.attorney_note || undefined,
+      correctionRequest: row.correction_status
+        ? {
+            reason: row.correction_reason || '',
+            details: row.correction_details || undefined,
+            requestedBy: row.correction_requested_by || '',
+            requestedAt: row.correction_requested_at || '',
+            targetFileId: row.correction_target_file_id || undefined,
+            status: row.correction_status,
+          }
+        : undefined,
+      resubmittedAt: row.resubmitted_at || undefined,
+      completed: row.completed ?? false,
+      notApplicable: row.not_applicable ?? false,
+      notApplicableReason: row.not_applicable_reason || undefined,
+      notApplicableMarkedBy: row.not_applicable_marked_by || undefined,
+      notApplicableAt: row.not_applicable_at || undefined,
+    }));
+
+    const builtCase: Case = {
+      id: caseRow.id,
+      clientName: caseRow.client_name,
+      clientEmail: caseRow.client_email,
+      clientPhone: caseRow.client_phone || undefined,
+      clientDob: caseRow.client_dob || undefined,
+      caseCode: caseRow.case_code || undefined,
+      courtCaseNumber: caseRow.court_case_number || undefined,
+      chapterType: caseRow.chapter_type as any,
+      assignedParalegal: caseRow.assigned_paralegal || '',
+      assignedAttorney: caseRow.assigned_attorney || '',
+      filingDeadline: caseRow.filing_deadline,
+      createdAt: caseRow.created_at || new Date().toISOString(),
+      lastClientActivity: caseRow.last_client_activity || undefined,
+      checklist,
+      activityLog: (activityRows || []).map((a: any) => ({
+        id: a.id,
+        eventType: a.event_type,
+        actorRole: a.actor_role || '',
+        actorName: a.actor_name || '',
+        description: a.description || '',
+        timestamp: a.created_at || new Date().toISOString(),
+        itemId: a.item_id || undefined,
+      })),
+      notes: (noteRows || []).map((n: any) => ({
+        id: n.id,
+        author: n.author_name || '',
+        authorRole: n.author_role || '',
+        content: n.content || '',
+        timestamp: n.created_at || new Date().toISOString(),
+        clientVisible: n.visibility === 'client',
+      })),
+      checkpointsCompleted: [],
+      urgency: caseRow.urgency || 'normal',
+      status: caseRow.status || 'active',
+      readyToFile: caseRow.ready_to_file ?? false,
+      wizardStep: caseRow.wizard_step ?? 0,
+      closedAt: caseRow.closed_at || undefined,
+      retentionNotifiedAt: caseRow.retention_notified_at || undefined,
+      retentionDeleteScheduledAt: caseRow.retention_delete_scheduled_at || undefined,
+      district: caseRow.district || undefined,
+      meetingDate: caseRow.meeting_date || undefined,
+    };
+
+    setCaseData(builtCase);
+  };
+
   useEffect(() => {
     if (!caseId) return;
-    const c = getCase(caseId);
-    if (!c) {
-      navigate('/paralegal');
-      return;
-    }
-    setCaseData(c);
+    void loadCaseFromSupabase(caseId);
   }, [caseId, navigate]);
 
   const refresh = () => {
     if (!caseId) return;
-    const c = getCase(caseId);
-    if (c) setCaseData(c);
+    void loadCaseFromSupabase(caseId);
   };
 
   if (!caseData) return null;
