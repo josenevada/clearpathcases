@@ -242,8 +242,9 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       const ext = file.name.split('.').pop() || 'pdf';
       const cleanName = `${clientLastName}-${docType}-${date}.${ext}`;
 
-      if (file.dataUrl) {
-        const response = await fetch(file.dataUrl);
+      const url = await getFileUrl(file);
+      if (url) {
+        const response = await fetch(url);
         const blob = await response.blob();
         zip.folder(folder)?.file(cleanName, blob);
       } else {
