@@ -220,23 +220,17 @@ const ClientWizard = () => {
           .eq('case_id', resolvedCaseId)
           .order('created_at', { ascending: true });
 
-        // Generate signed URLs for files that have storage_path
-        const filesWithUrls = await Promise.all((fileRows || []).map(async (f) => {
+        // Generate public URLs for files that have storage_path
+        const filesWithUrls = (fileRows || []).map((f) => {
           let displayUrl = f.data_url || '';
           if (f.storage_path && (!f.data_url || f.data_url === '')) {
-            try {
-              const { data: signedUrlData } = await supabase.storage
-                .from('case-documents')
-                .createSignedUrl(f.storage_path, 3600);
-              if (signedUrlData?.signedUrl) {
-                displayUrl = signedUrlData.signedUrl;
-              }
-            } catch {
-              console.warn('Failed to generate signed URL for', f.storage_path);
-            }
+            const { data: publicUrlData } = supabase.storage
+              .from('case-documents')
+              .getPublicUrl(f.storage_path);
+            displayUrl = publicUrlData.publicUrl || '';
           }
           return { ...f, displayUrl };
-        }));
+        });
 
         // Build checklist items from Supabase data
         const checklist: ChecklistItem[] = (checklistRows || []).map(row => {
