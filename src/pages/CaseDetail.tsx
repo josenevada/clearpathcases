@@ -529,7 +529,7 @@ const CaseDetail = () => {
     updateCase(caseData.id, c => ({
       ...c,
       notes: [...c.notes, {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         author: viewRole === 'paralegal' ? caseData.assignedParalegal : caseData.assignedAttorney,
         authorRole: viewRole,
         content: newNote,
