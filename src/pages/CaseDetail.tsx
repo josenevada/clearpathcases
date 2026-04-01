@@ -135,22 +135,17 @@ const CaseDetail = () => {
       supabase.from('notes').select('*').eq('case_id', id).order('created_at', { ascending: false }),
     ]);
 
-    // Generate signed URLs for files with storage_path
-    const filesWithUrls = await Promise.all((fileRows || []).map(async (f: any) => {
+    // Generate public URLs for files with storage_path
+    const filesWithUrls = (fileRows || []).map((f: any) => {
       let displayUrl = f.data_url || '';
       if (f.storage_path && !displayUrl) {
-        try {
-          const { data, error } = await supabase.storage
-            .from('case-documents')
-            .createSignedUrl(f.storage_path, 3600);
-          if (error) console.error('CaseDetail signed URL error:', f.storage_path, error);
-          displayUrl = data?.signedUrl || '';
-        } catch (e) {
-          console.error('CaseDetail signed URL exception:', e);
-        }
+        const { data: publicUrlData } = supabase.storage
+          .from('case-documents')
+          .getPublicUrl(f.storage_path);
+        displayUrl = publicUrlData.publicUrl || '';
       }
       return { ...f, data_url: displayUrl };
-    }));
+    });
 
     const mapFiles = (itemId: string): UploadedFile[] =>
       filesWithUrls

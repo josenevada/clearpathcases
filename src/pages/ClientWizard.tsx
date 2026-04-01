@@ -566,18 +566,12 @@ const ClientWizard = () => {
       return;
     }
 
-    // Get a signed URL for immediate display
+    // Get a public URL for immediate display
     let displayUrl = '';
-    try {
-      const { data: signedUrlData } = await supabase.storage
-        .from('case-documents')
-        .createSignedUrl(storagePath, 3600);
-      if (signedUrlData?.signedUrl) {
-        displayUrl = signedUrlData.signedUrl;
-      }
-    } catch {
-      console.warn('Failed to get signed URL after upload');
-    }
+    const { data: publicUrlData } = supabase.storage
+      .from('case-documents')
+      .getPublicUrl(storagePath);
+    displayUrl = publicUrlData.publicUrl || '';
 
     const newFile = {
       id: newFileId,
