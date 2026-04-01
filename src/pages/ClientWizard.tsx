@@ -551,7 +551,7 @@ const ClientWizard = () => {
     // Compress image if needed
     const processedFile = await compressImage(file);
 
-    const newFileId = Math.random().toString(36).substr(2, 9);
+    const newFileId = crypto.randomUUID();
     const uploadedAt = new Date().toISOString();
 
     // Upload to Supabase Storage
