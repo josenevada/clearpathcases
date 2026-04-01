@@ -100,7 +100,7 @@ const mapCase = async (caseRow: any, checklistRows: any[], fileRows: any[]): Pro
   filingDeadline: caseRow.filing_deadline,
   createdAt: caseRow.created_at || new Date().toISOString(),
   lastClientActivity: caseRow.last_client_activity || undefined,
-  checklist: mapChecklist(checklistRows, fileRows),
+  checklist: await mapChecklist(checklistRows, fileRows),
   activityLog: [],
   notes: [],
   checkpointsCompleted: [],
