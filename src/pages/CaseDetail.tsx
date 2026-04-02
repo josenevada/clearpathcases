@@ -364,7 +364,7 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleOverride = (item: ChecklistItem, fileId: string) => {
+  const handleOverride = async (item: ChecklistItem, fileId: string) => {
     updateCase(caseData.id, c => {
       const found = c.checklist.find(checklistItem => checklistItem.id === item.id);
       const targetFile = found?.files.find(file => file.id === fileId);
