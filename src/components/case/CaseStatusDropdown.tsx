@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { updateCase, addActivityEntry, type Case, type CaseStatus } from '@/lib/store';
+import { updateCase, type Case, type CaseStatus } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
