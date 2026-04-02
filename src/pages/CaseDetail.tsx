@@ -423,12 +423,15 @@ const CaseDetail = () => {
     }
 
     updateCase(caseData.id, c => ({ ...c, readyToFile: true }));
-    addActivityEntry(caseData.id, {
-      eventType: 'case_ready',
-      actorRole: 'attorney',
-      actorName: caseData.assignedAttorney,
-      description: 'Case marked as ready for filing',
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'case_ready',
+        actor_role: 'attorney',
+        actor_name: caseData.assignedAttorney,
+        description: 'Case marked as ready for filing',
+      });
+    })();
     toast.success('Case marked ready for filing!');
     refresh();
   };
