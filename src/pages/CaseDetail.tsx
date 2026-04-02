@@ -60,13 +60,18 @@ import UpgradeModal from '@/components/UpgradeModal';
 type ViewRole = 'paralegal' | 'attorney';
 type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test' | 'exemptions' | 'signatures';
 
-const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
-  const [state, setState] = useState<'idle' | 'success'>('idle');
+const ApproveButton = ({ onApprove }: { onApprove: () => Promise<void> }) => {
+  const [state, setState] = useState<'idle' | 'loading' | 'success'>('idle');
 
-  const handleClick = () => {
-    onApprove();
-    setState('success');
-    setTimeout(() => setState('idle'), 1500);
+  const handleClick = async () => {
+    setState('loading');
+    try {
+      await onApprove();
+      setState('success');
+      setTimeout(() => setState('idle'), 2000);
+    } catch {
+      setState('idle');
+    }
   };
 
   return (
@@ -74,13 +79,13 @@ const ApproveButton = ({ onApprove }: { onApprove: () => void }) => {
       variant="outline"
       size="sm"
       onClick={handleClick}
+      disabled={state === 'loading' || state === 'success'}
       className={`gap-1 border-primary/30 text-primary hover:bg-primary/10 transition-colors ${
         state === 'success' ? 'border-success/40 text-success bg-success/10' : ''
       }`}
-      disabled={state === 'success'}
     >
       <CheckCircle2 className="w-3 h-3" />
-      {state === 'success' ? 'Approved' : 'Approve'}
+      {state === 'loading' ? 'Saving…' : state === 'success' ? 'Approved' : 'Approve'}
     </Button>
   );
 };
@@ -278,17 +283,7 @@ const CaseDetail = () => {
   };
 
   const handleApprove = async (item: ChecklistItem, fileId: string) => {
-    updateCase(caseData.id, c => {
-      const found = c.checklist.find(checklistItem => checklistItem.id === item.id);
-      const targetFile = found?.files.find(file => file.id === fileId);
-      if (found && targetFile) {
-        targetFile.reviewStatus = 'approved';
-        targetFile.reviewNote = undefined;
-      }
-      return c;
-    });
-
-    // Persist to Supabase
+    // Persist to Supabase first
     await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', fileId);
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
@@ -297,14 +292,6 @@ const CaseDetail = () => {
       actor_name: caseData.assignedAttorney,
       description: `Attorney approved ${item.label}`,
       item_id: item.id,
-    });
-
-    addActivityEntry(caseData.id, {
-      eventType: 'file_approved',
-      actorRole: 'attorney',
-      actorName: caseData.assignedAttorney,
-      description: `Attorney approved ${item.label}`,
-      itemId: item.id,
     });
 
     toast.success(`${item.label} approved`);
@@ -1028,15 +1015,6 @@ const CaseDetail = () => {
                                                         {viewRole === 'paralegal' && file.reviewStatus !== 'approved' && file.reviewStatus !== 'overridden' && (
                                                           <ApproveButton
                                                             onApprove={async () => {
-                                                              updateCase(caseData.id, c => {
-                                                                const found = c.checklist.find(ci => ci.id === item.id);
-                                                                const target = found?.files.find(f => f.id === file.id);
-                                                                if (found && target) {
-                                                                  target.reviewStatus = 'approved';
-                                                                  target.reviewNote = undefined;
-                                                                }
-                                                                return c;
-                                                              });
                                                               await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', file.id);
                                                               await supabase.from('activity_log').insert({
                                                                 case_id: caseData.id,
@@ -1045,13 +1023,6 @@ const CaseDetail = () => {
                                                                 actor_name: user?.fullName || caseData.assignedParalegal,
                                                                 description: `${user?.fullName || caseData.assignedParalegal} approved ${file.name}`,
                                                                 item_id: item.id,
-                                                              });
-                                                              addActivityEntry(caseData.id, {
-                                                                eventType: 'file_approved',
-                                                                actorRole: 'paralegal',
-                                                                actorName: user?.fullName || caseData.assignedParalegal,
-                                                                description: `${user?.fullName || caseData.assignedParalegal} approved ${file.name}`,
-                                                                itemId: item.id,
                                                               });
                                                               refresh();
                                                             }}
