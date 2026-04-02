@@ -65,6 +65,7 @@ const mapChecklist = async (rows: any[], fileRows: any[]): Promise<ChecklistItem
       whyWeNeedThis: row.why_we_need_this || '',
       required: row.required ?? true,
       files,
+      textEntry: row.text_value ? (row.text_value as any) : undefined,
       flaggedForAttorney: row.flagged_for_attorney ?? false,
       attorneyNote: row.attorney_note || undefined,
       correctionRequest: row.correction_status
