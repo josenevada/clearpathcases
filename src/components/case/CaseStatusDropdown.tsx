@@ -50,10 +50,11 @@ const CaseStatusDropdown = ({ caseData, actorName, onUpdated }: CaseStatusDropdo
       readyToFile: newStatus === 'ready-to-file' || newStatus === 'filed' ? true : c.readyToFile,
     }));
 
-    addActivityEntry(caseData.id, {
-      eventType: 'status_change',
-      actorRole: 'paralegal',
-      actorName,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'status_change',
+      actor_role: 'paralegal',
+      actor_name: actorName,
       description: `${actorName} marked this case as ${STATUS_CONFIG[newStatus].label}`,
     });
 
