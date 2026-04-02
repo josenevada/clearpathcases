@@ -326,6 +326,8 @@ const ClientWizard = () => {
         let found = false;
         for (let ci = 0; ci < CATEGORIES.length; ci++) {
           const catItems = c.checklist.filter(item => item.category === CATEGORIES[ci]);
+          // Skip categories with no items entirely
+          if (catItems.length === 0) continue;
           const firstIncomplete = catItems.findIndex(item => !isItemEffectivelyComplete(item));
           if (firstIncomplete >= 0) {
             resumeCatIdx = ci;
@@ -493,6 +495,22 @@ const ClientWizard = () => {
   }
 
   const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+
+  // If current category is empty, advance to next non-empty one
+  if (categoryItems.length === 0) {
+    const nextNonEmpty = CATEGORIES.findIndex(
+      (cat, idx) => idx > currentCategoryIdx && 
+      caseData.checklist.filter(i => i.category === cat).length > 0
+    );
+    if (nextNonEmpty !== -1) {
+      setTimeout(() => {
+        setCurrentCategoryIdx(nextNonEmpty);
+        setCurrentItemIdx(0);
+      }, 0);
+    }
+    return null; // render nothing while transitioning
+  }
+
   const currentItem = categoryItems[currentItemIdx];
   const progress = calculateProgress(caseData);
   const openCorrectionItem = getOpenCorrectionItem(caseData);
@@ -872,7 +890,18 @@ const ClientWizard = () => {
   const handleStepTransitionContinue = () => {
     if (showStepTransition === null || !caseData) return;
     const completedStep = showStepTransition + 1;
-    const nextCategory = showStepTransition + 1;
+    // Find next non-empty category
+    let nextCategory = showStepTransition + 1;
+    while (nextCategory < CATEGORIES.length) {
+      const nextCatItems = caseData.checklist.filter(
+        item => item.category === CATEGORIES[nextCategory]
+      );
+      if (nextCatItems.length > 0) break;
+      nextCategory++;
+    }
+    if (nextCategory >= CATEGORIES.length) {
+      nextCategory = CATEGORIES.length - 1;
+    }
     setShowStepTransition(null);
     setCurrentCategoryIdx(nextCategory);
     setCurrentItemIdx(0);
