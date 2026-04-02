@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ExternalLink } from 'lucide-react';
-import { addActivityEntry } from '@/lib/store';
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface RetrievalLink {
