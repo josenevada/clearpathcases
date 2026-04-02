@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { addActivityEntry, calculateProgress, type Case } from '@/lib/store';
+import { calculateProgress, type Case } from '@/lib/store';
 import { hasOpenCorrection } from '@/lib/corrections';
 import { differenceInDays, differenceInHours } from 'date-fns';
 
