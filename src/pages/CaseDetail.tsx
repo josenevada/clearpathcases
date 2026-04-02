@@ -39,7 +39,7 @@ import { useAuth } from '@/lib/auth';
 import {
   updateCase,
   deleteCase,
-  addActivityEntry,
+  
   calculateProgress,
   isItemEffectivelyComplete,
   CATEGORIES,
