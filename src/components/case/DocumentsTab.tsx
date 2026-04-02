@@ -1083,13 +1083,16 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   }
                 })();
 
-                addActivityEntry(caseData.id, {
-                  eventType: 'file_deleted',
-                  actorRole: 'paralegal',
-                  actorName,
-                  description: `${actorName} deleted ${fileName}`,
-                  itemId: selectedFile.item.id,
-                });
+                (async () => {
+                  await supabase.from('activity_log').insert({
+                    case_id: caseData.id,
+                    event_type: 'file_deleted',
+                    actor_role: 'paralegal',
+                    actor_name: actorName,
+                    description: `${actorName} deleted ${fileName}`,
+                    item_id: selectedFile.item.id,
+                  });
+                })();
 
                 toast.success(`${fileName} deleted`);
                 setSelectedFile(null);
