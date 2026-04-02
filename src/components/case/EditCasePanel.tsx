@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { updateCase, addActivityEntry, type Case, type ChapterType } from '@/lib/store';
+import { updateCase, type Case, type ChapterType } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
