@@ -106,13 +106,14 @@ const DocumentRetrievalLinks = ({ itemLabel, caseId, clientName }: DocumentRetri
   const handleLinkClick = (link: RetrievalLink) => {
     window.open(link.url, '_blank', 'noopener,noreferrer');
 
-    // Log activity
-    addActivityEntry(caseId, {
-      eventType: 'checkpoint_completed' as any,
-      actorRole: 'client',
-      actorName: clientName,
+    // Log activity to Supabase
+    supabase.from('activity_log').insert({
+      case_id: caseId,
+      event_type: 'checkpoint_completed',
+      actor_role: 'client',
+      actor_name: clientName,
       description: `${clientName} opened retrieval link for ${itemLabel} (${link.label})`,
-    });
+    }).then(() => {});
 
     // Sync to Supabase
     supabase.from('activity_log').insert({

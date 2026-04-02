@@ -147,10 +147,11 @@ export const sendSmartReminder = async (caseData: Case): Promise<NotificationRes
   if (result.sms.status === 'sent') channels.push('SMS');
 
   if (channels.length > 0) {
-    addActivityEntry(caseData.id, {
-      eventType: 'reminder_sent',
-      actorRole: 'paralegal',
-      actorName: 'System',
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'reminder_sent',
+      actor_role: 'paralegal',
+      actor_name: 'System',
       description: `Reminder sent via ${channels.join(' and ')} to ${caseData.clientName}`,
     });
   }
