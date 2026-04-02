@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, ThumbsUp, FileText, Search, Eye } from 'lucide-react';
 import { getDocumentHelp, getValidationHelpMessage, type DocumentHelpContent } from '@/lib/document-help';
-import { addActivityEntry } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentHelpPanelProps {
   itemLabel: string;
