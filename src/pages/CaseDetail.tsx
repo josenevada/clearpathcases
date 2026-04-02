@@ -95,7 +95,7 @@ const CaseDetail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabType) || 'checklist';
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { plan, status: subStatus } = useSubscription();
   const planLimits = getPlanLimits(plan);
   const isTrial = subStatus === 'trial';
