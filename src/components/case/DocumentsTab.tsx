@@ -154,7 +154,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   // Bulk approve
-  const handleBulkApprove = useCallback(() => {
+  const handleBulkApprove = useCallback(async () => {
     const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
     if (targets.length === 0) return;
 
