@@ -350,7 +350,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     setShowExportWarning(null);
   };
 
-  const handleApprove = (entry: FileEntry) => {
+  const handleApprove = async (entry: FileEntry) => {
     updateCase(caseData.id, c => {
       const found = c.checklist.find(i => i.id === entry.item.id);
       if (found && found.files.length > 0) {
@@ -358,6 +358,16 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         if (f) f.reviewStatus = 'approved';
       }
       return c;
+    });
+    // Persist to Supabase
+    await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', entry.file.id);
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_approved',
+      actor_role: 'attorney',
+      actor_name: caseData.assignedAttorney,
+      description: `Attorney approved ${entry.item.label}`,
+      item_id: entry.item.id,
     });
     addActivityEntry(caseData.id, {
       eventType: 'file_approved', actorRole: 'attorney', actorName: caseData.assignedAttorney,

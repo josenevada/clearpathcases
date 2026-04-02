@@ -277,7 +277,7 @@ const CaseDetail = () => {
     setCorrectionDetails('');
   };
 
-  const handleApprove = (item: ChecklistItem, fileId: string) => {
+  const handleApprove = async (item: ChecklistItem, fileId: string) => {
     updateCase(caseData.id, c => {
       const found = c.checklist.find(checklistItem => checklistItem.id === item.id);
       const targetFile = found?.files.find(file => file.id === fileId);
@@ -286,6 +286,17 @@ const CaseDetail = () => {
         targetFile.reviewNote = undefined;
       }
       return c;
+    });
+
+    // Persist to Supabase
+    await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', fileId);
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_approved',
+      actor_role: 'attorney',
+      actor_name: caseData.assignedAttorney,
+      description: `Attorney approved ${item.label}`,
+      item_id: item.id,
     });
 
     addActivityEntry(caseData.id, {
@@ -1016,7 +1027,7 @@ const CaseDetail = () => {
                                                       <div className="mt-3 flex flex-wrap gap-2">
                                                         {viewRole === 'paralegal' && file.reviewStatus !== 'approved' && file.reviewStatus !== 'overridden' && (
                                                           <ApproveButton
-                                                            onApprove={() => {
+                                                            onApprove={async () => {
                                                               updateCase(caseData.id, c => {
                                                                 const found = c.checklist.find(ci => ci.id === item.id);
                                                                 const target = found?.files.find(f => f.id === file.id);
@@ -1025,6 +1036,15 @@ const CaseDetail = () => {
                                                                   target.reviewNote = undefined;
                                                                 }
                                                                 return c;
+                                                              });
+                                                              await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', file.id);
+                                                              await supabase.from('activity_log').insert({
+                                                                case_id: caseData.id,
+                                                                event_type: 'file_approved',
+                                                                actor_role: 'paralegal',
+                                                                actor_name: user?.fullName || caseData.assignedParalegal,
+                                                                description: `${user?.fullName || caseData.assignedParalegal} approved ${file.name}`,
+                                                                item_id: item.id,
                                                               });
                                                               addActivityEntry(caseData.id, {
                                                                 eventType: 'file_approved',
