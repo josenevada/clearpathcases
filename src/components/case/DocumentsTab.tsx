@@ -390,9 +390,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       }
       return c;
     });
-    addActivityEntry(caseData.id, {
-      eventType: 'file_correction', actorRole: 'attorney', actorName: caseData.assignedAttorney,
-      description: `Correction requested on ${entry.item.label} — '${correctionNote}'`, itemId: entry.item.id,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_correction',
+      actor_role: 'attorney',
+      actor_name: caseData.assignedAttorney,
+      description: `Correction requested on ${entry.item.label} — '${correctionNote}'`,
+      item_id: entry.item.id,
     });
     setCorrectionNote('');
     setSelectedFile(null);
