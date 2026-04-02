@@ -375,12 +375,13 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'file_overridden',
-      actorRole: 'attorney',
-      actorName: caseData.assignedAttorney,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_overridden',
+      actor_role: 'attorney',
+      actor_name: caseData.assignedAttorney,
       description: `Attorney overrode and approved ${item.label}`,
-      itemId: item.id,
+      item_id: item.id,
     });
 
     setOverrideNote('');
