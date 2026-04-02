@@ -412,26 +412,43 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleMarkReady = () => {
-    const allRequiredApproved = caseData.checklist
+  const handleMarkReady = async () => {
+    const allRequiredComplete = caseData.checklist
       .filter(item => item.required)
-      .every(item => item.files.length > 0 && item.files.some(file => file.reviewStatus === 'approved' || file.reviewStatus === 'overridden'));
+      .every(item => {
+        if (item.notApplicable) return true;
+        if (item.textEntry?.savedAt) return true;
+        if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
+        if (item.completed && item.files.length === 0 && !item.textEntry) return false;
+        return false;
+      });
 
-    if (!allRequiredApproved) {
-      toast.error('All required items must be approved before marking ready.');
+    if (!allRequiredComplete) {
+      const blocking = caseData.checklist
+        .filter(item => item.required && !item.notApplicable)
+        .filter(item => {
+          if (item.textEntry?.savedAt) return false;
+          if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return false;
+          return true;
+        })
+        .map(item => item.label);
+
+      toast.error(`${blocking.length} item${blocking.length !== 1 ? 's' : ''} still need approval: ${blocking.slice(0, 2).join(', ')}${blocking.length > 2 ? ` and ${blocking.length - 2} more` : ''}`);
       return;
     }
 
-    updateCase(caseData.id, c => ({ ...c, readyToFile: true }));
-    (async () => {
-      await supabase.from('activity_log').insert({
-        case_id: caseData.id,
-        event_type: 'case_ready',
-        actor_role: 'attorney',
-        actor_name: caseData.assignedAttorney,
-        description: 'Case marked as ready for filing',
-      });
-    })();
+    await supabase.from('cases')
+      .update({ ready_to_file: true })
+      .eq('id', caseData.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'case_ready',
+      actor_role: 'attorney',
+      actor_name: user?.fullName || caseData.assignedAttorney,
+      description: 'Case marked as ready for filing',
+    });
+
     toast.success('Case marked ready for filing!');
     refresh();
   };
