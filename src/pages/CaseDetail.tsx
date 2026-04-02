@@ -243,16 +243,21 @@ const CaseDetail = () => {
   };
 
   useEffect(() => {
-    if (!caseId) return;
+    if (!caseId || authLoading) return;
+    if (!user) { navigate('/login', { replace: true }); return; }
     void loadCaseFromSupabase(caseId);
-  }, [caseId, navigate]);
+  }, [caseId, navigate, authLoading, user]);
 
   const refresh = () => {
     if (!caseId) return;
     void loadCaseFromSupabase(caseId);
   };
 
-  if (!caseData) return null;
+  if (authLoading || !caseData) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-muted-foreground font-body">Loading case…</div>
+    </div>
+  );
 
   const progress = calculateProgress(caseData);
   const urgencyClass = { critical: 'urgency-critical', 'at-risk': 'urgency-at-risk', normal: 'urgency-normal' }[caseData.urgency];
