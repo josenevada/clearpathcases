@@ -51,13 +51,15 @@ const DocumentHelpPanel = ({
   const logOpen = useCallback(() => {
     if (!hasLoggedOpen.current) {
       hasLoggedOpen.current = true;
-      addActivityEntry(caseId, {
-        eventType: 'checkpoint_completed',
-        actorRole: 'client',
-        actorName: caseName,
-        description: `${caseName.split(' ')[0]} opened help for ${itemLabel}`,
-        itemId: undefined,
-      });
+      (async () => {
+        await supabase.from('activity_log').insert({
+          case_id: caseId,
+          event_type: 'checkpoint_completed',
+          actor_role: 'client',
+          actor_name: caseName,
+          description: `${caseName.split(' ')[0]} opened help for ${itemLabel}`,
+        });
+      })();
     }
   }, [caseId, caseName, itemLabel]);
 
