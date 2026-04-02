@@ -106,10 +106,11 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
 
       const oldCCN = caseData.courtCaseNumber || '';
       if (courtCaseNumber && courtCaseNumber !== oldCCN) {
-        addActivityEntry(caseData.id, {
-          eventType: 'case_updated',
-          actorRole: 'paralegal',
-          actorName,
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'case_updated',
+          actor_role: 'paralegal',
+          actor_name: actorName,
           description: `${actorName} added court case number ${courtCaseNumber}`,
         });
         await supabase.from('activity_log').insert({
