@@ -125,12 +125,13 @@ const CaseDetail = () => {
   const [addDocRequired, setAddDocRequired] = useState(true);
 
   const loadCaseFromSupabase = async (id: string) => {
-    const { data: caseRow } = await supabase
+    const { data: caseRow, error: caseError } = await supabase
       .from('cases')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
+    if (caseError) { console.error('Case load error:', caseError); toast.error('Failed to load case'); navigate('/paralegal'); return; }
     if (!caseRow) { navigate('/paralegal'); return; }
 
     const [{ data: checklistRows }, { data: fileRows }, { data: activityRows }, { data: noteRows }] = await Promise.all([
