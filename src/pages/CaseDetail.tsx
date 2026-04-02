@@ -970,45 +970,44 @@ const CaseDetail = () => {
                                                 {item.completed ? (item.textEntry?.savedAt ? 'Provided' : item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
                                               </Badge>
                                             </div>
-                                            {viewRole === 'attorney' && 
-                                             !item.files.some(f => f.reviewStatus === 'approved') &&
-                                             !(item.completed && item.files.some(f => f.id.startsWith('text-approved'))) && (
+                                            {viewRole === 'attorney' && item.textEntry?.savedAt && !item.files.some(f => f.reviewStatus === 'approved') && (
                                               <div className="flex gap-2 mt-2">
                                                 <Button variant="success" size="sm" onClick={async () => {
-                                                  const approvedAt = item.textEntry!.savedAt;
-                                                  const { error } = await supabase.from('files').insert({
-                                                    id: 'text-approved-' + item.id,
-                                                    case_id: caseData!.id,
-                                                    checklist_item_id: item.id,
-                                                    file_name: 'Employer Info',
-                                                    data_url: '',
-                                                    storage_path: null,
-                                                    uploaded_at: approvedAt,
-                                                    review_status: 'approved',
-                                                    uploaded_by: 'client',
-                                                  });
+                                                  try {
+                                                    const approvedAt = item.textEntry?.savedAt || new Date().toISOString();
+                                                    const fileId = 'text-approved-' + item.id;
 
-                                                  if (error && !error.message.includes('duplicate')) {
-                                                    await supabase.from('files')
-                                                      .update({ review_status: 'approved' })
-                                                      .eq('id', 'text-approved-' + item.id);
+                                                    await supabase.from('files').upsert({
+                                                      id: fileId,
+                                                      case_id: caseData!.id,
+                                                      checklist_item_id: item.id,
+                                                      file_name: 'Employer Info',
+                                                      data_url: '',
+                                                      storage_path: null,
+                                                      uploaded_at: approvedAt,
+                                                      review_status: 'approved',
+                                                      uploaded_by: 'client',
+                                                    }, { onConflict: 'id' });
+
+                                                    await supabase.from('checklist_items')
+                                                      .update({ completed: true })
+                                                      .eq('id', item.id);
+
+                                                    await supabase.from('activity_log').insert({
+                                                      case_id: caseData!.id,
+                                                      event_type: 'file_approved',
+                                                      actor_role: 'attorney',
+                                                      actor_name: user?.fullName || caseData!.assignedAttorney,
+                                                      description: `Attorney approved employer information for ${caseData!.clientName}`,
+                                                      item_id: item.id,
+                                                    });
+
+                                                    toast.success('Employer information approved');
+                                                    refresh();
+                                                  } catch (err) {
+                                                    console.error('Failed to approve employer info:', err);
+                                                    toast.error('Approval failed. Please try again.');
                                                   }
-
-                                                  await supabase.from('checklist_items')
-                                                    .update({ completed: true })
-                                                    .eq('id', item.id);
-
-                                                  await supabase.from('activity_log').insert({
-                                                    case_id: caseData!.id,
-                                                    event_type: 'file_approved',
-                                                    actor_role: 'attorney',
-                                                    actor_name: user?.fullName || caseData!.assignedAttorney,
-                                                    description: `Attorney approved employer information for ${caseData!.clientName}`,
-                                                    item_id: item.id,
-                                                  });
-
-                                                  toast.success('Employer information approved');
-                                                  refresh();
                                                 }}>
                                                   <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
                                                 </Button>
