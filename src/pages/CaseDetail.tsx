@@ -397,13 +397,16 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_flagged',
-      actorRole: 'paralegal',
-      actorName: caseData.assignedParalegal,
-      description: `${item.flaggedForAttorney ? 'Unflagged' : 'Flagged'} ${item.label} for attorney review`,
-      itemId: item.id,
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'item_flagged',
+        actor_role: 'paralegal',
+        actor_name: caseData.assignedParalegal,
+        description: `${item.flaggedForAttorney ? 'Unflagged' : 'Flagged'} ${item.label} for attorney review`,
+        item_id: item.id,
+      });
+    })();
 
     toast.success(item.flaggedForAttorney ? 'Flag removed' : 'Flagged for attorney');
     refresh();
