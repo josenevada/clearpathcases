@@ -970,7 +970,9 @@ const CaseDetail = () => {
                                                 {item.completed ? (item.textEntry?.savedAt ? 'Provided' : item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
                                               </Badge>
                                             </div>
-                                            {viewRole === 'attorney' && !item.files.some(f => f.reviewStatus === 'approved') && (
+                                            {viewRole === 'attorney' && 
+                                             !item.files.some(f => f.reviewStatus === 'approved') &&
+                                             !(item.completed && item.files.some(f => f.id.startsWith('text-approved'))) && (
                                               <div className="flex gap-2 mt-2">
                                                 <Button variant="success" size="sm" onClick={async () => {
                                                   const approvedAt = item.textEntry!.savedAt;
@@ -991,6 +993,10 @@ const CaseDetail = () => {
                                                       .update({ review_status: 'approved' })
                                                       .eq('id', 'text-approved-' + item.id);
                                                   }
+
+                                                  await supabase.from('checklist_items')
+                                                    .update({ completed: true })
+                                                    .eq('id', item.id);
 
                                                   await supabase.from('activity_log').insert({
                                                     case_id: caseData!.id,
