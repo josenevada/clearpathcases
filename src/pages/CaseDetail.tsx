@@ -174,6 +174,7 @@ const CaseDetail = () => {
       whyWeNeedThis: row.why_we_need_this || '',
       required: row.required ?? true,
       files: mapFiles(row.id),
+      textEntry: row.text_value ? (row.text_value as any) : undefined,
       flaggedForAttorney: row.flagged_for_attorney ?? false,
       attorneyNote: row.attorney_note || undefined,
       correctionRequest: row.correction_status
@@ -966,7 +967,7 @@ const CaseDetail = () => {
                                                 </p>
                                               </div>
                                               <Badge className={`${getFileStatusBadgeClass(item.files[0]?.reviewStatus || 'pending')} text-xs`}>
-                                                {item.completed ? (item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
+                                                {item.completed ? (item.textEntry?.savedAt ? 'Provided' : item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
                                               </Badge>
                                             </div>
                                             {viewRole === 'attorney' && (
