@@ -970,16 +970,39 @@ const CaseDetail = () => {
                                                 {item.completed ? (item.textEntry?.savedAt ? 'Provided' : item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
                                               </Badge>
                                             </div>
-                                            {viewRole === 'attorney' && (
+                                            {viewRole === 'attorney' && !item.files.some(f => f.reviewStatus === 'approved') && (
                                               <div className="flex gap-2 mt-2">
-                                                <Button variant="success" size="sm" onClick={() => {
-                                                  const updated = updateCase(caseData!.id, c => {
-                                                    const ci = c.checklist.find(x => x.id === item.id);
-                                                    if (ci) ci.files = [{ id: 'text-approved', name: 'Employer Info', dataUrl: '', uploadedAt: item.textEntry!.savedAt, reviewStatus: 'approved', uploadedBy: 'client' }];
-                                                    return c;
+                                                <Button variant="success" size="sm" onClick={async () => {
+                                                  const approvedAt = item.textEntry!.savedAt;
+                                                  const { error } = await supabase.from('files').insert({
+                                                    id: 'text-approved-' + item.id,
+                                                    case_id: caseData!.id,
+                                                    checklist_item_id: item.id,
+                                                    file_name: 'Employer Info',
+                                                    data_url: '',
+                                                    storage_path: null,
+                                                    uploaded_at: approvedAt,
+                                                    review_status: 'approved',
+                                                    uploaded_by: 'client',
                                                   });
-                                                  if (updated) setCaseData(updated);
+
+                                                  if (error && !error.message.includes('duplicate')) {
+                                                    await supabase.from('files')
+                                                      .update({ review_status: 'approved' })
+                                                      .eq('id', 'text-approved-' + item.id);
+                                                  }
+
+                                                  await supabase.from('activity_log').insert({
+                                                    case_id: caseData!.id,
+                                                    event_type: 'file_approved',
+                                                    actor_role: 'attorney',
+                                                    actor_name: user?.fullName || caseData!.assignedAttorney,
+                                                    description: `Attorney approved employer information for ${caseData!.clientName}`,
+                                                    item_id: item.id,
+                                                  });
+
                                                   toast.success('Employer information approved');
+                                                  refresh();
                                                 }}>
                                                   <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
                                                 </Button>
