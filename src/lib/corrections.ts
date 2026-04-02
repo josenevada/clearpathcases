@@ -18,6 +18,38 @@ export interface ChecklistStatusInfo {
 }
 
 export const getChecklistItemStatus = (item: ChecklistItem): ChecklistStatusInfo => {
+  // Text entry items — check textEntry first
+  if (item.textEntry?.savedAt) {
+    const isApproved = item.files.some(f => f.reviewStatus === 'approved');
+    if (isApproved) {
+      return {
+        key: 'approved',
+        label: 'Approved',
+        colorClass: 'text-success',
+        badgeClass: 'bg-success/10 text-success border-success/20',
+        tone: 'success',
+      };
+    }
+    return {
+      key: 'pending',
+      label: 'Provided',
+      colorClass: 'text-warning',
+      badgeClass: 'bg-warning/10 text-warning border-warning/20',
+      tone: 'warning',
+    };
+  }
+
+  // Completed with no files (text entries loaded from DB)
+  if (item.completed && item.files.length === 0) {
+    return {
+      key: 'pending',
+      label: 'Provided',
+      colorClass: 'text-warning',
+      badgeClass: 'bg-warning/10 text-warning border-warning/20',
+      tone: 'warning',
+    };
+  }
+
   if (item.files.length === 0) {
     return {
       key: 'not-started',
