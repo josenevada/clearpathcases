@@ -522,20 +522,23 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (!newNote.trim()) return;
+    const noteId = crypto.randomUUID();
+    const author = viewRole === 'paralegal' 
+      ? (caseData.assignedParalegal || user?.fullName || 'Staff')
+      : (caseData.assignedAttorney || user?.fullName || 'Attorney');
+    const timestamp = new Date().toISOString();
 
-    updateCase(caseData.id, c => ({
-      ...c,
-      notes: [...c.notes, {
-        id: crypto.randomUUID(),
-        author: viewRole === 'paralegal' ? caseData.assignedParalegal : caseData.assignedAttorney,
-        authorRole: viewRole,
-        content: newNote,
-        timestamp: new Date().toISOString(),
-        clientVisible: noteTab === 'client',
-      }],
-    }));
+    await supabase.from('notes').insert({
+      id: noteId,
+      case_id: caseData.id,
+      author_name: author,
+      author_role: viewRole,
+      content: newNote.trim(),
+      visibility: noteTab === 'client' ? 'client_visible' : 'internal',
+      created_at: timestamp,
+    });
 
     setNewNote('');
     toast.success('Note added');
