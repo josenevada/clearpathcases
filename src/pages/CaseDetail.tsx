@@ -95,7 +95,7 @@ const CaseDetail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabType) || 'checklist';
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { plan, status: subStatus } = useSubscription();
   const planLimits = getPlanLimits(plan);
   const isTrial = subStatus === 'trial';
@@ -125,12 +125,13 @@ const CaseDetail = () => {
   const [addDocRequired, setAddDocRequired] = useState(true);
 
   const loadCaseFromSupabase = async (id: string) => {
-    const { data: caseRow } = await supabase
+    const { data: caseRow, error: caseError } = await supabase
       .from('cases')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
+    if (caseError) { console.error('Case load error:', caseError); toast.error('Failed to load case'); navigate('/paralegal'); return; }
     if (!caseRow) { navigate('/paralegal'); return; }
 
     const [{ data: checklistRows }, { data: fileRows }, { data: activityRows }, { data: noteRows }] = await Promise.all([
@@ -243,16 +244,21 @@ const CaseDetail = () => {
   };
 
   useEffect(() => {
-    if (!caseId) return;
+    if (!caseId || authLoading) return;
+    if (!user) { navigate('/login', { replace: true }); return; }
     void loadCaseFromSupabase(caseId);
-  }, [caseId, navigate]);
+  }, [caseId, navigate, authLoading, user]);
 
   const refresh = () => {
     if (!caseId) return;
     void loadCaseFromSupabase(caseId);
   };
 
-  if (!caseData) return null;
+  if (authLoading || !caseData) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-muted-foreground font-body">Loading case…</div>
+    </div>
+  );
 
   const progress = calculateProgress(caseData);
   const urgencyClass = { critical: 'urgency-critical', 'at-risk': 'urgency-at-risk', normal: 'urgency-normal' }[caseData.urgency];
