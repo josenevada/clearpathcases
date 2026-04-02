@@ -265,12 +265,15 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
   // SSN handling
   const handleRevealSSN = () => {
     setSsnVisible(true);
-    addActivityEntry(caseData.id, {
-      eventType: 'ssn_viewed',
-      actorRole: viewRole,
-      actorName,
-      description: `${actorName} viewed SSN`,
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'ssn_viewed',
+        actor_role: viewRole,
+        actor_name: actorName,
+        description: `${actorName} viewed SSN`,
+      });
+    })();
     onRefresh();
 
     if (ssnTimer) clearTimeout(ssnTimer);
