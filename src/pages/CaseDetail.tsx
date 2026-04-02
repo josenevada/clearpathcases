@@ -413,24 +413,21 @@ const CaseDetail = () => {
   };
 
   const handleMarkReady = async () => {
+    const isRequiredItemComplete = (item: typeof caseData.checklist[number]) => {
+      if (item.notApplicable) return true;
+      if (item.textEntry?.savedAt) return item.attorneyNote?.startsWith('Approved by') ?? false;
+      if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
+      return item.completed && item.files.length === 0;
+    };
+
     const allRequiredComplete = caseData.checklist
       .filter(item => item.required)
-      .every(item => {
-        if (item.notApplicable) return true;
-        if (item.textEntry?.savedAt) return true;
-        if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
-        if (item.completed && item.files.length === 0 && !item.textEntry) return false;
-        return false;
-      });
+      .every(isRequiredItemComplete);
 
     if (!allRequiredComplete) {
       const blocking = caseData.checklist
         .filter(item => item.required && !item.notApplicable)
-        .filter(item => {
-          if (item.textEntry?.savedAt) return false;
-          if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return false;
-          return true;
-        })
+        .filter(item => !isRequiredItemComplete(item))
         .map(item => item.label);
 
       toast.error(`${blocking.length} item${blocking.length !== 1 ? 's' : ''} still need approval: ${blocking.slice(0, 2).join(', ')}${blocking.length > 2 ? ` and ${blocking.length - 2} more` : ''}`);
