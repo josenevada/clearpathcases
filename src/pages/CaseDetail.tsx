@@ -498,13 +498,16 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_not_applicable',
-      actorRole: 'paralegal',
-      actorName,
-      description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
-      itemId: item.id,
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'item_not_applicable',
+        actor_role: 'paralegal',
+        actor_name: actorName,
+        description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
+        item_id: item.id,
+      });
+    })();
 
     // Sync to Supabase
     await supabase.from('checklist_items').update({
