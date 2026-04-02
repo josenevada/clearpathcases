@@ -596,14 +596,6 @@ const CaseDetail = () => {
       input_type: 'file',
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_added',
-      actorRole: 'paralegal',
-      actorName: user?.fullName || 'Staff',
-      description: `Added custom document "${addDocName.trim()}" to ${category}`,
-      itemId: newItemId,
-    });
-
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_added',
