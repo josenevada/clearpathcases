@@ -114,15 +114,6 @@ const DocumentRetrievalLinks = ({ itemLabel, caseId, clientName }: DocumentRetri
       actor_name: clientName,
       description: `${clientName} opened retrieval link for ${itemLabel} (${link.label})`,
     }).then(() => {});
-
-    // Sync to Supabase
-    supabase.from('activity_log').insert({
-      case_id: caseId,
-      event_type: 'checkpoint_completed',
-      actor_role: 'client',
-      actor_name: clientName,
-      description: `${clientName} opened retrieval link for ${itemLabel} (${link.label})`,
-    }).then(() => {});
   };
 
   return (
