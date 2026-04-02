@@ -974,33 +974,39 @@ const CaseDetail = () => {
                                                 </p>
                                               </div>
                                               <Badge className={`${getFileStatusBadgeClass(item.files[0]?.reviewStatus || 'pending')} text-xs`}>
-                                                {item.completed ? (item.textEntry?.savedAt ? 'Provided' : item.files.some(f => f.reviewStatus === 'approved') ? 'Approved' : 'Pending Review') : 'Pending Review'}
+                                                {item.completed 
+                                                  ? (item.textEntry?.savedAt 
+                                                      ? (item.attorneyNote?.startsWith('Approved by') ? 'Approved' : 'Provided')
+                                                      : item.files.some(f => f.reviewStatus === 'approved') 
+                                                        ? 'Approved' 
+                                                        : 'Pending Review'
+                                                    ) 
+                                                  : 'Pending Review'
+                                                }
                                               </Badge>
                                             </div>
-                                            {viewRole === 'attorney' && item.textEntry?.savedAt && !item.files.some(f => f.reviewStatus === 'approved') && (
+                                            {viewRole === 'attorney' && 
+                                             item.textEntry?.savedAt && 
+                                             !item.attorneyNote?.startsWith('Approved by') && (
                                               <div className="flex gap-2 mt-2">
                                                 <Button variant="success" size="sm" onClick={async () => {
                                                   try {
-                                                    const approvedAt = item.textEntry?.savedAt || new Date().toISOString();
-                                                    const fileId = 'text-approved-' + item.id;
-
-                                                    await supabase.from('files').upsert({
-                                                      id: fileId,
-                                                      case_id: caseData!.id,
-                                                      checklist_item_id: item.id,
-                                                      file_name: 'Employer Info',
-                                                      data_url: '',
-                                                      storage_path: null,
-                                                      uploaded_at: approvedAt,
-                                                      review_status: 'approved',
-                                                      uploaded_by: 'client',
-                                                    }, { onConflict: 'id' });
-
-                                                    await supabase.from('checklist_items')
-                                                      .update({ completed: true })
+                                                    const { error: updateError } = await supabase
+                                                      .from('checklist_items')
+                                                      .update({
+                                                        completed: true,
+                                                        attorney_note: `Approved by ${user?.fullName || 'Attorney'} on ${new Date().toLocaleDateString()}`,
+                                                        flagged_for_attorney: false,
+                                                      })
                                                       .eq('id', item.id);
 
-                                                    await supabase.from('activity_log').insert({
+                                                    if (updateError) {
+                                                      console.error('Approval update error:', updateError);
+                                                      toast.error('Approval failed. Please try again.');
+                                                      return;
+                                                    }
+
+                                                    const { error: logError } = await supabase.from('activity_log').insert({
                                                       case_id: caseData!.id,
                                                       event_type: 'file_approved',
                                                       actor_role: 'attorney',
@@ -1008,6 +1014,8 @@ const CaseDetail = () => {
                                                       description: `Attorney approved employer information for ${caseData!.clientName}`,
                                                       item_id: item.id,
                                                     });
+
+                                                    if (logError) console.error('Activity log error:', logError);
 
                                                     toast.success('Employer information approved');
                                                     refresh();
