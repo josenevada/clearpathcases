@@ -389,7 +389,7 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         last_employer_name: info.last_employer_name,
         date_last_employment: info.date_last_employment,
       });
-      addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
+      await supabase.from('activity_log').insert({ case_id: caseData.id, event_type: 'client_info_updated', actor_role: viewRole, actor_name: actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, employment_status: info.employment_status, employer_name: info.employer_name, employer_address: info.employer_address, job_title: info.job_title, monthly_gross_income: info.monthly_gross_income, pay_frequency: info.pay_frequency, business_name: info.business_name, business_type: info.business_type, avg_monthly_income: info.avg_monthly_income, last_employer_name: info.last_employer_name, date_last_employment: info.date_last_employment }));
       flashSuccess(setSuccessEmployment);
       toast.success('Employment information saved');
