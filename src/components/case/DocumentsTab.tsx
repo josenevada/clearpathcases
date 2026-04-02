@@ -371,10 +371,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       description: `Attorney approved ${entry.item.label}`,
       item_id: entry.item.id,
     });
-    addActivityEntry(caseData.id, {
-      eventType: 'file_approved', actorRole: 'attorney', actorName: caseData.assignedAttorney,
-      description: `Attorney approved ${entry.item.label}`, itemId: entry.item.id,
-    });
     toast.success(`${entry.item.label} approved`);
     setSelectedFile(null);
     onRefresh();
