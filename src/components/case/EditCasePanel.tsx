@@ -134,10 +134,11 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
         assignedAttorney,
       }));
 
-      addActivityEntry(caseData.id, {
-        eventType: 'case_updated',
-        actorRole: 'paralegal',
-        actorName,
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'case_updated',
+        actor_role: 'paralegal',
+        actor_name: actorName,
         description: `${actorName} updated case details`,
       });
 

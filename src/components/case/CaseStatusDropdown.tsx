@@ -67,14 +67,6 @@ const CaseStatusDropdown = ({ caseData, actorName, onUpdated }: CaseStatusDropdo
         actor_name: 'ClearPath',
         description: 'Automated notifications paused — case marked as ' + (newStatus === 'filed' ? 'filed' : 'closed'),
       });
-      // Persist to Supabase activity log
-      await supabase.from('activity_log').insert({
-        case_id: caseData.id,
-        event_type: 'notifications_paused',
-        actor_role: 'system',
-        actor_name: 'ClearPath',
-        description: 'Automated notifications paused — case marked as ' + (newStatus === 'filed' ? 'filed' : 'closed'),
-      });
     }
 
     toast.success(`Case status updated to ${STATUS_CONFIG[newStatus].label}`);
