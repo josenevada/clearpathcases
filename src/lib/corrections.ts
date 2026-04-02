@@ -20,7 +20,7 @@ export interface ChecklistStatusInfo {
 export const getChecklistItemStatus = (item: ChecklistItem): ChecklistStatusInfo => {
   // Text entry items — check textEntry first
   if (item.textEntry?.savedAt) {
-    const isApproved = item.files.some(f => f.reviewStatus === 'approved');
+    const isApproved = item.files.some(f => f.reviewStatus === 'approved') || item.attorneyNote?.startsWith('Approved by');
     if (isApproved) {
       return {
         key: 'approved',
