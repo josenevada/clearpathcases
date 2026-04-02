@@ -162,9 +162,13 @@ const FormDataTab = ({ caseData, onRefresh }: FormDataTabProps) => {
 
   // ─── Readiness checks ────────────────────────────────────────────
   const requiredItems = caseData.checklist.filter(i => i.required && !i.notApplicable);
-  const approvedCount = requiredItems.filter(i =>
-    i.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')
-  ).length;
+  const isItemReadyForExtraction = (item: Case['checklist'][number]) => {
+    if (item.notApplicable) return true;
+    if (item.textEntry?.savedAt) return item.attorneyNote?.startsWith('Approved by') ?? false;
+    if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
+    return item.completed && item.files.length === 0;
+  };
+  const approvedCount = requiredItems.filter(isItemReadyForExtraction).length;
   const allApproved = requiredItems.length > 0 && approvedCount === requiredItems.length;
 
   // ─── Handlers ─────────────────────────────────────────────────────
