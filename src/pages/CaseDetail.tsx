@@ -1028,7 +1028,7 @@ const CaseDetail = () => {
                                                             }}
                                                           />
                                                         )}
-                                                        {viewRole === 'paralegal' && (
+{viewRole === 'paralegal' && file.reviewStatus !== 'approved' && file.reviewStatus !== 'overridden' && (
                                                           <Button
                                                             variant="warning"
                                                             size="sm"
@@ -1042,7 +1042,7 @@ const CaseDetail = () => {
                                                           </Button>
                                                         )}
 
-                                                        {viewRole === 'attorney' && (
+{viewRole === 'attorney' && file.reviewStatus !== 'approved' && file.reviewStatus !== 'overridden' && (
                                                           <>
                                                             <Button variant="success" size="sm" onClick={() => handleApprove(item, file.id)}>
                                                               <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
