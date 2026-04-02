@@ -16,7 +16,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  updateCase, addActivityEntry, CATEGORIES,
+  updateCase, CATEGORIES,
   type Case, type ChecklistItem, type UploadedFile, type FileReviewStatus,
 } from '@/lib/store';
 import { toast } from 'sonner';
