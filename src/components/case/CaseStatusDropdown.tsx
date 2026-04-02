@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { updateCase, addActivityEntry, type Case, type CaseStatus } from '@/lib/store';
+import { updateCase, type Case, type CaseStatus } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -50,22 +50,16 @@ const CaseStatusDropdown = ({ caseData, actorName, onUpdated }: CaseStatusDropdo
       readyToFile: newStatus === 'ready-to-file' || newStatus === 'filed' ? true : c.readyToFile,
     }));
 
-    addActivityEntry(caseData.id, {
-      eventType: 'status_change',
-      actorRole: 'paralegal',
-      actorName,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'status_change',
+      actor_role: 'paralegal',
+      actor_name: actorName,
       description: `${actorName} marked this case as ${STATUS_CONFIG[newStatus].label}`,
     });
 
     // Log notification pause for terminal statuses
     if (newStatus === 'filed' || newStatus === 'closed') {
-      addActivityEntry(caseData.id, {
-        eventType: 'notifications_paused',
-        actorRole: 'system',
-        actorName: 'ClearPath',
-        description: 'Automated notifications paused — case marked as ' + (newStatus === 'filed' ? 'filed' : 'closed'),
-      });
-      // Persist to Supabase activity log
       await supabase.from('activity_log').insert({
         case_id: caseData.id,
         event_type: 'notifications_paused',

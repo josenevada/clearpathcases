@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { addActivityEntry, type Case } from '@/lib/store';
+import { type Case } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -265,12 +265,15 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
   // SSN handling
   const handleRevealSSN = () => {
     setSsnVisible(true);
-    addActivityEntry(caseData.id, {
-      eventType: 'ssn_viewed',
-      actorRole: viewRole,
-      actorName,
-      description: `${actorName} viewed SSN`,
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'ssn_viewed',
+        actor_role: viewRole,
+        actor_name: actorName,
+        description: `${actorName} viewed SSN`,
+      });
+    })();
     onRefresh();
 
     if (ssnTimer) clearTimeout(ssnTimer);
@@ -334,7 +337,12 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         await supabase.from('cases').update(contactUpdates).eq('id', caseData.id);
       }
 
-      addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
+      // Sync DOB to cases table
+      if (info.date_of_birth !== savedInfo.date_of_birth) {
+        await supabase.from('cases').update({ client_dob: info.date_of_birth }).eq('id', caseData.id);
+      }
+
+      await supabase.from('activity_log').insert({ case_id: caseData.id, event_type: 'client_info_updated', actor_role: viewRole, actor_name: actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, full_legal_name: info.full_legal_name, date_of_birth: info.date_of_birth, ssn_encrypted: info.ssn_encrypted, current_address: info.current_address, phone: info.phone, email: info.email, marital_status: info.marital_status }));
       flashSuccess(setSuccessPersonal);
 
@@ -381,7 +389,7 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         last_employer_name: info.last_employer_name,
         date_last_employment: info.date_last_employment,
       });
-      addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
+      await supabase.from('activity_log').insert({ case_id: caseData.id, event_type: 'client_info_updated', actor_role: viewRole, actor_name: actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, employment_status: info.employment_status, employer_name: info.employer_name, employer_address: info.employer_address, job_title: info.job_title, monthly_gross_income: info.monthly_gross_income, pay_frequency: info.pay_frequency, business_name: info.business_name, business_type: info.business_type, avg_monthly_income: info.avg_monthly_income, last_employer_name: info.last_employer_name, date_last_employment: info.date_last_employment }));
       flashSuccess(setSuccessEmployment);
       toast.success('Employment information saved');
@@ -417,7 +425,7 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         expense_other: info.expense_other,
         other_expenses_description: info.other_expenses_description,
       });
-      addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
+      await supabase.from('activity_log').insert({ case_id: caseData.id, event_type: 'client_info_updated', actor_role: viewRole, actor_name: actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, household_size: info.household_size, num_dependents: info.num_dependents, expense_rent: info.expense_rent, expense_utilities: info.expense_utilities, expense_food: info.expense_food, expense_transportation: info.expense_transportation, expense_insurance: info.expense_insurance, expense_other: info.expense_other, other_expenses_description: info.other_expenses_description }));
       flashSuccess(setSuccessHousehold);
       toast.success('Household information saved');

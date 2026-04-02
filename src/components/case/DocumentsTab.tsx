@@ -16,7 +16,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  updateCase, addActivityEntry, CATEGORIES,
+  updateCase, CATEGORIES,
   type Case, type ChecklistItem, type UploadedFile, type FileReviewStatus,
 } from '@/lib/store';
 import { toast } from 'sonner';
@@ -154,7 +154,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   // Bulk approve
-  const handleBulkApprove = useCallback(() => {
+  const handleBulkApprove = useCallback(async () => {
     const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
     if (targets.length === 0) return;
 
@@ -170,12 +170,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     });
 
     for (const { file, item } of targets) {
-      addActivityEntry(caseData.id, {
-        eventType: 'file_approved',
-        actorRole: viewRole,
-        actorName: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'file_approved',
+        actor_role: viewRole,
+        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
         description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved ${item.label}`,
-        itemId: item.id,
+        item_id: item.id,
       });
     }
 
@@ -185,7 +186,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, onRefresh]);
 
   // Bulk correction
-  const handleBulkCorrection = useCallback(() => {
+  const handleBulkCorrection = useCallback(async () => {
     if (!bulkCorrectionNote.trim()) { toast.error('Please add a correction note.'); return; }
     const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
     if (targets.length === 0) return;
@@ -206,12 +207,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     });
 
     for (const { file, item } of targets) {
-      addActivityEntry(caseData.id, {
-        eventType: 'file_correction',
-        actorRole: viewRole,
-        actorName: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'file_correction',
+        actor_role: viewRole,
+        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
         description: `Correction requested on ${item.label} — '${bulkCorrectionNote}'`,
-        itemId: item.id,
+        item_id: item.id,
       });
     }
 
@@ -369,16 +371,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       description: `Attorney approved ${entry.item.label}`,
       item_id: entry.item.id,
     });
-    addActivityEntry(caseData.id, {
-      eventType: 'file_approved', actorRole: 'attorney', actorName: caseData.assignedAttorney,
-      description: `Attorney approved ${entry.item.label}`, itemId: entry.item.id,
-    });
     toast.success(`${entry.item.label} approved`);
     setSelectedFile(null);
     onRefresh();
   };
 
-  const handleCorrection = (entry: FileEntry) => {
+  const handleCorrection = async (entry: FileEntry) => {
     if (!correctionNote.trim()) { toast.error('Please add a correction note.'); return; }
     updateCase(caseData.id, c => {
       const found = c.checklist.find(i => i.id === entry.item.id);
@@ -392,9 +390,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       }
       return c;
     });
-    addActivityEntry(caseData.id, {
-      eventType: 'file_correction', actorRole: 'attorney', actorName: caseData.assignedAttorney,
-      description: `Correction requested on ${entry.item.label} — '${correctionNote}'`, itemId: entry.item.id,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_correction',
+      actor_role: 'attorney',
+      actor_name: caseData.assignedAttorney,
+      description: `Correction requested on ${entry.item.label} — '${correctionNote}'`,
+      item_id: entry.item.id,
     });
     setCorrectionNote('');
     setSelectedFile(null);
@@ -924,12 +926,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                                   if (f) f.manuallyReviewed = true;
                                   return c;
                                 });
-                                addActivityEntry(caseData.id, {
-                                  eventType: 'document_validated',
-                                  actorRole: 'paralegal',
-                                  actorName: caseData.assignedParalegal || 'Paralegal',
+                                await supabase.from('activity_log').insert({
+                                  case_id: caseData.id,
+                                  event_type: 'document_validated',
+                                  actor_role: 'paralegal',
+                                  actor_name: caseData.assignedParalegal || 'Paralegal',
                                   description: `Corrected AI detection on ${selectedFile.item.label} — actual type: ${feedbackDocType}`,
-                                  itemId: selectedFile.item.id,
+                                  item_id: selectedFile.item.id,
                                 });
                                 setFeedbackMode('submitted');
                                 onRefresh();
@@ -1080,13 +1083,16 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   }
                 })();
 
-                addActivityEntry(caseData.id, {
-                  eventType: 'file_deleted',
-                  actorRole: 'paralegal',
-                  actorName,
-                  description: `${actorName} deleted ${fileName}`,
-                  itemId: selectedFile.item.id,
-                });
+                (async () => {
+                  await supabase.from('activity_log').insert({
+                    case_id: caseData.id,
+                    event_type: 'file_deleted',
+                    actor_role: 'paralegal',
+                    actor_name: actorName,
+                    description: `${actorName} deleted ${fileName}`,
+                    item_id: selectedFile.item.id,
+                  });
+                })();
 
                 toast.success(`${fileName} deleted`);
                 setSelectedFile(null);

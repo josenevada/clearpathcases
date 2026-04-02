@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ExternalLink } from 'lucide-react';
-import { addActivityEntry } from '@/lib/store';
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface RetrievalLink {
@@ -106,15 +106,7 @@ const DocumentRetrievalLinks = ({ itemLabel, caseId, clientName }: DocumentRetri
   const handleLinkClick = (link: RetrievalLink) => {
     window.open(link.url, '_blank', 'noopener,noreferrer');
 
-    // Log activity
-    addActivityEntry(caseId, {
-      eventType: 'checkpoint_completed' as any,
-      actorRole: 'client',
-      actorName: clientName,
-      description: `${clientName} opened retrieval link for ${itemLabel} (${link.label})`,
-    });
-
-    // Sync to Supabase
+    // Log activity to Supabase
     supabase.from('activity_log').insert({
       case_id: caseId,
       event_type: 'checkpoint_completed',

@@ -39,7 +39,7 @@ import { useAuth } from '@/lib/auth';
 import {
   updateCase,
   deleteCase,
-  addActivityEntry,
+  
   calculateProgress,
   isItemEffectivelyComplete,
   CATEGORIES,
@@ -327,12 +327,13 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'file_correction',
-      actorRole: 'paralegal',
-      actorName: caseData.assignedParalegal,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_correction',
+      actor_role: 'paralegal',
+      actor_name: caseData.assignedParalegal,
       description: `${caseData.assignedParalegal} requested a correction on ${item.label} — ${reason}`,
-      itemId: item.id,
+      item_id: item.id,
     });
 
     try {
@@ -363,7 +364,7 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleOverride = (item: ChecklistItem, fileId: string) => {
+  const handleOverride = async (item: ChecklistItem, fileId: string) => {
     updateCase(caseData.id, c => {
       const found = c.checklist.find(checklistItem => checklistItem.id === item.id);
       const targetFile = found?.files.find(file => file.id === fileId);
@@ -374,12 +375,13 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'file_overridden',
-      actorRole: 'attorney',
-      actorName: caseData.assignedAttorney,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_overridden',
+      actor_role: 'attorney',
+      actor_name: caseData.assignedAttorney,
       description: `Attorney overrode and approved ${item.label}`,
-      itemId: item.id,
+      item_id: item.id,
     });
 
     setOverrideNote('');
@@ -395,13 +397,16 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_flagged',
-      actorRole: 'paralegal',
-      actorName: caseData.assignedParalegal,
-      description: `${item.flaggedForAttorney ? 'Unflagged' : 'Flagged'} ${item.label} for attorney review`,
-      itemId: item.id,
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'item_flagged',
+        actor_role: 'paralegal',
+        actor_name: caseData.assignedParalegal,
+        description: `${item.flaggedForAttorney ? 'Unflagged' : 'Flagged'} ${item.label} for attorney review`,
+        item_id: item.id,
+      });
+    })();
 
     toast.success(item.flaggedForAttorney ? 'Flag removed' : 'Flagged for attorney');
     refresh();
@@ -418,12 +423,15 @@ const CaseDetail = () => {
     }
 
     updateCase(caseData.id, c => ({ ...c, readyToFile: true }));
-    addActivityEntry(caseData.id, {
-      eventType: 'case_ready',
-      actorRole: 'attorney',
-      actorName: caseData.assignedAttorney,
-      description: 'Case marked as ready for filing',
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'case_ready',
+        actor_role: 'attorney',
+        actor_name: caseData.assignedAttorney,
+        description: 'Case marked as ready for filing',
+      });
+    })();
     toast.success('Case marked ready for filing!');
     refresh();
   };
@@ -490,13 +498,16 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_not_applicable',
-      actorRole: 'paralegal',
-      actorName,
-      description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
-      itemId: item.id,
-    });
+    (async () => {
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'item_not_applicable',
+        actor_role: 'paralegal',
+        actor_name: actorName,
+        description: `${actorName} marked ${item.label} as not applicable — ${reason}`,
+        item_id: item.id,
+      });
+    })();
 
     // Sync to Supabase
     await supabase.from('checklist_items').update({
@@ -522,20 +533,23 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (!newNote.trim()) return;
+    const noteId = crypto.randomUUID();
+    const author = viewRole === 'paralegal' 
+      ? (caseData.assignedParalegal || user?.fullName || 'Staff')
+      : (caseData.assignedAttorney || user?.fullName || 'Attorney');
+    const timestamp = new Date().toISOString();
 
-    updateCase(caseData.id, c => ({
-      ...c,
-      notes: [...c.notes, {
-        id: crypto.randomUUID(),
-        author: viewRole === 'paralegal' ? caseData.assignedParalegal : caseData.assignedAttorney,
-        authorRole: viewRole,
-        content: newNote,
-        timestamp: new Date().toISOString(),
-        clientVisible: noteTab === 'client',
-      }],
-    }));
+    await supabase.from('notes').insert({
+      id: noteId,
+      case_id: caseData.id,
+      author_name: author,
+      author_role: viewRole,
+      content: newNote.trim(),
+      visibility: noteTab === 'client' ? 'client_visible' : 'internal',
+      created_at: timestamp,
+    });
 
     setNewNote('');
     toast.success('Note added');
@@ -582,14 +596,6 @@ const CaseDetail = () => {
       input_type: 'file',
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_added',
-      actorRole: 'paralegal',
-      actorName: user?.fullName || 'Staff',
-      description: `Added custom document "${addDocName.trim()}" to ${category}`,
-      itemId: newItemId,
-    });
-
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_added',
@@ -618,12 +624,13 @@ const CaseDetail = () => {
     await supabase.from('checklist_items').delete().eq('id', item.id);
     await supabase.from('files').delete().eq('checklist_item_id', item.id);
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_removed',
-      actorRole: 'paralegal',
-      actorName: user?.fullName || 'Staff',
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_removed',
+      actor_role: 'paralegal',
+      actor_name: user?.fullName || 'Staff',
       description: `Removed custom document "${item.label}"`,
-      itemId: item.id,
+      item_id: item.id,
     });
 
     toast.success(`"${item.label}" removed from checklist`);

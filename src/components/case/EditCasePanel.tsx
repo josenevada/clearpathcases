@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { updateCase, addActivityEntry, type Case, type ChapterType } from '@/lib/store';
+import { updateCase, type Case, type ChapterType } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -106,10 +106,11 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
 
       const oldCCN = caseData.courtCaseNumber || '';
       if (courtCaseNumber && courtCaseNumber !== oldCCN) {
-        addActivityEntry(caseData.id, {
-          eventType: 'case_updated',
-          actorRole: 'paralegal',
-          actorName,
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'case_updated',
+          actor_role: 'paralegal',
+          actor_name: actorName,
           description: `${actorName} added court case number ${courtCaseNumber}`,
         });
         await supabase.from('activity_log').insert({
@@ -133,10 +134,11 @@ const EditCasePanel = ({ caseData, open, onClose, onUpdated, actorName }: EditCa
         assignedAttorney,
       }));
 
-      addActivityEntry(caseData.id, {
-        eventType: 'case_updated',
-        actorRole: 'paralegal',
-        actorName,
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'case_updated',
+        actor_role: 'paralegal',
+        actor_name: actorName,
         description: `${actorName} updated case details`,
       });
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, ThumbsUp, FileText, Search, Eye } from 'lucide-react';
 import { getDocumentHelp, getValidationHelpMessage, type DocumentHelpContent } from '@/lib/document-help';
-import { addActivityEntry } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentHelpPanelProps {
   itemLabel: string;
@@ -51,13 +51,15 @@ const DocumentHelpPanel = ({
   const logOpen = useCallback(() => {
     if (!hasLoggedOpen.current) {
       hasLoggedOpen.current = true;
-      addActivityEntry(caseId, {
-        eventType: 'checkpoint_completed',
-        actorRole: 'client',
-        actorName: caseName,
-        description: `${caseName.split(' ')[0]} opened help for ${itemLabel}`,
-        itemId: undefined,
-      });
+      (async () => {
+        await supabase.from('activity_log').insert({
+          case_id: caseId,
+          event_type: 'checkpoint_completed',
+          actor_role: 'client',
+          actor_name: caseName,
+          description: `${caseName.split(' ')[0]} opened help for ${itemLabel}`,
+        });
+      })();
     }
   }, [caseId, caseName, itemLabel]);
 
@@ -70,13 +72,15 @@ const DocumentHelpPanel = ({
   const handleFeedback = (helpful: boolean) => {
     setFeedbackGiven(true);
     if (!helpful) {
-      addActivityEntry(caseId, {
-        eventType: 'checkpoint_completed',
-        actorRole: 'client',
-        actorName: caseName,
-        description: `${caseName.split(' ')[0]} indicated confusion on ${itemLabel}`,
-        itemId: undefined,
-      });
+      (async () => {
+        await supabase.from('activity_log').insert({
+          case_id: caseId,
+          event_type: 'checkpoint_completed',
+          actor_role: 'client',
+          actor_name: caseName,
+          description: `${caseName.split(' ')[0]} indicated confusion on ${itemLabel}`,
+        });
+      })();
     }
   };
 
