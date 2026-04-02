@@ -926,12 +926,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                                   if (f) f.manuallyReviewed = true;
                                   return c;
                                 });
-                                addActivityEntry(caseData.id, {
-                                  eventType: 'document_validated',
-                                  actorRole: 'paralegal',
-                                  actorName: caseData.assignedParalegal || 'Paralegal',
+                                await supabase.from('activity_log').insert({
+                                  case_id: caseData.id,
+                                  event_type: 'document_validated',
+                                  actor_role: 'paralegal',
+                                  actor_name: caseData.assignedParalegal || 'Paralegal',
                                   description: `Corrected AI detection on ${selectedFile.item.label} — actual type: ${feedbackDocType}`,
-                                  itemId: selectedFile.item.id,
+                                  item_id: selectedFile.item.id,
                                 });
                                 setFeedbackMode('submitted');
                                 onRefresh();
