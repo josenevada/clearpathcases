@@ -327,12 +327,13 @@ const CaseDetail = () => {
       return c;
     });
 
-    addActivityEntry(caseData.id, {
-      eventType: 'file_correction',
-      actorRole: 'paralegal',
-      actorName: caseData.assignedParalegal,
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_correction',
+      actor_role: 'paralegal',
+      actor_name: caseData.assignedParalegal,
       description: `${caseData.assignedParalegal} requested a correction on ${item.label} — ${reason}`,
-      itemId: item.id,
+      item_id: item.id,
     });
 
     try {

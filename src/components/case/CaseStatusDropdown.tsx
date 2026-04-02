@@ -60,10 +60,11 @@ const CaseStatusDropdown = ({ caseData, actorName, onUpdated }: CaseStatusDropdo
 
     // Log notification pause for terminal statuses
     if (newStatus === 'filed' || newStatus === 'closed') {
-      addActivityEntry(caseData.id, {
-        eventType: 'notifications_paused',
-        actorRole: 'system',
-        actorName: 'ClearPath',
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'notifications_paused',
+        actor_role: 'system',
+        actor_name: 'ClearPath',
         description: 'Automated notifications paused — case marked as ' + (newStatus === 'filed' ? 'filed' : 'closed'),
       });
       // Persist to Supabase activity log
