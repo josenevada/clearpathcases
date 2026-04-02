@@ -376,7 +376,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     onRefresh();
   };
 
-  const handleCorrection = (entry: FileEntry) => {
+  const handleCorrection = async (entry: FileEntry) => {
     if (!correctionNote.trim()) { toast.error('Please add a correction note.'); return; }
     updateCase(caseData.id, c => {
       const found = c.checklist.find(i => i.id === entry.item.id);
