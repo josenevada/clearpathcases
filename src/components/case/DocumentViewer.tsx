@@ -112,17 +112,27 @@ function PdfViewer({ dataUrl }: { dataUrl: string }) {
         await loadPdfJs();
         if (cancelled || !window.pdfjsLib) return;
 
-        // Convert data URL to ArrayBuffer
-        const base64 = dataUrl.split(',')[1];
-        if (!base64) {
-          setError('Invalid file data');
-          return;
-        }
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        let pdfData: ArrayBuffer;
 
-        const doc = await window.pdfjsLib.getDocument({ data: bytes.buffer }).promise;
+        if (dataUrl.startsWith('http') || dataUrl.startsWith('blob')) {
+          // Fetch from Supabase Storage public URL
+          const response = await fetch(dataUrl);
+          if (!response.ok) throw new Error('Failed to fetch PDF');
+          pdfData = await response.arrayBuffer();
+        } else {
+          // Legacy base64 data URL path
+          const base64 = dataUrl.split(',')[1];
+          if (!base64) {
+            setError('Invalid file data');
+            return;
+          }
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          pdfData = bytes.buffer;
+        }
+
+        const doc = await window.pdfjsLib.getDocument({ data: pdfData }).promise;
         if (cancelled) return;
         setPdfDoc(doc);
         setTotalPages(doc.numPages);
