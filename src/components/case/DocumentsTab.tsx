@@ -186,7 +186,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, onRefresh]);
 
   // Bulk correction
-  const handleBulkCorrection = useCallback(() => {
+  const handleBulkCorrection = useCallback(async () => {
     if (!bulkCorrectionNote.trim()) { toast.error('Please add a correction note.'); return; }
     const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
     if (targets.length === 0) return;
