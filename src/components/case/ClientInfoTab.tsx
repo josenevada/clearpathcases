@@ -425,7 +425,7 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         expense_other: info.expense_other,
         other_expenses_description: info.other_expenses_description,
       });
-      addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
+      await supabase.from('activity_log').insert({ case_id: caseData.id, event_type: 'client_info_updated', actor_role: viewRole, actor_name: actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, household_size: info.household_size, num_dependents: info.num_dependents, expense_rent: info.expense_rent, expense_utilities: info.expense_utilities, expense_food: info.expense_food, expense_transportation: info.expense_transportation, expense_insurance: info.expense_insurance, expense_other: info.expense_other, other_expenses_description: info.other_expenses_description }));
       flashSuccess(setSuccessHousehold);
       toast.success('Household information saved');
