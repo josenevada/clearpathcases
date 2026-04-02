@@ -170,12 +170,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     });
 
     for (const { file, item } of targets) {
-      addActivityEntry(caseData.id, {
-        eventType: 'file_approved',
-        actorRole: viewRole,
-        actorName: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'file_approved',
+        actor_role: viewRole,
+        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
         description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved ${item.label}`,
-        itemId: item.id,
+        item_id: item.id,
       });
     }
 
