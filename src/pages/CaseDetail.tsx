@@ -624,12 +624,13 @@ const CaseDetail = () => {
     await supabase.from('checklist_items').delete().eq('id', item.id);
     await supabase.from('files').delete().eq('checklist_item_id', item.id);
 
-    addActivityEntry(caseData.id, {
-      eventType: 'item_removed',
-      actorRole: 'paralegal',
-      actorName: user?.fullName || 'Staff',
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_removed',
+      actor_role: 'paralegal',
+      actor_name: user?.fullName || 'Staff',
       description: `Removed custom document "${item.label}"`,
-      itemId: item.id,
+      item_id: item.id,
     });
 
     toast.success(`"${item.label}" removed from checklist`);
