@@ -337,7 +337,12 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         await supabase.from('cases').update(contactUpdates).eq('id', caseData.id);
       }
 
-      addActivityEntry(caseData.id, { eventType: 'client_info_updated', actorRole: viewRole, actorName, description: `${actorName} updated client information` });
+      // Sync DOB to cases table
+      if (info.date_of_birth !== savedInfo.date_of_birth) {
+        await supabase.from('cases').update({ client_dob: info.date_of_birth }).eq('id', caseData.id);
+      }
+
+      await supabase.from('activity_log').insert({ case_id: caseData.id, event_type: 'client_info_updated', actor_role: viewRole, actor_name: actorName, description: `${actorName} updated client information` });
       setSavedInfo(prev => ({ ...prev, full_legal_name: info.full_legal_name, date_of_birth: info.date_of_birth, ssn_encrypted: info.ssn_encrypted, current_address: info.current_address, phone: info.phone, email: info.email, marital_status: info.marital_status }));
       flashSuccess(setSuccessPersonal);
 
