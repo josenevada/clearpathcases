@@ -562,8 +562,8 @@ const useGooglePlacesAutocomplete = (
     }
 
     function initAutocomplete() {
-      if (!inputRef.current || !window.google?.maps?.places) return;
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+      if (!inputRef.current || !(window as any).google?.maps?.places) return;
+      autocompleteRef.current = new (window as any).google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
         componentRestrictions: { country: 'us' },
         fields: ['address_components'],
