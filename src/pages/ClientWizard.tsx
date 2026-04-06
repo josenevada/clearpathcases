@@ -1080,7 +1080,6 @@ const ClientWizard = () => {
 
     const textEntry = {
       employerName: employerName.trim(),
-      employerAddress: employerAddress.trim() || undefined,
       savedAt: new Date().toISOString(),
     };
 
