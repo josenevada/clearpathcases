@@ -113,10 +113,14 @@ function fillB101(form: any, fm: Record<string, string>, caseData: any) {
 
   // ── Part 1: Identify Yourself ──────────────────────────────────────
 
-  // Debtor 1 name
-  safeFill(form, "Debtor1.First name", fm["debtor_legal_name_first"] || caseData?.client_info?.full_legal_name?.split(" ")[0]);
-  safeFill(form, "Debtor1.Middle name", fm["debtor_legal_name_middle"]);
-  safeFill(form, "Debtor1.Last name", fm["debtor_legal_name_last"] || caseData?.client_info?.full_legal_name?.split(" ").slice(-1)[0]);
+  // Debtor 1 name — handle both correct and typo'd extraction keys, plus cases table fallback
+  const firstName = fm["debtor_legal_name_first"] || fm["debitor_first_name"] || fm["debtor_first_name"] || caseData?.client_info?.full_legal_name?.split(" ")[0] || caseData?.client_name?.split(" ")[0] || "";
+  const middleName = fm["debtor_legal_name_middle"] || fm["debitor_middle_name"] || fm["debtor_middle_name"] || "";
+  const lastName = fm["debtor_legal_name_last"] || fm["debitor_last_name"] || fm["debtor_last_name"] || caseData?.client_info?.full_legal_name?.split(" ").slice(-1)[0] || caseData?.client_name?.split(" ").slice(-1)[0] || "";
+
+  safeFill(form, "Debtor1.First name", firstName);
+  safeFill(form, "Debtor1.Middle name", middleName);
+  safeFill(form, "Debtor1.Last name", lastName);
   safeFill(form, "Debtor1.Suffix Sr Jr II III", fm["debtor_suffix"]);
 
   // SSN — last 4 only, never full SSN
@@ -124,21 +128,26 @@ function fillB101(form: any, fm: Record<string, string>, caseData: any) {
   const ssnLast4 = ssn.replace(/\D/g, "").slice(-4);
   safeFill(form, "Debtor1.SSNum", ssnLast4);
 
-  // Address — parse from client_info.current_address
+  // Address — parse from client_info.current_address with typo fallbacks
   const addr = caseData?.client_info?.current_address || "";
   const addrMatch = addr.match(/^(.+),\s*(.+),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?$/);
-  safeFill(form, "Debtor1.Street", addrMatch?.[1]?.trim() || fm["debtor_id_address"] || addr);
-  safeFill(form, "Debtor1.City", addrMatch?.[2]?.trim() || fm["client_info_city"]);
-  safeFill(form, "Debtor1.State", addrMatch?.[3]?.trim() || fm["client_info_state"]);
-  safeFill(form, "Debtor1.ZIP Code", addrMatch?.[4]?.trim() || fm["client_info_zip"]);
+  const street = fm["debtor_street"] || fm["debitor_street"] || fm["debtor_id_address"] || addrMatch?.[1]?.trim() || addr || "";
+  const city = fm["debtor_city"] || fm["debitor_city"] || fm["client_info_city"] || addrMatch?.[2]?.trim() || "";
+  const state = fm["debtor_state"] || fm["debitor_state"] || fm["client_info_state"] || addrMatch?.[3]?.trim() || "";
+  const zip = fm["debtor_zip"] || fm["debitor_zip"] || fm["client_info_zip"] || addrMatch?.[4]?.trim() || "";
+
+  safeFill(form, "Debtor1.Street", street);
+  safeFill(form, "Debtor1.City", city);
+  safeFill(form, "Debtor1.State", state);
+  safeFill(form, "Debtor1.ZIP Code", zip);
   safeFill(form, "Debtor1.County", fm["client_info_county"]);
 
-  // Contact
+  // Contact — client_info first, then cases table
   safeFill(form, "Debtor1.Contact phone_2", caseData?.client_info?.phone || caseData?.client_phone || fm["client_info_phone"]);
   safeFill(form, "Debtor1.Email address_2", caseData?.client_info?.email || caseData?.client_email);
 
   // ── District dropdown ──────────────────────────────────────────────
-  const clientState = addrMatch?.[3]?.trim() || fm["client_info_state"] || "";
+  const clientState = state || addrMatch?.[3]?.trim() || fm["client_info_state"] || "";
   const districtValue = STATE_DISTRICTS[clientState] || "";
   if (districtValue) {
     try {
