@@ -24,10 +24,10 @@ import { sendMomentumSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const EMPLOYER_LABEL = 'Employer Name & Address';
+const EMPLOYER_LABEL = 'Employer Name';
 const SSN_LABEL = 'Social Security Card';
 const SSN_LABEL_LEGACY = 'Social Security Number';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address';
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
@@ -49,7 +49,8 @@ const WARM_SUBTITLES: Record<string, string> = {
   'Pay Stubs (Last 2 Months)': 'This shows the court what you currently earn — it\'s one of the most important documents in your filing.',
   'W-2s (Last 2 Years)': 'These help paint a picture of your work history over the past couple of years.',
   'Tax Returns (Last 2 Years)': 'Your tax returns give the court a full view of your financial year — we need the last two.',
-  'Employer Name & Address': 'Just your current employer\'s info — this goes on the official paperwork.',
+  'Employer Name': 'Just your current employer\'s name — this goes on the official paperwork.',
+  'Employer Name & Address': 'Just your current employer\'s name — this goes on the official paperwork.',
   'Checking/Savings Statements (Last 6 Months)': 'The trustee reviews these to understand your recent finances — 6 months is the standard requirement.',
   'Digital Wallet Statements': 'If you\'ve used Venmo, PayPal, or Cash App, the court needs to see that activity too.',
   'Investment/Retirement Statements': 'Don\'t worry — retirement accounts are usually protected. We just need to document them.',
@@ -1079,7 +1080,6 @@ const ClientWizard = () => {
 
     const textEntry = {
       employerName: employerName.trim(),
-      employerAddress: employerAddress.trim() || undefined,
       savedAt: new Date().toISOString(),
     };
 
@@ -1525,17 +1525,7 @@ const ClientWizard = () => {
                           className="bg-input border-border rounded-[10px]"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">
-                          Employer Address <span className="text-muted-foreground font-normal">(optional)</span>
-                        </label>
-                        <Input
-                          value={employerAddress}
-                          onChange={e => setEmployerAddress(e.target.value)}
-                          placeholder="Street address, city, state, zip"
-                          className="bg-input border-border rounded-[10px]"
-                        />
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Your employer's address will be pulled from your pay stubs automatically</p>
                     </>
                   )}
 

@@ -219,7 +219,7 @@ export interface IntakeQuestion {
 }
 
 export const getDefaultIntakeQuestions = (): IntakeQuestion[] => [
-  { id: 'iq-1', question: 'Are you currently employed?', controlsItems: ['Pay Stubs (Last 2 Months)', 'Employer Name & Address'], active: true, order: 0 },
+  { id: 'iq-1', question: 'Are you currently employed?', controlsItems: ['Pay Stubs (Last 2 Months)', 'Employer Name'], active: true, order: 0 },
   { id: 'iq-2', question: 'Do you have any bank accounts (checking or savings)?', controlsItems: ['Checking/Savings Statements (Last 6 Months)'], active: true, order: 1 },
   { id: 'iq-3', question: 'Do you have any outstanding loans or credit card debt?', controlsItems: ['Credit Card Statements (Last 3 Months)', 'Loan Statements', 'Collection Notices'], active: true, order: 2 },
   { id: 'iq-4', question: 'Do you own any real estate property?', controlsItems: ['Property Deed', 'Mortgage Statement or Lease'], active: true, order: 3 },
@@ -666,7 +666,7 @@ export const buildDefaultChecklist = (): ChecklistItem[] => [
   item('Income & Employment', 'Pay Stubs (Last 2 Months)', 'Upload your most recent pay stubs from the last 60 days.', 'Your pay stubs show the court what you\'re currently earning. Think of it as proof that you qualify for the fresh start you\'re asking for.'),
   item('Income & Employment', 'W-2s (Last 2 Years)', 'Upload your W-2 forms from the last two tax years.', 'W-2s help your attorney show the court your work history. It\'s a standard part of every filing — nothing unusual.'),
   item('Income & Employment', 'Tax Returns (Last 2 Years)', 'Upload your federal tax returns from the last two years.', 'Your tax returns give the court the big picture of your finances. Every bankruptcy filing includes these.'),
-  item('Income & Employment', 'Employer Name & Address', 'Tell us where you work so we can include it on your paperwork.', 'This goes directly on your bankruptcy petition. If you\'re not working right now, just let us know — that\'s totally fine.', false),
+  item('Income & Employment', 'Employer Name', 'Tell us where you work so we can include it on your paperwork.', 'This goes directly on your bankruptcy petition. If you\'re not working right now, just let us know — that\'s totally fine.', false),
 
   // Step 2: Bank & Financial Accounts
   item('Bank & Financial Accounts', 'Checking/Savings Statements (Last 6 Months)', 'Upload bank statements for all your checking and savings accounts.', 'The trustee looks at these to understand your day-to-day finances. Six months is the standard — it\'s the same for everyone.'),

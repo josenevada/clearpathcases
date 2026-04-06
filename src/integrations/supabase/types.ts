@@ -226,8 +226,12 @@ export type Database = {
           chapter_type: string
           client_dob: string | null
           client_email: string
+          client_first_name: string | null
+          client_last_name: string | null
+          client_middle_name: string | null
           client_name: string
           client_phone: string | null
+          client_suffix: string | null
           closed_at: string | null
           court_case_number: string | null
           created_at: string | null
@@ -253,8 +257,12 @@ export type Database = {
           chapter_type: string
           client_dob?: string | null
           client_email: string
+          client_first_name?: string | null
+          client_last_name?: string | null
+          client_middle_name?: string | null
           client_name: string
           client_phone?: string | null
+          client_suffix?: string | null
           closed_at?: string | null
           court_case_number?: string | null
           created_at?: string | null
@@ -280,8 +288,12 @@ export type Database = {
           chapter_type?: string
           client_dob?: string | null
           client_email?: string
+          client_first_name?: string | null
+          client_last_name?: string | null
+          client_middle_name?: string | null
           client_name?: string
           client_phone?: string | null
+          client_suffix?: string | null
           closed_at?: string | null
           court_case_number?: string | null
           created_at?: string | null

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarIcon, ArrowRight, ArrowLeft, Check, Plus } from 'lucide-react';
@@ -36,7 +36,10 @@ interface NewCaseModalProps {
 }
 
 interface BasicInfo {
-  clientName: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
   clientEmail: string;
   clientPhone: string;
   clientDob: string;
@@ -45,6 +48,12 @@ interface BasicInfo {
   filingDeadline: Date | undefined;
   assignedParalegal: string;
   assignedAttorney: string;
+  // Address fields
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  county: string;
   // Joint filing spouse fields
   spouseName: string;
   spouseEmail: string;
@@ -64,6 +73,8 @@ interface IntakeQuestionDef {
   question: string;
 }
 
+const SUFFIX_OPTIONS = ['', 'Sr.', 'Jr.', 'II', 'III', 'IV'];
+
 const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
   { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
   { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
@@ -77,6 +88,9 @@ const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
   { key: 'mortgageInArrears', question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
 ];
 
+const buildClientName = (first: string, middle: string, last: string) =>
+  [first, middle, last].filter(Boolean).join(' ').trim();
+
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const firmSettings = getFirmSettings();
   const { user } = useAuth();
@@ -85,7 +99,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamLoaded, setTeamLoaded] = useState(false);
 
-  // PROMPT 4: Load team members from database
   useEffect(() => {
     if (!open || teamLoaded) return;
     const loadTeam = async () => {
@@ -102,12 +115,14 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const paralegals = teamMembers.filter(m => m.role === 'paralegal' || m.role === 'admin');
   const attorneys = teamMembers.filter(m => m.role === 'attorney' || m.role === 'admin');
 
-  // Auto-select if only one member
   const defaultParalegal = paralegals.length === 1 ? paralegals[0].full_name : (firmSettings.defaultParalegal || '');
   const defaultAttorney = attorneys.length === 1 ? attorneys[0].full_name : (firmSettings.defaultAttorney || '');
 
   const [info, setInfo] = useState<BasicInfo>({
-    clientName: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    suffix: '',
     clientEmail: '',
     clientPhone: '',
     clientDob: '',
@@ -116,13 +131,17 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     filingDeadline: undefined,
     assignedParalegal: defaultParalegal,
     assignedAttorney: defaultAttorney,
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+    county: '',
     spouseName: '',
     spouseEmail: '',
     spousePhone: '',
     spouseDob: '',
   });
 
-  // Update defaults when team loads
   useEffect(() => {
     if (teamLoaded) {
       setInfo(prev => ({
@@ -137,21 +156,21 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [questionIdx, setQuestionIdx] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
 
-  // Build chapter-aware question list
   const INTAKE_QUESTIONS = useMemo(() => {
     const base = [...BASE_INTAKE_QUESTIONS];
     if (info.chapterType === '13') {
-      // Insert CH.13 questions after the real estate question
       const realEstateIdx = base.findIndex(q => q.key === 'ownsRealEstate');
       base.splice(realEstateIdx + 1, 0, ...CH13_EXTRA_QUESTIONS);
     }
     return base;
   }, [info.chapterType]);
 
-  const isDirty = info.clientName || info.clientEmail || Object.keys(answers).length > 0;
+  const clientName = buildClientName(info.firstName, info.middleName, info.lastName);
+  const isDirty = info.firstName || info.lastName || info.clientEmail || Object.keys(answers).length > 0;
 
   const isJointFiling = answers.filingJointly === true;
-  const step1Valid = info.clientName && info.clientEmail && info.filingDeadline &&
+  const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline &&
+    info.street && info.city && info.state && info.zip &&
     (!isJointFiling || (info.spouseName && info.spouseEmail && info.spouseDob));
 
   const allAnswered = INTAKE_QUESTIONS.every(q => answers[q.key] !== undefined);
@@ -192,10 +211,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const resetAndClose = () => {
     setStep(1);
     setInfo({
-      clientName: '', clientEmail: '', clientPhone: '', clientDob: '', courtCaseNumber: '',
+      firstName: '', middleName: '', lastName: '', suffix: '',
+      clientEmail: '', clientPhone: '', clientDob: '', courtCaseNumber: '',
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: defaultParalegal,
       assignedAttorney: defaultAttorney,
+      street: '', city: '', state: '', zip: '', county: '',
       spouseName: '', spouseEmail: '', spousePhone: '', spouseDob: '',
     });
     setAnswers({});
@@ -224,12 +245,14 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   };
 
   const handleCreate = async () => {
-    const caseCode = generateCaseCode(info.clientName);
-    const displayName = isJointFiling && info.spouseName
-      ? `${info.clientName.split(' ')[0]} & ${info.spouseName.split(' ')[0]} ${info.clientName.split(' ').slice(-1)[0]}`
-      : info.clientName;
+    const displayName = clientName;
+    const caseCode = generateCaseCode(displayName);
+    const jointDisplayName = isJointFiling && info.spouseName
+      ? `${info.firstName} & ${info.spouseName.split(' ')[0]} ${info.lastName}`
+      : displayName;
+
     const newCase = createCase({
-      clientName: displayName,
+      clientName: jointDisplayName,
       clientEmail: info.clientEmail,
       clientPhone: info.clientPhone || undefined,
       chapterType: info.chapterType,
@@ -246,11 +269,17 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       milestones: info.chapterType === '13' ? buildCh13Milestones() : undefined,
     }));
 
+    const fullAddress = `${info.street}, ${info.city}, ${info.state} ${info.zip}`;
+
     try {
       await supabase.from('cases').upsert({
         id: newCase.id,
         firm_id: user?.firmId || null,
-        client_name: info.clientName,
+        client_name: jointDisplayName,
+        client_first_name: info.firstName,
+        client_middle_name: info.middleName || null,
+        client_last_name: info.lastName,
+        client_suffix: (info.suffix && info.suffix !== 'none') ? info.suffix : null,
         client_email: info.clientEmail,
         client_phone: info.clientPhone || null,
         client_dob: info.clientDob || null,
@@ -263,7 +292,16 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
-      });
+      } as any);
+
+      // Upsert client_info so form filling always has data from day one
+      await supabase.from('client_info').upsert({
+        case_id: newCase.id,
+        full_legal_name: clientName,
+        current_address: fullAddress,
+        phone: info.clientPhone || null,
+        email: info.clientEmail,
+      }, { onConflict: 'case_id' });
 
       const checklistRows = newCase.checklist.map((item, idx) => ({
         id: item.id,
@@ -275,7 +313,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         required: item.required,
         completed: false,
         sort_order: idx,
-        input_type: item.label === 'Employer Name & Address' ? 'text' : 'file',
+        input_type: item.label === 'Employer Name' ? 'text' : 'file',
       }));
       await supabase.from('checklist_items').insert(checklistRows);
     } catch (err) {
@@ -305,7 +343,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
     sendWelcomeSms(
       info.clientPhone || undefined,
-      info.clientName,
+      jointDisplayName,
       caseCode,
       newCase.id,
       firmSettings.firmName || 'your attorney\'s office',
@@ -451,7 +489,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                       <h4 className="font-display font-bold text-foreground">Checklist Preview</h4>
                     </div>
                     <p className="text-sm text-muted-foreground font-body mb-4">
-                      This checklist has been personalized for {info.clientName || 'this client'}.
+                      This checklist has been personalized for {clientName || 'this client'}.
                     </p>
                     <div className="space-y-2">
                       {categorySummary.map(({ category, count }) => (
@@ -501,7 +539,66 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   );
 };
 
-// PROMPT 4 + PROMPT 6: Step1Form with live team member dropdowns and joint filing spouse fields
+// ── Google Places Autocomplete Hook ──────────────────────────────────
+const useGooglePlacesAutocomplete = (
+  inputRef: React.RefObject<HTMLInputElement>,
+  onPlaceSelected: (place: { street: string; city: string; state: string; zip: string; county: string }) => void,
+) => {
+  const autocompleteRef = useRef<any>(null);
+
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || !inputRef.current) return;
+
+    // Load Google Maps script if not already loaded
+    if (!(window as any).google?.maps?.places) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      script.onload = () => initAutocomplete();
+      document.head.appendChild(script);
+    } else {
+      initAutocomplete();
+    }
+
+    function initAutocomplete() {
+      if (!inputRef.current || !(window as any).google?.maps?.places) return;
+      autocompleteRef.current = new (window as any).google.maps.places.Autocomplete(inputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components'],
+      });
+
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current?.getPlace();
+        if (!place?.address_components) return;
+
+        let street = '';
+        let city = '';
+        let state = '';
+        let zip = '';
+        let county = '';
+        let streetNumber = '';
+        let route = '';
+
+        for (const component of place.address_components) {
+          const type = component.types[0];
+          if (type === 'street_number') streetNumber = component.long_name;
+          if (type === 'route') route = component.long_name;
+          if (type === 'locality') city = component.long_name;
+          if (type === 'administrative_area_level_1') state = component.short_name;
+          if (type === 'postal_code') zip = component.long_name;
+          if (type === 'administrative_area_level_2') county = component.long_name.replace(/ County$/i, '');
+        }
+
+        street = [streetNumber, route].filter(Boolean).join(' ');
+        onPlaceSelected({ street, city, state, zip, county });
+      });
+    }
+  }, [inputRef, onPlaceSelected]);
+};
+
+// ── Step 1 Form Component ────────────────────────────────────────────
 const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, currentUserName, currentUserRole, isJointFiling, onToggleJoint }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
@@ -516,6 +613,21 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
   };
+
+  const streetInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePlaceSelected = useCallback((place: { street: string; city: string; state: string; zip: string; county: string }) => {
+    setInfo({
+      ...info,
+      street: place.street,
+      city: place.city,
+      state: place.state,
+      zip: place.zip,
+      county: place.county,
+    });
+  }, [info, setInfo]);
+
+  useGooglePlacesAutocomplete(streetInputRef, handlePlaceSelected);
 
   const renderTeamSelect = (
     label: string,
@@ -546,7 +658,6 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
             <SelectValue placeholder={`Select ${role}`} />
           </SelectTrigger>
           <SelectContent>
-            {/* Current user first with (You) label */}
             {members
               .sort((a, b) => {
                 if (a.id === currentUserId) return -1;
@@ -566,15 +677,51 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="sm:col-span-2">
-        <Label className="text-muted-foreground text-sm">Client Full Name *</Label>
+      {/* Structured name fields */}
+      <div>
+        <Label className="text-muted-foreground text-sm">First Name *</Label>
         <Input
-          value={info.clientName}
-          onChange={e => update('clientName', e.target.value)}
-          placeholder="Full name"
+          value={info.firstName}
+          onChange={e => update('firstName', e.target.value)}
+          placeholder="First name"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Middle Name</Label>
+        <Input
+          value={info.middleName}
+          onChange={e => update('middleName', e.target.value)}
+          placeholder="Middle name"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Last Name *</Label>
+        <Input
+          value={info.lastName}
+          onChange={e => update('lastName', e.target.value)}
+          placeholder="Last name"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">Suffix</Label>
+        <Select value={info.suffix} onValueChange={v => update('suffix', v)}>
+          <SelectTrigger className="mt-1 bg-input border-border rounded-[10px]">
+            <SelectValue placeholder="None" />
+          </SelectTrigger>
+          <SelectContent>
+            {SUFFIX_OPTIONS.map(s => (
+              <SelectItem key={s || 'none'} value={s || 'none'}>
+                {s || 'None'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Contact info */}
       <div>
         <Label className="text-muted-foreground text-sm">Client Email *</Label>
         <Input
@@ -603,6 +750,67 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
           className="mt-1 bg-input border-border rounded-[10px]"
         />
         <p className="text-xs text-muted-foreground mt-1">Used for client portal verification</p>
+      </div>
+
+      {/* Address section */}
+      <div className="sm:col-span-2 mt-2">
+        <div className="h-px bg-border" />
+        <p className="text-xs font-bold text-primary mt-3 mb-1 uppercase tracking-wider">Client Address</p>
+      </div>
+      <div className="sm:col-span-2">
+        <Label className="text-muted-foreground text-sm">Street Address *</Label>
+        <Input
+          ref={streetInputRef}
+          value={info.street}
+          onChange={e => update('street', e.target.value)}
+          placeholder="123 Main St"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">City *</Label>
+        <Input
+          value={info.city}
+          onChange={e => update('city', e.target.value)}
+          placeholder="City"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-muted-foreground text-sm">State *</Label>
+          <Input
+            value={info.state}
+            onChange={e => update('state', e.target.value)}
+            placeholder="NV"
+            maxLength={2}
+            className="mt-1 bg-input border-border rounded-[10px]"
+          />
+        </div>
+        <div>
+          <Label className="text-muted-foreground text-sm">ZIP Code *</Label>
+          <Input
+            value={info.zip}
+            onChange={e => update('zip', e.target.value)}
+            placeholder="89101"
+            className="mt-1 bg-input border-border rounded-[10px]"
+          />
+        </div>
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">County</Label>
+        <Input
+          value={info.county}
+          onChange={e => update('county', e.target.value)}
+          placeholder="Auto-filled or enter manually"
+          className="mt-1 bg-input border-border rounded-[10px]"
+        />
+      </div>
+
+      {/* Case details */}
+      <div className="sm:col-span-2 mt-2">
+        <div className="h-px bg-border" />
+        <p className="text-xs font-bold text-primary mt-3 mb-1 uppercase tracking-wider">Case Details</p>
       </div>
       <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Chapter Type *</Label>
