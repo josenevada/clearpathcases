@@ -1526,17 +1526,7 @@ const ClientWizard = () => {
                           className="bg-input border-border rounded-[10px]"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">
-                          Employer Address <span className="text-muted-foreground font-normal">(optional)</span>
-                        </label>
-                        <Input
-                          value={employerAddress}
-                          onChange={e => setEmployerAddress(e.target.value)}
-                          placeholder="Street address, city, state, zip"
-                          className="bg-input border-border rounded-[10px]"
-                        />
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Your employer's address will be pulled from your pay stubs automatically</p>
                     </>
                   )}
 
