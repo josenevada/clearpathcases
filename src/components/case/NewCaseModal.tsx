@@ -551,7 +551,7 @@ const useGooglePlacesAutocomplete = (
     if (!apiKey || !inputRef.current) return;
 
     // Load Google Maps script if not already loaded
-    if (!window.google?.maps?.places) {
+    if (!(window as any).google?.maps?.places) {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
