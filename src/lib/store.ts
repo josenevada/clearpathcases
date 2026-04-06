@@ -219,7 +219,7 @@ export interface IntakeQuestion {
 }
 
 export const getDefaultIntakeQuestions = (): IntakeQuestion[] => [
-  { id: 'iq-1', question: 'Are you currently employed?', controlsItems: ['Pay Stubs (Last 2 Months)', 'Employer Name & Address'], active: true, order: 0 },
+  { id: 'iq-1', question: 'Are you currently employed?', controlsItems: ['Pay Stubs (Last 2 Months)', 'Employer Name'], active: true, order: 0 },
   { id: 'iq-2', question: 'Do you have any bank accounts (checking or savings)?', controlsItems: ['Checking/Savings Statements (Last 6 Months)'], active: true, order: 1 },
   { id: 'iq-3', question: 'Do you have any outstanding loans or credit card debt?', controlsItems: ['Credit Card Statements (Last 3 Months)', 'Loan Statements', 'Collection Notices'], active: true, order: 2 },
   { id: 'iq-4', question: 'Do you own any real estate property?', controlsItems: ['Property Deed', 'Mortgage Statement or Lease'], active: true, order: 3 },
