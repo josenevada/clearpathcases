@@ -36,7 +36,8 @@ interface CaseStatusDropdownProps {
 
 const CaseStatusDropdown = ({ caseData, actorName, onUpdated }: CaseStatusDropdownProps) => {
   const [confirmDialog, setConfirmDialog] = useState<CaseStatus | null>(null);
-  const currentStatus = caseData.status || 'active';
+  const rawStatus = caseData.status || 'active';
+  const currentStatus: CaseStatus = rawStatus in STATUS_CONFIG ? (rawStatus as CaseStatus) : 'active';
   const config = STATUS_CONFIG[currentStatus];
 
   const changeStatus = async (newStatus: CaseStatus) => {
