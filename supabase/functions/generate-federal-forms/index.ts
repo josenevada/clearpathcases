@@ -698,6 +698,13 @@ serve(async (req) => {
       .eq("id", case_id)
       .single();
 
+    // Fetch firm branding for attorney section
+    const { data: firmData } = await supabase
+      .from("firms")
+      .select("name, branding_attorney_name, branding_bar_number, phone, primary_contact_email")
+      .eq("id", caseData?.firm_id)
+      .maybeSingle();
+
     // Fetch all extracted data
     const { data: extractedData } = await supabase
       .from("case_extracted_data")
@@ -712,13 +719,27 @@ serve(async (req) => {
         : field.field_value || "";
     }
 
+    // Inject firm data into fieldMap
+    if (firmData) {
+      fieldMap["firm_name"] = firmData.name || "";
+      fieldMap["attorney_name"] = firmData.branding_attorney_name || "";
+      fieldMap["bar_number"] = firmData.branding_bar_number || "";
+      fieldMap["firm_phone"] = firmData.phone || "";
+      fieldMap["attorney_email"] = firmData.primary_contact_email || "";
+    }
+
+    // Pass firmData into caseData for convenience
+    if (caseData) {
+      caseData.attorney = firmData;
+      caseData.firm = firmData;
+    }
+
     // Inject client_info fields into fieldMap for convenience
     if (caseData?.client_info) {
       const ci = caseData.client_info;
       if (ci.phone) fieldMap["client_info_phone"] = ci.phone;
       if (ci.email) fieldMap["client_info_email"] = ci.email;
       if (ci.current_address) {
-        // Parse address components if not already in extracted data
         fieldMap["client_info_address"] = ci.current_address;
       }
     }
