@@ -544,7 +544,7 @@ const useGooglePlacesAutocomplete = (
   inputRef: React.RefObject<HTMLInputElement>,
   onPlaceSelected: (place: { street: string; city: string; state: string; zip: string; county: string }) => void,
 ) => {
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<any>(null);
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
