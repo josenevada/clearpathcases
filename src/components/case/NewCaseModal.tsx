@@ -279,7 +279,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         client_first_name: info.firstName,
         client_middle_name: info.middleName || null,
         client_last_name: info.lastName,
-        client_suffix: info.suffix || null,
+        client_suffix: (info.suffix && info.suffix !== 'none') ? info.suffix : null,
         client_email: info.clientEmail,
         client_phone: info.clientPhone || null,
         client_dob: info.clientDob || null,
