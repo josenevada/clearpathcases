@@ -147,7 +147,7 @@ function fillB101(form: any, fm: Record<string, string>, caseData: any) {
   safeFill(form, "Debtor1.Email address_2", caseData?.client_info?.email || caseData?.client_email);
 
   // ── District dropdown ──────────────────────────────────────────────
-  const clientState = addrMatch?.[3]?.trim() || fm["client_info_state"] || "";
+  const clientState = state || addrMatch?.[3]?.trim() || fm["client_info_state"] || "";
   const districtValue = STATE_DISTRICTS[clientState] || "";
   if (districtValue) {
     try {
