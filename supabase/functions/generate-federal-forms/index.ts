@@ -107,36 +107,149 @@ function sumFields(fm: Record<string, string>, ...keys: string[]): string {
 
 function fillB101(form: any, fm: Record<string, string>, caseData: any) {
   const today = todayFormatted();
-  const clientState = fm["client_info_state"] || caseData?.client_info?.state || "";
+  const chapterType = caseData?.chapter_type || "7";
+  const isSelfEmployed = caseData?.client_info?.employment_status === "self-employed" || fm["employment_status"] === "self-employed";
+  const isJoint = Boolean(caseData?.joint_filing);
 
-  // Debtor 1
-  safeFill(form, "Debtor1.First name", fm["debtor_legal_name_first"]);
+  // ── Part 1: Identify Yourself ──────────────────────────────────────
+
+  // Debtor 1 name
+  safeFill(form, "Debtor1.First name", fm["debtor_legal_name_first"] || caseData?.client_info?.full_legal_name?.split(" ")[0]);
   safeFill(form, "Debtor1.Middle name", fm["debtor_legal_name_middle"]);
-  safeFill(form, "Debtor1.Last name", fm["debtor_legal_name_last"]);
-  // SSN — NEVER FILL
-  safeFill(form, "Debtor1.Street", fm["debtor_id_address"]);
-  safeFill(form, "Debtor1.City", fm["client_info_city"] || caseData?.client_info?.city);
-  safeFill(form, "Debtor1.State", clientState);
-  safeFill(form, "Debtor1.ZIP Code", fm["client_info_zip"] || caseData?.client_info?.zip);
-  safeFill(form, "Debtor1.County", fm["client_info_county"] || caseData?.client_info?.county);
-  safeFill(form, "Debtor1.Contact phone_2", fm["client_info_phone"] || caseData?.client_phone);
-  safeFill(form, "Debtor1.Email address_2", fm["client_info_email"] || caseData?.client_email);
-  safeFill(form, "Debtor1.Business name", fm["employer_name"]);
-  safeFill(form, "Debtor1.Date signed", today);
+  safeFill(form, "Debtor1.Last name", fm["debtor_legal_name_last"] || caseData?.client_info?.full_legal_name?.split(" ").slice(-1)[0]);
+  safeFill(form, "Debtor1.Suffix Sr Jr II III", fm["debtor_suffix"]);
+
+  // SSN — last 4 only, never full SSN
+  const ssn = caseData?.client_info?.ssn_encrypted || "";
+  const ssnLast4 = ssn.replace(/\D/g, "").slice(-4);
+  safeFill(form, "Debtor1.SSNum", ssnLast4);
+
+  // Address — parse from client_info.current_address
+  const addr = caseData?.client_info?.current_address || "";
+  const addrMatch = addr.match(/^(.+),\s*(.+),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?$/);
+  safeFill(form, "Debtor1.Street", addrMatch?.[1]?.trim() || fm["debtor_id_address"] || addr);
+  safeFill(form, "Debtor1.City", addrMatch?.[2]?.trim() || fm["client_info_city"]);
+  safeFill(form, "Debtor1.State", addrMatch?.[3]?.trim() || fm["client_info_state"]);
+  safeFill(form, "Debtor1.ZIP Code", addrMatch?.[4]?.trim() || fm["client_info_zip"]);
+  safeFill(form, "Debtor1.County", fm["client_info_county"]);
+
+  // Contact
+  safeFill(form, "Debtor1.Contact phone_2", caseData?.client_info?.phone || caseData?.client_phone || fm["client_info_phone"]);
+  safeFill(form, "Debtor1.Email address_2", caseData?.client_info?.email || caseData?.client_email);
+
+  // ── District dropdown ──────────────────────────────────────────────
+  const clientState = addrMatch?.[3]?.trim() || fm["client_info_state"] || "";
+  const districtValue = STATE_DISTRICTS[clientState] || "";
+  if (districtValue) {
+    try {
+      const districtField = form.getDropdown("Bankruptcy District Information");
+      districtField.select(districtValue);
+    } catch { /* skip if not found */ }
+  }
+
+  // ── Header chapter checkboxes (page 1) ────────────────────────────
+  try {
+    const chapterRadio = form.getRadioGroup("Check Box1");
+    const options = chapterRadio.getOptions();
+    if (chapterType === "7" && options[0]) chapterRadio.select(options[0]);
+    else if (chapterType === "11" && options[1]) chapterRadio.select(options[1]);
+    else if (chapterType === "12" && options[2]) chapterRadio.select(options[2]);
+    else if (chapterType === "13" && options[3]) chapterRadio.select(options[3]);
+  } catch {
+    safeCheck(form, "Check Box5", chapterType === "7");
+    safeCheck(form, "Check Box6", chapterType === "11");
+    safeCheck(form, "Check Box7", chapterType === "12");
+    safeCheck(form, "Check Box8", chapterType === "13");
+  }
+
+  // ── Part 2: About Your Case ────────────────────────────────────────
+
+  // Q6 — lived in district 180 days (default yes for Debtor 1)
+  safeCheck(form, "Check Box5", true);
+
+  // Q8 — fee payment — default "pay in full" (attorney pays)
+  safeCheck(form, "Check Box8", true);
+
+  // Q9 — prior bankruptcy — default No
+  safeCheck(form, "Check Box9", true);
+
+  // Q10 — pending cases — default No
+  safeCheck(form, "Check Box10", true);
+
+  // Q11 — renting — use screener answer
+  const ownsRealEstate = fm["owns_real_estate"] === "true" || Boolean(caseData?.owns_real_estate);
+  safeCheck(form, "Check Box11", !ownsRealEstate);
+
+  // ── Part 3: Sole Proprietor ────────────────────────────────────────
+
+  safeCheck(form, "Check Box12", isSelfEmployed);
+  if (!isSelfEmployed) {
+    safeCheck(form, "Check Box12", true);
+  }
+
+  if (isSelfEmployed) {
+    safeFill(form, "Name of business if any", caseData?.client_info?.business_name || fm["employer_name"]);
+    safeFill(form, "Business Street address", caseData?.client_info?.employer_address || fm["employer_street"]);
+    safeFill(form, "Business City", fm["employer_city"]);
+    safeFill(form, "Business State", fm["employer_state"]);
+    safeCheck(form, "Check Box14", true);
+  }
+
+  // Q13 — small business debtor — only for Ch11, default No
+  if (chapterType === "11") {
+    safeCheck(form, "Check Box13", true);
+  }
+
+  // ── Part 4: Hazardous Property ─────────────────────────────────────
+  safeCheck(form, "Check Box15", true);
+
+  // ── Part 5: Credit Counseling ──────────────────────────────────────
+  safeCheck(form, "Check Box16", true);
+
+  if (isJoint) {
+    safeCheck(form, "Check Box17", true);
+  }
+
+  // ── Part 6: Reporting ──────────────────────────────────────────────
+
+  // Q16a — consumer debts — default Yes for individual bankruptcy
+  safeCheck(form, "Check Box18", true);
+
+  // Q17 — filing under Ch7
+  if (chapterType === "7") {
+    safeCheck(form, "Check Box20", true);
+    safeCheck(form, "Check Box20A", true);
+  } else {
+    safeCheck(form, "Check Box19", true);
+  }
+
+  // Q18 — creditor count — default 1-49
+  safeCheck(form, "Check Box21", true);
+
+  // Q19 — asset estimate — default $0-$50,000
+  safeCheck(form, "Check Box22", true);
+
+  // Q20 — liability estimate — default $50,001-$100,000
+  safeCheck(form, "Check Box23", true);
+
+  // ── Part 7: Signatures ─────────────────────────────────────────────
   safeFill(form, "Executed on", today);
+  safeFill(form, "Debtor1.Date signed", today);
 
-  // District
-  const district = STATE_DISTRICTS[clientState] || "";
-  safeFill(form, "Bankruptcy District Information", district);
+  // ── Attorney section (page 8) ──────────────────────────────────────
+  safeFill(form, "Attorney.Printed name", fm["attorney_name"] || caseData?.attorney?.branding_attorney_name);
+  safeFill(form, "Attorney.Firm name", fm["firm_name"] || caseData?.firm?.name);
+  safeFill(form, "Attorney.Street address_2", fm["firm_street"]);
+  safeFill(form, "Attorney.City", fm["firm_city"]);
+  safeFill(form, "Attorney.State", fm["firm_state"]);
+  safeFill(form, "Attorney.Zip", fm["firm_zip"]);
+  safeFill(form, "Attorney.phone", fm["firm_phone"]);
+  safeFill(form, "Attorney.Email address", fm["attorney_email"]);
+  safeFill(form, "Attorney.Bar number", fm["bar_number"] || caseData?.attorney?.branding_bar_number);
+  safeFill(form, "Attorney.Date signed", today);
 
-  // Chapter 7 checkbox
-  safeCheck(form, "Check Box5", true); // Ch 7
-
-  // Credit counseling
-  safeFill(form, "Debtor1.Name", fm["credit_counseling_debtor_name"]);
-
-  // Joint filing — Debtor 2
-  if (caseData?.joint_filing) {
+  // ── Joint filing: Debtor 2 ─────────────────────────────────────────
+  if (isJoint) {
     safeFill(form, "Debtor2.First name", fm["spouse_legal_name_first"]);
     safeFill(form, "Debtor2.Middle name_2", fm["spouse_legal_name_middle"]);
     safeFill(form, "Debtor2.Last name", fm["spouse_legal_name_last"]);
@@ -147,6 +260,8 @@ function fillB101(form: any, fm: Record<string, string>, caseData: any) {
     safeFill(form, "Debtor2.Contact phone", fm["spouse_phone"]);
     safeFill(form, "Debtor2.Email address", fm["spouse_email"]);
     safeFill(form, "Debtor2.Date signed", today);
+    safeFill(form, "Debtor2.Executed on", today);
+    safeCheck(form, "Check Box6", true);
   }
 }
 
