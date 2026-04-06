@@ -24,10 +24,10 @@ import { sendMomentumSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const EMPLOYER_LABEL = 'Employer Name & Address';
+const EMPLOYER_LABEL = 'Employer Name';
 const SSN_LABEL = 'Social Security Card';
 const SSN_LABEL_LEGACY = 'Social Security Number';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL;
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address';
 
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
