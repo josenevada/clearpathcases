@@ -144,10 +144,10 @@ const StatsBar = () => {
   const [ref, visible] = useScrollReveal<HTMLDivElement>(0.3);
   const reduced = usePrefersReducedMotion();
   const stats = [
-    { value: 8.5, prefix: '', suffix: ' hrs', label: 'Saved per case vs. manual intake' },
-    { value: 10001, prefix: '$', suffix: '', label: 'Monthly net savings at Professional tier' },
-    { value: 26, prefix: '', suffix: 'x', label: 'Average ROI for Professional firms' },
-    { value: 3, prefix: '', suffix: '', label: 'Engines working for you: intake, forms & means test' },
+    { value: 15, prefix: '', suffix: ' min', label: 'Average client completion time' },
+    { value: 3, prefix: '', suffix: ' hrs', label: 'Paralegal time saved per case' },
+    { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
+    { value: 100, prefix: '', suffix: '%', label: 'Documents organized on arrival' },
   ];
 
   return (
@@ -168,7 +168,7 @@ const StatsBar = () => {
             }}
           >
             <p className="font-display font-bold text-[36px] md:text-[52px] text-primary" style={{ letterSpacing: '-0.01em', lineHeight: '1' }}>
-              <CountUp target={s.value} started={visible} prefix={s.prefix} suffix={s.suffix} />
+              {(s as any).displayOverride ? ((s as any).displayOverride) : <CountUp target={s.value} started={visible} prefix={s.prefix} suffix={s.suffix} />}
             </p>
             <p className="text-xs text-[#8aa3b8] font-body mt-2 leading-snug">{s.label}</p>
           </div>
@@ -220,8 +220,8 @@ const AIFormFillingSection = () => {
     >
       <div className="text-center mb-12" style={revealStyle(0)}>
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
-          Your paralegals should review forms.<br />
-          <span className="text-primary">Not type them.</span>
+          AI form filling &amp; means test.<br />
+          <span className="text-primary">Available on Professional.</span>
         </h2>
         <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
           Once documents are approved, ClearPath reads every file and<br className="hidden sm:block" />
@@ -469,20 +469,19 @@ const MarketingLanding = () => {
   // How-it-works sequential animation
   const [howStep, setHowStep] = useState(0);
   useEffect(() => {
-    if (!howVisible || reduced) { if (howVisible) setHowStep(9); return; }
-    const delays = [0, 150, 300, 450, 600, 750, 900, 1050, 1200];
+    if (!howVisible || reduced) { if (howVisible) setHowStep(7); return; }
+    const delays = [0, 150, 300, 450, 600, 750, 900];
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 7; i++) {
       timers.push(setTimeout(() => setHowStep(i), delays[i - 1]));
     }
     return () => timers.forEach(clearTimeout);
   }, [howVisible, reduced]);
 
   const howSteps = [
-    { num: '1', title: 'Create a Case', desc: 'A paralegal creates a case in seconds and sends the client a secure intake link via email or SMS. No client account required.', circleStep: 1, textStep: 1 },
-    { num: '2', title: 'Client Uploads Documents', desc: 'The client follows a guided step-by-step walkthrough on any device — one document at a time, with AI validation on every upload.', circleStep: 3, textStep: 3 },
-    { num: '3', title: 'AI Does the Heavy Lifting', desc: 'Once documents are approved, ClearPath pre-fills all 15 federal forms, calculates the means test automatically, and runs exemption analysis to maximize asset protection. Your paralegal reviews in minutes.', circleStep: 5, textStep: 5 },
-    { num: '4', title: 'Review, Approve & File', desc: 'Paralegals review in minutes. Attorney approves. Client and attorney sign inside ClearPath. Court-ready packet generated — one click.', circleStep: 7, textStep: 7 },
+    { num: '1', title: 'Create a case in 60 seconds', desc: 'Enter client name, contact info, and answer 7 screener questions. ClearPath builds a custom document checklist based on their specific situation.', circleStep: 1, textStep: 1 },
+    { num: '2', title: 'Client completes intake on their phone', desc: 'They receive a secure link via SMS and email. A guided wizard walks them through each document one at a time — with plain English instructions, camera upload, and help finding documents they can\'t locate.', circleStep: 3, textStep: 3 },
+    { num: '3', title: 'Review organized, validated documents', desc: 'Every document arrives pre-sorted by category with AI validation. Approve, request corrections, or download everything in one click.', circleStep: 5, textStep: 5 },
   ];
 
   /* Section background colors */
@@ -493,39 +492,34 @@ const MarketingLanding = () => {
 
   const faqItems = [
     {
-      q: 'Is client data secure?',
-      preview: 'Yes. TLS 1.3, SSL A+ rated, encrypted at rest and in transit.',
-      a: 'Yes. All documents are encrypted at rest and in transit using TLS 1.3. Our infrastructure has an independently verified SSL A+ rating. We maintain a 7-year data retention policy matching federal bankruptcy recordkeeping requirements. Files are stored in bank-level encrypted cloud storage. We never share client data with third parties.',
+      q: 'How does the client experience work?',
+      preview: 'Clients get a secure link and complete intake in about 15 minutes on their phone.',
+      a: 'When you create a case, ClearPath sends your client a secure link via SMS and email. They verify their identity with their date of birth, then follow a guided wizard that walks them through each required document one at a time. Plain English instructions tell them exactly what to upload and why. Most clients complete the full intake in 15-20 minutes on their phone without calling the firm once.',
     },
     {
-      q: 'How does AI form filling work?',
-      preview: 'AI reads every approved document and maps data to all 15 federal forms automatically.',
-      a: 'Once your paralegal approves all uploaded documents, ClearPath automatically sends each document to our AI engine, which reads and extracts the relevant data. That data is mapped to the correct fields across all 15 official federal bankruptcy forms. Your paralegal reviews the extracted fields, resolves any flagged conflicts, and your attorney approves before the forms are included in the court packet. Nothing is filed automatically — the attorney always has final review.',
+      q: 'What happens when a client uploads the wrong document?',
+      preview: 'AI validates every document instantly and tells the client immediately.',
+      a: 'ClearPath\'s AI checks every uploaded document the moment it arrives — verifying document type, checking for legibility, and flagging issues like wrong year or wrong account. If something is wrong the client sees an immediate message explaining what to fix. Corrections happen in real time, not days later when a paralegal finally reviews the case.',
     },
     {
-      q: 'How do clients access their document portal?',
-      preview: 'Via a secure unique link — no account or login required for clients.',
-      a: 'When you create a case, ClearPath generates a secure, unique link for that client. You send it via email or SMS directly from the dashboard. Clients click the link and are guided through their document uploads step by step — no account creation, no app download, no login required.',
+      q: 'What if a client doesn\'t finish uploading?',
+      preview: 'Automatic reminders go out so your team never has to chase.',
+      a: 'ClearPath automatically sends SMS and email reminders when a client hasn\'t completed their intake. Reminders are targeted — if a client uploaded some documents but not others, they get a message listing exactly what\'s still missing. Your paralegal never has to make a single follow-up call.',
     },
     {
-      q: 'Do clients need to create an account?',
-      preview: 'No. Clients use a secure link and verify with date of birth only.',
-      a: 'No. Clients access their portal via a secure unique link. They verify their identity with their date of birth and proceed directly to their document checklist. Zero friction for clients who are already stressed.',
+      q: 'How are documents organized when they arrive?',
+      preview: 'Everything is sorted by category before you open the case.',
+      a: 'Documents are automatically organized into six categories — Income & Employment, Bank & Financial Accounts, Debts & Credit, Assets & Property, Personal Identification, and Agreements & Confirmation. When your paralegal opens a case they see a clean organized view, not a pile of files to sort through.',
     },
     {
-      q: 'What happens if a client uploads the wrong document?',
-      preview: 'AI rejects it immediately and guides the client to upload the correct file.',
-      a: 'Our AI validates every document the moment it\'s uploaded. If the document doesn\'t match what\'s expected — wrong type, wrong year, unreadable image — the client is notified immediately and guided to upload the correct file. It never reaches your review queue.',
+      q: 'Does ClearPath work for Chapter 13?',
+      preview: 'Yes — both Chapter 7 and Chapter 13 are fully supported.',
+      a: 'ClearPath supports both Chapter 7 and Chapter 13. Each chapter has its own document checklist and screener questions. Chapter 13 automatically adds additional income documentation requirements to the checklist.',
     },
     {
-      q: 'Which bankruptcy chapters do you support?',
-      preview: 'Both Chapter 7 and Chapter 13. AI form filling is currently Ch.7, Ch.13 coming soon.',
-      a: 'ClearPath fully supports Chapter 7 and Chapter 13. Each chapter has its own document checklist, conditional screener questions, and milestone tracker. AI form filling is currently available for Chapter 7, with Chapter 13 coming soon.',
-    },
-    {
-      q: 'Can we customize the document checklist for our firm?',
-      preview: 'Yes. Every paid plan includes customizable document checklists.',
-      a: 'Yes. At every paid tier you can customize which documents are required, add custom document types, and configure the credit counseling provider link and attorney code. Firm tier includes full white-label branding so clients never see the ClearPath name.',
+      q: 'How long does setup take?',
+      preview: 'Your first case in under 5 minutes. No training required.',
+      a: 'Create your account, set up your firm profile, and create your first case in under 5 minutes. There\'s no training required — the workflow is intuitive enough that paralegals pick it up immediately. We also offer onboarding support if you need it.',
     },
   ];
 
@@ -555,17 +549,16 @@ const MarketingLanding = () => {
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
           style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '720px' }}
         >
-          While other firms<br />
-          are still typing,<br />
-          <span className="text-primary">yours is filing.</span>
+          The simplest way for bankruptcy clients<br />
+          <span className="text-primary">to send you their documents.</span>
         </h1>
         <p
           className="mt-6 text-[15px] md:text-lg text-[#8aa3b8] font-body font-light max-w-2xl mx-auto relative"
           style={{ ...heroStagger(4), lineHeight: '1.7' }}
         >
-          ClearPath collects documents from your clients automatically,<br className="hidden sm:block" />
-          then pre-fills all 15 federal Ch.7 forms using AI —<br className="hidden sm:block" />
-          so your paralegals review in minutes, not hours.
+          ClearPath guides your clients through every document step by step —<br className="hidden sm:block" />
+          on their phone, in minutes. Everything arrives organized,<br className="hidden sm:block" />
+          validated, and ready for your review.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
           <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free Trial</Button>
@@ -574,7 +567,7 @@ const MarketingLanding = () => {
           </Button>
         </div>
         <p className="mt-6 text-sm text-[#8aa3b8] relative" style={heroStagger(8)}>
-          ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ Setup in 5 minutes
+          ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 5 minutes
         </p>
 
         {/* Capability pill */}
@@ -609,12 +602,12 @@ const MarketingLanding = () => {
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">Before ClearPath</p>
             <ul className="space-y-3.5">
               {[
-                'Email clients a 20-item document checklist and wait',
-                'Chase missing documents for days over email and phone',
-                'Paralegals retype data from PDFs into federal forms by hand',
-                '7–11 hours of paralegal time per case',
-                'Errors, omissions, and last-minute court scrambles',
-                'Court packets assembled manually',
+                'Email clients a PDF checklist and wait days',
+                'Chase missing documents over phone and email',
+                'Clients upload wrong files, wrong formats, wrong years',
+                'Paralegals spend hours sorting and renaming files',
+                'Documents arrive scattered across email, text, and voicemail',
+                'Last-minute scrambles before filing deadlines',
               ].map(t => (
                 <li key={t} className="flex items-start gap-2.5">
                   <XCircle className="w-4 h-4 text-destructive/70 mt-0.5 flex-shrink-0" />
@@ -642,14 +635,12 @@ const MarketingLanding = () => {
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">With ClearPath</p>
             <ul className="space-y-3.5">
               {[
-                'Client guided through every document step by step — no emails',
-                'AI validates every document the moment it\'s uploaded',
-                'All 15 federal Ch.7 forms pre-filled automatically from approved documents',
-                '~1 hour total — paralegal + attorney combined',
-                'Means test and exemption analysis run automatically',
-                'Attorney reviews and approves — nothing retyped',
-                'Court-ready packet generated in one click',
-                'Client and attorney sign all documents inside ClearPath — no DocuSign',
+                'Client gets a secure link and completes intake on their phone',
+                'Step-by-step wizard tells them exactly what to upload',
+                'AI validates every document the moment it arrives',
+                'Everything organized by category before you open the case',
+                'Automatic reminders if a client goes quiet',
+                'Paralegal opens the case to find everything ready',
               ].map(t => (
                 <li key={t} className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -667,19 +658,17 @@ const MarketingLanding = () => {
       <section className="px-6 py-16 max-w-5xl mx-auto">
         <div ref={wizRef} className="text-center mb-12" style={revealStyle(wizVisible)}>
           <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
-            Clients upload everything.<br />
-            <span className="text-primary">Without a single email from you.</span>
+            Your clients shouldn't need a paralegal<br />
+            <span className="text-primary">to submit their documents.</span>
           </h2>
           <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
-            ClearPath sends your client a secure link. They follow a guided step-by-step<br className="hidden sm:block" />
-            wizard — one document at a time, on any device, with plain English instructions.<br className="hidden sm:block" />
-            No account required. No confusion. No chasing.
+            ClearPath does the hand-holding so your team doesn't have to.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients are guided through each document with plain English instructions, mobile camera capture, and a "Why do we need this?" explanation for every step. Completion rates are dramatically higher than email checklists.' },
-            { icon: Building, title: 'Bank statements in seconds', desc: 'Clients connect their bank directly via Plaid — no downloading, no scanning, no uploading. Statements arrive instantly and are automatically validated. Available on Professional and Firm plans.' },
+            { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
+            { icon: Building, title: 'Bank statements in seconds', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
             { icon: Shield, title: 'Wrong documents rejected instantly', desc: 'Every upload is reviewed by AI the moment it arrives. Blurry photo, wrong year, wrong document type — the client is notified immediately and guided to fix it before it ever reaches your review queue.' },
           ].map((c, i) => (
             <div
@@ -719,14 +708,14 @@ const MarketingLanding = () => {
       {/* How it works */}
       <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>How it works</h2>
-        <div ref={howRef} className="grid grid-cols-1 md:grid-cols-4 gap-0 items-start relative">
-          {[0, 1, 2].map(i => (
+        <div ref={howRef} className="grid grid-cols-1 md:grid-cols-3 gap-0 items-start relative">
+          {[0, 1].map(i => (
             <div
               key={i}
               className="hidden md:block absolute top-5"
               style={{
-                left: `calc(${12.5 + i * 25}% + 20px)`,
-                right: `calc(${62.5 - i * 25}% + 20px)`,
+                left: `calc(${16.67 + i * 33.33}% + 20px)`,
+                right: `calc(${50 - i * 33.33}% + 20px)`,
                 borderTop: '1px solid rgba(0,194,168,0.2)',
                 ...(reduced ? {} : {
                   transform: howStep >= (i + 1) * 2 ? 'scaleX(1)' : 'scaleX(0)',
@@ -752,7 +741,7 @@ const MarketingLanding = () => {
                 <h3 className="font-display font-semibold text-[17px] text-foreground mb-2">{step.title}</h3>
                 <p className="text-[15px] text-[#8aa3b8] font-body font-light max-w-[220px]" style={{ lineHeight: '1.7' }}>{step.desc}</p>
               </div>
-              {i < 3 && (
+              {i < 2 && (
                 <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
               )}
             </div>
@@ -766,13 +755,12 @@ const MarketingLanding = () => {
       <section className="px-6 py-16 max-w-5xl mx-auto">
         <div ref={featureRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { icon: FileText, title: 'Clients actually finish', desc: 'A guided step-by-step portal that walks clients through every document they need to upload. Adapts to each client\'s situation automatically.' },
-            { icon: LayoutDashboard, title: 'Know exactly where every case stands', desc: 'Every case in one place, sorted by urgency. See who\'s done, who\'s stalled, and what needs your attention today.' },
-            { icon: PackageCheck, title: 'Court-ready packets in one click', desc: 'Download an organized ZIP or compiled PDF of all approved documents and pre-filled federal forms, ready for court, in one click.' },
-            { icon: Brain, title: 'Complete Pre-Filing Intelligence', desc: 'AI pre-fills all 15 federal Ch.7 forms, calculates means test eligibility automatically, and optimizes exemptions to protect maximum client assets. Attorney reviews and approves — nothing done by hand.' },
-            { icon: MessageSquare, title: 'AI catches mistakes before they reach you', desc: 'Gemini Vision AI reviews every uploaded document the moment it arrives. Wrong document type, blurry photo, wrong year — rejected instantly before it reaches your review queue.' },
-            { icon: PenLine, title: 'Built-in E-Signatures', desc: 'Client and attorney sign all required documents directly inside ClearPath. No DocuSign. No Adobe Sign. No switching platforms. Legally binding in all 50 states under ESIGN and UETA.' },
-            { icon: Calculator, title: 'Means Test Engine', desc: 'Automatically calculates B122A-1 and B122A-2 using IRS National and Local Standards. Determines Ch.7 eligibility, flags borderline cases, and recommends Chapter 7 vs 13 before the attorney opens the file.' },
+            { icon: ClipboardList, title: 'Guided Mobile Wizard', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
+            { icon: MessageSquare, title: 'AI Document Validation', desc: 'Every uploaded document is checked instantly by AI — wrong year, wrong type, illegible scan. Clients are notified immediately so corrections happen before you ever open the case.' },
+            { icon: Sparkles, title: 'Smart Document Retrieval', desc: 'Clients who can\'t find their documents get guided help with deep links and step-by-step walkthroughs for every major bank, payroll provider, and tax platform.' },
+            { icon: Clock, title: 'Automatic SMS Reminders', desc: 'Clients who go quiet get automatic follow-up reminders. Targeted, specific, and sent at the right time — so your paralegal spends zero time chasing documents.' },
+            { icon: LayoutDashboard, title: 'Organized on Arrival', desc: 'Every document lands in the right category automatically. Income, bank accounts, debts, assets, ID — organized before you open the case.' },
+            { icon: Building, title: 'Bank Connection via Plaid', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
           ].map((f, i) => (
             <div
               key={f.title}
@@ -889,7 +877,7 @@ const MarketingLanding = () => {
       {/* Pricing */}
       <section id="pricing" className="px-6 py-16 max-w-6xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-4 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
-          An investment that pays for itself<br />in the first week.
+          Simple pricing.<br />Free to start.
         </h2>
         <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">14-day free trial on every plan. No credit card required.</p>
 
@@ -969,49 +957,40 @@ const MarketingLanding = () => {
       >
         <div
           ref={ctaRef}
-          className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center relative"
+          className="max-w-3xl mx-auto text-center relative"
           style={revealStyle(ctaVisible, { y: 16 })}
         >
-          {/* Left */}
-          <div>
-            <h2
-              className="font-display font-bold text-[36px] md:text-[44px] text-foreground landing-heading-glow"
-              style={{ letterSpacing: '-0.01em', lineHeight: '1.05' }}
-            >
-              Your next case could take<br />one hour instead of ten.
-            </h2>
-            <p className="text-[#8aa3b8] font-body font-light text-[15px] md:text-[17px] mt-4 max-w-lg" style={{ lineHeight: '1.7' }}>
-              Start your free 14-day trial. No credit card. No commitment.<br />
-              Set up your firm in under 5 minutes.
-            </p>
-            <Button
-              size="lg"
-              onClick={() => navigate('/signup')}
-              className="mt-8 cta-shimmer relative overflow-hidden transition-all duration-200"
-              style={{
-                boxShadow: '0 0 24px rgba(0,194,168,0.3)',
-                padding: '14px 28px',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 36px rgba(0,194,168,0.45)';
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px) scale(1.01)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 24px rgba(0,194,168,0.3)';
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0) scale(1)';
-              }}
-            >
-              Start Free — No Card Needed
-            </Button>
-            <p className="text-[13px] text-[#8aa3b8] font-body mt-4">
-              14-day free trial · Cancel anytime · Setup in 5 minutes
-            </p>
-          </div>
-
-          {/* Right — ROI card */}
-          <div>
-            <ROICard />
-          </div>
+          <h2
+            className="font-display font-bold text-[36px] md:text-[44px] text-foreground landing-heading-glow"
+            style={{ letterSpacing: '-0.01em', lineHeight: '1.05' }}
+          >
+            Your clients deserve a better way<br />to submit their documents.
+          </h2>
+          <p className="text-[#8aa3b8] font-body font-light text-[15px] md:text-[17px] mt-4 max-w-lg mx-auto" style={{ lineHeight: '1.7' }}>
+            Stop chasing documents over email. Start your free trial and see how ClearPath transforms your intake process.
+          </p>
+          <Button
+            size="lg"
+            onClick={() => navigate('/signup')}
+            className="mt-8 cta-shimmer relative overflow-hidden transition-all duration-200"
+            style={{
+              boxShadow: '0 0 24px rgba(0,194,168,0.3)',
+              padding: '14px 28px',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 36px rgba(0,194,168,0.45)';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px) scale(1.01)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 24px rgba(0,194,168,0.3)';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(0) scale(1)';
+            }}
+          >
+            Start Free — No Card Needed
+          </Button>
+          <p className="text-[13px] text-[#8aa3b8] font-body mt-4">
+            14-day free trial · Cancel anytime · First case in 5 minutes
+          </p>
         </div>
       </section>
 
@@ -1024,7 +1003,7 @@ const MarketingLanding = () => {
               <span className="text-sm text-[#8aa3b8] font-body">Bankruptcy document intake, simplified.</span>
             </div>
             <span className="text-[12px] text-[#8aa3b8] font-body md:ml-11">
-              Chapter 7 &amp; 13 · AI Form Filling · Court Packet Generation
+              Chapter 7 &amp; 13 · Guided Client Intake · AI Validation
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-[#8aa3b8]">

@@ -21,14 +21,14 @@ const LANDING_PLANS: Record<string, PlanDef> = {
     subtitle: 'For solo practitioners getting started',
     features: [
       'Up to 8 active cases',
-      'Full client intake wizard',
+      'Guided client intake wizard',
       'AI document validation',
       'Automated SMS & email reminders',
-      'Basic case management',
       'Document checklist customization',
+      'Case management dashboard',
       '14-day free trial',
     ],
-    note: 'Court packets, AI form filling, and means test available on Professional',
+    note: 'AI form filling, means test, and court packets available on Professional',
   },
   professional: {
     name: 'Professional',
@@ -36,7 +36,7 @@ const LANDING_PLANS: Record<string, PlanDef> = {
     annual: '$499',
     subtitle: 'For growing firms ready to scale',
     popular: true,
-    roiCallout: 'Saves ~$10,600/mo in paralegal labor',
+    roiCallout: 'Saves ~3 hrs of paralegal time per case',
     features: [
       'Up to 25 active cases',
       'Everything in Starter',
