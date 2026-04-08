@@ -469,10 +469,10 @@ const MarketingLanding = () => {
   // How-it-works sequential animation
   const [howStep, setHowStep] = useState(0);
   useEffect(() => {
-    if (!howVisible || reduced) { if (howVisible) setHowStep(9); return; }
-    const delays = [0, 150, 300, 450, 600, 750, 900, 1050, 1200];
+    if (!howVisible || reduced) { if (howVisible) setHowStep(7); return; }
+    const delays = [0, 150, 300, 450, 600, 750, 900];
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 7; i++) {
       timers.push(setTimeout(() => setHowStep(i), delays[i - 1]));
     }
     return () => timers.forEach(clearTimeout);
@@ -741,7 +741,7 @@ const MarketingLanding = () => {
                 <h3 className="font-display font-semibold text-[17px] text-foreground mb-2">{step.title}</h3>
                 <p className="text-[15px] text-[#8aa3b8] font-body font-light max-w-[220px]" style={{ lineHeight: '1.7' }}>{step.desc}</p>
               </div>
-              {i < 3 && (
+              {i < 2 && (
                 <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
               )}
             </div>
