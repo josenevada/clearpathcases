@@ -708,14 +708,14 @@ const MarketingLanding = () => {
       {/* How it works */}
       <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>How it works</h2>
-        <div ref={howRef} className="grid grid-cols-1 md:grid-cols-4 gap-0 items-start relative">
-          {[0, 1, 2].map(i => (
+        <div ref={howRef} className="grid grid-cols-1 md:grid-cols-3 gap-0 items-start relative">
+          {[0, 1].map(i => (
             <div
               key={i}
               className="hidden md:block absolute top-5"
               style={{
-                left: `calc(${12.5 + i * 25}% + 20px)`,
-                right: `calc(${62.5 - i * 25}% + 20px)`,
+                left: `calc(${16.67 + i * 33.33}% + 20px)`,
+                right: `calc(${50 - i * 33.33}% + 20px)`,
                 borderTop: '1px solid rgba(0,194,168,0.2)',
                 ...(reduced ? {} : {
                   transform: howStep >= (i + 1) * 2 ? 'scaleX(1)' : 'scaleX(0)',
