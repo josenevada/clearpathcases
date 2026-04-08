@@ -1030,6 +1030,7 @@ const MarketingLanding = () => {
           <div className="flex items-center gap-6 text-sm text-[#8aa3b8]">
             <a href="/privacy" className="hover:text-foreground transition-colors duration-150">Privacy Policy</a>
             <a href="/terms" className="hover:text-foreground transition-colors duration-150">Terms of Service</a>
+            <a href="/sms-consent" className="hover:text-foreground transition-colors duration-150">SMS Policy</a>
             <a href="/security" className="hover:text-foreground transition-colors duration-150">Security</a>
             <a href="/login" className="hover:text-foreground transition-colors duration-150">Sign In</a>
           </div>
