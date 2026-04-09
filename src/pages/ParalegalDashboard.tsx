@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Plus, Clock, Settings, LogOut, Search, X, FileCheck, Send, Mail, Phone, AlertCircle } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, differenceInDays } from 'date-fns';
@@ -17,7 +17,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionGate from '@/components/SubscriptionGate';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import StatsBar from '@/components/dashboard/StatsBar';
-import IntakeAgentStats from '@/components/dashboard/IntakeAgentStats';
+
 import SendLinkModal from '@/components/dashboard/SendLinkModal';
 import { getAllCases, saveCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
