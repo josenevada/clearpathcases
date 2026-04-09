@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { CalendarIcon, ArrowRight, ArrowLeft, Check, Plus } from 'lucide-react';
+import { CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -27,7 +25,6 @@ import { useAuth } from '@/lib/auth';
 import { sendClientWelcome } from '@/lib/notifications';
 import { sendWelcomeSms } from '@/lib/sms';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
 
 interface NewCaseModalProps {
   open: boolean;
@@ -37,24 +34,19 @@ interface NewCaseModalProps {
 
 interface BasicInfo {
   firstName: string;
-  middleName: string;
   lastName: string;
-  suffix: string;
   clientEmail: string;
   clientPhone: string;
   clientDob: string;
-  courtCaseNumber: string;
   chapterType: ChapterType;
   filingDeadline: Date | undefined;
   assignedParalegal: string;
   assignedAttorney: string;
-  // Address fields
   street: string;
   city: string;
   state: string;
   zip: string;
   county: string;
-  // Joint filing spouse fields
   spouseName: string;
   spouseEmail: string;
   spousePhone: string;
@@ -73,8 +65,6 @@ interface IntakeQuestionDef {
   question: string;
 }
 
-const SUFFIX_OPTIONS = ['', 'Sr.', 'Jr.', 'II', 'III', 'IV'];
-
 const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
   { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
   { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
@@ -88,8 +78,8 @@ const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
   { key: 'mortgageInArrears', question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
 ];
 
-const buildClientName = (first: string, middle: string, last: string) =>
-  [first, middle, last].filter(Boolean).join(' ').trim();
+const buildClientName = (first: string, last: string) =>
+  [first, last].filter(Boolean).join(' ').trim();
 
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const firmSettings = getFirmSettings();
@@ -120,13 +110,10 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const [info, setInfo] = useState<BasicInfo>({
     firstName: '',
-    middleName: '',
     lastName: '',
-    suffix: '',
     clientEmail: '',
     clientPhone: '',
     clientDob: '',
-    courtCaseNumber: '',
     chapterType: '7',
     filingDeadline: undefined,
     assignedParalegal: defaultParalegal,
@@ -155,6 +142,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [answers, setAnswers] = useState<Record<string, boolean | undefined>>({});
   const [questionIdx, setQuestionIdx] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
 
   const INTAKE_QUESTIONS = useMemo(() => {
     const base = [...BASE_INTAKE_QUESTIONS];
@@ -165,7 +153,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     return base;
   }, [info.chapterType]);
 
-  const clientName = buildClientName(info.firstName, info.middleName, info.lastName);
+  const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = info.firstName || info.lastName || info.clientEmail || Object.keys(answers).length > 0;
 
   const isJointFiling = answers.filingJointly === true;
@@ -190,14 +178,22 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     return buildCustomChecklist(intakeAnswers, info.chapterType);
   }, [allAnswered, info.chapterType, ...Object.values(answers)]);
 
-  const categorySummary = useMemo(() => {
-    const map: Record<string, number> = {};
+  // Reset excluded items when checklist changes
+  useEffect(() => {
+    setExcludedItems(new Set());
+  }, [customChecklist.length]);
+
+  const includedCount = customChecklist.length - excludedItems.size;
+
+  const groupedChecklist = useMemo(() => {
+    const map: Record<string, typeof customChecklist> = {};
     customChecklist.forEach(item => {
-      map[item.category] = (map[item.category] || 0) + 1;
+      if (!map[item.category]) map[item.category] = [];
+      map[item.category].push(item);
     });
     return (CATEGORIES as readonly string[])
       .filter(cat => map[cat])
-      .map(cat => ({ category: cat, count: map[cat] }));
+      .map(cat => ({ category: cat, items: map[cat] }));
   }, [customChecklist]);
 
   const handleClose = () => {
@@ -211,8 +207,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const resetAndClose = () => {
     setStep(1);
     setInfo({
-      firstName: '', middleName: '', lastName: '', suffix: '',
-      clientEmail: '', clientPhone: '', clientDob: '', courtCaseNumber: '',
+      firstName: '', lastName: '',
+      clientEmail: '', clientPhone: '', clientDob: '',
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: defaultParalegal,
       assignedAttorney: defaultAttorney,
@@ -222,6 +218,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setAnswers({});
     setQuestionIdx(0);
     setShowSummary(false);
+    setExcludedItems(new Set());
     setShowConfirmClose(false);
     onOpenChange(false);
   };
@@ -244,12 +241,24 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     return `${first}${last}-${year}-${rand}`;
   };
 
+  const toggleExcluded = (itemId: string) => {
+    setExcludedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
+
   const handleCreate = async () => {
     const displayName = clientName;
     const caseCode = generateCaseCode(displayName);
     const jointDisplayName = isJointFiling && info.spouseName
       ? `${info.firstName} & ${info.spouseName.split(' ')[0]} ${info.lastName}`
       : displayName;
+
+    // Only include non-excluded items in the case checklist
+    const includedChecklist = customChecklist.filter(item => !excludedItems.has(item.id));
 
     const newCase = createCase({
       clientName: jointDisplayName,
@@ -259,7 +268,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       filingDeadline: info.filingDeadline!.toISOString(),
       assignedParalegal: info.assignedParalegal,
       assignedAttorney: info.assignedAttorney,
-      checklist: customChecklist,
+      checklist: includedChecklist,
     });
 
     const updatedCase = updateCase(newCase.id, (c) => ({
@@ -277,9 +286,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         firm_id: user?.firmId || null,
         client_name: jointDisplayName,
         client_first_name: info.firstName,
-        client_middle_name: info.middleName || null,
+        client_middle_name: null,
         client_last_name: info.lastName,
-        client_suffix: (info.suffix && info.suffix !== 'none') ? info.suffix : null,
+        client_suffix: null,
         client_email: info.clientEmail,
         client_phone: info.clientPhone || null,
         client_dob: info.clientDob || null,
@@ -288,13 +297,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         assigned_paralegal: info.assignedParalegal,
         assigned_attorney: info.assignedAttorney,
         case_code: caseCode,
-        court_case_number: info.courtCaseNumber || null,
+        court_case_number: null,
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
       } as any);
 
-      // Upsert client_info so form filling always has data from day one
       await supabase.from('client_info').upsert({
         case_id: newCase.id,
         full_legal_name: clientName,
@@ -303,7 +311,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         email: info.clientEmail,
       }, { onConflict: 'case_id' });
 
-      const checklistRows = newCase.checklist.map((item, idx) => ({
+      // Insert included items normally
+      const includedRows = includedChecklist.map((item, idx) => ({
         id: item.id,
         case_id: newCase.id,
         category: item.category,
@@ -315,7 +324,28 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         sort_order: idx,
         input_type: item.label === 'Employer Name' ? 'text' : 'file',
       }));
-      await supabase.from('checklist_items').insert(checklistRows);
+
+      // Insert excluded items as not_applicable
+      const excludedChecklist = customChecklist.filter(item => excludedItems.has(item.id));
+      const excludedRows = excludedChecklist.map((item, idx) => ({
+        id: item.id,
+        case_id: newCase.id,
+        category: item.category,
+        label: item.label,
+        description: item.description,
+        why_we_need_this: item.whyWeNeedThis,
+        required: item.required,
+        completed: false,
+        sort_order: includedChecklist.length + idx,
+        input_type: item.label === 'Employer Name' ? 'text' : 'file',
+        not_applicable: true,
+        not_applicable_marked_by: 'attorney',
+      }));
+
+      const allRows = [...includedRows, ...excludedRows];
+      if (allRows.length > 0) {
+        await supabase.from('checklist_items').insert(allRows);
+      }
     } catch (err) {
       console.error('Failed to sync case to database:', err);
     }
@@ -328,7 +358,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
     const caseForNotification = updatedCase || { ...newCase, caseCode };
     sendClientWelcome(caseForNotification).then(result => {
-      const channels = [];
+      const channels: string[] = [];
       if (result.email.status === 'sent') channels.push('email');
       if (result.sms.status === 'sent') channels.push('SMS');
       if (channels.length > 0) {
@@ -388,11 +418,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   <Step1Form
                     info={info}
                     setInfo={setInfo}
-                    paralegals={paralegals}
-                    attorneys={attorneys}
-                    currentUserId={user?.id}
-                    currentUserName={user?.fullName}
-                    currentUserRole={user?.role}
                     isJointFiling={isJointFiling}
                     onToggleJoint={(v) => setAnswers(prev => ({ ...prev, filingJointly: v }))}
                   />
@@ -468,7 +493,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     </Button>
                     {allAnswered && (
                       <Button onClick={() => setShowSummary(true)}>
-                        View Summary <ArrowRight className="w-4 h-4 ml-1" />
+                        Review Checklist <ArrowRight className="w-4 h-4 ml-1" />
                       </Button>
                     )}
                   </div>
@@ -477,35 +502,43 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
               {step === 2 && showSummary && (
                 <motion.div
-                  key="summary"
+                  key="checklist-editor"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
                   className="mt-6"
                 >
-                  <div className="surface-card p-5 mb-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Check className="w-5 h-5 text-success" />
-                      <h4 className="font-display font-bold text-foreground">Checklist Preview</h4>
+                  {/* Running count */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-5 h-5 text-primary" />
+                      <span className="font-display font-bold text-foreground">
+                        {includedCount} documents requested
+                      </span>
                     </div>
-                    <p className="text-sm text-muted-foreground font-body mb-4">
-                      This checklist has been personalized for {clientName || 'this client'}.
-                    </p>
-                    <div className="space-y-2">
-                      {categorySummary.map(({ category, count }) => (
-                        <div key={category} className="flex items-center justify-between py-2 px-3 rounded-xl bg-secondary/50">
-                          <span className="font-body text-sm text-foreground">{category}</span>
-                          <span className="text-sm font-bold text-primary">{count} {count === 1 ? 'item' : 'items'}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-border flex justify-between">
-                      <span className="text-sm text-muted-foreground font-body">Total</span>
-                      <span className="text-sm font-bold text-foreground">{customChecklist.length} items</span>
-                    </div>
+                    <span className="text-xs text-muted-foreground font-body">
+                      {excludedItems.size > 0 && `${excludedItems.size} excluded`}
+                    </span>
                   </div>
 
-                  <div className="flex justify-between">
+                  <p className="text-sm text-muted-foreground font-body mb-4">
+                    Uncheck any documents this client doesn't need. Excluded items will be marked as not applicable.
+                  </p>
+
+                  {/* Grouped checklist editor */}
+                  <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+                    {groupedChecklist.map(({ category, items }) => (
+                      <ChecklistCategorySection
+                        key={category}
+                        category={category}
+                        items={items}
+                        excludedItems={excludedItems}
+                        onToggle={toggleExcluded}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between mt-6">
                     <Button variant="ghost" onClick={() => {
                       setShowSummary(false);
                       setQuestionIdx(INTAKE_QUESTIONS.length - 1);
@@ -513,7 +546,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                       <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
                     </Button>
                     <Button onClick={handleCreate}>
-                      Create Case <ArrowRight className="w-4 h-4 ml-1" />
+                      <Link2 className="w-4 h-4 mr-1" /> Create Case & Copy Link
                     </Button>
                   </div>
                 </motion.div>
@@ -539,6 +572,54 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   );
 };
 
+// ── Checklist Category Section ───────────────────────────────────────
+const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: {
+  category: string;
+  items: { id: string; label: string }[];
+  excludedItems: Set<string>;
+  onToggle: (id: string) => void;
+}) => {
+  const [open, setOpen] = useState(true);
+  const includedCount = items.filter(i => !excludedItems.has(i.id)).length;
+
+  return (
+    <div className="surface-card rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+          <span className="font-body text-sm font-bold text-foreground">{category}</span>
+        </div>
+        <span className="text-xs text-muted-foreground font-body">{includedCount}/{items.length}</span>
+      </button>
+      {open && (
+        <div className="px-4 pb-3 space-y-1">
+          {items.map(item => (
+            <label
+              key={item.id}
+              className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-muted/20 cursor-pointer transition-colors"
+            >
+              <Checkbox
+                checked={!excludedItems.has(item.id)}
+                onCheckedChange={() => onToggle(item.id)}
+              />
+              <span className={cn(
+                'text-sm font-body transition-colors',
+                excludedItems.has(item.id) ? 'text-muted-foreground line-through' : 'text-foreground'
+              )}>
+                {item.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Google Places Autocomplete Hook ──────────────────────────────────
 const useGooglePlacesAutocomplete = (
   inputRef: React.RefObject<HTMLInputElement>,
@@ -550,7 +631,6 @@ const useGooglePlacesAutocomplete = (
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     if (!apiKey || !inputRef.current) return;
 
-    // Load Google Maps script if not already loaded
     if (!(window as any).google?.maps?.places) {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
@@ -599,14 +679,9 @@ const useGooglePlacesAutocomplete = (
 };
 
 // ── Step 1 Form Component ────────────────────────────────────────────
-const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, currentUserName, currentUserRole, isJointFiling, onToggleJoint }: {
+const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
-  paralegals: TeamMember[];
-  attorneys: TeamMember[];
-  currentUserId?: string;
-  currentUserName?: string;
-  currentUserRole?: string;
   isJointFiling?: boolean;
   onToggleJoint?: (v: boolean) => void;
 }) => {
@@ -629,70 +704,15 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
 
   useGooglePlacesAutocomplete(streetInputRef, handlePlaceSelected);
 
-  const renderTeamSelect = (
-    label: string,
-    value: string,
-    onChange: (v: string) => void,
-    members: TeamMember[],
-    role: string,
-  ) => {
-    if (members.length === 0) {
-      return (
-        <div className="space-y-1.5">
-          <Label className="text-muted-foreground text-sm">{label}</Label>
-          <div className="mt-1 flex items-center gap-2">
-            <Input disabled placeholder={`No ${role}s on the team yet`} className="bg-input border-border rounded-[10px] flex-1" />
-            <Link to="/paralegal/settings/firm/team" className="text-xs text-primary hover:underline whitespace-nowrap flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add team member
-            </Link>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-1.5">
-        <Label className="text-muted-foreground text-sm">{label}</Label>
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="mt-1 bg-input border-border rounded-[10px]">
-            <SelectValue placeholder={`Select ${role}`} />
-          </SelectTrigger>
-          <SelectContent>
-            {members
-              .sort((a, b) => {
-                if (a.id === currentUserId) return -1;
-                if (b.id === currentUserId) return 1;
-                return a.full_name.localeCompare(b.full_name);
-              })
-              .map(m => (
-                <SelectItem key={m.id} value={m.full_name}>
-                  {m.full_name}{m.id === currentUserId ? ' (You)' : ''}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  };
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {/* Structured name fields */}
+      {/* Name fields */}
       <div>
         <Label className="text-muted-foreground text-sm">First Name *</Label>
         <Input
           value={info.firstName}
           onChange={e => update('firstName', e.target.value)}
           placeholder="First name"
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
-      </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">Middle Name</Label>
-        <Input
-          value={info.middleName}
-          onChange={e => update('middleName', e.target.value)}
-          placeholder="Middle name"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>
@@ -704,21 +724,6 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
           placeholder="Last name"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
-      </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">Suffix</Label>
-        <Select value={info.suffix} onValueChange={v => update('suffix', v)}>
-          <SelectTrigger className="mt-1 bg-input border-border rounded-[10px]">
-            <SelectValue placeholder="None" />
-          </SelectTrigger>
-          <SelectContent>
-            {SUFFIX_OPTIONS.map(s => (
-              <SelectItem key={s || 'none'} value={s || 'none'}>
-                {s || 'None'}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Contact info */}
@@ -860,19 +865,6 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
         </Popover>
         <p className="text-xs text-muted-foreground mt-1">Required for case tracking</p>
       </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">Court Case Number</Label>
-        <Input
-          value={info.courtCaseNumber}
-          onChange={e => update('courtCaseNumber', e.target.value)}
-          placeholder="Assigned by court after filing — e.g. 24-12345-ABC"
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
-        <p className="text-xs text-muted-foreground mt-1">You can add this later once the court assigns it.</p>
-      </div>
-      <div />
-      {renderTeamSelect('Assigned Paralegal', info.assignedParalegal, v => update('assignedParalegal', v), paralegals, 'paralegal')}
-      {renderTeamSelect('Assigned Attorney', info.assignedAttorney, v => update('assignedAttorney', v), attorneys, 'attorney')}
 
       {/* Joint Filing Toggle */}
       {onToggleJoint && (
@@ -914,7 +906,7 @@ const Step1Form = ({ info, setInfo, paralegals, attorneys, currentUserId, curren
         </div>
       )}
 
-      {/* Spouse Fields — shown when joint filing */}
+      {/* Spouse Fields */}
       {isJointFiling && (
         <>
           <div className="sm:col-span-2 mt-2">
