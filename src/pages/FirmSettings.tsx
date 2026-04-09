@@ -35,6 +35,8 @@ interface NavGroup {
   items: NavItem[];
 }
 
+const HIDDEN_KEYS = new Set(['whitelabel', 'branding', 'retention']);
+
 const NAV_GROUPS: NavGroup[] = [
   {
     key: 'firm',
@@ -75,6 +77,11 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+const VISIBLE_NAV_GROUPS = NAV_GROUPS.map(g => ({
+  ...g,
+  items: g.items.filter(i => !HIDDEN_KEYS.has(i.key)),
+})).filter(g => g.items.length > 0);
 
 const ALL_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
