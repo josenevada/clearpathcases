@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Plus, Clock, Settings, LogOut, Search, X, FileCheck, Send, Mail, Phone, AlertCircle } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, differenceInDays } from 'date-fns';
@@ -17,7 +17,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionGate from '@/components/SubscriptionGate';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import StatsBar from '@/components/dashboard/StatsBar';
-import IntakeAgentStats from '@/components/dashboard/IntakeAgentStats';
+
 import SendLinkModal from '@/components/dashboard/SendLinkModal';
 import { getAllCases, saveCases, calculateProgress, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
@@ -237,9 +237,6 @@ const ParalegalDashboard = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/paralegal/packets')} className="gap-1.5 border-primary/20 text-primary hover:bg-primary/5">
-            <FileCheck className="w-3.5 h-3.5" /> Packets
-          </Button>
           {!isAdminViewing && (
             <Button onClick={handleNewCase}>
               <Plus className="w-4 h-4 mr-1" /> New Case
@@ -272,8 +269,6 @@ const ParalegalDashboard = () => {
         {/* Stats bar */}
         <StatsBar cases={cases} onFilter={setStatsFilter} activeFilter={statsFilter} />
 
-        {/* Intake Agent analytics */}
-        <IntakeAgentStats />
 
         {/* Search bar */}
         {(cases.length > 0) && (
