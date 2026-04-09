@@ -444,7 +444,7 @@ const MarketingLanding = () => {
   const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
-  const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
+  // const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
   const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
@@ -483,12 +483,6 @@ const MarketingLanding = () => {
     { num: '2', title: 'Client completes intake on their phone', desc: 'They receive a secure link via SMS and email. A guided wizard walks them through each document one at a time — with plain English instructions and help finding documents they can\'t locate. No app download needed.', circleStep: 3, textStep: 3 },
     { num: '3', title: 'Review organized, validated documents', desc: 'Every document arrives sorted by category with AI validation. Approve, request corrections, download, or send reminders — all from one place.', circleStep: 5, textStep: 5 },
   ];
-
-  /* Section background colors */
-  const sectionBg = {
-    aiFormFilling: '#0d1b2a',
-    howItWorks: '#0a1520',
-  };
 
   const faqItems = [
     {
