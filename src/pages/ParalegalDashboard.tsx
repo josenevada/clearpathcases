@@ -253,7 +253,6 @@ const ParalegalDashboard = () => {
         {/* Onboarding checklist */}
         <OnboardingChecklist
           firmProfileComplete={onboardingState.firmProfileComplete}
-          brandingComplete={onboardingState.brandingComplete}
           counselingComplete={onboardingState.counselingComplete}
           hasCases={cases.length > 0}
           hasSentLink={onboardingState.hasSentLink}
