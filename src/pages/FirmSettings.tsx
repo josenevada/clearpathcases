@@ -194,7 +194,7 @@ const FirmSettings = () => {
                   <SelectValue>{activeItem?.label || 'Select'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {NAV_GROUPS.map(grp => (
+                  {VISIBLE_NAV_GROUPS.map(grp => (
                     <div key={grp.key}>
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         {grp.label}
@@ -215,7 +215,7 @@ const FirmSettings = () => {
             {/* Desktop: vertical nav */}
             {!isMobile && (
               <nav className="w-56 flex-shrink-0 space-y-5">
-                {NAV_GROUPS.map(grp => {
+                {VISIBLE_NAV_GROUPS.map(grp => {
                   const Icon = grp.icon;
                   return (
                     <div key={grp.key}>
