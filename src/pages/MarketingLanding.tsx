@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
-  Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
-  Building, Package, Brain, Calculator, PenLine,
+  Plus, Minus, Sparkles, MessageSquare, ClipboardList,
+  Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -215,7 +215,7 @@ const MarketingLanding = () => {
   const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
-  // const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
+  
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
   const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
