@@ -35,6 +35,8 @@ interface NavGroup {
   items: NavItem[];
 }
 
+const HIDDEN_KEYS = new Set(['whitelabel', 'branding', 'retention']);
+
 const NAV_GROUPS: NavGroup[] = [
   {
     key: 'firm',
@@ -75,6 +77,11 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+const VISIBLE_NAV_GROUPS = NAV_GROUPS.map(g => ({
+  ...g,
+  items: g.items.filter(i => !HIDDEN_KEYS.has(i.key)),
+})).filter(g => g.items.length > 0);
 
 const ALL_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
@@ -187,7 +194,7 @@ const FirmSettings = () => {
                   <SelectValue>{activeItem?.label || 'Select'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {NAV_GROUPS.map(grp => (
+                  {VISIBLE_NAV_GROUPS.map(grp => (
                     <div key={grp.key}>
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         {grp.label}
@@ -208,7 +215,7 @@ const FirmSettings = () => {
             {/* Desktop: vertical nav */}
             {!isMobile && (
               <nav className="w-56 flex-shrink-0 space-y-5">
-                {NAV_GROUPS.map(grp => {
+                {VISIBLE_NAV_GROUPS.map(grp => {
                   const Icon = grp.icon;
                   return (
                     <div key={grp.key}>
