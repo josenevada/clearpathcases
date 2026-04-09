@@ -178,8 +178,7 @@ const StatsBar = () => {
   );
 };
 
-/* ────── AI Form Filling Section (Interactive) ────── */
-const AIFormFillingSection = () => {
+
   const [ref, visible] = useScrollReveal<HTMLDivElement>();
   const reduced = usePrefersReducedMotion();
   const [conflictHovered, setConflictHovered] = useState(false);
