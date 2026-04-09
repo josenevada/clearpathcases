@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
-  Plus, Minus, Sparkles, MessageSquare, ClipboardList, Zap,
-  Building, Package, Brain, Calculator, PenLine,
+  Plus, Minus, Sparkles, MessageSquare, ClipboardList,
+  Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -144,10 +144,10 @@ const StatsBar = () => {
   const [ref, visible] = useScrollReveal<HTMLDivElement>(0.3);
   const reduced = usePrefersReducedMotion();
   const stats = [
-    { value: 15, prefix: '', suffix: ' min', label: 'Average client completion time' },
-    { value: 3, prefix: '', suffix: ' hrs', label: 'Paralegal time saved per case' },
     { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
-    { value: 100, prefix: '', suffix: '%', label: 'Documents organized on arrival' },
+    { value: 6, prefix: '', suffix: '', label: 'Document categories organized automatically' },
+    { value: 0, prefix: '', suffix: '', label: 'Clients can upload on their schedule', displayOverride: '24/7' },
+    { value: 5, prefix: '', suffix: ' min', label: 'Time to create and send your first case' },
   ];
 
   return (
@@ -178,236 +178,7 @@ const StatsBar = () => {
   );
 };
 
-/* ────── AI Form Filling Section (Interactive) ────── */
-const AIFormFillingSection = () => {
-  const [ref, visible] = useScrollReveal<HTMLDivElement>();
-  const reduced = usePrefersReducedMotion();
-  const [conflictHovered, setConflictHovered] = useState(false);
-  const [resolvedValue, setResolvedValue] = useState<string | null>(null);
-  const [hintDismissed, setHintDismissed] = useState(false);
 
-  const revealStyle = (delay = 0): React.CSSProperties =>
-    reduced ? {} : {
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(16px)',
-      transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
-    };
-
-  const fields = [
-    { label: 'Gross Monthly Income', value: '$4,833.00', confidence: 'High', source: 'Pay Stub — March 2026', color: 'bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)]' },
-    { label: 'Employer Name', value: 'Riverside Medical Group', confidence: 'High', source: 'Pay Stub — March 2026', color: 'bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)]' },
-    { label: 'Federal Tax Deduction', value: '$621.00', confidence: 'High', source: 'Pay Stub — March 2026', color: 'bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)]' },
-  ];
-
-  const forms = [
-    'B101 — Voluntary Petition', 'B106A/B — Property Schedule', 'B106C — Exemptions',
-    'B106D — Secured Creditors', 'B106E/F — Unsecured Creditors', 'B106G — Executory Contracts',
-    'B106H — Codebtors', 'B106I — Income', 'B106J — Expenses', 'B106 Summary',
-    'B106 Declaration', 'B107 — Statement of Financial Affairs', 'B108 — Statement of Intention',
-    'B122A-1 — Means Test', 'B122A-2 — Means Test Calculation',
-  ];
-
-  const handleResolve = (val: string) => {
-    setResolvedValue(val);
-    setHintDismissed(true);
-  };
-
-  return (
-    <section
-      className="px-6 py-16 max-w-5xl mx-auto"
-      ref={ref}
-      
-    >
-      <div className="text-center mb-12" style={revealStyle(0)}>
-        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
-          AI form filling &amp; means test.<br />
-          <span className="text-primary">Available on Professional.</span>
-        </h2>
-        <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
-          Once documents are approved, ClearPath reads every file and<br className="hidden sm:block" />
-          pre-fills all 15 official federal bankruptcy forms automatically.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Left — form extraction card */}
-        <div style={revealStyle(0.1)}>
-          <div className="p-4 md:p-6" style={{ background: '#0f2035', border: '0.5px solid rgba(0,194,168,0.25)', borderRadius: '12px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
-            <div className="flex items-center gap-2 mb-5">
-              <span className="w-2 h-2 rounded-full bg-primary" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
-              <span className="font-display font-bold text-sm text-foreground">B106I — Schedule I: Income</span>
-              <span className="ml-auto text-xs text-primary font-body">Extraction Complete</span>
-            </div>
-            <div className="space-y-3">
-              {fields.map((f, i) => (
-                <div key={i}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-[#8aa3b8] font-body">{f.label}</p>
-                      <p className="text-[15px] text-foreground font-medium font-body">{f.value}</p>
-                    </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-body ${f.color}`}>{f.confidence}</span>
-                  </div>
-                  <p className="text-[12px] italic text-[#8aa3b8] font-body">{f.source}</p>
-                </div>
-              ))}
-
-              {/* Interactive conflict row */}
-              <div
-                className="rounded-lg p-3 transition-colors duration-200 cursor-pointer"
-                style={{ background: conflictHovered ? 'rgba(139,92,246,0.06)' : 'transparent' }}
-                onMouseEnter={() => setConflictHovered(true)}
-                onMouseLeave={() => { if (!resolvedValue) setConflictHovered(false); }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-[#8aa3b8] font-body">Net Monthly Pay</p>
-                    <p className="text-[15px] text-foreground font-medium font-body">
-                      {resolvedValue || '$3,744.00'}
-                    </p>
-                  </div>
-                  {resolvedValue ? (
-                    <span
-                      className="text-[11px] px-2 py-0.5 rounded-full font-body bg-[rgba(34,197,94,0.15)] text-[rgb(34,197,94)] flex items-center gap-1"
-                      style={{ animation: 'badge-resolve 0.3s ease-out' }}
-                    >
-                      <CheckCircle2 className="w-3 h-3" /> Resolved
-                    </span>
-                  ) : (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full font-body" style={{ background: 'rgba(139,92,246,0.15)', color: 'rgb(168,85,247)' }}>
-                      Conflict
-                    </span>
-                  )}
-                </div>
-                {!resolvedValue && (
-                  <p className="text-[12px] italic font-body mt-1" style={{ color: '#a78bfa' }}>Conflict detected</p>
-                )}
-
-                {/* Expandable conflict details */}
-                <div
-                  className="overflow-hidden transition-all duration-[250ms] ease-in-out"
-                  style={{
-                    maxHeight: (conflictHovered || resolvedValue) ? '200px' : '0px',
-                    opacity: (conflictHovered || resolvedValue) ? 1 : 0,
-                  }}
-                >
-                  <div className="mt-3 ml-1 space-y-2">
-                    <label
-                      className="flex items-center gap-2 text-[12px] font-body text-[#8aa3b8] cursor-pointer"
-                      onClick={() => handleResolve('$3,744.00')}
-                    >
-                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all duration-200 ${resolvedValue === '$3,744.00' ? 'border-primary bg-primary' : 'border-[#a78bfa]'}`}>
-                        {resolvedValue === '$3,744.00' && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
-                      </span>
-                      Pay Stub Feb 2026: <span className="text-foreground">$3,744.00</span>
-                    </label>
-                    <label
-                      className="flex items-center gap-2 text-[12px] font-body text-[#8aa3b8] cursor-pointer"
-                      onClick={() => handleResolve('$3,912.00')}
-                    >
-                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all duration-200 ${resolvedValue === '$3,912.00' ? 'border-primary bg-primary' : 'border-[#a78bfa]'}`}>
-                        {resolvedValue === '$3,912.00' && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
-                      </span>
-                      Pay Stub Mar 2026: <span className="text-foreground">$3,912.00</span>
-                    </label>
-                    <p className="text-[11px] italic text-[#8aa3b8] font-body mt-1">
-                      {resolvedValue ? 'Value updated' : 'Select the correct value'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-4">
-            Conflicts across documents detected and flagged automatically.
-          </p>
-          {!hintDismissed && (
-            <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-2 italic transition-opacity duration-300">
-              ↑ Try hovering the conflict row
-            </p>
-          )}
-        </div>
-
-        {/* Right — form list */}
-        <div style={revealStyle(0.2)}>
-          <h3 className="font-display font-bold text-lg text-foreground mb-4">All 15 Ch.7 forms. Pre-filled.</h3>
-          <ul className="space-y-2">
-            {forms.map((f, i) => (
-              <li key={i} className="flex items-center gap-2" style={revealStyle(0.25 + i * 0.03)}>
-                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm text-foreground font-body">{f}</span>
-              </li>
-            ))}
-          </ul>
-          {/* Means test & exemption pills */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            {[
-              '⚡ Means Test Engine — Ch.7 eligibility calculated automatically',
-              '⚡ Exemption Optimizer — Maximum asset protection, every case',
-            ].map(pill => (
-              <span
-                key={pill}
-                className="inline-flex items-center px-3 py-1.5 rounded-full text-[13px] font-body font-medium"
-                style={{ border: '0.5px solid rgba(0,194,168,0.3)', color: 'rgb(0,194,168)', background: 'rgba(0,194,168,0.06)' }}
-              >
-                {pill}
-              </span>
-            ))}
-          </div>
-          <div className="mt-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body" style={{ background: 'rgba(251,191,36,0.12)', color: 'rgb(251,191,36)' }}>
-            <Zap className="w-3 h-3" />
-            Available on Professional &amp; Firm plans
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-/* ────── ROI Calculator Card ────── */
-const ROICard = () => (
-  <div
-    className="rounded-xl p-6 md:p-7"
-    style={{
-      background: '#111f2e',
-      border: '0.5px solid rgba(0,194,168,0.2)',
-      boxShadow: 'inset 0 1px 0 rgba(0,194,168,0.15), 0 8px 32px rgba(0,0,0,0.3)',
-    }}
-  >
-    <p className="text-[14px] uppercase tracking-[0.1em] text-primary font-display font-bold mb-5">
-      Professional Plan ROI — 25 Cases/Month
-    </p>
-    <div className="space-y-3 text-[13px] md:text-[14px] font-body">
-      {[
-        ['Hours saved per case', '8.5 hrs'],
-        ['Total hours saved/month', '212 hrs'],
-        ['Paralegal rate', '× $50/hr'],
-      ].map(([label, value]) => (
-        <div key={label} className="flex justify-between">
-          <span className="text-[#8aa3b8]">{label}</span>
-          <span className="text-[#f0f4f8] font-medium">{value}</span>
-        </div>
-      ))}
-      <div className="border-t border-foreground/10 my-2" />
-      <div className="flex justify-between">
-        <span className="text-[#8aa3b8]">Labor saved per month</span>
-        <span className="text-[#f0f4f8] font-medium">$10,600</span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-[#8aa3b8]">ClearPath Professional</span>
-        <span className="text-[#f0f4f8] font-medium">− $599</span>
-      </div>
-      <div style={{ borderTop: '1px solid rgba(0,194,168,0.2)' }} className="my-2" />
-      <div className="flex justify-between items-baseline">
-        <span className="font-display font-bold text-[22px] text-primary">Net savings/month</span>
-        <span className="font-display font-bold text-[22px] text-primary">$10,001</span>
-      </div>
-    </div>
-    <p className="text-[12px] italic text-[#8aa3b8] font-body mt-4">
-      Based on $50/hr paralegal rate. Individual results vary.
-    </p>
-  </div>
-);
 
 /* ────── Main Component ────── */
 const MarketingLanding = () => {
@@ -444,7 +215,7 @@ const MarketingLanding = () => {
   const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
-  const [pktRef, pktVisible] = useScrollReveal<HTMLDivElement>();
+  
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
   const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
@@ -479,47 +250,46 @@ const MarketingLanding = () => {
   }, [howVisible, reduced]);
 
   const howSteps = [
-    { num: '1', title: 'Create a case in 60 seconds', desc: 'Enter client name, contact info, and answer 7 screener questions. ClearPath builds a custom document checklist based on their specific situation.', circleStep: 1, textStep: 1 },
-    { num: '2', title: 'Client completes intake on their phone', desc: 'They receive a secure link via SMS and email. A guided wizard walks them through each document one at a time — with plain English instructions, camera upload, and help finding documents they can\'t locate.', circleStep: 3, textStep: 3 },
-    { num: '3', title: 'Review organized, validated documents', desc: 'Every document arrives pre-sorted by category with AI validation. Approve, request corrections, or download everything in one click.', circleStep: 5, textStep: 5 },
+    { num: '1', title: 'Create a case in 60 seconds', desc: 'Enter the client\'s name, contact info, and answer 7 screener questions. ClearPath builds a custom document checklist based on their specific situation automatically.', circleStep: 1, textStep: 1 },
+    { num: '2', title: 'Client completes intake on their phone', desc: 'They receive a secure link via SMS and email. A guided wizard walks them through each document one at a time — with plain English instructions and help finding documents they can\'t locate. No app download needed.', circleStep: 3, textStep: 3 },
+    { num: '3', title: 'Review organized, validated documents', desc: 'Every document arrives sorted by category with AI validation. Approve, request corrections, download, or send reminders — all from one place.', circleStep: 5, textStep: 5 },
   ];
-
-  /* Section background colors */
-  const sectionBg = {
-    aiFormFilling: '#0d1b2a',
-    howItWorks: '#0a1520',
-  };
 
   const faqItems = [
     {
       q: 'How does the client experience work?',
       preview: 'Clients get a secure link and complete intake in about 15 minutes on their phone.',
-      a: 'When you create a case, ClearPath sends your client a secure link via SMS and email. They verify their identity with their date of birth, then follow a guided wizard that walks them through each required document one at a time. Plain English instructions tell them exactly what to upload and why. Most clients complete the full intake in 15-20 minutes on their phone without calling the firm once.',
+      a: 'When you create a case, ClearPath sends your client a secure link via SMS and email. They verify their identity, then follow a guided wizard through each required document one at a time. Plain English instructions tell them exactly what to upload and why. Most clients complete the full intake on their phone without calling the firm once.',
     },
     {
-      q: 'What happens when a client uploads the wrong document?',
-      preview: 'AI validates every document instantly and tells the client immediately.',
-      a: 'ClearPath\'s AI checks every uploaded document the moment it arrives — verifying document type, checking for legibility, and flagging issues like wrong year or wrong account. If something is wrong the client sees an immediate message explaining what to fix. Corrections happen in real time, not days later when a paralegal finally reviews the case.',
+      q: 'What happens if a client uploads the wrong document?',
+      preview: 'AI validates every document instantly and tells the client right away.',
+      a: 'ClearPath checks every uploaded document the moment it arrives — verifying document type, legibility, and flagging issues like wrong year or wrong account. If something is wrong the client sees an immediate message explaining what to fix. Corrections happen in real time, not days later when a paralegal reviews.',
     },
     {
       q: 'What if a client doesn\'t finish uploading?',
       preview: 'Automatic reminders go out so your team never has to chase.',
-      a: 'ClearPath automatically sends SMS and email reminders when a client hasn\'t completed their intake. Reminders are targeted — if a client uploaded some documents but not others, they get a message listing exactly what\'s still missing. Your paralegal never has to make a single follow-up call.',
+      a: 'ClearPath automatically sends SMS and email reminders when a client hasn\'t completed their intake. Reminders are targeted — if a client uploaded some documents but not others, they receive a message listing exactly what\'s still missing.',
     },
     {
       q: 'How are documents organized when they arrive?',
-      preview: 'Everything is sorted by category before you open the case.',
+      preview: 'Everything is sorted into six categories automatically before you open the case.',
       a: 'Documents are automatically organized into six categories — Income & Employment, Bank & Financial Accounts, Debts & Credit, Assets & Property, Personal Identification, and Agreements & Confirmation. When your paralegal opens a case they see a clean organized view, not a pile of files to sort through.',
     },
     {
       q: 'Does ClearPath work for Chapter 13?',
       preview: 'Yes — both Chapter 7 and Chapter 13 are fully supported.',
-      a: 'ClearPath supports both Chapter 7 and Chapter 13. Each chapter has its own document checklist and screener questions. Chapter 13 automatically adds additional income documentation requirements to the checklist.',
+      a: 'ClearPath supports both Chapter 7 and Chapter 13. Each chapter has its own document checklist and screener questions.',
     },
     {
       q: 'How long does setup take?',
       preview: 'Your first case in under 5 minutes. No training required.',
-      a: 'Create your account, set up your firm profile, and create your first case in under 5 minutes. There\'s no training required — the workflow is intuitive enough that paralegals pick it up immediately. We also offer onboarding support if you need it.',
+      a: 'Create your account, set up your firm profile, and send your first client link in under 5 minutes. No training required — the workflow is intuitive enough that paralegals pick it up immediately.',
+    },
+    {
+      q: 'Will ClearPath add form filling and court packets?',
+      preview: 'Yes — AI form filling and court packets are coming soon on paid plans.',
+      a: 'AI form filling for all 15 federal Ch.7 forms, means test calculation, exemption analysis, and one-click court packet generation are currently in development. These features will be available on Professional and Firm plans. Customers on those plans will get early access when they launch.',
     },
   ];
 
@@ -549,16 +319,14 @@ const MarketingLanding = () => {
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
           style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '720px' }}
         >
-          The simplest way for bankruptcy clients<br />
-          <span className="text-primary">to send you their documents.</span>
+          Collect documents fast.
         </h1>
         <p
           className="mt-6 text-[15px] md:text-lg text-[#8aa3b8] font-body font-light max-w-2xl mx-auto relative"
           style={{ ...heroStagger(4), lineHeight: '1.7' }}
         >
-          ClearPath guides your clients through every document step by step —<br className="hidden sm:block" />
-          on their phone, in minutes. Everything arrives organized,<br className="hidden sm:block" />
-          validated, and ready for your review.
+          Your clients upload everything from their phone.<br className="hidden sm:block" />
+          You open the case to find it organized and ready.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
           <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free Trial</Button>
@@ -602,11 +370,11 @@ const MarketingLanding = () => {
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">Before ClearPath</p>
             <ul className="space-y-3.5">
               {[
-                'Email clients a PDF checklist and wait days',
+                'Email clients a PDF checklist and wait days for a response',
                 'Chase missing documents over phone and email',
-                'Clients upload wrong files, wrong formats, wrong years',
-                'Paralegals spend hours sorting and renaming files',
+                'Clients upload wrong files, wrong years, wrong formats',
                 'Documents arrive scattered across email, text, and voicemail',
+                'Paralegals spend hours sorting, renaming, and organizing',
                 'Last-minute scrambles before filing deadlines',
               ].map(t => (
                 <li key={t} className="flex items-start gap-2.5">
@@ -635,12 +403,12 @@ const MarketingLanding = () => {
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">With ClearPath</p>
             <ul className="space-y-3.5">
               {[
-                'Client gets a secure link and completes intake on their phone',
-                'Step-by-step wizard tells them exactly what to upload',
+                'Client receives a secure link and completes intake on their phone',
+                'Guided wizard walks them through each document one at a time',
                 'AI validates every document the moment it arrives',
+                'Automatic reminders when a client goes quiet',
                 'Everything organized by category before you open the case',
-                'Automatic reminders if a client goes quiet',
-                'Paralegal opens the case to find everything ready',
+                'Paralegal opens the case to find it ready to review',
               ].map(t => (
                 <li key={t} className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -698,10 +466,27 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* AI Form Filling */}
-      <div style={{ background: sectionBg.aiFormFilling }}>
-        <AIFormFillingSection />
-      </div>
+      {/* Coming Soon — AI Form Filling teaser */}
+      <section className="px-6 py-10 max-w-3xl mx-auto">
+        <div
+          className="rounded-xl p-6 text-center"
+          style={{
+            background: 'hsl(var(--surface))',
+            border: '0.5px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <span
+            className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-body font-semibold mb-4"
+            style={{ background: 'rgba(0,194,168,0.1)', color: 'rgb(0,194,168)' }}
+          >
+            Coming Soon
+          </span>
+          <h3 className="font-display font-bold text-lg text-foreground mb-2">AI Form Filling</h3>
+          <p className="text-[14px] text-[#8aa3b8] font-body font-light max-w-lg mx-auto" style={{ lineHeight: '1.7' }}>
+            ClearPath will automatically pre-fill all 15 federal Ch.7 forms from your approved documents. Means test, exemption analysis, and court-ready packet generation included. Currently in development for Professional plans.
+          </p>
+        </div>
+      </section>
 
       <SectionDivider />
 
@@ -798,82 +583,6 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Packet Section */}
-      <section className="px-6 py-16 max-w-5xl mx-auto">
-        <div ref={pktRef} className="text-center mb-12" style={revealStyle(pktVisible)}>
-          <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
-            Court-ready in one click.<br />
-            <span className="text-primary">Not one afternoon.</span>
-          </h2>
-          <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
-            When documents are approved and forms are filled, ClearPath assembles your<br className="hidden sm:block" />
-            complete court filing packet automatically — organized, redacted, and ready.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-          {/* Left — feature list */}
-          <div className="space-y-4" style={revealStyle(pktVisible, { delay: 0.1, x: -30, y: 0 })}>
-            {[
-              'SSN automatically redacted from all documents',
-              'Documents organized by schedule and category',
-              'Pre-filled federal forms included when attorney-approved',
-              'Packet version history — every generated packet saved',
-              'One-click download as compiled PDF or organized ZIP',
-              'Attorney certification page auto-populated with firm details',
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-[15px] text-[#8aa3b8] font-body" style={{ lineHeight: '1.7' }}>{item}</span>
-              </div>
-            ))}
-          </div>
-          {/* Right — packet preview card */}
-          <div
-            className="rounded-xl p-6"
-            style={{
-              background: '#111f2e',
-              border: '0.5px solid rgba(0,194,168,0.2)',
-              ...revealStyle(pktVisible, { delay: 0.2, x: 30, y: 0 }),
-            }}
-          >
-            <div className="flex items-center gap-2 mb-5">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <span className="font-body font-semibold text-sm text-foreground">Court Packet — Rodriguez, Maria</span>
-              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full font-body" style={{ background: 'rgba(34,197,94,0.15)', color: 'rgb(34,197,94)' }}>Ready to Generate</span>
-            </div>
-            <div className="space-y-2.5">
-              {[
-                'Voluntary Petition (B101)',
-                'Schedules A/B through H',
-                'Schedule I & J — Income & Expenses',
-                'Statement of Financial Affairs',
-                'Pre-filled Federal Forms (15 forms)',
-                'Credit Counseling Certificate',
-                'Supporting Documents (23 files)',
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-2.5">
-                  <FileText className="w-4 h-4 text-primary/60 flex-shrink-0" />
-                  <span className="text-[14px] text-foreground font-body">✓ {s}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6">
-              <button
-                className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 font-body font-semibold text-sm text-primary-foreground bg-primary cursor-default"
-              >
-                <Package className="w-4 h-4" />
-                Generate Packet
-              </button>
-              <p className="text-[12px] text-[#8aa3b8] font-body text-center mt-3">
-                SSN redacted · Attorney certified · Version 1
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <SectionDivider />
-
       {/* Pricing */}
       <section id="pricing" className="px-6 py-16 max-w-6xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-4 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
@@ -964,10 +673,10 @@ const MarketingLanding = () => {
             className="font-display font-bold text-[36px] md:text-[44px] text-foreground landing-heading-glow"
             style={{ letterSpacing: '-0.01em', lineHeight: '1.05' }}
           >
-            Your clients deserve a better way<br />to submit their documents.
+            The best intake experience<br />your clients have ever had.
           </h2>
           <p className="text-[#8aa3b8] font-body font-light text-[15px] md:text-[17px] mt-4 max-w-lg mx-auto" style={{ lineHeight: '1.7' }}>
-            Stop chasing documents over email. Start your free trial and see how ClearPath transforms your intake process.
+            Stop chasing documents. Start your free trial and send your first case in 5 minutes.
           </p>
           <Button
             size="lg"
