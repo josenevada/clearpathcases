@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2 } from 'lucide-react';
@@ -42,11 +42,6 @@ interface BasicInfo {
   filingDeadline: Date | undefined;
   assignedParalegal: string;
   assignedAttorney: string;
-  street: string;
-  city: string;
-  state: string;
-  zip: string;
-  county: string;
   spouseName: string;
   spouseEmail: string;
   spousePhone: string;
@@ -118,11 +113,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     filingDeadline: undefined,
     assignedParalegal: defaultParalegal,
     assignedAttorney: defaultAttorney,
-    street: '',
-    city: '',
-    state: '',
-    zip: '',
-    county: '',
     spouseName: '',
     spouseEmail: '',
     spousePhone: '',
@@ -158,7 +148,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const isJointFiling = answers.filingJointly === true;
   const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline &&
-    info.street && info.city && info.state && info.zip &&
     (!isJointFiling || (info.spouseName && info.spouseEmail && info.spouseDob));
 
   const allAnswered = INTAKE_QUESTIONS.every(q => answers[q.key] !== undefined);
@@ -212,7 +201,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: defaultParalegal,
       assignedAttorney: defaultAttorney,
-      street: '', city: '', state: '', zip: '', county: '',
       spouseName: '', spouseEmail: '', spousePhone: '', spouseDob: '',
     });
     setAnswers({});
@@ -257,7 +245,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       ? `${info.firstName} & ${info.spouseName.split(' ')[0]} ${info.lastName}`
       : displayName;
 
-    // Only include non-excluded items in the case checklist
     const includedChecklist = customChecklist.filter(item => !excludedItems.has(item.id));
 
     const newCase = createCase({
@@ -277,8 +264,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       clientDob: info.clientDob || undefined,
       milestones: info.chapterType === '13' ? buildCh13Milestones() : undefined,
     }));
-
-    const fullAddress = `${info.street}, ${info.city}, ${info.state} ${info.zip}`;
 
     try {
       await supabase.from('cases').upsert({
@@ -302,14 +287,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         wizard_step: 0,
         ready_to_file: false,
       } as any);
-
-      await supabase.from('client_info').upsert({
-        case_id: newCase.id,
-        full_legal_name: clientName,
-        current_address: fullAddress,
-        phone: info.clientPhone || null,
-        email: info.clientEmail,
-      }, { onConflict: 'case_id' });
 
       // Insert included items normally
       const includedRows = includedChecklist.map((item, idx) => ({
@@ -508,7 +485,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   transition={{ duration: 0.2 }}
                   className="mt-6"
                 >
-                  {/* Running count */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Check className="w-5 h-5 text-primary" />
@@ -525,7 +501,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     Uncheck any documents this client doesn't need. Excluded items will be marked as not applicable.
                   </p>
 
-                  {/* Grouped checklist editor */}
                   <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
                     {groupedChecklist.map(({ category, items }) => (
                       <ChecklistCategorySection
@@ -620,64 +595,6 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: 
   );
 };
 
-// ── Google Places Autocomplete Hook ──────────────────────────────────
-const useGooglePlacesAutocomplete = (
-  inputRef: React.RefObject<HTMLInputElement>,
-  onPlaceSelected: (place: { street: string; city: string; state: string; zip: string; county: string }) => void,
-) => {
-  const autocompleteRef = useRef<any>(null);
-
-  useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    if (!apiKey || !inputRef.current) return;
-
-    if (!(window as any).google?.maps?.places) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-      script.async = true;
-      script.onload = () => initAutocomplete();
-      document.head.appendChild(script);
-    } else {
-      initAutocomplete();
-    }
-
-    function initAutocomplete() {
-      if (!inputRef.current || !(window as any).google?.maps?.places) return;
-      autocompleteRef.current = new (window as any).google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components'],
-      });
-
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current?.getPlace();
-        if (!place?.address_components) return;
-
-        let street = '';
-        let city = '';
-        let state = '';
-        let zip = '';
-        let county = '';
-        let streetNumber = '';
-        let route = '';
-
-        for (const component of place.address_components) {
-          const type = component.types[0];
-          if (type === 'street_number') streetNumber = component.long_name;
-          if (type === 'route') route = component.long_name;
-          if (type === 'locality') city = component.long_name;
-          if (type === 'administrative_area_level_1') state = component.short_name;
-          if (type === 'postal_code') zip = component.long_name;
-          if (type === 'administrative_area_level_2') county = component.long_name.replace(/ County$/i, '');
-        }
-
-        street = [streetNumber, route].filter(Boolean).join(' ');
-        onPlaceSelected({ street, city, state, zip, county });
-      });
-    }
-  }, [inputRef, onPlaceSelected]);
-};
-
 // ── Step 1 Form Component ────────────────────────────────────────────
 const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
   info: BasicInfo;
@@ -688,21 +605,6 @@ const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
   };
-
-  const streetInputRef = useRef<HTMLInputElement>(null);
-
-  const handlePlaceSelected = useCallback((place: { street: string; city: string; state: string; zip: string; county: string }) => {
-    setInfo({
-      ...info,
-      street: place.street,
-      city: place.city,
-      state: place.state,
-      zip: place.zip,
-      county: place.county,
-    });
-  }, [info, setInfo]);
-
-  useGooglePlacesAutocomplete(streetInputRef, handlePlaceSelected);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -755,61 +657,6 @@ const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
           className="mt-1 bg-input border-border rounded-[10px]"
         />
         <p className="text-xs text-muted-foreground mt-1">Used for client portal verification</p>
-      </div>
-
-      {/* Address section */}
-      <div className="sm:col-span-2 mt-2">
-        <div className="h-px bg-border" />
-        <p className="text-xs font-bold text-primary mt-3 mb-1 uppercase tracking-wider">Client Address</p>
-      </div>
-      <div className="sm:col-span-2">
-        <Label className="text-muted-foreground text-sm">Street Address *</Label>
-        <Input
-          ref={streetInputRef}
-          value={info.street}
-          onChange={e => update('street', e.target.value)}
-          placeholder="123 Main St"
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
-      </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">City *</Label>
-        <Input
-          value={info.city}
-          onChange={e => update('city', e.target.value)}
-          placeholder="City"
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-muted-foreground text-sm">State *</Label>
-          <Input
-            value={info.state}
-            onChange={e => update('state', e.target.value)}
-            placeholder="NV"
-            maxLength={2}
-            className="mt-1 bg-input border-border rounded-[10px]"
-          />
-        </div>
-        <div>
-          <Label className="text-muted-foreground text-sm">ZIP Code *</Label>
-          <Input
-            value={info.zip}
-            onChange={e => update('zip', e.target.value)}
-            placeholder="89101"
-            className="mt-1 bg-input border-border rounded-[10px]"
-          />
-        </div>
-      </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">County</Label>
-        <Input
-          value={info.county}
-          onChange={e => update('county', e.target.value)}
-          placeholder="Auto-filled or enter manually"
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
       </div>
 
       {/* Case details */}
