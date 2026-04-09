@@ -306,8 +306,8 @@ const MarketingLanding = () => {
       >
         <Logo size="sm" />
         <div className="flex items-center gap-4">
-          <a href="#features" className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative">Features</a>
-          <a href="#pricing" className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative">Pricing</a>
+          <a href="#features" onClick={e => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Features</a>
+          <a href="#pricing" onClick={e => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Pricing</a>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
           <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free Trial</Button>
         </div>
@@ -524,7 +524,7 @@ const MarketingLanding = () => {
               </div>
               <div style={reduced ? {} : { opacity: howStep >= step.textStep ? 1 : 0, transition: 'opacity 0.3s ease-out' }}>
                 <h3 className="font-display font-semibold text-[17px] text-foreground mb-2">{step.title}</h3>
-                <p className="text-[15px] text-[#8aa3b8] font-body font-light max-w-[220px]" style={{ lineHeight: '1.7' }}>{step.desc}</p>
+                <p className="text-[15px] text-[#8aa3b8] font-body font-light max-w-[260px] mx-auto" style={{ lineHeight: '1.7' }}>{step.desc}</p>
               </div>
               {i < 2 && (
                 <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
