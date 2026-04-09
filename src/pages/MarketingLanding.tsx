@@ -178,8 +178,6 @@ const StatsBar = () => {
   );
 };
 
-
-  const [ref, visible] = useScrollReveal<HTMLDivElement>();
   const reduced = usePrefersReducedMotion();
   const [conflictHovered, setConflictHovered] = useState(false);
   const [resolvedValue, setResolvedValue] = useState<string | null>(null);
