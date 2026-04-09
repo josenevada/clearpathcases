@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, X, Building2, Scale, BookOpen, Plus, Send } from 'lucide-react';
+import { CheckCircle2, Circle, X, Building2, BookOpen, Plus, Send } from 'lucide-react';
 
 interface OnboardingChecklistProps {
   firmProfileComplete: boolean;
-  brandingComplete: boolean;
   counselingComplete: boolean;
   hasCases: boolean;
   hasSentLink: boolean;
@@ -12,7 +11,7 @@ interface OnboardingChecklistProps {
   onSendLink: () => void;
 }
 
-const OnboardingChecklist = ({ firmProfileComplete, brandingComplete, counselingComplete, hasCases, hasSentLink, onNewCase, onSendLink }: OnboardingChecklistProps) => {
+const OnboardingChecklist = ({ firmProfileComplete, counselingComplete, hasCases, hasSentLink, onNewCase, onSendLink }: OnboardingChecklistProps) => {
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
 
@@ -24,12 +23,6 @@ const OnboardingChecklist = ({ firmProfileComplete, brandingComplete, counseling
       done: firmProfileComplete,
       action: () => navigate('/paralegal/settings/firm/profile'),
       icon: Building2,
-    },
-    {
-      label: 'Add your attorney name and bar number',
-      done: brandingComplete,
-      action: () => navigate('/paralegal/settings/appearance/branding'),
-      icon: Scale,
     },
     {
       label: 'Set your credit counseling provider link',
