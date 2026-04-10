@@ -6,7 +6,7 @@ import ExemptionsTab from '@/components/case/ExemptionsTab';
 import SignaturesTab from '@/components/case/SignaturesTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -703,9 +703,19 @@ const CaseDetail = () => {
             <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
               <Pencil className="w-3 h-3" /> Edit Case
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)} className="gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/20">
-              <Trash2 className="w-3 h-3" /> Delete
-            </Button>
+            <div className="relative group">
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+              <div className="absolute right-0 top-full mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <button
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Case
+                </button>
+              </div>
+            </div>
              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                caseData.chapterType === '13'
                  ? 'bg-warning/10 text-warning border border-warning/20'
@@ -730,8 +740,10 @@ const CaseDetail = () => {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="w-3 h-3" /> {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Clock className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">Due</span>
+              {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
             </span>
             <span className="rounded-pill bg-secondary px-3 py-1 text-xs font-bold capitalize text-muted-foreground">
               {user?.fullName} · {viewRole}
