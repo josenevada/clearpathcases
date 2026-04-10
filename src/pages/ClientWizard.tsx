@@ -11,6 +11,7 @@ import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
+import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -1580,6 +1581,7 @@ const ClientWizard = () => {
                       ) : null
                     }
                   />
+                  <DocumentRetrievalLinks itemLabel={currentItem.label} caseId={caseData.id} clientName={caseData.clientName} />
                   <div className="flex flex-col items-center gap-1 mt-1">
                     <button
                       onClick={() => setShowNaFlow(true)}
@@ -1642,6 +1644,7 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
+                  <DocumentRetrievalLinks itemLabel={currentItem.label} caseId={caseData.id} clientName={caseData.clientName} />
                   <div className="flex flex-col items-center gap-1 mt-1">
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -1800,6 +1803,7 @@ const ClientWizard = () => {
                       You can photograph physical documents directly with your camera.
                     </p>
                   )}
+                  <DocumentRetrievalLinks itemLabel={currentItem.label} caseId={caseData.id} clientName={caseData.clientName} />
                   <div className="flex flex-col items-center gap-1 mt-1">
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
