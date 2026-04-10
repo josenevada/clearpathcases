@@ -1869,11 +1869,6 @@ const ClientWizard = () => {
                 {hasValidationIssue ? 'Continue anyway →' : 'Continue →'}
               </Button>
             )}
-            {(currentItemIdx > 0 || currentCategoryIdx > 0) && (
-              <Button variant="ghost" onClick={goBack} size="sm" className="text-muted-foreground">
-                <ArrowLeft className="w-4 h-4 mr-1" /> Back
-              </Button>
-            )}
           </div>
         </div>
       )}
