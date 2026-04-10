@@ -487,13 +487,13 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", inputClass)}>
-                  {info.date_of_birth ? format(new Date(info.date_of_birth), 'PPP') : 'Select date'}
+                  {info.date_of_birth ? format((() => { const [y,m,d] = info.date_of_birth!.split('-').map(Number); return new Date(y, m-1, d); })(), 'PPP') : 'Select date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={info.date_of_birth ? new Date(info.date_of_birth) : undefined}
+                  selected={info.date_of_birth ? (() => { const [y,m,d] = info.date_of_birth!.split('-').map(Number); return new Date(y, m-1, d); })() : undefined}
                   onSelect={d => update('date_of_birth', d ? d.toISOString().slice(0, 10) : null)}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}

@@ -495,9 +495,11 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             {caseData.clientName.includes(' & ') && (
               <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] rounded-full">Joint</Badge>
             )}
-            <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
-              {caseData.urgency.replace('-', ' ')}
-            </Badge>
+            {caseData.urgency !== 'normal' && (
+              <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
+                {caseData.urgency.replace('-', ' ')}
+              </Badge>
+            )}
             {hasRecentResubmission && (
               <Badge className="border-warning/20 bg-warning/10 text-warning text-xs">
                 Resubmitted

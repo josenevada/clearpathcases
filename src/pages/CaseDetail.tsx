@@ -713,9 +713,11 @@ const CaseDetail = () => {
              }`}>
                Ch.{caseData.chapterType}
              </span>
-            <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
-              {caseData.urgency.replace('-', ' ')}
-            </Badge>
+            {caseData.urgency !== 'normal' && (
+              <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
+                {caseData.urgency.replace('-', ' ')}
+              </Badge>
+            )}
             <CaseStatusDropdown
               caseData={caseData}
               actorName={user?.fullName || 'Staff'}
