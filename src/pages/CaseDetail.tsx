@@ -35,6 +35,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import DocumentsTab from '@/components/case/DocumentsTab';
+import DocumentViewer from '@/components/case/DocumentViewer';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import BuildPacketTab from '@/components/case/BuildPacketTab';
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
@@ -65,6 +72,8 @@ import UpgradeModal from '@/components/UpgradeModal';
 
 type ViewRole = 'paralegal' | 'attorney';
 type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test' | 'exemptions' | 'signatures';
+
+type PreviewFile = { name: string; dataUrl: string; itemId: string; fileId: string; reviewStatus: string } | null;
 
 const ApproveButton = ({ onApprove }: { onApprove: () => Promise<void> }) => {
   const [state, setState] = useState<'idle' | 'loading' | 'success'>('idle');
