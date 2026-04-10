@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
   if (!twilioRes.ok) {
     console.error('Twilio error:', twilioData);
-    return json({ success: false, error: `Twilio error [${twilioRes.status}]` }, 500);
+    return json({ success: false, skipped: true, reason: `Twilio error [${twilioRes.status}]: ${twilioData?.message || 'Unknown'}` });
   }
 
   // ── Log to activity_log ──
