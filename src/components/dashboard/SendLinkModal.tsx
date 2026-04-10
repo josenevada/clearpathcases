@@ -75,7 +75,7 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] border-border bg-background">
+      <DialogContent className="sm:max-w-[480px] border-border bg-background z-[100]">
         <DialogHeader>
           <DialogTitle className="font-display font-bold text-xl text-foreground">
             Your case is ready — send {firstName} their intake link.
