@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown } from 'lucide-react';
 import { CATEGORIES, isItemEffectivelyComplete, type Case } from '@/lib/store';
 
 interface ProgressPillProps {
@@ -24,12 +24,13 @@ const ProgressPill = ({ caseData }: ProgressPillProps) => {
 
   return (
     <>
-      {/* Floating pill */}
+      {/* Inline pill */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-40 px-4 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-lg hover:bg-primary/90 transition-colors font-body"
+        className="w-full px-4 py-2.5 rounded-xl bg-secondary text-foreground text-sm font-medium hover:bg-secondary/80 transition-colors font-body flex items-center justify-between"
       >
-        {completedItems} of {totalItems} done — tap to see details
+        <span>{completedItems} of {totalItems} done</span>
+        <ChevronDown className="w-4 h-4 text-muted-foreground" />
       </button>
 
       {/* Drawer overlay + content */}
