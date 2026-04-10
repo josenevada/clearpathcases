@@ -1596,6 +1596,50 @@ const CaseDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={!!previewFile} onOpenChange={(open) => { if (!open) setPreviewFile(null); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="truncate text-base">{previewFile?.name}</DialogTitle>
+          </DialogHeader>
+          {previewFile && (
+            <div className="space-y-4">
+              <DocumentViewer fileName={previewFile.name} dataUrl={previewFile.dataUrl} />
+              {previewFile.reviewStatus !== 'approved' && previewFile.reviewStatus !== 'overridden' && (
+                <div className="flex gap-2 justify-end border-t border-border pt-4">
+                  {viewRole === 'paralegal' && (
+                    <ApproveButton
+                      onApprove={async () => {
+                        await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', previewFile.fileId);
+                        await supabase.from('activity_log').insert({
+                          case_id: caseData.id,
+                          event_type: 'file_approved',
+                          actor_role: 'paralegal',
+                          actor_name: user?.fullName || caseData.assignedParalegal,
+                          description: `${user?.fullName || caseData.assignedParalegal} approved ${previewFile.name}`,
+                          item_id: previewFile.itemId,
+                        });
+                        setPreviewFile(null);
+                        refresh();
+                      }}
+                    />
+                  )}
+                  {viewRole === 'attorney' && (
+                    <Button variant="success" size="sm" onClick={async () => {
+                      const item = caseData.checklist.find(i => i.id === previewFile.itemId);
+                      if (item) await handleApprove(item, previewFile.fileId);
+                      setPreviewFile(null);
+                    }}>
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
