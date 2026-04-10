@@ -807,11 +807,6 @@ const CaseDetail = () => {
                 { key: 'client-info' as TabType, label: 'Client Info' },
                 { key: 'documents' as TabType, label: 'Documents' },
                 { key: 'activity' as TabType, label: 'Activity' },
-                { key: 'packet' as TabType, label: 'Build Packet', dot: true },
-                ...(caseData.chapterType === '7' ? [{ key: 'form-data' as TabType, label: 'Form Data', dot: true }] : []),
-                ...(caseData.chapterType === '7' ? [{ key: 'means-test' as TabType, label: 'Means Test', dot: true }] : []),
-                ...(caseData.chapterType === '7' ? [{ key: 'exemptions' as TabType, label: 'Exemptions', dot: true }] : []),
-                ...(caseData.chapterType === '7' ? [{ key: 'signatures' as TabType, label: 'Signatures', dot: true }] : []),
               ]).map(tab => {
                 const locked = isFeatureGated(tab.key);
                 return (
