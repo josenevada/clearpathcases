@@ -1359,25 +1359,6 @@ const ClientWizard = () => {
                 })()}
               </header>
 
-              <button
-                onClick={() => setWhyOpen(!whyOpen)}
-                className="flex items-center gap-1 text-primary/80 text-sm mb-6 hover:text-primary transition-colors"
-              >
-                <ChevronDown className={`w-4 h-4 transition-transform ${whyOpen ? 'rotate-180' : ''}`} />
-                Why does my attorney need this?
-              </button>
-              <AnimatePresence>
-                {whyOpen && (
-                  <motion.p
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="text-muted-foreground text-sm leading-relaxed mb-6 overflow-hidden"
-                  >
-                    {currentItem.whyWeNeedThis}
-                  </motion.p>
-                )}
-               </AnimatePresence>
 
 
               {isCheckpointItem ? (
@@ -1581,8 +1562,8 @@ const ClientWizard = () => {
                       ) : null
                     }
                   />
-                  <DocumentRetrievalLinks itemLabel={currentItem.label} caseId={caseData.id} clientName={caseData.clientName} />
-                  <div className="flex flex-col items-center gap-1 mt-1">
+                  <div className="flex flex-col items-center gap-2 mt-2">
+                    <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     <button
                       onClick={() => setShowNaFlow(true)}
                       className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
@@ -1644,8 +1625,8 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
-                  <DocumentRetrievalLinks itemLabel={currentItem.label} caseId={caseData.id} clientName={caseData.clientName} />
-                  <div className="flex flex-col items-center gap-1 mt-1">
+                  <div className="flex flex-col items-center gap-2 mt-2">
+                    <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                         Skip this item
@@ -1803,8 +1784,8 @@ const ClientWizard = () => {
                       You can photograph physical documents directly with your camera.
                     </p>
                   )}
-                  <DocumentRetrievalLinks itemLabel={currentItem.label} caseId={caseData.id} clientName={caseData.clientName} />
-                  <div className="flex flex-col items-center gap-1 mt-1">
+                  <div className="flex flex-col items-center gap-2 mt-2">
+                    <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                         Skip for now
@@ -1815,7 +1796,7 @@ const ClientWizard = () => {
                         onClick={() => setShowNaFlow(true)}
                         className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
                       >
-                        I don't think I have this
+                        I don't have this document
                       </button>
                     )}
                   </div>
