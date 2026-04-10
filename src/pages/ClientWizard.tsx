@@ -1278,7 +1278,7 @@ const ClientWizard = () => {
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center px-6 pb-32">
+      <div className="flex-1 flex items-center justify-center px-6 pb-24">
         <AnimatePresence mode="wait">
           {showStepTransition !== null ? (
             <StepTransition
