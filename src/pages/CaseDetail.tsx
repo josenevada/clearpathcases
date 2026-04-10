@@ -626,7 +626,7 @@ const CaseDetail = () => {
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_added',
-      actor_role: 'paralegal',
+      actor_role: actorRole,
       actor_name: user?.fullName || 'Staff',
       description: `Added custom document "${addDocName.trim()}" to ${category}`,
       item_id: newItemId,
