@@ -429,10 +429,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       const requiredItems = items.filter(i => i.required);
       const requiredApproved = requiredItems.filter(i => i.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden'));
 
-      let status: 'complete' | 'in-progress' | 'attention';
-      if (corrections.length > 0) status = 'attention';
-      else if (requiredApproved.length === requiredItems.length && requiredItems.length > 0) status = 'complete';
-      else status = 'in-progress';
+      let status: 'complete' | 'in-progress' | 'not-started' | 'attention';
+      if (approved.length === 0 && pending.length === 0 && corrections.length === 0) status = 'not-started';
+      else if (corrections.length > 0) status = 'attention';
+      else if (pending.length > 0) status = 'in-progress';
+      else if (approved.length > 0) status = 'complete';
+      else status = 'not-started';
 
       return { category: cat, approved: approved.length, pending: pending.length, corrections: corrections.length, total: items.length, status };
     });
@@ -441,7 +443,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const totalApproved = categorySummary.reduce((s, c) => s + c.approved, 0);
   const totalPending = categorySummary.reduce((s, c) => s + c.pending, 0);
   const totalCorrections = categorySummary.reduce((s, c) => s + c.corrections, 0);
-  const overallStatus = totalCorrections > 0 ? 'attention' : totalPending > 0 ? 'in-progress' : 'complete';
+  const overallStatus = totalApproved === 0 && totalPending === 0 && totalCorrections === 0 ? 'not-started' : totalCorrections > 0 ? 'attention' : totalPending > 0 ? 'in-progress' : categorySummary.every(c => c.approved > 0 && c.pending === 0 && c.corrections === 0) ? 'complete' : 'in-progress';
 
   return (
     <div className="space-y-6">
@@ -496,25 +498,8 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           )}
           {!bulkMode && (
             <div className="flex items-center gap-2">
-              {!bulkActionsEnabled && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-xs text-muted-foreground font-body flex items-center gap-1 cursor-default">
-                        <Lock className="w-3 h-3" /> Bulk actions
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Available on Professional</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
               <Button onClick={() => handleExportCheck('zip')}>
                 <Download className="w-4 h-4 mr-1" /> Download ZIP
-              </Button>
-              <Button variant="secondary" onClick={() => handleExportCheck('pdf')}>
-                <FileText className="w-4 h-4 mr-1" /> Compile PDF
               </Button>
             </div>
           )}
@@ -633,8 +618,8 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         </div>
       )}
 
-      {/* Completion Summary */}
-      <div className="surface-card overflow-hidden">
+      {/* Completion Summary — only show when files exist */}
+      {allFiles.length > 0 && <div className="surface-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h3 className="font-display font-bold text-foreground">Completion Summary</h3>
         </div>
@@ -670,7 +655,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       {/* Slide-in Preview Panel */}
       <AnimatePresence>
