@@ -584,6 +584,7 @@ const CaseDetail = () => {
 
   // PROMPT 5: Add custom document to a category
   const handleAddCustomDoc = async (category: string) => {
+    const actorRole = viewRole;
     if (!addDocName.trim()) {
       toast.error('Please enter a document name.');
       return;
@@ -1376,8 +1377,8 @@ const CaseDetail = () => {
                             );
                           })}
 
-                          {/* PROMPT 5: Add custom document button */}
-                          {viewRole === 'paralegal' && (
+                          {/* Add custom document button */}
+                          {(
                             <div className="border-t border-border px-4 py-3">
                               {addDocCategory === category ? (
                                 <div className="space-y-3">
