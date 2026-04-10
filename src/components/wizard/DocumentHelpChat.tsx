@@ -148,7 +148,23 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType }: DocumentHelp
                       ].map(q => (
                         <button
                           key={q}
-                          onClick={() => { setInput(q); setTimeout(() => sendMessage(), 0); }}
+                          onClick={() => {
+                            const userMsg: ChatMessage = { role: 'user', content: q };
+                            setMessages(prev => [...prev, userMsg]);
+                            setLoading(true);
+                            supabase.functions.invoke('document-agent-help', {
+                              body: {
+                                document_category: documentLabel,
+                                chapter_type: chapterType,
+                                messages: [{ role: 'user', content: q }],
+                              },
+                            }).then(({ data, error }) => {
+                              const aiResponse = error ? "I'm having trouble right now." : (data?.response || "I'm having trouble right now.");
+                              setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+                            }).catch(() => {
+                              setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now." }]);
+                            }).finally(() => setLoading(false));
+                          }}
                           className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
                         >
                           {q}
