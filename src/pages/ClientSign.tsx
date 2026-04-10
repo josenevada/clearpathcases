@@ -145,8 +145,10 @@ const ClientSign = () => {
     }
 
     // Compare DOB (normalize format)
-    const inputDate = new Date(dobInput);
-    const storedDate = new Date(ci.date_of_birth);
+    const [iy, im, id] = dobInput.split('-').map(Number);
+    const inputDate = new Date(iy, im - 1, id);
+    const [sy, sm, sd] = ci.date_of_birth.split('-').map(Number);
+    const storedDate = new Date(sy, sm - 1, sd);
     
     if (inputDate.getFullYear() === storedDate.getFullYear() &&
         inputDate.getMonth() === storedDate.getMonth() &&
