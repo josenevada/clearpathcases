@@ -21,7 +21,8 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
 
   if (!caseData) return null;
 
-  const portalLink = `${window.location.origin}/client/${caseData.caseCode}`;
+  const caseCode = caseData.caseCode;
+  const portalLink = caseCode ? `${window.location.origin}/client/${caseCode}` : '';
   const firstName = caseData.clientName.split(' ')[0];
   const hasPhone = !!caseData.clientPhone;
   const hasEmail = !!caseData.clientEmail;
@@ -74,7 +75,7 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] border-border bg-background">
+      <DialogContent className="sm:max-w-[480px] border-border bg-background z-[100]">
         <DialogHeader>
           <DialogTitle className="font-display font-bold text-xl text-foreground">
             Your case is ready — send {firstName} their intake link.
@@ -96,9 +97,9 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
             <label className="text-sm text-muted-foreground font-body">Client portal URL</label>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-input border border-border rounded-[10px] px-3 py-2 text-sm text-foreground font-mono truncate">
-                {portalLink}
+                {caseCode ? portalLink : 'Generating link…'}
               </div>
-              <Button variant="outline" size="icon" onClick={handleCopy}>
+              <Button variant="outline" size="icon" onClick={handleCopy} disabled={!caseCode}>
                 {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
@@ -113,11 +114,11 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={handleCopy}>
+            <Button variant="outline" className="flex-1" onClick={handleCopy} disabled={!caseCode}>
               <Copy className="w-4 h-4 mr-1.5" />
               {copied ? 'Copied!' : 'Copy link'}
             </Button>
-            <Button className="flex-1" onClick={handleSend} disabled={sending || hasBothMissing}>
+            <Button className="flex-1" onClick={handleSend} disabled={sending || hasBothMissing || !caseCode}>
               <Send className="w-4 h-4 mr-1.5" />
               {sending ? 'Sending…' : 'Send now'}
             </Button>

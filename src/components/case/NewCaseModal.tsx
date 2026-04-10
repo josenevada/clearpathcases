@@ -330,7 +330,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     const portalLink = `${window.location.origin}/client/${caseCode}`;
     navigator.clipboard?.writeText(portalLink);
     toast.success('Case created! Client portal link copied to clipboard.');
-    onCreated(newCase);
+    onCreated(updatedCase);
     resetAndClose();
 
     const caseForNotification = updatedCase || { ...newCase, caseCode };
