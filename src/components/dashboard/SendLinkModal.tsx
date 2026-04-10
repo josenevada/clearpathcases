@@ -21,7 +21,8 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
 
   if (!caseData) return null;
 
-  const portalLink = `${window.location.origin}/client/${caseData.caseCode}`;
+  const caseCode = caseData.caseCode;
+  const portalLink = caseCode ? `${window.location.origin}/client/${caseCode}` : '';
   const firstName = caseData.clientName.split(' ')[0];
   const hasPhone = !!caseData.clientPhone;
   const hasEmail = !!caseData.clientEmail;
