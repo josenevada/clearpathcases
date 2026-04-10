@@ -12,6 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -647,13 +653,83 @@ const CaseDetail = () => {
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_removed',
-      actor_role: 'paralegal',
+      actor_role: viewRole,
       actor_name: user?.fullName || 'Staff',
       description: `Removed custom document "${item.label}"`,
       item_id: item.id,
     });
 
     toast.success(`"${item.label}" removed from checklist`);
+    refresh();
+  };
+
+  const handleQuickMarkNA = async (item: ChecklistItem) => {
+    const actorName = user?.fullName || 'Staff';
+    const timestamp = new Date().toISOString();
+
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === item.id);
+      if (found) {
+        found.notApplicable = true;
+        found.notApplicableReason = 'Marked by staff';
+        found.notApplicableMarkedBy = actorName;
+        found.notApplicableAt = timestamp;
+        found.completed = false;
+      }
+      return c;
+    });
+
+    await supabase.from('checklist_items').update({
+      not_applicable: true,
+      not_applicable_reason: 'Marked by staff',
+      not_applicable_marked_by: actorName,
+      not_applicable_at: timestamp,
+    }).eq('id', item.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_not_applicable',
+      actor_role: viewRole,
+      actor_name: actorName,
+      description: `${actorName} marked ${item.label} as not applicable`,
+      item_id: item.id,
+    });
+
+    toast.success(`${item.label} marked as N/A`);
+    refresh();
+  };
+
+  const handleRemoveNA = async (item: ChecklistItem) => {
+    const actorName = user?.fullName || 'Staff';
+
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === item.id);
+      if (found) {
+        found.notApplicable = false;
+        found.notApplicableReason = undefined;
+        found.notApplicableMarkedBy = undefined;
+        found.notApplicableAt = undefined;
+      }
+      return c;
+    });
+
+    await supabase.from('checklist_items').update({
+      not_applicable: false,
+      not_applicable_reason: null,
+      not_applicable_marked_by: null,
+      not_applicable_at: null,
+    }).eq('id', item.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_na_removed',
+      actor_role: viewRole,
+      actor_name: actorName,
+      description: `${actorName} removed N/A from ${item.label}`,
+      item_id: item.id,
+    });
+
+    toast.success(`N/A removed from ${item.label}`);
     refresh();
   };
 
