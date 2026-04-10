@@ -114,11 +114,11 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={handleCopy}>
+            <Button variant="outline" className="flex-1" onClick={handleCopy} disabled={!caseCode}>
               <Copy className="w-4 h-4 mr-1.5" />
               {copied ? 'Copied!' : 'Copy link'}
             </Button>
-            <Button className="flex-1" onClick={handleSend} disabled={sending || hasBothMissing}>
+            <Button className="flex-1" onClick={handleSend} disabled={sending || hasBothMissing || !caseCode}>
               <Send className="w-4 h-4 mr-1.5" />
               {sending ? 'Sending…' : 'Send now'}
             </Button>
