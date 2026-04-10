@@ -748,83 +748,57 @@ const CaseDetail = () => {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border px-4 py-4 sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+        <div className="mx-auto flex max-w-7xl items-center gap-4">
           <Link to="/paralegal" className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="w-4 h-4" /> Dashboard
           </Link>
-           <div className="flex flex-1 items-center gap-3 flex-wrap">
-             <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
-             {caseData.courtCaseNumber ? (
-               <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-mono text-muted-foreground border border-border">
-                 {caseData.courtCaseNumber}
-               </span>
-             ) : (
-               <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] italic text-muted-foreground border border-border">
-                 Pending court assignment
-               </span>
-             )}
-             <button
-               onClick={() => {
-                 const num = prompt('Enter court case number:', caseData.courtCaseNumber || '');
-                 if (num !== null) {
-                   updateCase(caseData.id, c => ({ ...c, courtCaseNumber: num.trim() || undefined }));
-                   supabase.from('cases').update({ court_case_number: num.trim() || null }).eq('id', caseData.id);
-                   refresh();
-                   toast.success(num.trim() ? 'Court case number updated' : 'Court case number cleared');
-                 }
-               }}
-               className="text-muted-foreground hover:text-foreground transition-colors"
-             >
-               <Pencil className="w-3 h-3" />
-             </button>
-            <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
-              <Pencil className="w-3 h-3" /> Edit Case
+
+          <h1 className="font-display text-xl font-bold text-foreground">{caseData.clientName}</h1>
+
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+            caseData.chapterType === '13'
+              ? 'bg-warning/10 text-warning border border-warning/20'
+              : 'bg-primary/10 text-primary border border-primary/20'
+          }`}>
+            Ch.{caseData.chapterType}
+          </span>
+
+          {caseData.urgency !== 'normal' && (
+            <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
+              {caseData.urgency.replace('-', ' ')}
+            </Badge>
+          )}
+
+          <CaseStatusDropdown
+            caseData={caseData}
+            actorName={user?.fullName || 'Staff'}
+            onUpdated={setCaseData}
+          />
+
+          <div className="flex-1" />
+
+          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Due</span>
+            {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
+          </span>
+
+          <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
+            <Pencil className="w-3 h-3" /> Edit Case
+          </Button>
+
+          <div className="relative group">
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <MoreVertical className="w-4 h-4" />
             </Button>
-            <div className="relative group">
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-              <div className="absolute right-0 top-full mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <button
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete Case
-                </button>
-              </div>
+            <div className="absolute right-0 top-full mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <button
+                onClick={() => setShowDeleteDialog(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Case
+              </button>
             </div>
-             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-               caseData.chapterType === '13'
-                 ? 'bg-warning/10 text-warning border border-warning/20'
-                 : 'bg-primary/10 text-primary border border-primary/20'
-             }`}>
-               Ch.{caseData.chapterType}
-             </span>
-            {caseData.urgency !== 'normal' && (
-              <Badge className={`${urgencyClass} rounded-full px-2 py-0.5 text-xs`}>
-                {caseData.urgency.replace('-', ' ')}
-              </Badge>
-            )}
-            <CaseStatusDropdown
-              caseData={caseData}
-              actorName={user?.fullName || 'Staff'}
-              onUpdated={setCaseData}
-            />
-            {!caseData.clientPhone && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded-full px-2.5 py-1">
-                <PhoneOff className="w-3 h-3" /> No phone number on file — SMS notifications paused
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="text-xs font-medium">Due</span>
-              {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
-            </span>
-            <span className="rounded-pill bg-secondary px-3 py-1 text-xs font-bold capitalize text-muted-foreground">
-              {user?.fullName} · {viewRole}
-            </span>
           </div>
         </div>
       </header>
