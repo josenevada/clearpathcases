@@ -35,6 +35,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import DocumentsTab from '@/components/case/DocumentsTab';
+import DocumentViewer from '@/components/case/DocumentViewer';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import BuildPacketTab from '@/components/case/BuildPacketTab';
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
@@ -65,6 +72,8 @@ import UpgradeModal from '@/components/UpgradeModal';
 
 type ViewRole = 'paralegal' | 'attorney';
 type TabType = 'checklist' | 'client-info' | 'documents' | 'activity' | 'packet' | 'form-data' | 'means-test' | 'exemptions' | 'signatures';
+
+type PreviewFile = { name: string; dataUrl: string; itemId: string; fileId: string; reviewStatus: string } | null;
 
 const ApproveButton = ({ onApprove }: { onApprove: () => Promise<void> }) => {
   const [state, setState] = useState<'idle' | 'loading' | 'success'>('idle');
@@ -118,6 +127,7 @@ const CaseDetail = () => {
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showEditPanel, setShowEditPanel] = useState(false);
+  const [previewFile, setPreviewFile] = useState<PreviewFile>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1140,11 +1150,29 @@ const CaseDetail = () => {
                                               <div key={file.id} className="space-y-3">
                                                 <div className="surface-card p-4">
                                                   <div className="flex items-start gap-3">
-                                                    <FileText className="w-8 h-8 flex-shrink-0 text-muted-foreground" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const url = file.dataUrl || (file.storagePath ? supabase.storage.from('case-documents').getPublicUrl(file.storagePath).data.publicUrl : '');
+                                                        if (url) setPreviewFile({ name: file.name, dataUrl: url, itemId: item.id, fileId: file.id, reviewStatus: file.reviewStatus });
+                                                      }}
+                                                      className="mt-0.5 hover:text-primary transition-colors"
+                                                    >
+                                                      <FileText className="w-8 h-8 flex-shrink-0 text-muted-foreground hover:text-primary" />
+                                                    </button>
                                                     <div className="min-w-0 flex-1">
                                                       <div className="flex items-start justify-between gap-3">
                                                         <div>
-                                                          <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              const url = file.dataUrl || (file.storagePath ? supabase.storage.from('case-documents').getPublicUrl(file.storagePath).data.publicUrl : '');
+                                                              if (url) setPreviewFile({ name: file.name, dataUrl: url, itemId: item.id, fileId: file.id, reviewStatus: file.reviewStatus });
+                                                            }}
+                                                            className="truncate text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors text-left"
+                                                          >
+                                                            {file.name}
+                                                          </button>
                                                           <p className="text-xs text-muted-foreground">
                                                             Uploaded {format(new Date(file.uploadedAt), 'MMM d, yyyy · h:mm a')} by {file.uploadedBy}
                                                           </p>
@@ -1568,6 +1596,50 @@ const CaseDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={!!previewFile} onOpenChange={(open) => { if (!open) setPreviewFile(null); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="truncate text-base">{previewFile?.name}</DialogTitle>
+          </DialogHeader>
+          {previewFile && (
+            <div className="space-y-4">
+              <DocumentViewer fileName={previewFile.name} dataUrl={previewFile.dataUrl} />
+              {previewFile.reviewStatus !== 'approved' && previewFile.reviewStatus !== 'overridden' && (
+                <div className="flex gap-2 justify-end border-t border-border pt-4">
+                  {viewRole === 'paralegal' && (
+                    <ApproveButton
+                      onApprove={async () => {
+                        await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', previewFile.fileId);
+                        await supabase.from('activity_log').insert({
+                          case_id: caseData.id,
+                          event_type: 'file_approved',
+                          actor_role: 'paralegal',
+                          actor_name: user?.fullName || caseData.assignedParalegal,
+                          description: `${user?.fullName || caseData.assignedParalegal} approved ${previewFile.name}`,
+                          item_id: previewFile.itemId,
+                        });
+                        setPreviewFile(null);
+                        refresh();
+                      }}
+                    />
+                  )}
+                  {viewRole === 'attorney' && (
+                    <Button variant="success" size="sm" onClick={async () => {
+                      const item = caseData.checklist.find(i => i.id === previewFile.itemId);
+                      if (item) await handleApprove(item, previewFile.fileId);
+                      setPreviewFile(null);
+                    }}>
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
