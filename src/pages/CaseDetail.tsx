@@ -12,6 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -578,6 +584,7 @@ const CaseDetail = () => {
 
   // PROMPT 5: Add custom document to a category
   const handleAddCustomDoc = async (category: string) => {
+    const actorRole = viewRole;
     if (!addDocName.trim()) {
       toast.error('Please enter a document name.');
       return;
@@ -619,7 +626,7 @@ const CaseDetail = () => {
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_added',
-      actor_role: 'paralegal',
+      actor_role: actorRole,
       actor_name: user?.fullName || 'Staff',
       description: `Added custom document "${addDocName.trim()}" to ${category}`,
       item_id: newItemId,
@@ -647,13 +654,83 @@ const CaseDetail = () => {
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_removed',
-      actor_role: 'paralegal',
+      actor_role: viewRole,
       actor_name: user?.fullName || 'Staff',
       description: `Removed custom document "${item.label}"`,
       item_id: item.id,
     });
 
     toast.success(`"${item.label}" removed from checklist`);
+    refresh();
+  };
+
+  const handleQuickMarkNA = async (item: ChecklistItem) => {
+    const actorName = user?.fullName || 'Staff';
+    const timestamp = new Date().toISOString();
+
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === item.id);
+      if (found) {
+        found.notApplicable = true;
+        found.notApplicableReason = 'Marked by staff';
+        found.notApplicableMarkedBy = actorName;
+        found.notApplicableAt = timestamp;
+        found.completed = false;
+      }
+      return c;
+    });
+
+    await supabase.from('checklist_items').update({
+      not_applicable: true,
+      not_applicable_reason: 'Marked by staff',
+      not_applicable_marked_by: actorName,
+      not_applicable_at: timestamp,
+    }).eq('id', item.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_not_applicable',
+      actor_role: viewRole,
+      actor_name: actorName,
+      description: `${actorName} marked ${item.label} as not applicable`,
+      item_id: item.id,
+    });
+
+    toast.success(`${item.label} marked as N/A`);
+    refresh();
+  };
+
+  const handleRemoveNA = async (item: ChecklistItem) => {
+    const actorName = user?.fullName || 'Staff';
+
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(ci => ci.id === item.id);
+      if (found) {
+        found.notApplicable = false;
+        found.notApplicableReason = undefined;
+        found.notApplicableMarkedBy = undefined;
+        found.notApplicableAt = undefined;
+      }
+      return c;
+    });
+
+    await supabase.from('checklist_items').update({
+      not_applicable: false,
+      not_applicable_reason: null,
+      not_applicable_marked_by: null,
+      not_applicable_at: null,
+    }).eq('id', item.id);
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'item_na_removed',
+      actor_role: viewRole,
+      actor_name: actorName,
+      description: `${actorName} removed N/A from ${item.label}`,
+      item_id: item.id,
+    });
+
+    toast.success(`N/A removed from ${item.label}`);
     refresh();
   };
 
@@ -965,14 +1042,34 @@ const CaseDetail = () => {
                                   )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
                                   {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}
-                                  {(item as any).isCustom && viewRole === 'paralegal' && (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteCustomDoc(item); }}
-                                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  )}
+                                  <div onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                                          <MoreVertical className="w-3.5 h-3.5" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-44">
+                                        {!item.notApplicable ? (
+                                          <DropdownMenuItem onClick={() => handleQuickMarkNA(item)}>
+                                            <Ban className="w-3.5 h-3.5 mr-2" /> Mark as N/A
+                                          </DropdownMenuItem>
+                                        ) : (
+                                          <DropdownMenuItem onClick={() => handleRemoveNA(item)}>
+                                            <Ban className="w-3.5 h-3.5 mr-2" /> Remove N/A
+                                          </DropdownMenuItem>
+                                        )}
+                                        {(item as any).isCustom && (
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteCustomDoc(item)}
+                                            className="text-destructive focus:text-destructive"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 </button>
 
                                 <AnimatePresence>
@@ -1280,8 +1377,8 @@ const CaseDetail = () => {
                             );
                           })}
 
-                          {/* PROMPT 5: Add custom document button */}
-                          {viewRole === 'paralegal' && (
+                          {/* Add custom document button */}
+                          {(
                             <div className="border-t border-border px-4 py-3">
                               {addDocCategory === category ? (
                                 <div className="space-y-3">
