@@ -1041,14 +1041,34 @@ const CaseDetail = () => {
                                   )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
                                   {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}
-                                  {(item as any).isCustom && viewRole === 'paralegal' && (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteCustomDoc(item); }}
-                                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  )}
+                                  <div onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                                          <MoreVertical className="w-3.5 h-3.5" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-44">
+                                        {!item.notApplicable ? (
+                                          <DropdownMenuItem onClick={() => handleQuickMarkNA(item)}>
+                                            <Ban className="w-3.5 h-3.5 mr-2" /> Mark as N/A
+                                          </DropdownMenuItem>
+                                        ) : (
+                                          <DropdownMenuItem onClick={() => handleRemoveNA(item)}>
+                                            <Ban className="w-3.5 h-3.5 mr-2" /> Remove N/A
+                                          </DropdownMenuItem>
+                                        )}
+                                        {(item as any).isCustom && (
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteCustomDoc(item)}
+                                            className="text-destructive focus:text-destructive"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 </button>
 
                                 <AnimatePresence>
