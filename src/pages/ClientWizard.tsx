@@ -1600,9 +1600,9 @@ const ClientWizard = () => {
                     )}
                   </AnimatePresence>
                   {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
-                    <div className="mt-3">
-                      <ProgressPill caseData={caseData} />
-                    </div>
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      {caseData.checklist.filter(isItemEffectivelyComplete).length} of {caseData.checklist.length} documents done
+                    </p>
                   )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
@@ -1754,9 +1754,9 @@ const ClientWizard = () => {
                     />
                   </div>
                   {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
-                    <div className="mt-3">
-                      <ProgressPill caseData={caseData} />
-                    </div>
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      {caseData.checklist.filter(isItemEffectivelyComplete).length} of {caseData.checklist.length} documents done
+                    </p>
                   )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
@@ -1788,14 +1788,6 @@ const ClientWizard = () => {
           )}
         </AnimatePresence>
 
-        {/* Inline Back link */}
-        {!showSuccess && !showMilestone && !showStepTransition && (currentItemIdx > 0 || currentCategoryIdx > 0) && (
-          <div className="max-w-md mx-auto w-full mt-4 mb-2 text-center">
-            <button onClick={goBack} className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
-            </button>
-          </div>
-        )}
       </div>
 
 
@@ -1877,6 +1869,11 @@ const ClientWizard = () => {
               >
                 {hasValidationIssue ? 'Continue anyway →' : 'Continue →'}
               </Button>
+            )}
+            {(currentItemIdx > 0 || currentCategoryIdx > 0) && (
+              <button onClick={goBack} className="text-sm text-muted-foreground hover:text-primary transition-colors mx-auto mt-1">
+                ← Back
+              </button>
             )}
           </div>
         </div>
