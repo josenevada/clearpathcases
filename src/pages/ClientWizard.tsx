@@ -1787,12 +1787,21 @@ const ClientWizard = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Inline Back link */}
+        {!showSuccess && !showMilestone && !showStepTransition && (currentItemIdx > 0 || currentCategoryIdx > 0) && (
+          <div className="max-w-md mx-auto w-full mt-4 mb-2 text-center">
+            <button onClick={goBack} className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+              <ArrowLeft className="w-3.5 h-3.5" /> Back
+            </button>
+          </div>
+        )}
       </div>
 
 
       {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-4">
-          <div className="max-w-md mx-auto flex flex-col gap-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-3">
+          <div className="max-w-md mx-auto">
             {isCheckpointItem ? (
               <Button
                 onClick={handleCheckpointConfirm}
