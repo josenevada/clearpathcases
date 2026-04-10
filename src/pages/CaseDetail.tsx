@@ -1150,11 +1150,29 @@ const CaseDetail = () => {
                                               <div key={file.id} className="space-y-3">
                                                 <div className="surface-card p-4">
                                                   <div className="flex items-start gap-3">
-                                                    <FileText className="w-8 h-8 flex-shrink-0 text-muted-foreground" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const url = file.dataUrl || (file.storagePath ? supabase.storage.from('case-documents').getPublicUrl(file.storagePath).data.publicUrl : '');
+                                                        if (url) setPreviewFile({ name: file.name, dataUrl: url, itemId: item.id, fileId: file.id, reviewStatus: file.reviewStatus });
+                                                      }}
+                                                      className="mt-0.5 hover:text-primary transition-colors"
+                                                    >
+                                                      <FileText className="w-8 h-8 flex-shrink-0 text-muted-foreground hover:text-primary" />
+                                                    </button>
                                                     <div className="min-w-0 flex-1">
                                                       <div className="flex items-start justify-between gap-3">
                                                         <div>
-                                                          <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              const url = file.dataUrl || (file.storagePath ? supabase.storage.from('case-documents').getPublicUrl(file.storagePath).data.publicUrl : '');
+                                                              if (url) setPreviewFile({ name: file.name, dataUrl: url, itemId: item.id, fileId: file.id, reviewStatus: file.reviewStatus });
+                                                            }}
+                                                            className="truncate text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors text-left"
+                                                          >
+                                                            {file.name}
+                                                          </button>
                                                           <p className="text-xs text-muted-foreground">
                                                             Uploaded {format(new Date(file.uploadedAt), 'MMM d, yyyy · h:mm a')} by {file.uploadedBy}
                                                           </p>
