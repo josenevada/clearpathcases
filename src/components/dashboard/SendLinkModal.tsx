@@ -97,9 +97,9 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
             <label className="text-sm text-muted-foreground font-body">Client portal URL</label>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-input border border-border rounded-[10px] px-3 py-2 text-sm text-foreground font-mono truncate">
-                {portalLink}
+                {caseCode ? portalLink : 'Generating link…'}
               </div>
-              <Button variant="outline" size="icon" onClick={handleCopy}>
+              <Button variant="outline" size="icon" onClick={handleCopy} disabled={!caseCode}>
                 {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
