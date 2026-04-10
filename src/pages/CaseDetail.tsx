@@ -783,18 +783,20 @@ const CaseDetail = () => {
             {format(new Date(caseData.filingDeadline), 'MMM d, yyyy')}
           </span>
 
-          <Button variant="outline" size="sm" onClick={() => setShowEditPanel(true)} className="gap-1.5">
-            <Pencil className="w-3 h-3" /> Edit Case
-          </Button>
-
           <div className="relative group">
             <Button variant="outline" size="icon" className="h-8 w-8">
               <MoreVertical className="w-4 h-4" />
             </Button>
-            <div className="absolute right-0 top-full mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+            <div className="absolute right-0 top-full mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <button
+                onClick={() => setShowEditPanel(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-secondary rounded-t-lg transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Edit Case
+              </button>
               <button
                 onClick={() => setShowDeleteDialog(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-b-lg transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete Case
               </button>

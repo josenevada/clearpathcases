@@ -182,7 +182,7 @@ const Packets = () => {
           <PlanBadge />
         </div>
         <div className="flex items-center gap-4">
-          <ThemeToggle />
+          
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>

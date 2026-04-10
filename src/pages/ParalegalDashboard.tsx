@@ -230,7 +230,7 @@ const ParalegalDashboard = () => {
           <span className="hidden text-sm text-muted-foreground md:block">
             {displayName}, {displayRole}
           </span>
-          <ThemeToggle />
+          
           <Button variant="ghost" size="icon" onClick={() => setGlobalSearchOpen(true)}>
             <Search className="w-4 h-4" />
           </Button>
