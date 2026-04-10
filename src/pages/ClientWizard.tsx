@@ -11,9 +11,6 @@ import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
 import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
-import DocumentHelpPanel from '@/components/wizard/DocumentHelpPanel';
-import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
-import DocumentAgent from '@/components/wizard/DocumentAgent';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -143,7 +140,7 @@ const ClientWizard = () => {
   const [ssnVisible, setSsnVisible] = useState(false);
   const [ssnError, setSsnError] = useState('');
   const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
-  const [helpForceOpen, setHelpForceOpen] = useState(false);
+  
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const [showNaFlow, setShowNaFlow] = useState(false);
@@ -384,9 +381,6 @@ const ClientWizard = () => {
           };
         });
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
-        if (result.validation_status === 'warning' || result.validation_status === 'failed') {
-          setHelpForceOpen(true);
-        }
       } else {
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
       }
@@ -447,18 +441,6 @@ const ClientWizard = () => {
     setNaClientReason(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
 
-  // ─── 90-second inactivity auto-show help
-  useEffect(() => {
-    setHelpForceOpen(false);
-    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    if (!caseData) return;
-    const catItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
-    const item = catItems[currentItemIdx];
-    if (!item || isTextEntryItem(item.label) || (item.category === 'Agreements & Confirmation' && item.label.includes('Confirmation'))) return;
-    if (item.completed) return;
-    inactivityTimerRef.current = setTimeout(() => { setHelpForceOpen(true); }, 90_000);
-    return () => { if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current); };
-  }, [currentCategoryIdx, currentItemIdx, caseData]);
 
   if (isLoading || !caseData) {
     return (
@@ -1023,7 +1005,6 @@ const ClientWizard = () => {
       return;
     }
     if (!currentItem.completed && currentItem.required) {
-      setHelpForceOpen(true);
       toast('Take your time — when you\'ve found it, just tap the upload area above.', { duration: 4000 });
       return;
     }
@@ -1397,38 +1378,6 @@ const ClientWizard = () => {
                 )}
                </AnimatePresence>
 
-              {/* Document retrieval links */}
-              {!isCheckpointItem && !isTextEntry && (
-                <DocumentRetrievalLinks
-                  itemLabel={currentItem.label}
-                  caseId={caseData.id}
-                  clientName={caseData.clientName}
-                />
-              )}
-
-              {/* Contextual document help panel */}
-              {!isCheckpointItem && !isTextEntry && (
-                <DocumentHelpPanel
-                  itemLabel={currentItem.label}
-                  caseId={caseData.id}
-                  caseName={caseData.clientName}
-                  validationStatus={currentItem.files.find(f => f.validationStatus === 'failed' || f.validationStatus === 'warning')?.validationStatus}
-                  validationSuggestion={currentItem.files.find(f => f.validationStatus === 'failed' || f.validationStatus === 'warning')?.validationResult?.suggestion}
-                  hasFiles={currentItem.files.length > 0}
-                  forceOpen={helpForceOpen}
-                  onForceOpenHandled={() => setHelpForceOpen(false)}
-                />
-              )}
-
-              {/* AI Document Retrieval Agent */}
-              {!isCheckpointItem && !isTextEntry && (
-                <DocumentAgent
-                  documentCategory={currentItem.category}
-                  documentLabel={currentItem.label}
-                  caseId={caseData.id}
-                  onDocumentUploaded={() => {}}
-                />
-              )}
 
               {isCheckpointItem ? (
                 <div className="space-y-6">
