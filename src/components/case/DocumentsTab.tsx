@@ -1114,11 +1114,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   );
 };
 
-const StatusIndicator = ({ status }: { status: 'complete' | 'in-progress' | 'attention' }) => {
+const StatusIndicator = ({ status }: { status: 'complete' | 'in-progress' | 'attention' | 'not-started' }) => {
   const config = {
     complete: { label: 'Complete', className: 'text-success' },
     'in-progress': { label: 'In Progress', className: 'text-warning' },
     attention: { label: 'Attention Needed', className: 'text-destructive' },
+    'not-started': { label: 'Not Started', className: 'text-muted-foreground' },
   }[status];
 
   return (
