@@ -1322,41 +1322,15 @@ const ClientWizard = () => {
             </motion.div>
           ) : currentItem ? (
             <motion.div key={currentItem.id} {...pageTransition} className="max-w-md mx-auto w-full">
-              <header className="mb-8">
+              <header className="mb-6">
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2 leading-tight">
                   {currentItem.label}
                 </h2>
                 {WARM_SUBTITLES[currentItem.label] && (
-                  <p className="text-primary/80 text-sm font-body mb-2 leading-relaxed">
+                  <p className="text-primary/80 text-sm font-body leading-relaxed">
                     {WARM_SUBTITLES[currentItem.label]}
                   </p>
                 )}
-                <p className="text-muted-foreground text-lg font-body leading-relaxed">
-                  {currentItem.description}
-                </p>
-                {/* Credit Counseling Provider link */}
-                {currentItem.label === 'Credit Counseling Certificate' && (() => {
-                  try {
-                    const cp = JSON.parse(localStorage.getItem('cp_counseling_provider') || '{}');
-                    if (cp.providerLink) {
-                      return (
-                        <div className="surface-card p-4 mt-3 space-y-1">
-                          <p className="text-sm font-medium text-foreground">
-                            Your firm recommends: <a href={cp.providerLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{cp.providerName || cp.providerLink}</a>
-                          </p>
-                          {cp.attorneyCode && (
-                            <p className="text-xs text-muted-foreground">Attorney code: <span className="font-mono font-bold text-foreground">{cp.attorneyCode}</span></p>
-                          )}
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="surface-card border-warning/30 bg-warning/5 p-4 mt-3">
-                        <p className="text-sm text-warning">Your firm hasn't set a credit counseling provider yet — contact your attorney for the correct link.</p>
-                      </div>
-                    );
-                  } catch { return null; }
-                })()}
               </header>
 
 
@@ -1625,6 +1599,11 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
+                  {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
+                    <div className="mt-3">
+                      <ProgressPill caseData={caseData} />
+                    </div>
+                  )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
@@ -1674,11 +1653,6 @@ const ClientWizard = () => {
                       onChange={handleSingleFileUpload}
                     />
                   </div>
-                  {isMobile && (
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                      You can photograph physical documents directly with your camera.
-                    </p>
-                  )}
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
                 <div className="space-y-2">
@@ -1779,10 +1753,10 @@ const ClientWizard = () => {
                       onChange={handleSingleFileUpload}
                     />
                   </div>
-                  {isMobile && (
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                      You can photograph physical documents directly with your camera.
-                    </p>
+                  {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
+                    <div className="mt-3">
+                      <ProgressPill caseData={caseData} />
+                    </div>
                   )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
@@ -1815,9 +1789,6 @@ const ClientWizard = () => {
         </AnimatePresence>
       </div>
 
-      {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
-        <ProgressPill caseData={caseData} />
-      )}
 
       {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-4">
