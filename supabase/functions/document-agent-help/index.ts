@@ -9,9 +9,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { document_category, client_message } = await req.json();
+    const body = await req.json();
+    const { document_category, client_message, messages, chapter_type } = body;
 
-    if (!document_category || !client_message) {
+    // Support both legacy single-message and new multi-turn chat
+    const chatMessages = messages as { role: string; content: string }[] | undefined;
+
+    if (!document_category || (!client_message && (!chatMessages || chatMessages.length === 0))) {
       return new Response(JSON.stringify({ error: 'Missing fields' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -25,12 +29,40 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `You are a helpful assistant inside a document intake app.
-A client is trying to find their ${document_category}.
-They said: "${client_message}"
-Give them specific step-by-step instructions in plain English, under 80 words.
-Do not mention bankruptcy. Be warm and direct.
-If you can identify a specific platform or website, include the URL.`;
+    const chapterLabel = chapter_type === '13' ? 'Chapter 13' : 'Chapter 7';
+
+    const systemPrompt = `You are a friendly, warm intake assistant helping a client gather documents for their ${chapterLabel} filing. The client is currently on the "${document_category}" step.
+
+Your role:
+- Help the client find and upload their ${document_category}.
+- Give clear, step-by-step instructions in plain English.
+- Be warm, encouraging, and patient. Many clients feel stressed.
+- If you can identify a specific website or platform, include the URL.
+- Keep responses under 80 words.
+
+You must NEVER:
+- Give legal advice of any kind.
+- Tell the client they don't need a document or can skip it.
+- Mention bankruptcy, court proceedings, or legal terms.
+- Suggest the client doesn't need to provide something.
+
+If unsure, always say: "That's a great question — I'd recommend checking with your attorney's office to be sure."`;
+
+    let apiMessages: { role: string; content: string }[];
+
+    if (chatMessages && chatMessages.length > 0) {
+      // Multi-turn: pass conversation history
+      apiMessages = [
+        { role: 'system', content: systemPrompt },
+        ...chatMessages,
+      ];
+    } else {
+      // Legacy single-message
+      apiMessages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: client_message },
+      ];
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -40,10 +72,7 @@ If you can identify a specific platform or website, include the URL.`;
       },
       body: JSON.stringify({
         model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: 'You help clients find their financial documents. Be warm, direct, concise. Never mention bankruptcy or legal proceedings.' },
-          { role: 'user', content: prompt },
-        ],
+        messages: apiMessages,
       }),
     });
 
