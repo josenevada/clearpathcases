@@ -1331,6 +1331,15 @@ const ClientWizard = () => {
                     {WARM_SUBTITLES[currentItem.label]}
                   </p>
                 )}
+                {(() => {
+                  const sectionItems = caseData.checklist.filter(i => i.category === currentItem.category);
+                  const sectionDone = sectionItems.filter(isItemEffectivelyComplete).length;
+                  return (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {sectionDone} of {sectionItems.length} done in {currentItem.category}
+                    </p>
+                  );
+                })()}
               </header>
 
 
@@ -1599,11 +1608,6 @@ const ClientWizard = () => {
                       />
                     )}
                   </AnimatePresence>
-                  {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
-                    <p className="text-xs text-muted-foreground text-center mt-3">
-                      {caseData.checklist.filter(isItemEffectivelyComplete).length} of {caseData.checklist.length} documents done
-                    </p>
-                  )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
@@ -1753,11 +1757,6 @@ const ClientWizard = () => {
                       onChange={handleSingleFileUpload}
                     />
                   </div>
-                  {!showSuccess && !showMilestone && !showStepTransition && progress < 100 && (
-                    <p className="text-xs text-muted-foreground text-center mt-3">
-                      {caseData.checklist.filter(isItemEffectivelyComplete).length} of {caseData.checklist.length} documents done
-                    </p>
-                  )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
@@ -1871,7 +1870,7 @@ const ClientWizard = () => {
               </Button>
             )}
             {(currentItemIdx > 0 || currentCategoryIdx > 0) && (
-              <button onClick={goBack} className="text-sm text-muted-foreground hover:text-primary transition-colors mx-auto mt-1">
+              <button onClick={goBack} className="text-sm text-muted-foreground hover:text-primary transition-colors mt-1 block mx-auto text-center">
                 ← Back
               </button>
             )}
@@ -1997,7 +1996,7 @@ const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: numb
     <div className="flex items-center justify-between px-4 py-3">
       <Logo size="sm" clickable={false} />
       <span className="text-sm text-muted-foreground font-body tabular-nums">
-        {progress}%
+        Step {step} of {totalSteps}
       </span>
     </div>
     <div className="h-2 bg-secondary rounded-full mx-4">
