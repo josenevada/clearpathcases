@@ -1997,7 +1997,7 @@ const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: numb
     <div className="flex items-center justify-between px-4 py-3">
       <Logo size="sm" clickable={false} />
       <span className="text-sm text-muted-foreground font-body tabular-nums">
-        {progress}%
+        Step {step} of {totalSteps}
       </span>
     </div>
     <div className="h-2 bg-secondary rounded-full mx-4">
