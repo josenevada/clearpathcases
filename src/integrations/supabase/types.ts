@@ -1510,6 +1510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_case_id_by_code: { Args: { _case_code: string }; Returns: string }
       get_firm_case_ids: { Args: never; Returns: string[] }
       get_user_firm_id: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
