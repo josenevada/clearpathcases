@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X, Camera } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X, Camera, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import CorrectionNoteCard from '@/components/wizard/CorrectionNoteCard';
 import DocumentHelpChat from '@/components/wizard/DocumentHelpChat';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
+import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
@@ -152,6 +153,7 @@ const ClientWizard = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const targetFixItemId = searchParams.get('fix');
 
   // Helper: update caseData in React state only (no localStorage)
@@ -413,6 +415,13 @@ const ClientWizard = () => {
     setWhyOpen(false); setShowSuccess(false); setShowMilestone(null); setShowStepTransition(null);
     setCurrentCategoryIdx(position.categoryIdx); setCurrentItemIdx(position.itemIdx);
     setSearchParams({ fix: itemId }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleSidebarNavigate = useCallback((catIdx: number, itemIdx: number) => {
+    setWhyOpen(false); setShowSuccess(false); setShowMilestone(null); setShowStepTransition(null);
+    setCurrentCategoryIdx(catIdx);
+    setCurrentItemIdx(itemIdx);
+    setSearchParams({}, { replace: true });
   }, [setSearchParams]);
 
   // Reset fields when item changes
@@ -1191,28 +1200,151 @@ const ClientWizard = () => {
 
   const pendingCount = caseData.checklist.filter(i => !i.notApplicable && !isItemEffectivelyComplete(i)).length;
 
+  // Collect all open corrections
+  const openCorrections = caseData.checklist.filter(i => i.correctionRequest?.status === 'open');
+  const showMultiCorrectionScreen = openCorrections.length >= 2;
+
+  // Sidebar component for reuse
+  const sidebarContent = (
+    <WizardSidebar
+      checklist={caseData.checklist}
+      currentCategoryIdx={currentCategoryIdx}
+      currentItemIdx={currentItemIdx}
+      onNavigate={handleSidebarNavigate}
+      onClose={() => setSidebarOpen(false)}
+    />
+  );
+
+  // Desktop sidebar (always visible on lg+)
+  const desktopSidebar = (
+    <div className="hidden lg:block w-[280px] flex-shrink-0 border-r border-border h-screen sticky top-0 overflow-y-auto">
+      <WizardSidebar
+        checklist={caseData.checklist}
+        currentCategoryIdx={currentCategoryIdx}
+        currentItemIdx={currentItemIdx}
+        onNavigate={handleSidebarNavigate}
+      />
+    </div>
+  );
+
+  // Mobile sidebar overlay
+  const mobileSidebar = (
+    <AnimatePresence>
+      {sidebarOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[80] bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute left-0 top-0 bottom-0 w-[280px] shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {sidebarContent}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   if (progress === 100 && !showMilestone && !showSuccess) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" />
-        {hasPortalCorrection && openCorrectionItem && (
-          <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
-        )}
-        <div className="flex-1 flex items-center justify-center px-6">
-          <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-14 h-14 text-primary" />
-            </div>
-            <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're all done — great work.</h2>
-            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-              Your documents have been sent to {caseData.assignedAttorney || 'your attorney'}. They'll review everything and reach out within 1–2 business days. You can close this window.
-            </p>
-            <div className="surface-card p-6 text-left space-y-2 rounded-xl">
-              <p className="text-sm text-muted-foreground">Questions? Your team is here for you:</p>
-              <p className="text-foreground font-medium">{caseData.assignedAttorney}</p>
-              <p className="text-foreground font-medium">{caseData.assignedParalegal}</p>
-            </div>
-          </motion.div>
+      <div className="min-h-screen flex flex-row">
+        {desktopSidebar}
+        {mobileSidebar}
+        <div className="flex-1 flex flex-col min-h-screen">
+          <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" onMenuClick={() => setSidebarOpen(true)} />
+          {hasPortalCorrection && openCorrectionItem && (
+            <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
+          )}
+          <div className="flex-1 flex items-center justify-center px-6">
+            <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-14 h-14 text-primary" />
+              </div>
+              <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're all done — great work.</h2>
+              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+                Your documents have been sent to {caseData.assignedAttorney || 'your attorney'}. They'll review everything and reach out within 1–2 business days. You can close this window.
+              </p>
+              <Button onClick={() => setSidebarOpen(true)} size="lg" className="w-full max-w-xs mb-3 lg:hidden">
+                Review my documents
+              </Button>
+              <button
+                onClick={() => {
+                  // Go back to the first item
+                  handleSidebarNavigate(0, 0);
+                }}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors block mx-auto"
+              >
+                ← Go back to review
+              </button>
+              <div className="surface-card p-6 text-left space-y-2 rounded-xl mt-8">
+                <p className="text-sm text-muted-foreground">Questions? Your team is here for you:</p>
+                <p className="text-foreground font-medium">{caseData.assignedAttorney}</p>
+                <p className="text-foreground font-medium">{caseData.assignedParalegal}</p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Multi-correction action screen
+  if (showMultiCorrectionScreen) {
+    return (
+      <div className="min-h-screen flex flex-row">
+        {desktopSidebar}
+        {mobileSidebar}
+        <div className="flex-1 flex flex-col min-h-screen">
+          <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} />
+          <div className="flex-1 flex items-center justify-center px-6 pb-24">
+            <motion.div {...pageTransition} className="max-w-md mx-auto w-full">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-warning" />
+                </div>
+                <h2 className="font-display text-2xl font-bold text-foreground mb-2">Your attorney needs a few things</h2>
+                <p className="text-muted-foreground text-sm">Tap any item below to fix it — your attorney is waiting on these before they can move forward.</p>
+              </div>
+              <div className="space-y-2 mb-6">
+                {openCorrections.map(item => {
+                  const position = getChecklistItemPosition(caseData, item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (position) handleSidebarNavigate(position.categoryIdx, position.itemIdx);
+                      }}
+                      className="w-full text-left surface-card p-4 rounded-xl border border-destructive/20 hover:border-destructive/40 transition-colors"
+                    >
+                      <p className="text-foreground font-medium text-sm">{item.label}</p>
+                      {item.correctionRequest?.reason && (
+                        <p className="text-muted-foreground text-xs mt-1">{item.correctionRequest.reason}</p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <Button
+                onClick={() => {
+                  const first = openCorrections[0];
+                  const pos = getChecklistItemPosition(caseData, first.id);
+                  if (pos) handleSidebarNavigate(pos.categoryIdx, pos.itemIdx);
+                }}
+                size="lg"
+                className="w-full"
+              >
+                Start fixing these →
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </div>
     );
@@ -1250,12 +1382,16 @@ const ClientWizard = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-row">
+      {desktopSidebar}
+      {mobileSidebar}
+      <div className="flex-1 flex flex-col min-h-screen">
       <WizardHeader
         progress={progress}
         step={currentCategoryIdx + 1}
         totalSteps={CATEGORIES.length}
         stepName={CATEGORIES[currentCategoryIdx]}
+        onMenuClick={() => setSidebarOpen(true)}
       />
 
       {hasPortalCorrection && openCorrectionItem && (
@@ -1987,14 +2123,22 @@ const ClientWizard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };
 
-const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: number; step: number; totalSteps: number; stepName: string }) => (
+const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick }: { progress: number; step: number; totalSteps: number; stepName: string; onMenuClick?: () => void }) => (
   <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm">
     <div className="flex items-center justify-between px-4 py-3">
-      <Logo size="sm" clickable={false} />
+      <div className="flex items-center gap-2">
+        {onMenuClick && (
+          <button onClick={onMenuClick} className="lg:hidden p-1.5 rounded-md hover:bg-muted transition-colors -ml-1">
+            <Menu className="w-5 h-5 text-muted-foreground" />
+          </button>
+        )}
+        <Logo size="sm" clickable={false} />
+      </div>
       <span className="text-sm text-muted-foreground font-body tabular-nums">
         Step {step} of {totalSteps}
       </span>
