@@ -417,6 +417,13 @@ const ClientWizard = () => {
     setSearchParams({ fix: itemId }, { replace: true });
   }, [setSearchParams]);
 
+  const handleSidebarNavigate = useCallback((catIdx: number, itemIdx: number) => {
+    setWhyOpen(false); setShowSuccess(false); setShowMilestone(null); setShowStepTransition(null);
+    setCurrentCategoryIdx(catIdx);
+    setCurrentItemIdx(itemIdx);
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
+
   // Reset fields when item changes
   useEffect(() => {
     if (!caseData) return;
