@@ -1382,12 +1382,16 @@ const ClientWizard = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-row">
+      {desktopSidebar}
+      {mobileSidebar}
+      <div className="flex-1 flex flex-col min-h-screen">
       <WizardHeader
         progress={progress}
         step={currentCategoryIdx + 1}
         totalSteps={CATEGORIES.length}
         stepName={CATEGORIES[currentCategoryIdx]}
+        onMenuClick={() => setSidebarOpen(true)}
       />
 
       {hasPortalCorrection && openCorrectionItem && (
