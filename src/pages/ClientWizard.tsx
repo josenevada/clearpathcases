@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X, Camera, Menu } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ChevronDown, AlertTriangle, ArrowLeft, Trash2, Briefcase, Loader2, Eye, EyeOff, Lock, X, Camera, Menu, Flame, Star, Zap, FileText, CreditCard, Building2, Car, Home, IdCard, ShieldCheck, Award, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -36,12 +36,56 @@ const pageTransition = {
 };
 
 const MILESTONE_THRESHOLDS = [25, 50, 75, 100];
-const MILESTONE_MESSAGES = [
-  "You're off to a great start. Every document you upload brings you one step closer to a fresh start.",
-  "You're halfway there — that's a big deal. Keep going, you're doing amazing.",
-  'Almost there! Your attorney will have nearly everything they need to move forward.',
-  "You did it — your documents are ready for review. We'll be in touch soon.",
-];
+
+// ─── Per-item success messages ────────────────────────────────────────
+const SUCCESS_MESSAGES: Record<string, string> = {
+  'Pay Stubs (Last 2 Months)': "Got your pay stubs — that's one of the most important ones.",
+  'W-2s (Last 2 Years)': "W-2s uploaded — your work history is documented.",
+  'Tax Returns (Last 2 Years)': "Tax returns received — that's a big one off the list.",
+  'Employer Name': "Employer info saved — nice and easy.",
+  'Employer Name & Address': "Employer info saved — nice and easy.",
+  'Checking/Savings Statements (Last 6 Months)': "Bank statements uploaded — your finances are documented.",
+  'Digital Wallet Statements': "Digital wallet info captured — good thinking.",
+  'Investment/Retirement Statements': "Retirement accounts documented — don't worry, they're usually protected.",
+  'Credit Card Statements (Last 3 Months)': "Credit card statements received — helps us list your debts accurately.",
+  'Loan Statements': "Loan statements uploaded — every debt documented is one less surprise.",
+  'Collection Notices': "Collection notices uploaded — we'll make sure those debts are included.",
+  'Mortgage Statement or Lease': "Housing info documented — an important piece of the picture.",
+  'Vehicle Title or Registration': "Vehicle documentation received — ownership confirmed.",
+  'Property Deed': "Property deed uploaded — we'll make sure the right protections apply.",
+  'Government-Issued Photo ID': "Identity confirmed — you're almost there.",
+  'Social Security Card': "Got it — your SSN is secured and encrypted.",
+  'Social Security Number': "Got it — your SSN is secured and encrypted.",
+  'Credit Counseling Certificate': "Counseling certificate uploaded — that requirement is handled.",
+  'Financial Disclosure Confirmation': "Financial disclosure confirmed — almost done.",
+  'Assets Disclosure Confirmation': "Assets disclosure confirmed — just a bit more.",
+  'Final Confirmation': "Final confirmation received — you're all set.",
+};
+
+// ─── Document icon mapping ────────────────────────────────────────
+const DOCUMENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  'Pay Stubs (Last 2 Months)': FileText,
+  'W-2s (Last 2 Years)': FileText,
+  'Tax Returns (Last 2 Years)': FileText,
+  'Employer Name': Briefcase,
+  'Employer Name & Address': Briefcase,
+  'Checking/Savings Statements (Last 6 Months)': Building2,
+  'Digital Wallet Statements': CreditCard,
+  'Investment/Retirement Statements': Building2,
+  'Credit Card Statements (Last 3 Months)': CreditCard,
+  'Loan Statements': FileText,
+  'Collection Notices': FileText,
+  'Mortgage Statement or Lease': Home,
+  'Vehicle Title or Registration': Car,
+  'Property Deed': Home,
+  'Government-Issued Photo ID': IdCard,
+  'Social Security Card': ShieldCheck,
+  'Social Security Number': ShieldCheck,
+  'Credit Counseling Certificate': Award,
+  'Financial Disclosure Confirmation': ClipboardCheck,
+  'Assets Disclosure Confirmation': ClipboardCheck,
+  'Final Confirmation': ClipboardCheck,
+};
 
 // Human subtitles for each document step
 const WARM_SUBTITLES: Record<string, string> = {
@@ -1254,41 +1298,91 @@ const ClientWizard = () => {
   );
 
   if (progress === 100 && !showMilestone && !showSuccess) {
+    const attorneyName = caseData.assignedAttorney || 'your attorney';
     return (
       <div className="min-h-screen flex flex-row">
         {desktopSidebar}
         {mobileSidebar}
         <div className="flex-1 flex flex-col min-h-screen">
-          <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" onMenuClick={() => setSidebarOpen(true)} />
           {hasPortalCorrection && openCorrectionItem && (
             <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
           )}
-          <div className="flex-1 flex items-center justify-center px-6">
+          <div className="flex-1 flex items-center justify-center px-6 py-16">
             <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-14 h-14 text-primary" />
+              {/* Animated SVG checkmark */}
+              <div className="relative w-28 h-28 mx-auto mb-8">
+                {/* Radial glow */}
+                <div className="absolute inset-0 rounded-full" style={{
+                  background: 'radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 70%)',
+                  transform: 'scale(2.5)',
+                }} />
+                <svg viewBox="0 0 100 100" className="w-28 h-28 relative z-10">
+                  <motion.circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke="hsl(var(--success))"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{ filter: 'drop-shadow(0 0 8px hsl(var(--success) / 0.3))' }}
+                  />
+                  <motion.path
+                    d="M30 52 L44 66 L70 38"
+                    fill="none"
+                    stroke="hsl(var(--success))"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.5, ease: 'easeOut' }}
+                  />
+                </svg>
               </div>
-              <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're all done — great work.</h2>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Your documents have been sent to {caseData.assignedAttorney || 'your attorney'}. They'll review everything and reach out within 1–2 business days. You can close this window.
+
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                You did it.
+              </h2>
+              <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
+                Every document has been sent to {attorneyName}. You've done your part — they'll take it from here.
               </p>
-              <Button onClick={() => setSidebarOpen(true)} size="lg" className="w-full max-w-xs mb-3 lg:hidden">
+
+              {/* Reassurance card */}
+              <div className="surface-card p-6 text-left rounded-xl space-y-3 mb-8">
+                {caseData.assignedAttorney && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-sm">{caseData.assignedAttorney.charAt(0)}</span>
+                    </div>
+                    <p className="text-foreground font-medium text-sm">{caseData.assignedAttorney}</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Your attorney will review everything and be in touch within 1–2 business days.
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Questions? Reply to the text we sent you.
+                </p>
+              </div>
+
+              <Button variant="ghost" onClick={() => setSidebarOpen(true)} size="lg" className="w-full max-w-xs mb-2 lg:hidden">
                 Review my documents
               </Button>
               <button
-                onClick={() => {
-                  // Go back to the first item
-                  handleSidebarNavigate(0, 0);
-                }}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors block mx-auto"
+                onClick={() => handleSidebarNavigate(0, 0)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors block mx-auto lg:hidden"
               >
                 ← Go back to review
               </button>
-              <div className="surface-card p-6 text-left space-y-2 rounded-xl mt-8">
-                <p className="text-sm text-muted-foreground">Questions? Your team is here for you:</p>
-                <p className="text-foreground font-medium">{caseData.assignedAttorney}</p>
-                <p className="text-foreground font-medium">{caseData.assignedParalegal}</p>
-              </div>
+              {/* Desktop: just a text link since sidebar is always visible */}
+              <button
+                onClick={() => handleSidebarNavigate(0, 0)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors hidden lg:block mx-auto mt-2"
+              >
+                ← Go back to review
+              </button>
             </motion.div>
           </div>
         </div>
@@ -1425,36 +1519,100 @@ const ClientWizard = () => {
             />
           ) : showMilestone !== null ? (
             <motion.div key="milestone" {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-primary" />
-              </div>
-              <h2 className="font-display text-3xl font-bold text-foreground mb-4">
-                {showMilestone}% done
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                {MILESTONE_MESSAGES[MILESTONE_THRESHOLDS.indexOf(showMilestone)]}
-              </p>
-              {showMilestone < 100 && (
-                <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">
-                  Keep going →
-                </Button>
+              {showMilestone === 25 && (
+                <>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-6">
+                    <Flame className="w-10 h-10 text-warning" />
+                  </motion.div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're off to a strong start.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">Quarter of the way there. Every document you've uploaded is one less thing standing between you and your fresh start.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">Keep the momentum →</Button>
+                </>
+              )}
+              {showMilestone === 50 && (
+                <>
+                  <div className="relative w-20 h-20 mx-auto mb-6">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Star className="w-16 h-16 text-primary" />
+                    </motion.div>
+                    {/* Confetti dots */}
+                    {[...Array(8)].map((_, i) => {
+                      const angle = (i / 8) * Math.PI * 2;
+                      const colors = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(172 100% 38%)', 'hsl(45 93% 58%)', 'hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))'];
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+                          animate={{
+                            x: Math.cos(angle) * 60,
+                            y: Math.sin(angle) * 60,
+                            scale: [0, 1.2, 0.8],
+                            opacity: [0, 1, 0],
+                          }}
+                          transition={{ duration: 1.2, delay: 0.3 + i * 0.05, ease: 'easeOut' }}
+                          className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full -translate-x-1/2 -translate-y-1/2"
+                          style={{ backgroundColor: colors[i] }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">Halfway there — seriously.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">This is the hardest part for most people and you pushed through it. Your attorney already has enough to start working on your case.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">Let's finish this →</Button>
+                </>
+              )}
+              {showMilestone === 75 && (
+                <>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-6">
+                    <Zap className="w-10 h-10 text-warning" />
+                  </motion.div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">Almost done — don't stop now.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">Three quarters of the way there. Your attorney is waiting on just a few more things before they can move forward.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">Finish strong →</Button>
+                </>
+              )}
+              {showMilestone === 100 && (
+                <>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="w-10 h-10 text-success" />
+                  </motion.div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">Every document is in.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">You've done your part — your attorney will take it from here.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">See summary →</Button>
+                </>
               )}
             </motion.div>
           ) : showSuccess ? (
             <motion.div key="success" {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-success animate-scale-check" />
-              </div>
-              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-                {currentItem?.label} saved
-              </h2>
-              <p className="text-muted-foreground">
-                {currentItemIdx < categoryItems.length - 1
-                  ? `Next up: ${categoryItems[currentItemIdx + 1]?.label}`
+              {(() => {
+                const IconComp = (currentItem && DOCUMENT_ICONS[currentItem.label]) || CheckCircle2;
+                const message = (currentItem && SUCCESS_MESSAGES[currentItem.label]) || "Saved — one step closer.";
+                const nextLabel = currentItemIdx < categoryItems.length - 1
+                  ? categoryItems[currentItemIdx + 1]?.label
                   : currentCategoryIdx < CATEGORIES.length - 1
-                    ? `Next: ${CATEGORIES[currentCategoryIdx + 1]}`
-                    : 'Almost done!'}
-              </p>
+                    ? CATEGORIES[currentCategoryIdx + 1]
+                    : null;
+                return (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                      className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-5"
+                    >
+                      <IconComp className="w-10 h-10 text-success" />
+                    </motion.div>
+                    <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground mb-2 leading-snug">
+                      {message}
+                    </h2>
+                    {nextLabel && (
+                      <p className="text-muted-foreground text-sm mt-3">
+                        Next: {nextLabel}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </motion.div>
           ) : currentItem ? (
             <motion.div key={currentItem.id} {...pageTransition} className="max-w-md mx-auto w-full">

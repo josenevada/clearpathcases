@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CATEGORIES, type Case } from '@/lib/store';
+import { CATEGORIES, isItemEffectivelyComplete, type Case } from '@/lib/store';
 
 interface StepTransitionProps {
   completedStepIdx: number;
@@ -20,33 +20,69 @@ const StepTransition = ({ completedStepIdx, caseData, onContinue }: StepTransiti
   const completedName = CATEGORIES[completedStepIdx];
   const nextIdx = completedStepIdx + 1;
   const nextName = CATEGORIES[nextIdx];
+  const completedItems = caseData.checklist.filter(i => i.category === completedName);
   const nextItems = caseData.checklist.filter(i => i.category === nextName);
-  const totalCompleted = caseData.checklist.filter(i => i.completed).length;
-  const totalItems = caseData.checklist.length;
+  const nextPreview = nextItems.slice(0, 2);
 
   return (
-    <motion.div {...pageTransition} className="max-w-md mx-auto w-full text-center">
-      <div className="flex items-center justify-center gap-2 mb-6">
-        <CheckCircle2 className="w-6 h-6 text-success" />
-        <span className="text-success font-display font-bold text-lg">
-          Step {completedStepIdx + 1} complete
-        </span>
+    <motion.div {...pageTransition} className="max-w-md mx-auto w-full">
+      {/* Animated checkmark */}
+      <div className="flex justify-center mb-6">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+          className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center"
+        >
+          <CheckCircle2 className="w-9 h-9 text-success" />
+        </motion.div>
       </div>
 
-      <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-3">
-        Up next: {nextName}
+      {/* Heading */}
+      <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground text-center mb-5">
+        You finished {completedName}
       </h2>
 
-      <p className="text-muted-foreground text-lg font-body mb-2">
-        {nextItems.length} {nextItems.length === 1 ? 'thing' : 'things'} to gather
-      </p>
+      {/* Completed items list */}
+      <div className="space-y-1.5 mb-6">
+        {completedItems.map((item, i) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 + i * 0.05 }}
+            className="flex items-center gap-2 px-3 py-1.5"
+          >
+            <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+            <span className="text-sm text-muted-foreground truncate">{item.label}</span>
+          </motion.div>
+        ))}
+      </div>
 
-      <p className="text-muted-foreground/70 text-sm font-body mb-10">
-        You've completed {totalCompleted} of {totalItems} items overall
-      </p>
+      {/* Divider + next section */}
+      {nextName && (
+        <>
+          <div className="border-t border-border my-5" />
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Up next</p>
+          <p className="text-primary font-display font-bold text-lg mb-3">{nextName}</p>
+          <div className="space-y-1 mb-8">
+            {nextPreview.map(item => (
+              <div key={item.id} className="flex items-center gap-2 px-3 py-1">
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
+                <span className="text-sm text-muted-foreground">{item.label}</span>
+              </div>
+            ))}
+            {nextItems.length > 2 && (
+              <p className="text-xs text-muted-foreground/60 px-3">
+                + {nextItems.length - 2} more
+              </p>
+            )}
+          </div>
+        </>
+      )}
 
-      <Button onClick={onContinue} size="lg" className="w-full max-w-xs">
-        Let's go →
+      <Button onClick={onContinue} size="lg" className="w-full max-w-xs mx-auto block">
+        Start {nextName} →
       </Button>
     </motion.div>
   );
