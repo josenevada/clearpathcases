@@ -1298,41 +1298,91 @@ const ClientWizard = () => {
   );
 
   if (progress === 100 && !showMilestone && !showSuccess) {
+    const attorneyName = caseData.assignedAttorney || 'your attorney';
     return (
       <div className="min-h-screen flex flex-row">
         {desktopSidebar}
         {mobileSidebar}
         <div className="flex-1 flex flex-col min-h-screen">
-          <WizardHeader progress={100} step={6} totalSteps={6} stepName="Complete" onMenuClick={() => setSidebarOpen(true)} />
           {hasPortalCorrection && openCorrectionItem && (
             <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
           )}
-          <div className="flex-1 flex items-center justify-center px-6">
+          <div className="flex-1 flex items-center justify-center px-6 py-16">
             <motion.div {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-14 h-14 text-primary" />
+              {/* Animated SVG checkmark */}
+              <div className="relative w-28 h-28 mx-auto mb-8">
+                {/* Radial glow */}
+                <div className="absolute inset-0 rounded-full" style={{
+                  background: 'radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 70%)',
+                  transform: 'scale(2.5)',
+                }} />
+                <svg viewBox="0 0 100 100" className="w-28 h-28 relative z-10">
+                  <motion.circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke="hsl(var(--success))"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{ filter: 'drop-shadow(0 0 8px hsl(var(--success) / 0.3))' }}
+                  />
+                  <motion.path
+                    d="M30 52 L44 66 L70 38"
+                    fill="none"
+                    stroke="hsl(var(--success))"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.5, ease: 'easeOut' }}
+                  />
+                </svg>
               </div>
-              <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're all done — great work.</h2>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Your documents have been sent to {caseData.assignedAttorney || 'your attorney'}. They'll review everything and reach out within 1–2 business days. You can close this window.
+
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                You did it.
+              </h2>
+              <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
+                Every document has been sent to {attorneyName}. You've done your part — they'll take it from here.
               </p>
-              <Button onClick={() => setSidebarOpen(true)} size="lg" className="w-full max-w-xs mb-3 lg:hidden">
+
+              {/* Reassurance card */}
+              <div className="surface-card p-6 text-left rounded-xl space-y-3 mb-8">
+                {caseData.assignedAttorney && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-sm">{caseData.assignedAttorney.charAt(0)}</span>
+                    </div>
+                    <p className="text-foreground font-medium text-sm">{caseData.assignedAttorney}</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Your attorney will review everything and be in touch within 1–2 business days.
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Questions? Reply to the text we sent you.
+                </p>
+              </div>
+
+              <Button variant="ghost" onClick={() => setSidebarOpen(true)} size="lg" className="w-full max-w-xs mb-2 lg:hidden">
                 Review my documents
               </Button>
               <button
-                onClick={() => {
-                  // Go back to the first item
-                  handleSidebarNavigate(0, 0);
-                }}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors block mx-auto"
+                onClick={() => handleSidebarNavigate(0, 0)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors block mx-auto lg:hidden"
               >
                 ← Go back to review
               </button>
-              <div className="surface-card p-6 text-left space-y-2 rounded-xl mt-8">
-                <p className="text-sm text-muted-foreground">Questions? Your team is here for you:</p>
-                <p className="text-foreground font-medium">{caseData.assignedAttorney}</p>
-                <p className="text-foreground font-medium">{caseData.assignedParalegal}</p>
-              </div>
+              {/* Desktop: just a text link since sidebar is always visible */}
+              <button
+                onClick={() => handleSidebarNavigate(0, 0)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors hidden lg:block mx-auto mt-2"
+              >
+                ← Go back to review
+              </button>
             </motion.div>
           </div>
         </div>
