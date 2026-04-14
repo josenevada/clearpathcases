@@ -36,12 +36,56 @@ const pageTransition = {
 };
 
 const MILESTONE_THRESHOLDS = [25, 50, 75, 100];
-const MILESTONE_MESSAGES = [
-  "You're off to a great start. Every document you upload brings you one step closer to a fresh start.",
-  "You're halfway there — that's a big deal. Keep going, you're doing amazing.",
-  'Almost there! Your attorney will have nearly everything they need to move forward.',
-  "You did it — your documents are ready for review. We'll be in touch soon.",
-];
+
+// ─── Per-item success messages ────────────────────────────────────────
+const SUCCESS_MESSAGES: Record<string, string> = {
+  'Pay Stubs (Last 2 Months)': "Got your pay stubs — that's one of the most important ones.",
+  'W-2s (Last 2 Years)': "W-2s uploaded — your work history is documented.",
+  'Tax Returns (Last 2 Years)': "Tax returns received — that's a big one off the list.",
+  'Employer Name': "Employer info saved — nice and easy.",
+  'Employer Name & Address': "Employer info saved — nice and easy.",
+  'Checking/Savings Statements (Last 6 Months)': "Bank statements uploaded — your finances are documented.",
+  'Digital Wallet Statements': "Digital wallet info captured — good thinking.",
+  'Investment/Retirement Statements': "Retirement accounts documented — don't worry, they're usually protected.",
+  'Credit Card Statements (Last 3 Months)': "Credit card statements received — helps us list your debts accurately.",
+  'Loan Statements': "Loan statements uploaded — every debt documented is one less surprise.",
+  'Collection Notices': "Collection notices uploaded — we'll make sure those debts are included.",
+  'Mortgage Statement or Lease': "Housing info documented — an important piece of the picture.",
+  'Vehicle Title or Registration': "Vehicle documentation received — ownership confirmed.",
+  'Property Deed': "Property deed uploaded — we'll make sure the right protections apply.",
+  'Government-Issued Photo ID': "Identity confirmed — you're almost there.",
+  'Social Security Card': "Got it — your SSN is secured and encrypted.",
+  'Social Security Number': "Got it — your SSN is secured and encrypted.",
+  'Credit Counseling Certificate': "Counseling certificate uploaded — that requirement is handled.",
+  'Financial Disclosure Confirmation': "Financial disclosure confirmed — almost done.",
+  'Assets Disclosure Confirmation': "Assets disclosure confirmed — just a bit more.",
+  'Final Confirmation': "Final confirmation received — you're all set.",
+};
+
+// ─── Document icon mapping ────────────────────────────────────────
+const DOCUMENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  'Pay Stubs (Last 2 Months)': FileText,
+  'W-2s (Last 2 Years)': FileText,
+  'Tax Returns (Last 2 Years)': FileText,
+  'Employer Name': Briefcase,
+  'Employer Name & Address': Briefcase,
+  'Checking/Savings Statements (Last 6 Months)': Building2,
+  'Digital Wallet Statements': CreditCard,
+  'Investment/Retirement Statements': Building2,
+  'Credit Card Statements (Last 3 Months)': CreditCard,
+  'Loan Statements': FileText,
+  'Collection Notices': FileText,
+  'Mortgage Statement or Lease': Home,
+  'Vehicle Title or Registration': Car,
+  'Property Deed': Home,
+  'Government-Issued Photo ID': IdCard,
+  'Social Security Card': ShieldCheck,
+  'Social Security Number': ShieldCheck,
+  'Credit Counseling Certificate': Award,
+  'Financial Disclosure Confirmation': ClipboardCheck,
+  'Assets Disclosure Confirmation': ClipboardCheck,
+  'Final Confirmation': ClipboardCheck,
+};
 
 // Human subtitles for each document step
 const WARM_SUBTITLES: Record<string, string> = {
