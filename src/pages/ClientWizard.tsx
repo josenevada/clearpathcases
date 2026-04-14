@@ -153,6 +153,7 @@ const ClientWizard = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const targetFixItemId = searchParams.get('fix');
 
   // Helper: update caseData in React state only (no localStorage)
