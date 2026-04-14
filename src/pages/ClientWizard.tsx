@@ -2123,10 +2123,17 @@ const ClientWizard = () => {
   );
 };
 
-const WizardHeader = ({ progress, step, totalSteps, stepName }: { progress: number; step: number; totalSteps: number; stepName: string }) => (
+const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick }: { progress: number; step: number; totalSteps: number; stepName: string; onMenuClick?: () => void }) => (
   <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm">
     <div className="flex items-center justify-between px-4 py-3">
-      <Logo size="sm" clickable={false} />
+      <div className="flex items-center gap-2">
+        {onMenuClick && (
+          <button onClick={onMenuClick} className="lg:hidden p-1.5 rounded-md hover:bg-muted transition-colors -ml-1">
+            <Menu className="w-5 h-5 text-muted-foreground" />
+          </button>
+        )}
+        <Logo size="sm" clickable={false} />
+      </div>
       <span className="text-sm text-muted-foreground font-body tabular-nums">
         Step {step} of {totalSteps}
       </span>
