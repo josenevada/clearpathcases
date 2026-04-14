@@ -28,8 +28,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
   const [showMobileOptions, setShowMobileOptions] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onFileAdd(file);
+    Array.from(e.target.files || []).forEach(file => onFileAdd(file));
     e.target.value = '';
   };
 
@@ -146,6 +145,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
           type="file"
           className="hidden"
           accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+          multiple
           onChange={handleChange}
         />
         <input
