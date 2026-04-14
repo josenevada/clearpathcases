@@ -2123,6 +2123,7 @@ const ClientWizard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };
