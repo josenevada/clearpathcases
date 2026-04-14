@@ -2188,7 +2188,7 @@ const ClientWizard = () => {
           isOpen={alexChatOpen}
           onOpenChange={setAlexChatOpen}
         />
-      )
+      )}
       {/* Persistent hidden file inputs for mobile */}
       <input
         ref={(el) => { (window as any).__mobileCamera = el; }}
