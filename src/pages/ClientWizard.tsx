@@ -1469,36 +1469,100 @@ const ClientWizard = () => {
             />
           ) : showMilestone !== null ? (
             <motion.div key="milestone" {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-primary" />
-              </div>
-              <h2 className="font-display text-3xl font-bold text-foreground mb-4">
-                {showMilestone}% done
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                {MILESTONE_MESSAGES[MILESTONE_THRESHOLDS.indexOf(showMilestone)]}
-              </p>
-              {showMilestone < 100 && (
-                <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">
-                  Keep going →
-                </Button>
+              {showMilestone === 25 && (
+                <>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-6">
+                    <Flame className="w-10 h-10 text-warning" />
+                  </motion.div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">You're off to a strong start.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">Quarter of the way there. Every document you've uploaded is one less thing standing between you and your fresh start.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">Keep the momentum →</Button>
+                </>
+              )}
+              {showMilestone === 50 && (
+                <>
+                  <div className="relative w-20 h-20 mx-auto mb-6">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Star className="w-16 h-16 text-primary" />
+                    </motion.div>
+                    {/* Confetti dots */}
+                    {[...Array(8)].map((_, i) => {
+                      const angle = (i / 8) * Math.PI * 2;
+                      const colors = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(172 100% 38%)', 'hsl(45 93% 58%)', 'hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))'];
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+                          animate={{
+                            x: Math.cos(angle) * 60,
+                            y: Math.sin(angle) * 60,
+                            scale: [0, 1.2, 0.8],
+                            opacity: [0, 1, 0],
+                          }}
+                          transition={{ duration: 1.2, delay: 0.3 + i * 0.05, ease: 'easeOut' }}
+                          className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full -translate-x-1/2 -translate-y-1/2"
+                          style={{ backgroundColor: colors[i] }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">Halfway there — seriously.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">This is the hardest part for most people and you pushed through it. Your attorney already has enough to start working on your case.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">Let's finish this →</Button>
+                </>
+              )}
+              {showMilestone === 75 && (
+                <>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-6">
+                    <Zap className="w-10 h-10 text-warning" />
+                  </motion.div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">Almost done — don't stop now.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">Three quarters of the way there. Your attorney is waiting on just a few more things before they can move forward.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">Finish strong →</Button>
+                </>
+              )}
+              {showMilestone === 100 && (
+                <>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="w-10 h-10 text-success" />
+                  </motion.div>
+                  <h2 className="font-display text-3xl font-bold text-foreground mb-4">Every document is in.</h2>
+                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">You've done your part — your attorney will take it from here.</p>
+                  <Button onClick={handleDismissMilestone} size="lg" className="w-full max-w-xs">See summary →</Button>
+                </>
               )}
             </motion.div>
           ) : showSuccess ? (
             <motion.div key="success" {...pageTransition} className="max-w-md mx-auto text-center">
-              <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-success animate-scale-check" />
-              </div>
-              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-                {currentItem?.label} saved
-              </h2>
-              <p className="text-muted-foreground">
-                {currentItemIdx < categoryItems.length - 1
-                  ? `Next up: ${categoryItems[currentItemIdx + 1]?.label}`
+              {(() => {
+                const IconComp = (currentItem && DOCUMENT_ICONS[currentItem.label]) || CheckCircle2;
+                const message = (currentItem && SUCCESS_MESSAGES[currentItem.label]) || "Saved — one step closer.";
+                const nextLabel = currentItemIdx < categoryItems.length - 1
+                  ? categoryItems[currentItemIdx + 1]?.label
                   : currentCategoryIdx < CATEGORIES.length - 1
-                    ? `Next: ${CATEGORIES[currentCategoryIdx + 1]}`
-                    : 'Almost done!'}
-              </p>
+                    ? CATEGORIES[currentCategoryIdx + 1]
+                    : null;
+                return (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                      className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-5"
+                    >
+                      <IconComp className="w-10 h-10 text-success" />
+                    </motion.div>
+                    <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground mb-2 leading-snug">
+                      {message}
+                    </h2>
+                    {nextLabel && (
+                      <p className="text-muted-foreground text-sm mt-3">
+                        Next: {nextLabel}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </motion.div>
           ) : currentItem ? (
             <motion.div key={currentItem.id} {...pageTransition} className="max-w-md mx-auto w-full">
