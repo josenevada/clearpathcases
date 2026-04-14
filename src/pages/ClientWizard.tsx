@@ -1262,7 +1262,7 @@ const ClientWizard = () => {
 
   // Desktop sidebar (always visible on lg+)
   const desktopSidebar = (
-    <div className="hidden lg:block w-[280px] flex-shrink-0 border-r border-border h-screen sticky top-0 overflow-y-auto">
+    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-screen sticky top-0 overflow-y-auto">
       <WizardSidebar
         checklist={caseData.checklist}
         currentCategoryIdx={currentCategoryIdx}
@@ -1509,7 +1509,7 @@ const ClientWizard = () => {
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center px-6 pb-24">
+      <div className="flex-1 flex items-center justify-center px-6 lg:px-12 pb-24">
         <AnimatePresence mode="wait">
           {showStepTransition !== null ? (
             <StepTransition
@@ -1616,7 +1616,7 @@ const ClientWizard = () => {
               })()}
             </motion.div>
           ) : currentItem ? (
-            <motion.div key={currentItem.id} {...pageTransition} className="max-w-md mx-auto w-full">
+            <motion.div key={currentItem.id} {...pageTransition} className="max-w-md lg:max-w-xl mx-auto w-full">
               <header className="mb-6">
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2 leading-tight">
                   {currentItem.label}
