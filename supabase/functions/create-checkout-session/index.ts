@@ -10,7 +10,7 @@ const corsHeaders = {
 const PRICE_MAP: Record<string, string> = {
   starter: "price_1TDTgBRwKiGRq1RZ89pOglAI",
   professional: "price_1TDThARwKiGRq1RZPOq2AsKy",
-  firm: "price_1TDTp5RwKiGRq1RZaqvm4t1U",
+  firm: "price_1TFMr0RwKiGRq1RZqtfSMg4m",
 };
 
 serve(async (req) => {
@@ -33,50 +33,37 @@ serve(async (req) => {
     const { plan } = await req.json();
     const priceId = PRICE_MAP[plan] || PRICE_MAP.starter;
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Find or create customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId: string;
+    let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { user_id: user.id },
-      });
-      customerId = customer.id;
     }
 
-    // Create subscription with incomplete payment
-    const subscription = await stripe.subscriptions.create({
+    const origin = req.headers.get("origin") || "https://clearpathcases.lovable.app";
+
+    // Use Stripe-hosted Checkout Session (most reliable approach)
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      items: [{ price: priceId }],
-      payment_behavior: "default_incomplete",
-      payment_settings: {
-        payment_method_types: ["card"],
-        save_default_payment_method: "on_subscription",
-      },
-      expand: ["latest_invoice.payment_intent"],
+      customer_email: customerId ? undefined : user.email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: "subscription",
+      success_url: `${origin}/paralegal/settings?tab=billing&success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/paralegal/settings?tab=billing`,
       metadata: { plan, user_id: user.id },
     });
 
-    const invoice = subscription.latest_invoice as any;
-    const paymentIntent = invoice?.payment_intent;
-    if (!paymentIntent?.client_secret) {
-      throw new Error("Failed to create payment intent for subscription");
-    }
-
-    return new Response(JSON.stringify({
-      clientSecret: paymentIntent.client_secret,
-      subscriptionId: subscription.id,
-    }), {
+    return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    console.error("[create-checkout-session] Error:", (error as Error).message);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
