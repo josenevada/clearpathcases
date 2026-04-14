@@ -56,15 +56,18 @@ serve(async (req) => {
       items: [{ price: priceId }],
       payment_behavior: "default_incomplete",
       payment_settings: {
-        payment_method_types: ["card", "us_bank_account"],
+        payment_method_types: ["card"],
         save_default_payment_method: "on_subscription",
       },
       expand: ["latest_invoice.payment_intent"],
       metadata: { plan, user_id: user.id },
     });
 
-    const invoice = subscription.latest_invoice as Stripe.Invoice;
-    const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+    const invoice = subscription.latest_invoice as any;
+    const paymentIntent = invoice?.payment_intent;
+    if (!paymentIntent?.client_secret) {
+      throw new Error("Failed to create payment intent for subscription");
+    }
 
     return new Response(JSON.stringify({
       clientSecret: paymentIntent.client_secret,
