@@ -1841,7 +1841,6 @@ const ClientWizard = () => {
                     }
                   />
                   <div className="flex flex-col items-center gap-2 mt-2">
-                    <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     <button
                       onClick={() => setShowNaFlow(true)}
                       className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
@@ -1904,7 +1903,6 @@ const ClientWizard = () => {
                     )}
                   </AnimatePresence>
                   <div className="flex flex-col items-center gap-2 mt-2">
-                    <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                         Skip this item
@@ -2053,7 +2051,6 @@ const ClientWizard = () => {
                     />
                   </div>
                   <div className="flex flex-col items-center gap-2 mt-2">
-                    <DocumentHelpChat documentLabel={currentItem.label} category={currentItem.category} chapterType={caseData.chapterType} />
                     {!currentItem.required && !currentItem.completed && !currentItemHasOpenCorrection && (
                       <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                         Skip for now
@@ -2172,6 +2169,26 @@ const ClientWizard = () => {
           </div>
         </div>
       )}
+      {/* Floating "Ask Alex" pill — visible on document steps only */}
+      {!showSuccess && !showMilestone && showStepTransition === null && currentItem && (
+        <button
+          onClick={() => setAlexChatOpen(true)}
+          className="fixed bottom-20 left-4 z-40 flex items-center gap-2 bg-secondary border border-border text-foreground text-sm px-4 py-2 rounded-full shadow-sm hover:border-primary/40 transition-colors"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Ask Alex
+        </button>
+      )}
+      {/* Controlled Alex chat panel */}
+      {currentItem && (
+        <DocumentHelpChat
+          documentLabel={currentItem.label}
+          category={currentItem.category}
+          chapterType={caseData.chapterType}
+          isOpen={alexChatOpen}
+          onOpenChange={setAlexChatOpen}
+        />
+      )
       {/* Persistent hidden file inputs for mobile */}
       <input
         ref={(el) => { (window as any).__mobileCamera = el; }}
