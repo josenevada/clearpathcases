@@ -50,11 +50,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
   const isFlagged = (vs?: string) => vs === 'warning' || vs === 'failed';
 
   return (
-    <div className="space-y-3">
-      {/* Helper text */}
-      <p className="text-xs text-muted-foreground font-body">
-        {config.helperText}
-      </p>
+    <div className="space-y-3 w-full">
 
       {/* Uploaded files list */}
       <AnimatePresence>
