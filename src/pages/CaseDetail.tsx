@@ -1051,14 +1051,12 @@ const CaseDetail = () => {
                                             <Ban className="w-3.5 h-3.5 mr-2" /> Remove N/A
                                           </DropdownMenuItem>
                                         )}
-                                        {(item as any).isCustom && (
-                                          <DropdownMenuItem
-                                            onClick={() => handleDeleteCustomDoc(item)}
-                                            className="text-destructive focus:text-destructive"
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
-                                          </DropdownMenuItem>
-                                        )}
+                                        <DropdownMenuItem
+                                          onClick={() => handleDeleteCustomDoc(item)}
+                                          className="text-destructive focus:text-destructive"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
+                                        </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                   </div>
