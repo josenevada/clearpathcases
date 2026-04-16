@@ -651,6 +651,12 @@ const CaseDetail = () => {
   };
 
   const handleDeleteCustomDoc = async (item: ChecklistItem) => {
+    const isCustom = (item as any).isCustom;
+    const confirmMsg = isCustom
+      ? `Delete "${item.label}" from this checklist? This cannot be undone.`
+      : `Delete "${item.label}" from this checklist? Any uploaded files for this item will also be removed. This cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
     // Remove from localStorage
     updateCase(caseData.id, c => ({
       ...c,
@@ -658,15 +664,15 @@ const CaseDetail = () => {
     }));
 
     // Remove from Supabase
-    await supabase.from('checklist_items').delete().eq('id', item.id);
     await supabase.from('files').delete().eq('checklist_item_id', item.id);
+    await supabase.from('checklist_items').delete().eq('id', item.id);
 
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'item_removed',
       actor_role: viewRole,
       actor_name: user?.fullName || 'Staff',
-      description: `Removed custom document "${item.label}"`,
+      description: `Removed checklist item "${item.label}"`,
       item_id: item.id,
     });
 
