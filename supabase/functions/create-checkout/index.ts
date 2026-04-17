@@ -48,7 +48,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${origin}/paralegal/settings?tab=billing&success=true`,
+      success_url: `${origin}/paralegal/settings?tab=billing&success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/paralegal/settings?tab=billing`,
       metadata: { plan, user_id: user.id },
     });
