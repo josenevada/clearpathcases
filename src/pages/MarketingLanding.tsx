@@ -258,6 +258,11 @@ const MarketingLanding = () => {
 
   const faqItems = [
     {
+      q: 'What is Alex?',
+      preview: 'An AI assistant built into the wizard that answers client document questions instantly.',
+      a: 'Alex is an AI assistant built into the client intake wizard. When clients get stuck — they don\'t know where to find a document, what it looks like, or how to get it — they ask Alex. Alex answers in plain English with specific guidance and direct links to the right source. Available on every document step, 24/7.',
+    },
+    {
       q: 'How does the client experience work?',
       preview: 'Clients get a secure link and complete intake in about 15 minutes on their phone.',
       a: 'When you create a case, ClearPath sends your client a secure link via SMS and email. They verify their identity, then follow a guided wizard through each required document one at a time. Plain English instructions tell them exactly what to upload and why. Most clients complete the full intake on their phone without calling the firm once.',
