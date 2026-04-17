@@ -459,8 +459,8 @@ const MarketingLanding = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
-            { icon: Building, title: 'Bank statements in seconds', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
-            { icon: Shield, title: 'Wrong documents rejected instantly', desc: 'Every upload is reviewed by AI the moment it arrives. Blurry photo, wrong year, wrong document type — the client is notified immediately and guided to fix it before it ever reaches your review queue.' },
+            { icon: Building, title: 'Bank statements via Plaid', desc: 'Clients connect their bank account directly through Plaid — the same technology trusted by millions of apps. Statements arrive instantly, no downloading or scanning required. Supports Chase, Bank of America, Wells Fargo, and 10,000+ institutions.' },
+            { icon: Sparkles, title: "Meet Alex — your clients' AI guide", desc: "When clients get stuck, Alex answers instantly. Where to find a W-2, what a bank statement looks like, how to get a pay stub from ADP. Alex keeps clients moving forward so your team never has to explain it." },
           ].map((c, i) => (
             <div
               key={c.title}
