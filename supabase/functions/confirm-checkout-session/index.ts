@@ -28,31 +28,50 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("Not authenticated");
 
-    const { payment_intent_id, plan } = await req.json();
-    if (!payment_intent_id) throw new Error("No payment_intent_id provided");
+    const { payment_intent_id, session_id, plan } = await req.json();
+    if (!payment_intent_id && !session_id) throw new Error("No payment_intent_id or session_id provided");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
-
-    if (paymentIntent.status !== "succeeded") {
-      return new Response(JSON.stringify({ confirmed: false, status: paymentIntent.status }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    const customerId = typeof paymentIntent.customer === "string"
-      ? paymentIntent.customer
-      : paymentIntent.customer?.id;
-
-    // Find subscription for this customer
+    let customerId: string | null = null;
     let subscriptionId: string | null = null;
-    if (customerId) {
-      const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "active" });
-      if (subs.data.length > 0) subscriptionId = subs.data[0].id;
+    let resolvedPlan: string | undefined = plan;
+
+    if (session_id) {
+      // Stripe Checkout Session flow
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+
+      if (session.payment_status !== "paid") {
+        return new Response(JSON.stringify({ confirmed: false, status: session.payment_status }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      customerId = typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+      subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id ?? null;
+      resolvedPlan = plan || session.metadata?.plan || "starter";
+    } else {
+      // Legacy payment_intent_id flow
+      const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
+
+      if (paymentIntent.status !== "succeeded") {
+        return new Response(JSON.stringify({ confirmed: false, status: paymentIntent.status }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      customerId = typeof paymentIntent.customer === "string"
+        ? paymentIntent.customer
+        : paymentIntent.customer?.id ?? null;
+
+      if (customerId) {
+        const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "active" });
+        if (subs.data.length > 0) subscriptionId = subs.data[0].id;
+      }
     }
 
     // Find the user's firm
