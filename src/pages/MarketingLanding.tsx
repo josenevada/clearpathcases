@@ -338,8 +338,8 @@ const MarketingLanding = () => {
           ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 5 minutes
         </p>
 
-        {/* Capability pill */}
-        <div className="flex justify-center mt-4 relative" style={heroStagger(9)}>
+        {/* Capability pills */}
+        <div className="flex justify-center mt-4 relative gap-2 flex-wrap" style={heroStagger(9)}>
           <span
             className="font-body text-[13px] text-[#8aa3b8]"
             style={{
@@ -350,7 +350,10 @@ const MarketingLanding = () => {
               display: 'inline-block',
             }}
           >
-            Built for Chapter 7 &amp; Chapter 13 bankruptcy practices
+            Built for Chapter 7 &amp; Chapter 13
+          </span>
+          <span className="font-body bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-2 text-[13px]">
+            ✦ Includes Alex, your clients' AI guide
           </span>
         </div>
 
