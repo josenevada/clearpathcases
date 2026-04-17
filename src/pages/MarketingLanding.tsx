@@ -211,7 +211,8 @@ const MarketingLanding = () => {
     };
   };
 
-  const [beforeAfterRef, beforeAfterVisible] = useScrollReveal<HTMLDivElement>();
+  const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
+  const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
