@@ -621,7 +621,7 @@ const MarketingLanding = () => {
           {[
             { icon: ClipboardList, title: 'Guided Mobile Wizard', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
             { icon: MessageSquare, title: 'AI Document Validation', desc: 'Every uploaded document is checked instantly by AI — wrong year, wrong type, illegible scan. Clients are notified immediately so corrections happen before you ever open the case.' },
-            { icon: Sparkles, title: 'Smart Document Retrieval', desc: 'Clients who can\'t find their documents get guided help with deep links and step-by-step walkthroughs for every major bank, payroll provider, and tax platform.' },
+            { icon: Sparkles, title: 'Alex — Built-in Document AI', desc: 'Every document step has Alex built in. Clients ask where to find their documents and get instant answers with direct links. Alex knows ADP, Gusto, Chase, IRS.gov, and dozens more by name.' },
             { icon: Clock, title: 'Automatic SMS Reminders', desc: 'Clients who go quiet get automatic follow-up reminders. Targeted, specific, and sent at the right time — so your paralegal spends zero time chasing documents.' },
             { icon: LayoutDashboard, title: 'Organized on Arrival', desc: 'Every document lands in the right category automatically. Income, bank accounts, debts, assets, ID — organized before you open the case.' },
             { icon: Building, title: 'Bank Connection via Plaid', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
