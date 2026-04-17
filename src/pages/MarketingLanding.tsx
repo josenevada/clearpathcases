@@ -364,62 +364,81 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Before / After */}
+      {/* Comparison Table */}
       <section className="px-6 py-20 max-w-5xl mx-auto">
-        <div ref={beforeAfterRef} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-4 items-stretch">
-          <div
-            className="rounded-xl bg-destructive/[0.04] border border-destructive/10 border-l-4 border-l-destructive/40 p-6 landing-card-hover"
-            style={revealStyle(beforeAfterVisible, { x: -60, y: 0 })}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">Before ClearPath</p>
-            <ul className="space-y-3.5">
-              {[
-                'Email clients a PDF checklist and wait days for a response',
-                'Chase missing documents over phone and email',
-                'Clients upload wrong files, wrong years, wrong formats',
-                'Documents arrive scattered across email, text, and voicemail',
-                'Paralegals spend hours sorting, renaming, and organizing',
-                'Last-minute scrambles before filing deadlines',
-              ].map(t => (
-                <li key={t} className="flex items-start gap-2.5">
-                  <XCircle className="w-4 h-4 text-destructive/70 mt-0.5 flex-shrink-0" />
-                  <span className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{t}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="hidden md:flex flex-col items-center justify-center gap-2 px-2" style={revealStyle(beforeAfterVisible, { delay: 0.4, y: 0 })}>
-            <div className="w-px flex-1 bg-foreground/[0.08]" />
-            <ArrowRight className="w-3.5 h-3.5 text-[#8aa3b8]" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#8aa3b8] text-center whitespace-nowrap">Your practice,<br />transformed</p>
-            <div className="w-px flex-1 bg-foreground/[0.08]" />
-          </div>
-          <div className="flex md:hidden items-center justify-center gap-3 py-1" style={revealStyle(beforeAfterVisible, { delay: 0.2, y: 0 })}>
-            <div className="h-px flex-1 bg-foreground/[0.08]" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#8aa3b8] whitespace-nowrap">Your practice, transformed</p>
-            <ArrowRight className="w-3.5 h-3.5 text-[#8aa3b8] flex-shrink-0" />
-            <div className="h-px flex-1 bg-foreground/[0.08]" />
-          </div>
-          <div
-            className="rounded-xl bg-primary/[0.04] border border-primary/10 border-l-4 border-l-primary/50 p-6 landing-card-hover"
-            style={revealStyle(beforeAfterVisible, { x: 60, y: 0 })}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">With ClearPath</p>
-            <ul className="space-y-3.5">
-              {[
-                'Client receives a secure link and completes intake on their phone',
-                'Guided wizard walks them through each document one at a time',
-                'AI validates every document the moment it arrives',
-                'Automatic reminders when a client goes quiet',
-                'Everything organized by category before you open the case',
-                'Paralegal opens the case to find it ready to review',
-              ].map(t => (
-                <li key={t} className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{t}</span>
-                </li>
-              ))}
-            </ul>
+        <div ref={comparisonRef} style={revealStyle(comparisonVisible)}>
+          <h2 className="font-display font-bold text-[28px] md:text-[36px] text-foreground text-center mb-4">
+            Built for how bankruptcy actually works
+          </h2>
+          <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mb-12">
+            See how ClearPath compares to how most firms collect documents today.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left py-4 pr-6 min-w-[200px]"></th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Email & PDF</span>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Google Forms</span>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Generic Software</span>
+                  </th>
+                  <th className="py-4 px-3 text-center bg-primary/[0.03]">
+                    <span className="text-[11px] font-semibold font-body text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1 inline-block">ClearPath</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: 'Client guided step by step', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'AI validates every document', cols: ['x', 'x', 'x', 'check'] },
+                  { label: 'AI guide answers client questions', cols: ['x', 'x', 'x', 'alex'] },
+                  { label: 'Bank statements via Plaid', cols: ['x', 'x', 'x', 'plaid'] },
+                  { label: 'Automatic SMS reminders', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Documents organized on arrival', cols: ['x', 'x', '-', 'check'] },
+                  { label: "Works on client's phone", cols: ['-', '-', '-', 'check'] },
+                  { label: 'Built for Ch. 7 & Ch. 13', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Setup in under 5 minutes', cols: ['check', 'check', 'x', 'check'] },
+                ].map((row, rowIdx) => (
+                  <tr key={row.label} className={rowIdx % 2 === 1 ? 'bg-white/[0.02]' : ''}>
+                    <td className="text-[14px] text-foreground font-body font-medium py-4 pr-6 min-w-[200px]">
+                      {row.label}
+                    </td>
+                    {row.cols.map((cell, colIdx) => {
+                      const isClearPath = colIdx === 3;
+                      return (
+                        <td
+                          key={colIdx}
+                          className={`py-4 px-3 text-center ${isClearPath ? 'bg-primary/[0.03]' : ''}`}
+                        >
+                          <div className="flex items-center justify-center">
+                            {cell === 'x' && <XCircle className="text-destructive/60 w-4 h-4" />}
+                            {cell === 'check' && <CheckCircle2 className="text-primary w-4 h-4" />}
+                            {cell === '-' && <span className="text-muted-foreground">—</span>}
+                            {cell === 'alex' && (
+                              <>
+                                <CheckCircle2 className="text-primary w-4 h-4" />
+                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Alex</span>
+                              </>
+                            )}
+                            {cell === 'plaid' && (
+                              <>
+                                <CheckCircle2 className="text-primary w-4 h-4" />
+                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Plaid</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
