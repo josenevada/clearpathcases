@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,11 +8,31 @@ import { toast } from 'sonner';
 import EmbeddedCheckoutModal from '@/components/EmbeddedCheckoutModal';
 
 const BillingTab = () => {
-  const { plan, status, daysLeft } = useSubscription();
+  const { plan, status, daysLeft, refresh } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
 
   const currentPlan = plan ? PLANS[plan as PlanKey] : null;
+
+  // Handle post-Stripe-checkout redirect: ?success=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      const timer = setTimeout(() => {
+        refresh();
+        toast.success("You're subscribed — welcome to ClearPath!");
+      }, 3000);
+
+      // Strip ?success=true from URL while preserving other params (e.g. tab=billing)
+      params.delete('success');
+      params.delete('session_id');
+      const newSearch = params.toString();
+      const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
+      window.history.replaceState({}, '', newUrl);
+
+      return () => clearTimeout(timer);
+    }
+  }, [refresh]);
 
   const handleManageBilling = async () => {
     setLoading(true);
