@@ -16,8 +16,8 @@ interface PlanDef {
 const LANDING_PLANS: Record<string, PlanDef> = {
   starter: {
     name: 'Starter',
-    monthly: '$149',
-    annual: '$124',
+    monthly: '$199',
+    annual: '$166',
     subtitle: 'For solo practitioners',
     features: [
       'Up to 8 active cases',
@@ -28,15 +28,13 @@ const LANDING_PLANS: Record<string, PlanDef> = {
       'Case management dashboard',
       '14-day free trial',
     ],
-    note: 'AI form filling, means test, and court packets coming soon on higher plans',
   },
   professional: {
     name: 'Professional',
-    monthly: '$349',
-    annual: '$291',
+    monthly: '$399',
+    annual: '$332',
     subtitle: 'For growing firms',
     popular: true,
-    roiCallout: 'Most popular',
     features: [
       'Up to 25 active cases',
       'Everything in Starter',
