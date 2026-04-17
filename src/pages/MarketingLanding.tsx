@@ -211,7 +211,8 @@ const MarketingLanding = () => {
     };
   };
 
-  const [beforeAfterRef, beforeAfterVisible] = useScrollReveal<HTMLDivElement>();
+  const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
+  const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
   const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
@@ -256,6 +257,11 @@ const MarketingLanding = () => {
   ];
 
   const faqItems = [
+    {
+      q: 'What is Alex?',
+      preview: 'An AI assistant built into the wizard that answers client document questions instantly.',
+      a: 'Alex is an AI assistant built into the client intake wizard. When clients get stuck — they don\'t know where to find a document, what it looks like, or how to get it — they ask Alex. Alex answers in plain English with specific guidance and direct links to the right source. Available on every document step, 24/7.',
+    },
     {
       q: 'How does the client experience work?',
       preview: 'Clients get a secure link and complete intake in about 15 minutes on their phone.',
@@ -338,8 +344,8 @@ const MarketingLanding = () => {
           ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 5 minutes
         </p>
 
-        {/* Capability pill */}
-        <div className="flex justify-center mt-4 relative" style={heroStagger(9)}>
+        {/* Capability pills */}
+        <div className="flex justify-center mt-4 relative gap-2 flex-wrap" style={heroStagger(9)}>
           <span
             className="font-body text-[13px] text-[#8aa3b8]"
             style={{
@@ -350,7 +356,10 @@ const MarketingLanding = () => {
               display: 'inline-block',
             }}
           >
-            Built for Chapter 7 &amp; Chapter 13 bankruptcy practices
+            Built for Chapter 7 &amp; Chapter 13
+          </span>
+          <span className="font-body bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-2 text-[13px]">
+            ✦ Includes Alex, your clients' AI guide
           </span>
         </div>
 
@@ -360,62 +369,81 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Before / After */}
+      {/* Comparison Table */}
       <section className="px-6 py-20 max-w-5xl mx-auto">
-        <div ref={beforeAfterRef} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-4 items-stretch">
-          <div
-            className="rounded-xl bg-destructive/[0.04] border border-destructive/10 border-l-4 border-l-destructive/40 p-6 landing-card-hover"
-            style={revealStyle(beforeAfterVisible, { x: -60, y: 0 })}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">Before ClearPath</p>
-            <ul className="space-y-3.5">
-              {[
-                'Email clients a PDF checklist and wait days for a response',
-                'Chase missing documents over phone and email',
-                'Clients upload wrong files, wrong years, wrong formats',
-                'Documents arrive scattered across email, text, and voicemail',
-                'Paralegals spend hours sorting, renaming, and organizing',
-                'Last-minute scrambles before filing deadlines',
-              ].map(t => (
-                <li key={t} className="flex items-start gap-2.5">
-                  <XCircle className="w-4 h-4 text-destructive/70 mt-0.5 flex-shrink-0" />
-                  <span className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{t}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="hidden md:flex flex-col items-center justify-center gap-2 px-2" style={revealStyle(beforeAfterVisible, { delay: 0.4, y: 0 })}>
-            <div className="w-px flex-1 bg-foreground/[0.08]" />
-            <ArrowRight className="w-3.5 h-3.5 text-[#8aa3b8]" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#8aa3b8] text-center whitespace-nowrap">Your practice,<br />transformed</p>
-            <div className="w-px flex-1 bg-foreground/[0.08]" />
-          </div>
-          <div className="flex md:hidden items-center justify-center gap-3 py-1" style={revealStyle(beforeAfterVisible, { delay: 0.2, y: 0 })}>
-            <div className="h-px flex-1 bg-foreground/[0.08]" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#8aa3b8] whitespace-nowrap">Your practice, transformed</p>
-            <ArrowRight className="w-3.5 h-3.5 text-[#8aa3b8] flex-shrink-0" />
-            <div className="h-px flex-1 bg-foreground/[0.08]" />
-          </div>
-          <div
-            className="rounded-xl bg-primary/[0.04] border border-primary/10 border-l-4 border-l-primary/50 p-6 landing-card-hover"
-            style={revealStyle(beforeAfterVisible, { x: 60, y: 0 })}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">With ClearPath</p>
-            <ul className="space-y-3.5">
-              {[
-                'Client receives a secure link and completes intake on their phone',
-                'Guided wizard walks them through each document one at a time',
-                'AI validates every document the moment it arrives',
-                'Automatic reminders when a client goes quiet',
-                'Everything organized by category before you open the case',
-                'Paralegal opens the case to find it ready to review',
-              ].map(t => (
-                <li key={t} className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{t}</span>
-                </li>
-              ))}
-            </ul>
+        <div ref={comparisonRef} style={revealStyle(comparisonVisible)}>
+          <h2 className="font-display font-bold text-[28px] md:text-[36px] text-foreground text-center mb-4">
+            Built for how bankruptcy actually works
+          </h2>
+          <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mb-12">
+            See how ClearPath compares to how most firms collect documents today.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left py-4 pr-6 min-w-[200px]"></th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Email & PDF</span>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Google Forms</span>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Generic Software</span>
+                  </th>
+                  <th className="py-4 px-3 text-center bg-primary/[0.03]">
+                    <span className="text-[11px] font-semibold font-body text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1 inline-block">ClearPath</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: 'Client guided step by step', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'AI validates every document', cols: ['x', 'x', 'x', 'check'] },
+                  { label: 'AI guide answers client questions', cols: ['x', 'x', 'x', 'alex'] },
+                  { label: 'Bank statements via Plaid', cols: ['x', 'x', 'x', 'plaid'] },
+                  { label: 'Automatic SMS reminders', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Documents organized on arrival', cols: ['x', 'x', '-', 'check'] },
+                  { label: "Works on client's phone", cols: ['-', '-', '-', 'check'] },
+                  { label: 'Built for Ch. 7 & Ch. 13', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Setup in under 5 minutes', cols: ['check', 'check', 'x', 'check'] },
+                ].map((row, rowIdx) => (
+                  <tr key={row.label} className={rowIdx % 2 === 1 ? 'bg-white/[0.02]' : ''}>
+                    <td className="text-[14px] text-foreground font-body font-medium py-4 pr-6 min-w-[200px]">
+                      {row.label}
+                    </td>
+                    {row.cols.map((cell, colIdx) => {
+                      const isClearPath = colIdx === 3;
+                      return (
+                        <td
+                          key={colIdx}
+                          className={`py-4 px-3 text-center ${isClearPath ? 'bg-primary/[0.03]' : ''}`}
+                        >
+                          <div className="flex items-center justify-center">
+                            {cell === 'x' && <XCircle className="text-destructive/60 w-4 h-4" />}
+                            {cell === 'check' && <CheckCircle2 className="text-primary w-4 h-4" />}
+                            {cell === '-' && <span className="text-muted-foreground">—</span>}
+                            {cell === 'alex' && (
+                              <>
+                                <CheckCircle2 className="text-primary w-4 h-4" />
+                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Alex</span>
+                              </>
+                            )}
+                            {cell === 'plaid' && (
+                              <>
+                                <CheckCircle2 className="text-primary w-4 h-4" />
+                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Plaid</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -436,8 +464,8 @@ const MarketingLanding = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
-            { icon: Building, title: 'Bank statements in seconds', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
-            { icon: Shield, title: 'Wrong documents rejected instantly', desc: 'Every upload is reviewed by AI the moment it arrives. Blurry photo, wrong year, wrong document type — the client is notified immediately and guided to fix it before it ever reaches your review queue.' },
+            { icon: Building, title: 'Bank statements via Plaid', desc: 'Clients connect their bank account directly through Plaid — the same technology trusted by millions of apps. Statements arrive instantly, no downloading or scanning required. Supports Chase, Bank of America, Wells Fargo, and 10,000+ institutions.' },
+            { icon: Sparkles, title: "Meet Alex — your clients' AI guide", desc: "When clients get stuck, Alex answers instantly. Where to find a W-2, what a bank statement looks like, how to get a pay stub from ADP. Alex keeps clients moving forward so your team never has to explain it." },
           ].map((c, i) => (
             <div
               key={c.title}
@@ -466,7 +494,63 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Coming Soon — AI Form Filling teaser */}
+      {/* Alex Spotlight */}
+      <section ref={alexRef} className="py-20 px-6 max-w-5xl mx-auto" style={revealStyle(alexVisible)}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* Left column */}
+          <div>
+            <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[12px] font-semibold mb-4 inline-block">NEW</span>
+            <h2 className="font-display text-[28px] md:text-[36px] font-bold text-foreground mb-4">
+              Your clients will never feel lost again.
+            </h2>
+            <p className="text-[15px] text-[#8aa3b8] font-body font-light mb-6" style={{ lineHeight: '1.7' }}>
+              We built Alex — a friendly AI assistant that lives inside the document wizard. When a client doesn't know where to find their bank statements or what a W-2 looks like, they ask Alex. Alex answers in plain English, gives them direct links, and walks them through exactly what to do. No calls to your office. No abandoned intake portals.
+            </p>
+            <ul className="space-y-3">
+              {[
+                'Available on every document step, 24/7',
+                'Answers questions about any document type',
+                'Guides clients to the exact source — ADP, IRS, Chase, and more',
+              ].map(t => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="text-primary w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span className="text-[15px] text-[#8aa3b8] font-body font-light">{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Right column — chat mockup */}
+          <div
+            className="rounded-2xl border p-4"
+            style={{ background: '#111f2e', border: '0.5px solid rgba(255,255,255,0.08)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">A</div>
+              <div>
+                <p className="font-body font-semibold text-foreground text-sm">Alex</p>
+                <p className="text-[11px] text-muted-foreground">Document Assistant</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                Where do I get my W-2?
+              </div>
+              <div className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                Log into your payroll portal — ADP at adp.com, Workday at workday.com, or Paychex. Go to Pay & Tax → Tax Documents and download both years.
+              </div>
+              <div className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                I use ADP
+              </div>
+              <div className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024 and upload them here. Takes about 2 minutes ✓
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SectionDivider />
       <section className="px-6 py-10 max-w-3xl mx-auto">
         <div
           className="rounded-xl p-6 text-center"
@@ -542,10 +626,10 @@ const MarketingLanding = () => {
           {[
             { icon: ClipboardList, title: 'Guided Mobile Wizard', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
             { icon: MessageSquare, title: 'AI Document Validation', desc: 'Every uploaded document is checked instantly by AI — wrong year, wrong type, illegible scan. Clients are notified immediately so corrections happen before you ever open the case.' },
-            { icon: Sparkles, title: 'Smart Document Retrieval', desc: 'Clients who can\'t find their documents get guided help with deep links and step-by-step walkthroughs for every major bank, payroll provider, and tax platform.' },
+            { icon: Sparkles, title: 'Alex — Built-in Document AI', desc: 'Every document step has Alex built in. Clients ask where to find their documents and get instant answers with direct links. Alex knows ADP, Gusto, Chase, IRS.gov, and dozens more by name.' },
             { icon: Clock, title: 'Automatic SMS Reminders', desc: 'Clients who go quiet get automatic follow-up reminders. Targeted, specific, and sent at the right time — so your paralegal spends zero time chasing documents.' },
             { icon: LayoutDashboard, title: 'Organized on Arrival', desc: 'Every document lands in the right category automatically. Income, bank accounts, debts, assets, ID — organized before you open the case.' },
-            { icon: Building, title: 'Bank Connection via Plaid', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
+            { icon: Building, title: 'Bank Connection via Plaid', desc: 'ClearPath integrates directly with Plaid — the same bank connection technology used by Venmo and Robinhood. Clients connect once and 6 months of statements arrive instantly. Available on Professional and Firm plans.' },
           ].map((f, i) => (
             <div
               key={f.title}
