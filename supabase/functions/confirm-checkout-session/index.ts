@@ -83,7 +83,7 @@ serve(async (req) => {
 
     const updatePayload = {
       subscription_status: "active",
-      plan_name: plan || "starter",
+      plan_name: resolvedPlan || "starter",
       stripe_customer_id: customerId || null,
       stripe_subscription_id: subscriptionId,
     };
