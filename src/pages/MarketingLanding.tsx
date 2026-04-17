@@ -624,7 +624,7 @@ const MarketingLanding = () => {
             { icon: Sparkles, title: 'Alex — Built-in Document AI', desc: 'Every document step has Alex built in. Clients ask where to find their documents and get instant answers with direct links. Alex knows ADP, Gusto, Chase, IRS.gov, and dozens more by name.' },
             { icon: Clock, title: 'Automatic SMS Reminders', desc: 'Clients who go quiet get automatic follow-up reminders. Targeted, specific, and sent at the right time — so your paralegal spends zero time chasing documents.' },
             { icon: LayoutDashboard, title: 'Organized on Arrival', desc: 'Every document lands in the right category automatically. Income, bank accounts, debts, assets, ID — organized before you open the case.' },
-            { icon: Building, title: 'Bank Connection via Plaid', desc: 'Clients can connect their bank account directly — statements arrive instantly without downloading or scanning. No document, no problem.' },
+            { icon: Building, title: 'Bank Connection via Plaid', desc: 'ClearPath integrates directly with Plaid — the same bank connection technology used by Venmo and Robinhood. Clients connect once and 6 months of statements arrive instantly. Available on Professional and Firm plans.' },
           ].map((f, i) => (
             <div
               key={f.title}
