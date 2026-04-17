@@ -141,7 +141,7 @@ serve(async (req) => {
       console.error("[confirm-checkout-session] unexpected error updating firm:", (e as Error).message);
     }
 
-    return new Response(JSON.stringify({ confirmed: true, plan }), {
+    return new Response(JSON.stringify({ confirmed: true, plan: resolvedPlan }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
