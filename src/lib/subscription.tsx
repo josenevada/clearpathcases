@@ -125,8 +125,14 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(interval);
   }, [checkSubscription]);
 
+  // Delayed refresh — allows backend (e.g. confirm-checkout-session) time to finish updating firms
+  const refresh = useCallback(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await checkSubscription();
+  }, [checkSubscription]);
+
   return (
-    <SubscriptionContext.Provider value={{ ...state, loading, refresh: checkSubscription }}>
+    <SubscriptionContext.Provider value={{ ...state, loading, refresh }}>
       {children}
     </SubscriptionContext.Provider>
   );
