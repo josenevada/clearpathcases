@@ -489,7 +489,63 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Coming Soon — AI Form Filling teaser */}
+      {/* Alex Spotlight */}
+      <section ref={alexRef} className="py-20 px-6 max-w-5xl mx-auto" style={revealStyle(alexVisible)}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* Left column */}
+          <div>
+            <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[12px] font-semibold mb-4 inline-block">NEW</span>
+            <h2 className="font-display text-[28px] md:text-[36px] font-bold text-foreground mb-4">
+              Your clients will never feel lost again.
+            </h2>
+            <p className="text-[15px] text-[#8aa3b8] font-body font-light mb-6" style={{ lineHeight: '1.7' }}>
+              We built Alex — a friendly AI assistant that lives inside the document wizard. When a client doesn't know where to find their bank statements or what a W-2 looks like, they ask Alex. Alex answers in plain English, gives them direct links, and walks them through exactly what to do. No calls to your office. No abandoned intake portals.
+            </p>
+            <ul className="space-y-3">
+              {[
+                'Available on every document step, 24/7',
+                'Answers questions about any document type',
+                'Guides clients to the exact source — ADP, IRS, Chase, and more',
+              ].map(t => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="text-primary w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span className="text-[15px] text-[#8aa3b8] font-body font-light">{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Right column — chat mockup */}
+          <div
+            className="rounded-2xl border p-4"
+            style={{ background: '#111f2e', border: '0.5px solid rgba(255,255,255,0.08)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">A</div>
+              <div>
+                <p className="font-body font-semibold text-foreground text-sm">Alex</p>
+                <p className="text-[11px] text-muted-foreground">Document Assistant</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                Where do I get my W-2?
+              </div>
+              <div className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                Log into your payroll portal — ADP at adp.com, Workday at workday.com, or Paychex. Go to Pay & Tax → Tax Documents and download both years.
+              </div>
+              <div className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                I use ADP
+              </div>
+              <div className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
+                Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024 and upload them here. Takes about 2 minutes ✓
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SectionDivider />
       <section className="px-6 py-10 max-w-3xl mx-auto">
         <div
           className="rounded-xl p-6 text-center"
