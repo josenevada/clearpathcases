@@ -224,12 +224,31 @@ const MockupWizard = () => (
 );
 
 const MockupAlex = () => {
-  const bubbles = [
+  const bubbles: Array<{ who: 'client' | 'alex'; text: string }> = [
     { who: 'client', text: 'Where do I get my W-2?' },
     { who: 'alex', text: 'Log into your payroll portal — ADP at adp.com or Workday. Go to Pay & Tax → Tax Documents and download both years.' },
     { who: 'client', text: 'I use ADP' },
     { who: 'alex', text: 'Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024. Takes 2 minutes ✓' },
   ];
+
+  // Stagger schedule: each bubble starts after the previous one finishes
+  // Client bubbles: short fade. Alex bubbles: typing indicator (0.4s) + word reveal.
+  const schedule: Array<{ indicatorStart: number; wordsStart: number; duration: number }> = [];
+  let cursor = 0.15;
+  bubbles.forEach((b) => {
+    if (b.who === 'client') {
+      schedule.push({ indicatorStart: 0, wordsStart: cursor, duration: 0.25 });
+      cursor += 0.45;
+    } else {
+      const indicatorStart = cursor;
+      const wordsStart = cursor + 0.4;
+      const wordCount = b.text.split(/\s+/).length;
+      const dur = 0.4 + wordCount * 0.04 + 0.25;
+      schedule.push({ indicatorStart, wordsStart, duration: dur });
+      cursor += dur + 0.2;
+    }
+  });
+
   return (
     <motion.div
       key="alex"
@@ -246,21 +265,77 @@ const MockupAlex = () => {
         </div>
       </div>
       <div className="mt-4 space-y-3">
-        {bubbles.map((b, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.15 * (i + 1) }}
-            className={
-              b.who === 'client'
-                ? 'ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body'
-                : 'mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body'
-            }
-          >
-            {b.text}
-          </motion.div>
-        ))}
+        {bubbles.map((b, i) => {
+          const s = schedule[i];
+          if (b.who === 'client') {
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: s.wordsStart }}
+                className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
+              >
+                {b.text}
+              </motion.div>
+            );
+          }
+          const words = b.text.split(/\s+/);
+          return (
+            <div key={i} className="relative mr-auto max-w-[80%]">
+              {/* Typing indicator */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{
+                  duration: 0.4,
+                  delay: s.indicatorStart,
+                  times: [0, 0.15, 0.85, 1],
+                }}
+                className="bg-secondary rounded-2xl px-4 py-3 inline-flex items-center gap-1"
+                style={{ pointerEvents: 'none' }}
+              >
+                {[0, 1, 2].map((d) => (
+                  <motion.span
+                    key={d}
+                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
+                    style={{ display: 'inline-block' }}
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: Infinity,
+                      delay: d * 0.12,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                ))}
+              </motion.div>
+              {/* Word-by-word bubble */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.01, delay: s.wordsStart }}
+                className="bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
+              >
+                {words.map((word, w) => (
+                  <motion.span
+                    key={w}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      ease: 'easeOut',
+                      delay: s.wordsStart + w * 0.04,
+                    }}
+                    style={{ display: 'inline-block', marginRight: '0.25em' }}
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </motion.div>
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );
