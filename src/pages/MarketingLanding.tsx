@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList,
-  Building,
+  Building, UploadCloud, ChevronRight, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -179,6 +180,318 @@ const StatsBar = () => {
 };
 
 
+/* ────── Interactive Feature Showcase ────── */
+const showcaseFeatures = [
+  {
+    icon: ClipboardList,
+    title: 'Guided client wizard',
+    desc: 'Step-by-step intake built for non-technical clients. Works on any phone.',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Alex — AI document guide',
+    desc: 'Clients ask where to find documents. Alex answers with specific steps and direct links.',
+  },
+  {
+    icon: Building,
+    title: 'Bank connection via Plaid',
+    desc: 'Clients connect their bank once. Six months of statements arrive instantly.',
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'Organized on arrival',
+    desc: 'Every document lands in the right category. The paralegal opens a case ready to review.',
+  },
+];
+
+const ROTATION_MS = 4000;
+
+const MockupWizard = () => (
+  <motion.div
+    key="wizard"
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -12 }}
+    transition={{ duration: 0.25 }}
+    className="grid grid-cols-[120px_1fr] gap-4"
+  >
+    <div className="space-y-2.5 pt-2">
+      {[
+        { label: 'Pay Stubs', done: true },
+        { label: 'Bank Stmts', done: false },
+        { label: 'Tax Returns', done: false },
+        { label: 'ID', done: false },
+      ].map((it, i) => (
+        <div key={i} className="flex items-center gap-2 text-[11px] font-body">
+          {it.done ? (
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+          ) : (
+            <div className="w-3.5 h-3.5 rounded-full border border-white/20 flex-shrink-0" />
+          )}
+          <span className={it.done ? 'text-foreground' : 'text-muted-foreground'}>{it.label}</span>
+        </div>
+      ))}
+    </div>
+    <div>
+      <div className="h-1 w-full rounded-full bg-white/[0.06] overflow-hidden mb-4">
+        <div className="h-full bg-primary rounded-full" style={{ width: '30%' }} />
+      </div>
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
+          <FileText className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <h4 className="font-display font-bold text-[18px] text-foreground leading-tight">Pay Stubs (Last 2 Months)</h4>
+          <p className="text-[12px] text-primary mt-1 font-body">This shows the court what you currently earn.</p>
+        </div>
+      </div>
+      <div
+        className="rounded-xl py-6 px-4 flex flex-col items-center justify-center text-center"
+        style={{ border: '1.5px dashed rgba(255,255,255,0.15)' }}
+      >
+        <UploadCloud className="w-6 h-6 text-muted-foreground mb-2" />
+        <p className="text-[12px] text-muted-foreground font-body">Tap to upload your file</p>
+      </div>
+      <div className="mt-3">
+        <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1 text-[11px] font-body font-semibold">
+          <MessageSquare className="w-3 h-3" />
+          Ask Alex
+        </span>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const MockupAlex = () => {
+  const bubbles = [
+    { who: 'client', text: 'Where do I get my W-2?' },
+    { who: 'alex', text: 'Log into your payroll portal — ADP at adp.com or Workday. Go to Pay & Tax → Tax Documents and download both years.' },
+    { who: 'client', text: 'I use ADP' },
+    { who: 'alex', text: 'Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024. Takes 2 minutes ✓' },
+  ];
+  return (
+    <motion.div
+      key="alex"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25 }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">A</div>
+        <div>
+          <p className="font-body font-semibold text-foreground text-sm">Alex</p>
+          <p className="text-[11px] text-muted-foreground">Document Assistant</p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-3">
+        {bubbles.map((b, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.15 * (i + 1) }}
+            className={
+              b.who === 'client'
+                ? 'ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body'
+                : 'mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body'
+            }
+          >
+            {b.text}
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+const MockupPlaid = () => (
+  <motion.div
+    key="plaid"
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -12 }}
+    transition={{ duration: 0.25 }}
+  >
+    <div className="flex items-center gap-2 mb-1">
+      <span className="font-body font-bold text-[15px] text-foreground">Plaid</span>
+      <div className="w-2 h-2 rounded-full bg-success" />
+    </div>
+    <p className="text-[13px] text-[#8aa3b8] font-body font-light mb-4">Connect your bank account securely.</p>
+    <div className="flex flex-wrap gap-2 mb-4">
+      {['Chase', 'Bank of America', 'Wells Fargo'].map(b => (
+        <span key={b} className="bg-secondary rounded-full px-3 py-1 text-[12px] font-body text-foreground">{b}</span>
+      ))}
+    </div>
+    <button className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-body font-semibold mb-3">
+      Connect Bank Account
+    </button>
+    <p className="text-[11px] text-muted-foreground font-body text-center mb-4">
+      10,000+ institutions supported · 256-bit encryption · Trusted by millions
+    </p>
+    <div className="rounded-xl bg-success/10 border border-success/20 px-3 py-2.5 flex items-center gap-2">
+      <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+      <span className="text-success font-medium text-sm font-body">Connected — 6 months of statements ready</span>
+    </div>
+  </motion.div>
+);
+
+const MockupOrganized = () => {
+  const cats = [
+    { name: 'Income & Employment', count: '4/4', state: 'done' },
+    { name: 'Bank & Financial', count: '2/2', state: 'done' },
+    { name: 'Debts & Credit', count: '2/4', state: 'partial' },
+    { name: 'Personal ID', count: '0/2', state: 'empty' },
+  ];
+  return (
+    <motion.div
+      key="organized"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25 }}
+    >
+      <h4 className="font-display font-bold text-[16px] text-foreground mb-3">Kevin James — Chapter 7</h4>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="h-full bg-primary rounded-full" style={{ width: '78%' }} />
+        </div>
+        <span className="text-[11px] text-muted-foreground font-body">78% complete</span>
+      </div>
+      <div className="space-y-1.5 mb-4">
+        {cats.map(c => (
+          <div key={c.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02]">
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[13px] text-foreground font-body flex-1">{c.name}</span>
+            {c.state === 'done' && (
+              <span className="flex items-center gap-1 text-success text-[11px] font-body font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" />{c.count}
+              </span>
+            )}
+            {c.state === 'partial' && (
+              <span className="flex items-center gap-1 text-[hsl(36_91%_55%)] text-[11px] font-body font-semibold">
+                <Clock className="w-3.5 h-3.5" />{c.count}
+              </span>
+            )}
+            {c.state === 'empty' && (
+              <span className="text-muted-foreground text-[11px] font-body">{c.count}</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <button className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-body font-semibold mb-2 inline-flex items-center justify-center gap-2">
+        <Download className="w-4 h-4" />
+        Download ZIP
+      </button>
+      <p className="text-center text-[12px] text-muted-foreground font-body underline cursor-pointer">View all documents</p>
+    </motion.div>
+  );
+};
+
+const FeatureShowcase = () => {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [showcaseRef, showcaseVisible] = useScrollReveal<HTMLDivElement>();
+  const reduced = usePrefersReducedMotion();
+
+  useEffect(() => {
+    if (paused || reduced) return;
+    const t = setInterval(() => {
+      setActive(a => (a + 1) % showcaseFeatures.length);
+    }, ROTATION_MS);
+    return () => clearInterval(t);
+  }, [paused, reduced]);
+
+  const mockups = [<MockupWizard />, <MockupAlex />, <MockupPlaid />, <MockupOrganized />];
+
+  return (
+    <section
+      ref={showcaseRef}
+      className="px-6 py-20 max-w-6xl mx-auto"
+      style={{
+        opacity: showcaseVisible ? 1 : 0,
+        transform: showcaseVisible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
+      }}
+    >
+      <h2 className="font-display font-bold text-[28px] md:text-[36px] text-foreground text-center mb-4">
+        Everything your intake workflow needs
+      </h2>
+      <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mb-12">
+        Click any feature to see how it works.
+      </p>
+
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-12 items-start"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <div>
+          {showcaseFeatures.map((f, i) => {
+            const Icon = f.icon;
+            const isActive = i === active;
+            return (
+              <button
+                key={f.title}
+                onClick={() => setActive(i)}
+                className={`w-full text-left py-4 px-3 border-b border-white/[0.06] transition-colors ${
+                  isActive ? 'border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${
+                      isActive ? 'bg-primary/10 border-primary/20' : 'bg-secondary/50 border-transparent'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-body font-semibold text-[16px] ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {f.title}
+                    </p>
+                    {isActive && (
+                      <p className="text-[14px] text-[#8aa3b8] font-body font-light mt-1.5" style={{ lineHeight: '1.6' }}>
+                        {f.desc}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div>
+          <div
+            className="rounded-2xl p-6"
+            style={{
+              background: '#111f2e',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+              minHeight: '380px',
+            }}
+          >
+            <AnimatePresence mode="wait">{mockups[active]}</AnimatePresence>
+          </div>
+
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {showcaseFeatures.map((_, i) => (
+              <div key={i} className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{
+                    width: i < active ? '100%' : i === active ? (paused || reduced ? '50%' : '100%') : '0%',
+                    transition: i === active && !paused && !reduced ? `width ${ROTATION_MS}ms linear` : 'width 0.2s ease-out',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 /* ────── Main Component ────── */
 const MarketingLanding = () => {
@@ -549,6 +862,10 @@ const MarketingLanding = () => {
           </div>
         </div>
       </section>
+
+      <SectionDivider />
+
+      <FeatureShowcase />
 
       <SectionDivider />
       <section className="px-6 py-10 max-w-3xl mx-auto">
