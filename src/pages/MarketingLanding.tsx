@@ -864,6 +864,10 @@ const MarketingLanding = () => {
       </section>
 
       <SectionDivider />
+
+      <FeatureShowcase />
+
+      <SectionDivider />
       <section className="px-6 py-10 max-w-3xl mx-auto">
         <div
           className="rounded-xl p-6 text-center"
