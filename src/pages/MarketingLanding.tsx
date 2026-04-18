@@ -224,6 +224,11 @@ const MockupWizard = () => (
     }}>
       <iframe
         src="https://watchclueso.com/embed/ts2yv4p5qxllae0w?autoplay=1&muted=1&loop=1"
+        frameBorder="0"
+        // @ts-expect-error vendor-prefixed fullscreen attrs
+        webkitallowfullscreen="true"
+        mozallowfullscreen="true"
+        allowFullScreen
         style={{
           position: 'absolute',
           top: 0,
@@ -233,7 +238,7 @@ const MockupWizard = () => (
           border: 'none',
           borderRadius: '12px'
         }}
-        allow="fullscreen; autoplay"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
       />
     </div>
   </motion.div>
