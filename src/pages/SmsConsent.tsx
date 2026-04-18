@@ -41,6 +41,54 @@ const SmsConsent = () => {
           </div>
         </section>
 
+        {/* Section: What Clients See */}
+        <section className="mb-10">
+          <h2 className="font-display font-bold text-xl md:text-2xl mb-4" style={{ color: '#EDF0F4' }}>
+            What Clients See
+          </h2>
+          <p className="font-body text-sm leading-relaxed mb-6" style={{ color: '#8aa3b8' }}>
+            Example SMS consent conversation shown to every client before messages are sent.
+          </p>
+
+          <div className="mx-auto max-w-sm rounded-[2.5rem] p-3 mb-6" style={{ background: '#1a2433', border: '0.5px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px -10px rgba(0,0,0,0.6)' }}>
+            <div className="rounded-[2rem] px-4 py-6 space-y-3" style={{ background: '#0a1420', minHeight: '480px' }}>
+              <div className="text-center pb-3 mb-2" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                <p className="font-body text-xs" style={{ color: '#8aa3b8' }}>Messages</p>
+                <p className="font-body text-sm font-semibold" style={{ color: '#EDF0F4' }}>Johnson Law</p>
+              </div>
+
+              {/* Incoming bubble 1 */}
+              <div className="flex justify-start">
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5" style={{ background: '#EDF0F4', color: '#0d1b2a' }}>
+                  <p className="font-body text-[13px] leading-snug">
+                    Johnson Law would like to send you SMS updates about your bankruptcy case documents. You'll receive your document portal link and upload reminders. Reply YES to confirm or STOP to decline. Msg &amp; data rates may apply.
+                  </p>
+                </div>
+              </div>
+
+              {/* Outgoing bubble */}
+              <div className="flex justify-end">
+                <div className="rounded-2xl rounded-br-md px-4 py-2" style={{ background: '#00C2A8', color: '#0d1b2a' }}>
+                  <p className="font-body text-[13px] font-semibold">YES</p>
+                </div>
+              </div>
+
+              {/* Incoming bubble 2 */}
+              <div className="flex justify-start">
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5" style={{ background: '#EDF0F4', color: '#0d1b2a' }}>
+                  <p className="font-body text-[13px] leading-snug">
+                    Confirmed. Your document portal is ready: yourclearpath.app/client/example. Reply STOP to opt out anytime.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="font-body text-base leading-relaxed" style={{ color: '#8aa3b8' }}>
+            Every client must reply <span className="font-bold" style={{ color: '#EDF0F4' }}>YES</span> before receiving any further messages. Clients who reply <span className="font-bold" style={{ color: '#EDF0F4' }}>NO</span> or <span className="font-bold" style={{ color: '#EDF0F4' }}>STOP</span> receive no further messages. This two-step confirmation is required before any document portal links or reminders are sent.
+          </p>
+        </section>
+
         {/* Section 2 */}
         <section className="mb-10">
           <h2 className="font-display font-bold text-xl md:text-2xl mb-4" style={{ color: '#EDF0F4' }}>
