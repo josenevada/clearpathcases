@@ -231,9 +231,25 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
                     }`}
                   >
                     {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
+                      msg.animate ? (
+                        <TypewriterMarkdown
+                          text={msg.content}
+                          onTick={() => {
+                            if (scrollRef.current) {
+                              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                            }
+                          }}
+                          onDone={() => {
+                            setMessages(prev =>
+                              prev.map((m, idx) => (idx === i ? { ...m, animate: false } : m))
+                            );
+                          }}
+                        />
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )
                     ) : (
                       msg.content
                     )}
