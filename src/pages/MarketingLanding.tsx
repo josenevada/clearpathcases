@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
   Plus, Minus, Sparkles, MessageSquare, ClipboardList,
-  Building,
+  Building, UploadCloud, ChevronRight, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
