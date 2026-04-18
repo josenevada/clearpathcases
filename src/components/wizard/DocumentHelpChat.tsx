@@ -131,10 +131,10 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
 
       if (error) throw error;
       const aiResponse = data?.response || "I'm having trouble right now. Please try again.";
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, animate: true }]);
     } catch (err) {
       console.error('Chat error:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now. Please follow the written steps above or contact your attorney's office." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now. Please follow the written steps above or contact your attorney's office.", animate: true }]);
     } finally {
       setLoading(false);
     }
