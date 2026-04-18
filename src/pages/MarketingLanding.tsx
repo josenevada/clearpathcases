@@ -223,31 +223,101 @@ const MockupWizard = () => (
   </motion.div>
 );
 
-const MockupAlex = () => {
-  const bubbles: Array<{ who: 'client' | 'alex'; text: string }> = [
-    { who: 'client', text: 'Where do I get my W-2?' },
-    { who: 'alex', text: 'Log into your payroll portal — ADP at adp.com or Workday. Go to Pay & Tax → Tax Documents and download both years.' },
-    { who: 'client', text: 'I use ADP' },
-    { who: 'alex', text: 'Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024. Takes 2 minutes ✓' },
-  ];
+type AlexBubble = { who: 'client' | 'alex'; text: string };
 
-  // Stagger schedule: each bubble starts after the previous one finishes
-  // Client bubbles: short fade. Alex bubbles: typing indicator (0.4s) + word reveal.
-  const schedule: Array<{ indicatorStart: number; wordsStart: number; duration: number }> = [];
-  let cursor = 0.15;
-  bubbles.forEach((b) => {
-    if (b.who === 'client') {
-      schedule.push({ indicatorStart: 0, wordsStart: cursor, duration: 0.25 });
-      cursor += 0.45;
-    } else {
-      const indicatorStart = cursor;
-      const wordsStart = cursor + 0.4;
-      const wordCount = b.text.split(/\s+/).length;
-      const dur = 0.4 + wordCount * 0.04 + 0.25;
-      schedule.push({ indicatorStart, wordsStart, duration: dur });
-      cursor += dur + 0.2;
-    }
-  });
+const ALEX_BUBBLES: AlexBubble[] = [
+  { who: 'client', text: 'Where do I get my W-2?' },
+  { who: 'alex', text: 'Log into your payroll portal — ADP at adp.com or Workday. Go to Pay & Tax → Tax Documents and download both years.' },
+  { who: 'client', text: 'I use ADP' },
+  { who: 'alex', text: 'Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024. Takes 2 minutes ✓' },
+];
+
+const TYPE_CHAR_MS = 18;        // characters per ms for Alex
+const CLIENT_PAUSE_MS = 500;    // pause after client message before Alex starts
+const ALEX_THINK_MS = 600;      // typing dots before Alex types
+const POST_ALEX_MS = 700;       // pause after Alex finishes before next message
+
+type StepState = {
+  visibleCount: number;          // 0..bubbles.length — how many bubbles exist (incl. typing)
+  typing: boolean;               // is the current Alex bubble showing typing dots
+  typedChars: number;            // chars revealed in the currently typing Alex bubble
+};
+
+const TypingDots = () => (
+  <div className="bg-secondary rounded-2xl px-4 py-3 inline-flex items-center gap-1 mr-auto">
+    {[0, 1, 2].map((d) => (
+      <motion.span
+        key={d}
+        className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
+        style={{ display: 'inline-block' }}
+        animate={{ y: [0, -3, 0] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: d * 0.12, ease: 'easeInOut' }}
+      />
+    ))}
+  </div>
+);
+
+const MockupAlex = () => {
+  const [state, setState] = useState<StepState>({ visibleCount: 0, typing: false, typedChars: 0 });
+  const cancelledRef = useRef(false);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const intervals: ReturnType<typeof setInterval>[] = [];
+
+    const wait = (ms: number) => new Promise<void>((resolve) => {
+      const t = setTimeout(resolve, ms);
+      timeouts.push(t);
+    });
+
+    const run = async () => {
+      // small initial delay so the entrance fade can play
+      await wait(300);
+      for (let i = 0; i < ALEX_BUBBLES.length; i++) {
+        if (cancelledRef.current) return;
+        const b = ALEX_BUBBLES[i];
+        if (b.who === 'client') {
+          setState((s) => ({ visibleCount: i + 1, typing: false, typedChars: 0 }));
+          await wait(CLIENT_PAUSE_MS);
+        } else {
+          // show typing indicator
+          setState({ visibleCount: i + 1, typing: true, typedChars: 0 });
+          await wait(ALEX_THINK_MS);
+          if (cancelledRef.current) return;
+          // start typewriter
+          setState({ visibleCount: i + 1, typing: false, typedChars: 0 });
+          await new Promise<void>((resolve) => {
+            let chars = 0;
+            const total = b.text.length;
+            const iv = setInterval(() => {
+              if (cancelledRef.current) {
+                clearInterval(iv);
+                resolve();
+                return;
+              }
+              chars += 1;
+              setState({ visibleCount: i + 1, typing: false, typedChars: chars });
+              if (chars >= total) {
+                clearInterval(iv);
+                resolve();
+              }
+            }, TYPE_CHAR_MS);
+            intervals.push(iv);
+          });
+          await wait(POST_ALEX_MS);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelledRef.current = true;
+      timeouts.forEach(clearTimeout);
+      intervals.forEach(clearInterval);
+    };
+  }, []);
 
   return (
     <motion.div
@@ -265,74 +335,40 @@ const MockupAlex = () => {
         </div>
       </div>
       <div className="mt-4 space-y-3">
-        {bubbles.map((b, i) => {
-          const s = schedule[i];
+        {ALEX_BUBBLES.slice(0, state.visibleCount).map((b, i) => {
+          const isCurrent = i === state.visibleCount - 1;
           if (b.who === 'client') {
             return (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: s.wordsStart }}
+                transition={{ duration: 0.25 }}
                 className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
               >
                 {b.text}
               </motion.div>
             );
           }
-          const words = b.text.split(/\s+/);
+          // Alex bubble
+          if (isCurrent && state.typing) {
+            return <TypingDots key={i} />;
+          }
+          const shown = isCurrent ? b.text.slice(0, state.typedChars) : b.text;
+          const stillTyping = isCurrent && state.typedChars < b.text.length;
           return (
-            <div key={i} className="relative mr-auto max-w-[80%]">
-              {/* Typing indicator */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 1, 0] }}
-                transition={{
-                  duration: 0.4,
-                  delay: s.indicatorStart,
-                  times: [0, 0.15, 0.85, 1],
-                }}
-                className="bg-secondary rounded-2xl px-4 py-3 inline-flex items-center gap-1"
-                style={{ pointerEvents: 'none' }}
-              >
-                {[0, 1, 2].map((d) => (
-                  <motion.span
-                    key={d}
-                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
-                    style={{ display: 'inline-block' }}
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{
-                      duration: 0.6,
-                      repeat: Infinity,
-                      delay: d * 0.12,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                ))}
-              </motion.div>
-              {/* Word-by-word bubble */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.01, delay: s.wordsStart }}
-                className="bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
-              >
-                {words.map((word, w) => (
-                  <motion.span
-                    key={w}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.25,
-                      ease: 'easeOut',
-                      delay: s.wordsStart + w * 0.04,
-                    }}
-                    style={{ display: 'inline-block', marginRight: '0.25em' }}
-                  >
-                    {word}
-                  </motion.span>
-                ))}
-              </motion.div>
+            <div
+              key={i}
+              className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
+            >
+              {shown}
+              {stillTyping && (
+                <motion.span
+                  className="inline-block w-[2px] h-[1em] bg-foreground/70 ml-0.5 align-middle"
+                  animate={{ opacity: [1, 0, 1] }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                />
+              )}
             </div>
           );
         })}
