@@ -213,13 +213,29 @@ const MockupWizard = () => (
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -12 }}
     transition={{ duration: 0.25 }}
-    style={{ width: '100%', height: '100%', minHeight: '360px', borderRadius: '12px', overflow: 'hidden' }}
   >
-    <iframe
-      src="https://watchclueso.com/embed/ts2yv4p5qxllae0w"
-      style={{ border: 'none', width: '100%', height: '100%', minHeight: '360px', borderRadius: '12px' }}
-      allow="fullscreen"
-    />
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      paddingTop: '56.25%',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      background: '#0B1623'
+    }}>
+      <iframe
+        src="https://watchclueso.com/embed/ts2yv4p5qxllae0w?autoplay=1&muted=1&loop=1"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          borderRadius: '12px'
+        }}
+        allow="fullscreen; autoplay"
+      />
+    </div>
   </motion.div>
 );
 
