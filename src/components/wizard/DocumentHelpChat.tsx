@@ -165,9 +165,9 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
       },
     }).then(({ data, error }) => {
       const aiResponse = error ? "I'm having trouble right now." : (data?.response || "I'm having trouble right now.");
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, animate: true }]);
     }).catch(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now.", animate: true }]);
     }).finally(() => setLoading(false));
   };
 
