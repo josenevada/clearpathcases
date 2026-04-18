@@ -213,52 +213,13 @@ const MockupWizard = () => (
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -12 }}
     transition={{ duration: 0.25 }}
-    className="grid grid-cols-[120px_1fr] gap-4"
+    style={{ width: '100%', height: '100%', minHeight: '360px', borderRadius: '12px', overflow: 'hidden' }}
   >
-    <div className="space-y-2.5 pt-2">
-      {[
-        { label: 'Pay Stubs', done: true },
-        { label: 'Bank Stmts', done: false },
-        { label: 'Tax Returns', done: false },
-        { label: 'ID', done: false },
-      ].map((it, i) => (
-        <div key={i} className="flex items-center gap-2 text-[11px] font-body">
-          {it.done ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-          ) : (
-            <div className="w-3.5 h-3.5 rounded-full border border-white/20 flex-shrink-0" />
-          )}
-          <span className={it.done ? 'text-foreground' : 'text-muted-foreground'}>{it.label}</span>
-        </div>
-      ))}
-    </div>
-    <div>
-      <div className="h-1 w-full rounded-full bg-white/[0.06] overflow-hidden mb-4">
-        <div className="h-full bg-primary rounded-full" style={{ width: '30%' }} />
-      </div>
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
-          <FileText className="w-4 h-4 text-primary" />
-        </div>
-        <div>
-          <h4 className="font-display font-bold text-[18px] text-foreground leading-tight">Pay Stubs (Last 2 Months)</h4>
-          <p className="text-[12px] text-primary mt-1 font-body">This shows the court what you currently earn.</p>
-        </div>
-      </div>
-      <div
-        className="rounded-xl py-6 px-4 flex flex-col items-center justify-center text-center"
-        style={{ border: '1.5px dashed rgba(255,255,255,0.15)' }}
-      >
-        <UploadCloud className="w-6 h-6 text-muted-foreground mb-2" />
-        <p className="text-[12px] text-muted-foreground font-body">Tap to upload your file</p>
-      </div>
-      <div className="mt-3">
-        <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1 text-[11px] font-body font-semibold">
-          <MessageSquare className="w-3 h-3" />
-          Ask Alex
-        </span>
-      </div>
-    </div>
+    <iframe
+      src="https://watchclueso.com/embed/ts2yv4p5qxllae0w"
+      style={{ border: 'none', width: '100%', height: '100%', minHeight: '360px', borderRadius: '12px' }}
+      allow="fullscreen"
+    />
   </motion.div>
 );
 
