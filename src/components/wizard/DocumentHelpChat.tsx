@@ -7,7 +7,63 @@ import ReactMarkdown from 'react-markdown';
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  animate?: boolean; // typewriter on first render
 }
+
+const TYPE_CHAR_MS = 14;
+
+const TypewriterMarkdown = ({
+  text,
+  onTick,
+  onDone,
+}: {
+  text: string;
+  onTick?: () => void;
+  onDone?: () => void;
+}) => {
+  const [shown, setShown] = useState(0);
+  const cancelledRef = useRef(false);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    setShown(0);
+    const iv = setInterval(() => {
+      if (cancelledRef.current) {
+        clearInterval(iv);
+        return;
+      }
+      setShown((s) => {
+        const next = s + 1;
+        if (next >= text.length) {
+          clearInterval(iv);
+          onDone?.();
+          return text.length;
+        }
+        onTick?.();
+        return next;
+      });
+    }, TYPE_CHAR_MS);
+    return () => {
+      cancelledRef.current = true;
+      clearInterval(iv);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+
+  const isDone = shown >= text.length;
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
+      <ReactMarkdown>{text.slice(0, shown)}</ReactMarkdown>
+      {!isDone && (
+        <motion.span
+          className="inline-block w-[2px] h-[1em] bg-foreground/70 ml-0.5 align-middle"
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+        />
+      )}
+    </div>
+  );
+};
 
 interface DocumentHelpChatProps {
   documentLabel: string;
@@ -75,10 +131,10 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
 
       if (error) throw error;
       const aiResponse = data?.response || "I'm having trouble right now. Please try again.";
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, animate: true }]);
     } catch (err) {
       console.error('Chat error:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now. Please follow the written steps above or contact your attorney's office." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now. Please follow the written steps above or contact your attorney's office.", animate: true }]);
     } finally {
       setLoading(false);
     }
@@ -109,9 +165,9 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
       },
     }).then(({ data, error }) => {
       const aiResponse = error ? "I'm having trouble right now." : (data?.response || "I'm having trouble right now.");
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, animate: true }]);
     }).catch(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble right now.", animate: true }]);
     }).finally(() => setLoading(false));
   };
 
@@ -175,9 +231,25 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
                     }`}
                   >
                     {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
+                      msg.animate ? (
+                        <TypewriterMarkdown
+                          text={msg.content}
+                          onTick={() => {
+                            if (scrollRef.current) {
+                              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                            }
+                          }}
+                          onDone={() => {
+                            setMessages(prev =>
+                              prev.map((m, idx) => (idx === i ? { ...m, animate: false } : m))
+                            );
+                          }}
+                        />
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )
                     ) : (
                       msg.content
                     )}
