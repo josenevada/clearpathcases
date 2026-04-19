@@ -282,7 +282,7 @@ const FeatureShowcase = () => {
       </p>
 
       <div
-        className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-12 items-start"
+        className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 items-start"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
@@ -323,14 +323,7 @@ const FeatureShowcase = () => {
         </div>
 
         <div>
-          <div
-            className="rounded-2xl p-6"
-            style={{
-              background: '#111f2e',
-              border: '0.5px solid rgba(255,255,255,0.08)',
-              minHeight: '380px',
-            }}
-          >
+          <div>
             <AnimatePresence mode="wait">{mockups[active]}</AnimatePresence>
           </div>
 
@@ -726,28 +719,6 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       <FeatureShowcase />
-
-      <SectionDivider />
-      <section className="px-6 py-10 max-w-3xl mx-auto">
-        <div
-          className="rounded-xl p-6 text-center"
-          style={{
-            background: 'hsl(var(--surface))',
-            border: '0.5px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <span
-            className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-body font-semibold mb-4"
-            style={{ background: 'rgba(0,194,168,0.1)', color: 'rgb(0,194,168)' }}
-          >
-            Coming Soon
-          </span>
-          <h3 className="font-display font-bold text-lg text-foreground mb-2">AI Form Filling</h3>
-          <p className="text-[14px] text-[#8aa3b8] font-body font-light max-w-lg mx-auto" style={{ lineHeight: '1.7' }}>
-            ClearPath will automatically pre-fill all 15 federal Ch.7 forms from your approved documents. Means test, exemption analysis, and court-ready packet generation included. Currently in development for Professional plans.
-          </p>
-        </div>
-      </section>
 
       <SectionDivider />
 
