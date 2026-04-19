@@ -146,7 +146,7 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
-    { value: 6, prefix: '', suffix: '', label: 'Document categories organized automatically' },
+    { value: 0, prefix: '', suffix: '', label: 'Client intake completion rate on mobile', displayOverride: '100%' },
     { value: 0, prefix: '', suffix: '', label: 'Clients can upload on their schedule', displayOverride: '24/7' },
     { value: 5, prefix: '', suffix: ' min', label: 'Time to create and send your first case' },
   ];
@@ -379,7 +379,7 @@ const MarketingLanding = () => {
 
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
-  const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
+  const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
   
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
@@ -401,24 +401,6 @@ const MarketingLanding = () => {
       transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
     };
   };
-
-  // How-it-works sequential animation
-  const [howStep, setHowStep] = useState(0);
-  useEffect(() => {
-    if (!howVisible || reduced) { if (howVisible) setHowStep(7); return; }
-    const delays = [0, 150, 300, 450, 600, 750, 900];
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 1; i <= 7; i++) {
-      timers.push(setTimeout(() => setHowStep(i), delays[i - 1]));
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [howVisible, reduced]);
-
-  const howSteps = [
-    { num: '1', title: 'Create a case in 60 seconds', desc: 'Enter the client\'s name, contact info, and answer 7 screener questions. ClearPath builds a custom document checklist based on their specific situation automatically.', circleStep: 1, textStep: 1 },
-    { num: '2', title: 'Client completes intake on their phone', desc: 'They receive a secure link via SMS and email. A guided wizard walks them through each document one at a time — with plain English instructions and help finding documents they can\'t locate. No app download needed.', circleStep: 3, textStep: 3 },
-    { num: '3', title: 'Review organized, validated documents', desc: 'Every document arrives sorted by category with AI validation. Approve, request corrections, download, or send reminders — all from one place.', circleStep: 5, textStep: 5 },
-  ];
 
   const faqItems = [
     {
@@ -527,7 +509,132 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Comparison Table */}
+      {/* Two views — attorney + client */}
+      <section
+        ref={twoViewsRef}
+        className="px-6 py-20 max-w-6xl mx-auto"
+        style={revealStyle(twoViewsVisible)}
+      >
+        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
+          Two views. One seamless workflow.
+        </h2>
+        <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mt-4 max-w-2xl mx-auto">
+          The attorney sees documents arriving organized. The client never feels lost.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-16">
+          {/* Left — attorney view */}
+          <div style={revealStyle(twoViewsVisible, { x: -30 })}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
+              For your firm
+            </p>
+            <div className="mt-0">
+              <DashboardMockup visible={true} />
+            </div>
+            <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
+              Every case organized. Every document tracked.
+            </p>
+          </div>
+
+          {/* Right — client phone view */}
+          <div style={revealStyle(twoViewsVisible, { x: 30 })}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
+              For your client
+            </p>
+            <motion.div
+              animate={reduced ? undefined : { y: [0, -8, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                width: 260,
+                height: 520,
+                borderRadius: 40,
+                background: '#0d1a27',
+                border: '8px solid #1a2d42',
+                boxShadow: '0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,194,168,0.15)',
+                margin: '0 auto',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Notch */}
+              <div
+                style={{
+                  width: 80,
+                  height: 20,
+                  background: '#1a2d42',
+                  borderRadius: '0 0 12px 12px',
+                  margin: '0 auto',
+                }}
+              />
+              {/* Progress bar */}
+              <div style={{ height: 3, background: '#00C2A8', width: '28%' }} />
+              {/* Header */}
+              <div className="flex items-center justify-between" style={{ padding: '8px 14px' }}>
+                <span className="font-display font-bold text-[11px] text-primary">ClearPath</span>
+                <span className="text-[10px] text-muted-foreground">Step 1 of 6</span>
+              </div>
+              {/* Content */}
+              <div style={{ padding: '12px 14px' }}>
+                <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-primary" />
+                </div>
+                <h3 className="font-display font-bold text-[15px] text-foreground mt-2">Pay Stubs</h3>
+                <p className="text-[11px] text-primary/80 mt-1">Proves your current income to the court.</p>
+                <div
+                  style={{
+                    border: '1.5px dashed rgba(0,194,168,0.25)',
+                    borderRadius: 12,
+                    padding: '16px 10px',
+                    textAlign: 'center',
+                    marginTop: 10,
+                    background: 'rgba(0,194,168,0.02)',
+                  }}
+                >
+                  <UploadCloud className="w-5 h-5 text-primary/50 mx-auto mb-1" />
+                  <p className="text-[11px] text-muted-foreground">Tap to upload</p>
+                </div>
+                <div
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 20,
+                    padding: '5px 12px',
+                    fontSize: 11,
+                    color: '#7FA0B8',
+                    marginTop: 10,
+                    display: 'inline-block',
+                  }}
+                >
+                  💬 Ask Alex
+                </div>
+              </div>
+              {/* Bottom CTA */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: '12px 14px',
+                  background: 'rgba(13,26,40,0.95)',
+                }}
+              >
+                <div
+                  className="bg-primary text-primary-foreground font-body font-semibold text-[12px] text-center"
+                  style={{ borderRadius: 10, padding: '10px 14px' }}
+                >
+                  Continue →
+                </div>
+              </div>
+            </motion.div>
+            <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
+              Guided step by step. Works on any phone.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <SectionDivider />
       <section className="px-6 py-20 max-w-5xl mx-auto">
         <div ref={comparisonRef} style={revealStyle(comparisonVisible)}>
           <h2 className="font-display font-bold text-[28px] md:text-[36px] text-foreground text-center mb-4">
@@ -667,52 +774,6 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       <FeatureShowcase />
-
-      <SectionDivider />
-
-      {/* How it works */}
-      <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
-        <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-12 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>How it works</h2>
-        <div ref={howRef} className="grid grid-cols-1 md:grid-cols-3 gap-0 items-start relative">
-          {[0, 1].map(i => (
-            <div
-              key={i}
-              className="hidden md:block absolute top-5"
-              style={{
-                left: `calc(${16.67 + i * 33.33}% + 20px)`,
-                right: `calc(${50 - i * 33.33}% + 20px)`,
-                borderTop: '1px solid rgba(0,194,168,0.2)',
-                ...(reduced ? {} : {
-                  transform: howStep >= (i + 1) * 2 ? 'scaleX(1)' : 'scaleX(0)',
-                  transition: 'transform 0.3s ease-out',
-                  transformOrigin: 'left',
-                }),
-              }}
-            />
-          ))}
-          {howSteps.map((step, i) => (
-            <div key={step.num} className="flex flex-col items-center text-center px-4 py-4 relative z-10">
-              <div
-                className="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4"
-                style={reduced ? {} : {
-                  transform: howStep >= step.circleStep ? 'scale(1)' : isMobile ? 'scale(1)' : 'scale(0)',
-                  opacity: howStep >= step.circleStep ? 1 : 0,
-                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out',
-                }}
-              >
-                <span className="font-display font-bold text-sm text-primary-foreground">{step.num}</span>
-              </div>
-              <div style={reduced ? {} : { opacity: howStep >= step.textStep ? 1 : 0, transition: 'opacity 0.3s ease-out' }}>
-                <h3 className="font-display font-semibold text-[17px] text-foreground mb-2">{step.title}</h3>
-                <p className="text-[15px] text-[#8aa3b8] font-body font-light max-w-[260px] mx-auto" style={{ lineHeight: '1.7' }}>{step.desc}</p>
-              </div>
-              {i < 2 && (
-                <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
 
       <SectionDivider />
 
