@@ -379,9 +379,7 @@ const MarketingLanding = () => {
 
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
-  const [wizRef, wizVisible] = useScrollReveal<HTMLDivElement>();
   const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
-  const [featureRef, featureVisible] = useScrollReveal<HTMLDivElement>();
   
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
@@ -458,11 +456,6 @@ const MarketingLanding = () => {
       preview: 'Your first case in under 5 minutes. No training required.',
       a: 'Create your account, set up your firm profile, and send your first client link in under 5 minutes. No training required — the workflow is intuitive enough that paralegals pick it up immediately.',
     },
-    {
-      q: 'Will ClearPath add form filling and court packets?',
-      preview: 'Yes — AI form filling and court packets are coming soon on paid plans.',
-      a: 'AI form filling for all 15 federal Ch.7 forms, means test calculation, exemption analysis, and one-click court packet generation are currently in development. These features will be available on Professional and Firm plans. Customers on those plans will get early access when they launch.',
-    },
   ];
 
   return (
@@ -491,14 +484,13 @@ const MarketingLanding = () => {
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
           style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '720px' }}
         >
-          Stop chasing documents. Start filing.
+          The document intake tool built for bankruptcy firms.
         </h1>
         <p
           className="mt-6 text-[15px] md:text-lg text-[#8aa3b8] font-body font-light max-w-2xl mx-auto relative"
           style={{ ...heroStagger(4), lineHeight: '1.7' }}
         >
-          Your clients upload everything from their phone.<br className="hidden sm:block" />
-          You open the case to find it organized and ready.
+          Send clients a guided intake link. They upload everything from their phone. You open the case to find it organized and ready.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
           <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free Trial</Button>
@@ -616,50 +608,6 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Wizard Section */}
-      <section className="px-6 py-16 max-w-5xl mx-auto">
-        <div ref={wizRef} className="text-center mb-12" style={revealStyle(wizVisible)}>
-          <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground leading-[1.1] landing-heading-glow" style={{ letterSpacing: '-0.01em' }}>
-            Your clients shouldn't need a paralegal<br />
-            <span className="text-primary">to submit their documents.</span>
-          </h2>
-          <p className="text-[15px] text-[#8aa3b8] font-body font-light mt-4 max-w-2xl mx-auto" style={{ lineHeight: '1.7' }}>
-            ClearPath does the hand-holding so your team doesn't have to.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { icon: ClipboardList, title: 'Step-by-step for every client', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
-            { icon: Building, title: 'Bank statements via Plaid', desc: 'Clients connect their bank account directly through Plaid — the same technology trusted by millions of apps. Statements arrive instantly, no downloading or scanning required. Supports Chase, Bank of America, Wells Fargo, and 10,000+ institutions.' },
-            { icon: Sparkles, title: "Meet Alex — your clients' AI guide", desc: "When clients get stuck, Alex answers instantly. Where to find a W-2, what a bank statement looks like, how to get a pay stub from ADP. Alex keeps clients moving forward so your team never has to explain it." },
-          ].map((c, i) => (
-            <div
-              key={c.title}
-              className="p-7 rounded-xl transition-all duration-200"
-              style={{
-                background: '#111f2e',
-                border: '0.5px solid rgba(255,255,255,0.08)',
-                ...revealStyle(wizVisible, { delay: 0.1 + i * 0.08, y: 16 }),
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,194,168,0.25)';
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-              }}
-            >
-              <c.icon className="w-7 h-7 text-primary mb-4" />
-              <h3 className="font-body font-semibold text-[17px] text-foreground mb-2">{c.title}</h3>
-              <p className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{c.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <SectionDivider />
-
       {/* Alex Spotlight */}
       <section ref={alexRef} className="py-20 px-6 max-w-5xl mx-auto" style={revealStyle(alexVisible)}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -761,53 +709,6 @@ const MarketingLanding = () => {
               {i < 2 && (
                 <div className="md:hidden w-px h-8 border-l-2 border-dashed border-primary/25 mt-4" />
               )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <SectionDivider />
-
-      {/* Feature cards */}
-      <section className="px-6 py-16 max-w-5xl mx-auto">
-        <div ref={featureRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { icon: ClipboardList, title: 'Guided Mobile Wizard', desc: 'Clients follow a step-by-step wizard built for non-technical users. Plain English instructions, camera upload, and document help built in. Works on any phone, no app download needed.' },
-            { icon: MessageSquare, title: 'AI Document Validation', desc: 'Every uploaded document is checked instantly by AI — wrong year, wrong type, illegible scan. Clients are notified immediately so corrections happen before you ever open the case.' },
-            { icon: Sparkles, title: 'Alex — Built-in Document AI', desc: 'Every document step has Alex built in. Clients ask where to find their documents and get instant answers with direct links. Alex knows ADP, Gusto, Chase, IRS.gov, and dozens more by name.' },
-            { icon: Clock, title: 'Automatic SMS Reminders', desc: 'Clients who go quiet get automatic follow-up reminders. Targeted, specific, and sent at the right time — so your paralegal spends zero time chasing documents.' },
-            { icon: LayoutDashboard, title: 'Organized on Arrival', desc: 'Every document lands in the right category automatically. Income, bank accounts, debts, assets, ID — organized before you open the case.' },
-            { icon: Building, title: 'Bank Connection via Plaid', desc: 'ClearPath integrates directly with Plaid — the same bank connection technology used by Venmo and Robinhood. Clients connect once and 6 months of statements arrive instantly. Available on Professional and Firm plans.' },
-          ].map((f, i) => (
-            <div
-              key={f.title}
-              className="p-6 rounded-xl transition-all duration-200"
-              style={{
-                border: '0.5px solid rgba(255,255,255,0.08)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-                background: 'hsl(var(--surface))',
-                ...revealStyle(featureVisible, { delay: i * 0.06, y: 16 }),
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.borderColor = 'rgba(0,194,168,0.3)';
-                el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), 0 0 20px rgba(0,194,168,0.06)';
-                el.style.transform = 'translateY(-2px)';
-                el.style.background = '#131f2e';
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.borderColor = 'rgba(255,255,255,0.08)';
-                el.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04)';
-                el.style.transform = 'translateY(0)';
-                el.style.background = 'hsl(var(--surface))';
-              }}
-            >
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-                <f.icon className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="font-display font-semibold text-[17px] text-foreground mb-2">{f.title}</h3>
-              <p className="text-[15px] text-[#8aa3b8] font-body font-light" style={{ lineHeight: '1.7' }}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -965,9 +866,9 @@ const MarketingLanding = () => {
               <X className="w-5 h-5" />
             </button>
             <h3 className="font-display font-bold text-xl text-foreground mb-4">Product Demo</h3>
-            <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center">
-              <p className="text-[#8aa3b8] font-body">Demo video coming soon</p>
-            </div>
+            <video autoPlay muted loop playsInline style={{ width: '100%', borderRadius: '8px' }}>
+              <source src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/marketing-videos/pay-stubs-workflow.mp4`} type="video/mp4" />
+            </video>
           </div>
         </div>
       )}
