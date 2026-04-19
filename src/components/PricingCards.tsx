@@ -44,7 +44,6 @@ const LANDING_PLANS: Record<string, PlanDef> = {
       'White-label client portal',
       '14-day free trial',
     ],
-    note: 'AI form filling and court packets coming soon',
   },
   firm: {
     name: 'Firm',

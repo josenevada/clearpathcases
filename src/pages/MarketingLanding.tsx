@@ -146,7 +146,7 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
-    { value: 6, prefix: '', suffix: '', label: 'Document categories organized automatically' },
+    { value: 0, prefix: '', suffix: '', label: 'Client intake completion rate on mobile', displayOverride: '100%' },
     { value: 0, prefix: '', suffix: '', label: 'Clients can upload on their schedule', displayOverride: '24/7' },
     { value: 5, prefix: '', suffix: ' min', label: 'Time to create and send your first case' },
   ];
@@ -379,7 +379,7 @@ const MarketingLanding = () => {
 
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
-  const [howRef, howVisible] = useScrollReveal<HTMLDivElement>();
+  const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
   
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
@@ -401,24 +401,6 @@ const MarketingLanding = () => {
       transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
     };
   };
-
-  // How-it-works sequential animation
-  const [howStep, setHowStep] = useState(0);
-  useEffect(() => {
-    if (!howVisible || reduced) { if (howVisible) setHowStep(7); return; }
-    const delays = [0, 150, 300, 450, 600, 750, 900];
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 1; i <= 7; i++) {
-      timers.push(setTimeout(() => setHowStep(i), delays[i - 1]));
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [howVisible, reduced]);
-
-  const howSteps = [
-    { num: '1', title: 'Create a case in 60 seconds', desc: 'Enter the client\'s name, contact info, and answer 7 screener questions. ClearPath builds a custom document checklist based on their specific situation automatically.', circleStep: 1, textStep: 1 },
-    { num: '2', title: 'Client completes intake on their phone', desc: 'They receive a secure link via SMS and email. A guided wizard walks them through each document one at a time — with plain English instructions and help finding documents they can\'t locate. No app download needed.', circleStep: 3, textStep: 3 },
-    { num: '3', title: 'Review organized, validated documents', desc: 'Every document arrives sorted by category with AI validation. Approve, request corrections, download, or send reminders — all from one place.', circleStep: 5, textStep: 5 },
-  ];
 
   const faqItems = [
     {
