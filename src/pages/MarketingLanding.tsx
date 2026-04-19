@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -206,280 +206,47 @@ const showcaseFeatures = [
 
 const ROTATION_MS = 4000;
 
-const MockupWizard = () => (
+const VIDEO_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/marketing-videos`;
+
+const FeatureVideo = ({ src, motionKey }: { src: string; motionKey: string }) => (
   <motion.div
-    key="wizard"
+    key={motionKey}
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -12 }}
     transition={{ duration: 0.25 }}
   >
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      paddingTop: '56.25%',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      background: '#0B1623'
-    }}>
-      <iframe
-        src="https://watchclueso.com/embed/ts2yv4p5qxllae0w?autoplay=1&muted=1&loop=1"
-        frameBorder="0"
-        // @ts-expect-error vendor-prefixed fullscreen attrs
-        webkitallowfullscreen="true"
-        mozallowfullscreen="true"
-        allowFullScreen
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          border: 'none',
-          borderRadius: '12px'
-        }}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      />
-    </div>
+    <video
+      autoPlay
+      muted
+      loop
+      playsInline
+      style={{
+        width: '100%',
+        borderRadius: '12px',
+        display: 'block',
+      }}
+    >
+      <source src={src} type="video/mp4" />
+    </video>
   </motion.div>
 );
 
-type AlexBubble = { who: 'client' | 'alex'; text: string };
-
-const ALEX_BUBBLES: AlexBubble[] = [
-  { who: 'client', text: 'Where do I get my W-2?' },
-  { who: 'alex', text: 'Log into your payroll portal — ADP at adp.com or Workday. Go to Pay & Tax → Tax Documents and download both years.' },
-  { who: 'client', text: 'I use ADP' },
-  { who: 'alex', text: 'Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024. Takes 2 minutes ✓' },
-];
-
-const TYPE_CHAR_MS = 18;        // characters per ms for Alex
-const CLIENT_PAUSE_MS = 500;    // pause after client message before Alex starts
-const ALEX_THINK_MS = 600;      // typing dots before Alex types
-const POST_ALEX_MS = 700;       // pause after Alex finishes before next message
-
-type StepState = {
-  visibleCount: number;          // 0..bubbles.length — how many bubbles exist (incl. typing)
-  typing: boolean;               // is the current Alex bubble showing typing dots
-  typedChars: number;            // chars revealed in the currently typing Alex bubble
-};
-
-const TypingDots = () => (
-  <div className="bg-secondary rounded-2xl px-4 py-3 inline-flex items-center gap-1 mr-auto">
-    {[0, 1, 2].map((d) => (
-      <motion.span
-        key={d}
-        className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
-        style={{ display: 'inline-block' }}
-        animate={{ y: [0, -3, 0] }}
-        transition={{ duration: 0.6, repeat: Infinity, delay: d * 0.12, ease: 'easeInOut' }}
-      />
-    ))}
-  </div>
+const MockupWizard = () => (
+  <FeatureVideo motionKey="wizard" src={`${VIDEO_BASE}/pay-stubs-workflow.mp4`} />
 );
 
-const MockupAlex = () => {
-  const [state, setState] = useState<StepState>({ visibleCount: 0, typing: false, typedChars: 0 });
-  const cancelledRef = useRef(false);
-
-  useEffect(() => {
-    cancelledRef.current = false;
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-    const intervals: ReturnType<typeof setInterval>[] = [];
-
-    const wait = (ms: number) => new Promise<void>((resolve) => {
-      const t = setTimeout(resolve, ms);
-      timeouts.push(t);
-    });
-
-    const run = async () => {
-      // small initial delay so the entrance fade can play
-      await wait(300);
-      for (let i = 0; i < ALEX_BUBBLES.length; i++) {
-        if (cancelledRef.current) return;
-        const b = ALEX_BUBBLES[i];
-        if (b.who === 'client') {
-          setState((s) => ({ visibleCount: i + 1, typing: false, typedChars: 0 }));
-          await wait(CLIENT_PAUSE_MS);
-        } else {
-          // show typing indicator
-          setState({ visibleCount: i + 1, typing: true, typedChars: 0 });
-          await wait(ALEX_THINK_MS);
-          if (cancelledRef.current) return;
-          // start typewriter
-          setState({ visibleCount: i + 1, typing: false, typedChars: 0 });
-          await new Promise<void>((resolve) => {
-            let chars = 0;
-            const total = b.text.length;
-            const iv = setInterval(() => {
-              if (cancelledRef.current) {
-                clearInterval(iv);
-                resolve();
-                return;
-              }
-              chars += 1;
-              setState({ visibleCount: i + 1, typing: false, typedChars: chars });
-              if (chars >= total) {
-                clearInterval(iv);
-                resolve();
-              }
-            }, TYPE_CHAR_MS);
-            intervals.push(iv);
-          });
-          await wait(POST_ALEX_MS);
-        }
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelledRef.current = true;
-      timeouts.forEach(clearTimeout);
-      intervals.forEach(clearInterval);
-    };
-  }, []);
-
-  return (
-    <motion.div
-      key="alex"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.25 }}
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">A</div>
-        <div>
-          <p className="font-body font-semibold text-foreground text-sm">Alex</p>
-          <p className="text-[11px] text-muted-foreground">Document Assistant</p>
-        </div>
-      </div>
-      <div className="mt-4 space-y-3">
-        {ALEX_BUBBLES.slice(0, state.visibleCount).map((b, i) => {
-          const isCurrent = i === state.visibleCount - 1;
-          if (b.who === 'client') {
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
-              >
-                {b.text}
-              </motion.div>
-            );
-          }
-          // Alex bubble
-          if (isCurrent && state.typing) {
-            return <TypingDots key={i} />;
-          }
-          const shown = isCurrent ? b.text.slice(0, state.typedChars) : b.text;
-          const stillTyping = isCurrent && state.typedChars < b.text.length;
-          return (
-            <div
-              key={i}
-              className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body"
-            >
-              {shown}
-              {stillTyping && (
-                <motion.span
-                  className="inline-block w-[2px] h-[1em] bg-foreground/70 ml-0.5 align-middle"
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </motion.div>
-  );
-};
+const MockupAlex = () => (
+  <FeatureVideo motionKey="alex" src={`${VIDEO_BASE}/ask-alex.mp4`} />
+);
 
 const MockupPlaid = () => (
-  <motion.div
-    key="plaid"
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -12 }}
-    transition={{ duration: 0.25 }}
-  >
-    <div className="flex items-center gap-2 mb-1">
-      <span className="font-body font-bold text-[15px] text-foreground">Plaid</span>
-      <div className="w-2 h-2 rounded-full bg-success" />
-    </div>
-    <p className="text-[13px] text-[#8aa3b8] font-body font-light mb-4">Connect your bank account securely.</p>
-    <div className="flex flex-wrap gap-2 mb-4">
-      {['Chase', 'Bank of America', 'Wells Fargo'].map(b => (
-        <span key={b} className="bg-secondary rounded-full px-3 py-1 text-[12px] font-body text-foreground">{b}</span>
-      ))}
-    </div>
-    <button className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-body font-semibold mb-3">
-      Connect Bank Account
-    </button>
-    <p className="text-[11px] text-muted-foreground font-body text-center mb-4">
-      10,000+ institutions supported · 256-bit encryption · Trusted by millions
-    </p>
-    <div className="rounded-xl bg-success/10 border border-success/20 px-3 py-2.5 flex items-center gap-2">
-      <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-      <span className="text-success font-medium text-sm font-body">Connected — 6 months of statements ready</span>
-    </div>
-  </motion.div>
+  <FeatureVideo motionKey="plaid" src={`${VIDEO_BASE}/connecting-bank.mp4`} />
 );
 
-const MockupOrganized = () => {
-  const cats = [
-    { name: 'Income & Employment', count: '4/4', state: 'done' },
-    { name: 'Bank & Financial', count: '2/2', state: 'done' },
-    { name: 'Debts & Credit', count: '2/4', state: 'partial' },
-    { name: 'Personal ID', count: '0/2', state: 'empty' },
-  ];
-  return (
-    <motion.div
-      key="organized"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.25 }}
-    >
-      <h4 className="font-display font-bold text-[16px] text-foreground mb-3">Kevin James — Chapter 7</h4>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-          <div className="h-full bg-primary rounded-full" style={{ width: '78%' }} />
-        </div>
-        <span className="text-[11px] text-muted-foreground font-body">78% complete</span>
-      </div>
-      <div className="space-y-1.5 mb-4">
-        {cats.map(c => (
-          <div key={c.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02]">
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-[13px] text-foreground font-body flex-1">{c.name}</span>
-            {c.state === 'done' && (
-              <span className="flex items-center gap-1 text-success text-[11px] font-body font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" />{c.count}
-              </span>
-            )}
-            {c.state === 'partial' && (
-              <span className="flex items-center gap-1 text-[hsl(36_91%_55%)] text-[11px] font-body font-semibold">
-                <Clock className="w-3.5 h-3.5" />{c.count}
-              </span>
-            )}
-            {c.state === 'empty' && (
-              <span className="text-muted-foreground text-[11px] font-body">{c.count}</span>
-            )}
-          </div>
-        ))}
-      </div>
-      <button className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-body font-semibold mb-2 inline-flex items-center justify-center gap-2">
-        <Download className="w-4 h-4" />
-        Download ZIP
-      </button>
-      <p className="text-center text-[12px] text-muted-foreground font-body underline cursor-pointer">View all documents</p>
-    </motion.div>
-  );
-};
+const MockupOrganized = () => (
+  <FeatureVideo motionKey="organized" src={`${VIDEO_BASE}/reminders-approve.mp4`} />
+);
 
 const FeatureShowcase = () => {
   const [active, setActive] = useState(0);
