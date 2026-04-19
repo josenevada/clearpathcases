@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
-  ArrowRight, Lock, Shield, CheckCircle, Clock, ChevronDown,
-  Plus, Minus, Sparkles, MessageSquare, ClipboardList,
+  ArrowRight, Lock, Shield, CheckCircle, ChevronDown,
+  Plus, Minus, MessageSquare, ClipboardList,
   Building, UploadCloud, ChevronRight, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
