@@ -555,6 +555,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={handleDownloadSelected}
+              >
+                <Download className="w-4 h-4 mr-2" /> Download Selected
+              </Button>
+              <Button
+                size="sm"
                 variant="warning"
                 onClick={() => setShowBulkCorrection(true)}
               >
