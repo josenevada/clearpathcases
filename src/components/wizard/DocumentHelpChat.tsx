@@ -94,7 +94,8 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
     setMessages([{ role: 'assistant', content: ALEX_INTRO }]);
     setInput('');
     setLoading(false);
-  }, [documentLabel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentLabel, language]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -129,6 +130,7 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
           document_category: documentLabel,
           chapter_type: chapterType,
           messages: apiMessages,
+          language,
         },
       });
 
@@ -165,6 +167,7 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
         document_category: documentLabel,
         chapter_type: chapterType,
         messages: apiMessages,
+        language,
       },
     }).then(({ data, error }) => {
       const aiResponse = error ? "I'm having trouble right now." : (data?.response || "I'm having trouble right now.");
@@ -263,11 +266,10 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
               {/* Quick suggestions after intro message */}
               {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && (
                 <div className="flex flex-wrap gap-2 pl-8">
-                  {[
-                    'Where do I find this?',
-                    'What does this look like?',
-                    'Can I use a screenshot?',
-                  ].map(q => (
+                  {(language === 'es'
+                    ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
+                    : ['Where do I find this?', 'What does this look like?', 'Can I use a screenshot?']
+                  ).map(q => (
                     <button
                       key={q}
                       onClick={() => handleQuickQuestion(q)}
@@ -304,7 +306,7 @@ const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpen
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask Alex anything…"
+                  placeholder={language === 'es' ? 'Pregúntale a Alex…' : 'Ask Alex anything…'}
                   className="flex-1 bg-muted rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
                   disabled={loading}
                 />
