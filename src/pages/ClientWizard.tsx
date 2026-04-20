@@ -1743,7 +1743,8 @@ const ClientWizard = () => {
                     </a>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {isCheckpointItem ? (
                 <div className="space-y-6">
