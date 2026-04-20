@@ -106,7 +106,11 @@ export default function AlexChatDemo() {
 
       <div
         ref={scrollRef}
-        className="mt-4 space-y-3 h-[280px] overflow-hidden flex flex-col"
+        className="mt-4 space-y-3 h-[320px] overflow-y-auto flex flex-col pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          maskImage: 'linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)',
+        }}
       >
         <AnimatePresence initial={false}>
           {messages.map(m => (
