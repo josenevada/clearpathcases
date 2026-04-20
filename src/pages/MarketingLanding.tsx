@@ -5,7 +5,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, ChevronDown,
   Plus, Minus, MessageSquare, ClipboardList,
-  Building, UploadCloud, ChevronRight, Download,
+  Building, UploadCloud, ChevronRight, Download, Circle, Mail, Paperclip,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
@@ -381,6 +381,18 @@ const MarketingLanding = () => {
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
+  const [beforeAfterState, setBeforeAfterState] = useState<'before' | 'after'>('before');
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setBeforeAfterState((s) => (s === 'before' ? 'after' : 'before'));
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  const toggleBeforeAfter = (next: 'before' | 'after') => {
+    setBeforeAfterState(next);
+  };
   
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
@@ -523,17 +535,257 @@ const MarketingLanding = () => {
           The attorney sees documents arriving organized. The client never feels lost.
         </p>
 
+        {/* Before / After auto-transitioning preview */}
+        <div className="max-w-2xl mx-auto mb-16 mt-12">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => toggleBeforeAfter('before')}
+              className={`text-[12px] font-semibold uppercase tracking-wider rounded-full px-4 py-1.5 border transition-colors ${
+                beforeAfterState === 'before'
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'text-muted-foreground bg-transparent border-border/40'
+              }`}
+            >
+              Before ClearPath
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleBeforeAfter('after')}
+              className={`text-[12px] font-semibold uppercase tracking-wider rounded-full px-4 py-1.5 border transition-colors ${
+                beforeAfterState === 'after'
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'text-muted-foreground bg-transparent border-border/40'
+              }`}
+            >
+              With ClearPath
+            </button>
+          </div>
+
+          <div className="rounded-2xl overflow-hidden" style={{ minHeight: 320 }}>
+            <AnimatePresence mode="wait">
+              {beforeAfterState === 'before' ? (
+                <motion.div
+                  key="before"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="rounded-2xl overflow-hidden bg-destructive/[0.03]"
+                  style={{ background: '#0d1520', border: '1px solid rgba(248,113,113,0.15)' }}
+                >
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-[12px] text-muted-foreground">Inbox (47 unread)</span>
+                    <span className="ml-auto w-2 h-2 rounded-full bg-destructive" />
+                  </div>
+                  <div className="divide-y divide-border/20">
+                    {[
+                      { who: 'Sarah M.', subj: 'Re: Documents — still waiting on pay stubs', when: '3 days ago' },
+                      { who: 'James C.', subj: 'FWD: wrong file again??', when: '2 days ago' },
+                      { who: 'Robert K.', subj: 'RE: RE: RE: bank statements', when: '5 days ago' },
+                      { who: 'Linda T.', subj: 'Can you resend the checklist?', when: '1 week ago' },
+                      { who: 'Marcus W.', subj: "I don't understand what you need", when: '1 week ago' },
+                    ].map((e, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-2">
+                        <div className="w-6 h-6 rounded-full bg-muted/30 flex items-center justify-center text-[10px] text-muted-foreground font-semibold">
+                          {e.who.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] text-foreground/90 truncate">
+                            <span className="font-semibold">{e.who}</span> — {e.subj}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{e.when}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-4 py-3 border-t border-border/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[11px] text-muted-foreground">Document Checklist.pdf</span>
+                    </div>
+                    <ul className="space-y-1">
+                      {[
+                        'Pay stubs (last 60 days)',
+                        'W-2s (2 years)',
+                        'Federal tax returns (2 years)',
+                        'Bank statements (6 months, all accounts)',
+                        'Photo ID (government issued)',
+                        'Social Security card',
+                        'Credit card statements (3 months)',
+                        'Loan documents',
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-3 h-3 rounded-sm border border-border/50 inline-block" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="text-destructive/70 text-[12px] text-center py-3">
+                    Hours spent chasing. Documents still missing.
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="after"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="rounded-2xl overflow-hidden"
+                  style={{ background: '#0d1520', border: '1px solid rgba(0,194,168,0.2)' }}
+                >
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+                    <span className="font-display font-bold text-[14px] text-foreground">
+                      Kevin James — Chapter 7
+                    </span>
+                    <span className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+                      78% complete
+                    </span>
+                  </div>
+                  <div className="px-4 pt-3">
+                    <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: '78%' }} />
+                    </div>
+                  </div>
+                  <div className="divide-y divide-border/20 mt-2">
+                    {[
+                      { name: 'Income & Employment', count: '4/4', state: 'done' },
+                      { name: 'Bank & Financial', count: '2/2', state: 'done' },
+                      { name: 'Debts & Credit', count: '2/4', state: 'partial' },
+                      { name: 'Personal ID', count: '0/2', state: 'empty' },
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          {row.state === 'done' && <CheckCircle2 className="w-4 h-4 text-success" />}
+                          {row.state === 'partial' && (
+                            <div className="w-4 h-4 rounded-full border-2 border-warning relative overflow-hidden">
+                              <div className="absolute inset-0 bg-warning" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                            </div>
+                          )}
+                          {row.state === 'empty' && <Circle className="w-4 h-4 text-muted-foreground" />}
+                          <span className="text-[12px] text-foreground/90">{row.name}</span>
+                        </div>
+                        <span
+                          className={`text-[11px] font-semibold ${
+                            row.state === 'done'
+                              ? 'text-success'
+                              : row.state === 'partial'
+                              ? 'text-warning'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {row.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex items-center gap-3">
+                      <div className="flex-1">
+                        <p className="text-[12px] text-foreground/90">📱 Kevin uploaded 3 documents today</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">2 hours ago</p>
+                      </div>
+                      <button className="text-[11px] font-semibold text-primary">Review →</button>
+                    </div>
+                  </div>
+                  <p className="text-primary/70 text-[12px] text-center py-3">
+                    Organized on arrival. Ready to review.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-16">
-          {/* Left — attorney view */}
+          {/* Left — attorney checklist view */}
           <div style={revealStyle(twoViewsVisible, { x: -30 })}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
-              For your firm
+              For your paralegal
             </p>
-            <div className="mt-0">
-              <DashboardMockup visible={true} />
+            <div
+              className="rounded-2xl overflow-hidden bg-card mx-auto"
+              style={{
+                maxWidth: 460,
+                border: '1px solid hsl(172 100% 38% / 0.3)',
+                boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
+              }}
+            >
+              {/* Browser chrome */}
+              <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border/30 bg-muted/10">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-warning/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-success/60" />
+              </div>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-display font-bold text-[13px] text-foreground">← Kevin James</span>
+                  <span className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+                    CH.7
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">Due May 29</span>
+              </div>
+              {/* Progress */}
+              <div className="px-4">
+                <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: '78%' }} />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5">78% complete</p>
+              </div>
+              {/* Categories */}
+              <div className="mt-3">
+                {[
+                  { name: 'Income & Employment', count: '4/4', state: 'done' },
+                  { name: 'Bank & Financial', count: '2/2', state: 'done' },
+                  { name: 'Debts & Credit', count: '2/4', state: 'partial' },
+                  { name: 'Personal ID', count: '0/2', state: 'empty' },
+                ].map((row, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-3 px-4 border-b border-border/40"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {row.state === 'done' && <CheckCircle2 className="w-4 h-4 text-success" />}
+                      {row.state === 'partial' && (
+                        <div className="w-4 h-4 rounded-full border-2 border-warning relative overflow-hidden">
+                          <div className="absolute inset-0 bg-warning" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                        </div>
+                      )}
+                      {row.state === 'empty' && <Circle className="w-4 h-4 text-muted-foreground" />}
+                      <span className="text-[12px] text-foreground/90">{row.name}</span>
+                    </div>
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        row.state === 'done'
+                          ? 'text-success'
+                          : row.state === 'partial'
+                          ? 'text-warning'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {row.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 px-4 py-3">
+                <button className="flex-1 bg-primary text-primary-foreground text-[12px] font-semibold rounded-lg py-2">
+                  Approve All
+                </button>
+                <button className="flex-1 border border-border text-foreground text-[12px] font-semibold rounded-lg py-2">
+                  Download ZIP
+                </button>
+              </div>
             </div>
             <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
-              Every case organized. Every document tracked.
+              Documents arrive organized. Review and approve in minutes.
             </p>
           </div>
 
