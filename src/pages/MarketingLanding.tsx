@@ -379,6 +379,7 @@ const MarketingLanding = () => {
   };
 
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
+  const [credibilityRef, credibilityVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
   const [beforeAfterState, setBeforeAfterState] = useState<'before' | 'after'>('before');
