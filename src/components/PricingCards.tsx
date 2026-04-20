@@ -13,12 +13,17 @@ interface PlanDef {
   note?: string;
 }
 
-const LANDING_PLANS: Record<string, PlanDef> = {
+interface PlanDefWithDiff extends PlanDef {
+  differentiator?: string;
+}
+
+const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
   starter: {
     name: 'Starter',
     monthly: '$199',
     annual: '$166',
     subtitle: 'For solo practitioners',
+    differentiator: 'Solo practice · Up to 8 cases',
     features: [
       'Up to 8 active cases',
       'Full client intake wizard',
@@ -35,6 +40,7 @@ const LANDING_PLANS: Record<string, PlanDef> = {
     annual: '$332',
     subtitle: 'For growing firms',
     popular: true,
+    differentiator: 'Growing firms · Plaid + white-label',
     features: [
       'Up to 25 active cases',
       'Everything in Starter',
@@ -50,6 +56,7 @@ const LANDING_PLANS: Record<string, PlanDef> = {
     monthly: '$699',
     annual: '$582',
     subtitle: 'For high-volume practices',
+    differentiator: 'High volume · Dedicated support',
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
@@ -73,7 +80,7 @@ interface PricingCardsProps {
 const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, isAnnual = false }: PricingCardsProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl mx-auto">
-      {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDef][]).map(([key, plan]) => {
+      {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDefWithDiff][]).map(([key, plan]) => {
         const isCurrent = currentPlan === key;
         const price = isAnnual ? plan.annual : plan.monthly;
         return (
@@ -109,6 +116,11 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
             )}
             <h3 className="font-display font-semibold text-[17px] text-foreground">{plan.name}</h3>
             <p className="text-xs text-[#8aa3b8] font-body mt-1">{plan.subtitle}</p>
+            {plan.differentiator && (
+              <span className="text-[12px] font-body font-semibold text-primary bg-primary/10 rounded-full px-3 py-1 inline-block mt-3 mb-1 self-start">
+                {plan.differentiator}
+              </span>
+            )}
             <div className="mt-3 mb-1">
               <span className="font-display font-bold text-3xl text-foreground">{price}</span>
               <span className="text-[#8aa3b8] text-sm">/month</span>

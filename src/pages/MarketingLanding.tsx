@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
-  ArrowRight, Lock, Shield, CheckCircle, ChevronDown,
+  ArrowRight, Lock, Shield, CheckCircle, ChevronDown, Clock,
   Plus, Minus, MessageSquare, ClipboardList,
   Building, UploadCloud, ChevronRight, Download, Circle, Mail, Paperclip,
 } from 'lucide-react';
@@ -379,6 +379,7 @@ const MarketingLanding = () => {
   };
 
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
+  const [credibilityRef, credibilityVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
   const [beforeAfterState, setBeforeAfterState] = useState<'before' | 'after'>('before');
@@ -469,7 +470,7 @@ const MarketingLanding = () => {
           <a href="#features" onClick={e => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Features</a>
           <a href="#pricing" onClick={e => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Pricing</a>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
-          <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free Trial</Button>
+          <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free — No Card Needed</Button>
         </div>
       </nav>
 
@@ -488,9 +489,9 @@ const MarketingLanding = () => {
           Send clients a guided intake link. They upload everything from their phone. You open the case to find it organized and ready.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
-          <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free Trial</Button>
+          <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free — No Card Needed</Button>
           <Button size="lg" variant="ghost" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
-            See How It Works <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+            See Features <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
         <p className="mt-6 text-sm text-[#8aa3b8] relative" style={heroStagger(8)}>
@@ -518,6 +519,112 @@ const MarketingLanding = () => {
 
         <DashboardMockup visible={heroLoaded} />
         <StatsBar />
+      </section>
+
+      {/* Credibility bar */}
+      <section
+        ref={credibilityRef}
+        className="max-w-4xl mx-auto py-8 px-6"
+        style={revealStyle(credibilityVisible)}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
+          {[
+            { Icon: Lock, label: 'Bank-level encryption' },
+            { Icon: Shield, label: 'SOC 2 compliant infrastructure' },
+            { Icon: CheckCircle2, label: 'Built for Ch. 7 & Ch. 13' },
+            { Icon: Clock, label: 'First case in 5 minutes' },
+          ].map(({ Icon, label }, i) => (
+            <div
+              key={label}
+              className="flex items-center justify-center gap-2 text-[13px] text-[#8aa3b8] font-body py-2 md:py-0"
+              style={i > 0 && i < 4 ? { borderLeft: '0.5px solid rgba(255,255,255,0.06)' } : undefined}
+            >
+              <Icon className="w-4 h-4 text-primary/60 flex-shrink-0" />
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SectionDivider />
+
+      {/* Comparison grid — moved up before See the difference */}
+      <section className="px-6 py-20 max-w-5xl mx-auto">
+        <div ref={comparisonRef} style={revealStyle(comparisonVisible)}>
+          <h2 className="font-display font-bold text-[28px] md:text-[36px] text-foreground text-center mb-4">
+            Built for how bankruptcy actually works
+          </h2>
+          <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mb-12">
+            See how ClearPath compares to how most firms collect documents today.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left py-4 pr-6 min-w-[200px]"></th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Email & PDF</span>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Google Forms</span>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Generic Software</span>
+                  </th>
+                  <th className="py-4 px-3 text-center bg-primary/[0.03]">
+                    <span className="text-[11px] font-semibold font-body text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1 inline-block">ClearPath</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: 'Client guided step by step', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'AI validates every document', cols: ['x', 'x', 'x', 'check'] },
+                  { label: 'AI guide answers client questions', cols: ['x', 'x', 'x', 'alex'] },
+                  { label: 'Bank statements via Plaid', cols: ['x', 'x', 'x', 'plaid'] },
+                  { label: 'Automatic SMS reminders', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Documents organized on arrival', cols: ['x', 'x', '-', 'check'] },
+                  { label: "Works on client's phone", cols: ['-', '-', '-', 'check'] },
+                  { label: 'Built for Ch. 7 & Ch. 13', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Personalized checklist per client', cols: ['x', 'x', 'x', 'check'] },
+                ].map((row, rowIdx) => (
+                  <tr key={row.label} className={rowIdx % 2 === 1 ? 'bg-white/[0.02]' : ''}>
+                    <td className="text-[14px] text-foreground font-body font-medium py-4 pr-6 min-w-[200px]">
+                      {row.label}
+                    </td>
+                    {row.cols.map((cell, colIdx) => {
+                      const isClearPath = colIdx === 3;
+                      return (
+                        <td
+                          key={colIdx}
+                          className={`py-4 px-3 text-center ${isClearPath ? 'bg-primary/[0.03]' : ''}`}
+                        >
+                          <div className="flex items-center justify-center">
+                            {cell === 'x' && <XCircle className="text-destructive/60 w-4 h-4" />}
+                            {cell === 'check' && <CheckCircle2 className="text-primary w-4 h-4" />}
+                            {cell === '-' && <span className="text-muted-foreground">—</span>}
+                            {cell === 'alex' && (
+                              <>
+                                <CheckCircle2 className="text-primary w-4 h-4" />
+                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Alex</span>
+                              </>
+                            )}
+                            {cell === 'plaid' && (
+                              <>
+                                <CheckCircle2 className="text-primary w-4 h-4" />
+                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Plaid</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <SectionDivider />
@@ -858,85 +965,6 @@ const MarketingLanding = () => {
       </section>
 
       <SectionDivider />
-      <section className="px-6 py-20 max-w-5xl mx-auto">
-        <div ref={comparisonRef} style={revealStyle(comparisonVisible)}>
-          <h2 className="font-display font-bold text-[28px] md:text-[36px] text-foreground text-center mb-4">
-            Built for how bankruptcy actually works
-          </h2>
-          <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mb-12">
-            See how ClearPath compares to how most firms collect documents today.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left py-4 pr-6 min-w-[200px]"></th>
-                  <th className="py-4 px-3 text-center">
-                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Email & PDF</span>
-                  </th>
-                  <th className="py-4 px-3 text-center">
-                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Google Forms</span>
-                  </th>
-                  <th className="py-4 px-3 text-center">
-                    <span className="text-[11px] font-semibold font-body text-muted-foreground bg-secondary/50 rounded-full px-3 py-1 inline-block">Generic Software</span>
-                  </th>
-                  <th className="py-4 px-3 text-center bg-primary/[0.03]">
-                    <span className="text-[11px] font-semibold font-body text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1 inline-block">ClearPath</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { label: 'Client guided step by step', cols: ['x', 'x', '-', 'check'] },
-                  { label: 'AI validates every document', cols: ['x', 'x', 'x', 'check'] },
-                  { label: 'AI guide answers client questions', cols: ['x', 'x', 'x', 'alex'] },
-                  { label: 'Bank statements via Plaid', cols: ['x', 'x', 'x', 'plaid'] },
-                  { label: 'Automatic SMS reminders', cols: ['x', 'x', '-', 'check'] },
-                  { label: 'Documents organized on arrival', cols: ['x', 'x', '-', 'check'] },
-                  { label: "Works on client's phone", cols: ['-', '-', '-', 'check'] },
-                  { label: 'Built for Ch. 7 & Ch. 13', cols: ['x', 'x', '-', 'check'] },
-                  { label: 'Setup in under 5 minutes', cols: ['check', 'check', 'x', 'check'] },
-                ].map((row, rowIdx) => (
-                  <tr key={row.label} className={rowIdx % 2 === 1 ? 'bg-white/[0.02]' : ''}>
-                    <td className="text-[14px] text-foreground font-body font-medium py-4 pr-6 min-w-[200px]">
-                      {row.label}
-                    </td>
-                    {row.cols.map((cell, colIdx) => {
-                      const isClearPath = colIdx === 3;
-                      return (
-                        <td
-                          key={colIdx}
-                          className={`py-4 px-3 text-center ${isClearPath ? 'bg-primary/[0.03]' : ''}`}
-                        >
-                          <div className="flex items-center justify-center">
-                            {cell === 'x' && <XCircle className="text-destructive/60 w-4 h-4" />}
-                            {cell === 'check' && <CheckCircle2 className="text-primary w-4 h-4" />}
-                            {cell === '-' && <span className="text-muted-foreground">—</span>}
-                            {cell === 'alex' && (
-                              <>
-                                <CheckCircle2 className="text-primary w-4 h-4" />
-                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Alex</span>
-                              </>
-                            )}
-                            {cell === 'plaid' && (
-                              <>
-                                <CheckCircle2 className="text-primary w-4 h-4" />
-                                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">Plaid</span>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <SectionDivider />
 
       {/* Alex Spotlight */}
       <section ref={alexRef} className="py-20 px-6 max-w-5xl mx-auto" style={revealStyle(alexVisible)}>
@@ -1119,6 +1147,21 @@ const MarketingLanding = () => {
           </p>
         </div>
       </section>
+
+      {/* Footer CTA strip */}
+      <div
+        className="py-6 px-6 text-center"
+        style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.04)' }}
+      >
+        <span className="text-[15px] text-[#8aa3b8] font-body">Ready to stop chasing documents?</span>
+        <Button
+          size="sm"
+          onClick={() => navigate('/signup')}
+          className="landing-btn-glow ml-4"
+        >
+          Start Free — No Card Needed
+        </Button>
+      </div>
 
       {/* Footer */}
       <footer className="px-6 py-8" style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
