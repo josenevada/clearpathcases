@@ -1702,7 +1702,13 @@ const ClientWizard = () => {
 
 
 
-              {currentItem?.label === 'Credit Counseling Certificate' && (
+              {currentItem?.label === 'Credit Counseling Certificate' && (() => {
+                const safeCounselingUrl = counselingProviderLink
+                  ? counselingProviderLink.startsWith('http://') || counselingProviderLink.startsWith('https://')
+                    ? counselingProviderLink
+                    : `https://${counselingProviderLink}`
+                  : null;
+                return (
                 <div className="mt-4 mb-6 rounded-xl p-4" style={{ background: 'rgba(0,194,168,0.05)', border: '1px solid rgba(0,194,168,0.2)' }}>
                   <p className="font-body font-semibold text-[13px] text-foreground mb-1">
                     Complete your credit counseling
@@ -1710,10 +1716,10 @@ const ClientWizard = () => {
                   <p className="text-[12px] text-muted-foreground mb-3" style={{ lineHeight: '1.6' }}>
                     The court requires this before filing. It takes about 60–90 minutes. After completing it, download your certificate and upload it here.
                   </p>
-                  {counselingProviderLink ? (
+                  {safeCounselingUrl ? (
                     <div className="space-y-2">
                       <a
-                        href={counselingProviderLink}
+                        href={safeCounselingUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block w-full text-center font-body font-semibold text-[13px] text-primary-foreground bg-primary rounded-xl py-3 hover:opacity-90 transition-opacity"
@@ -1737,7 +1743,8 @@ const ClientWizard = () => {
                     </a>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {isCheckpointItem ? (
                 <div className="space-y-6">
