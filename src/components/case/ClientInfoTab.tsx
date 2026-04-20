@@ -197,13 +197,18 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
     loadData();
   }, [caseData.id]);
 
+  const [isJointFiling, setIsJointFiling] = useState(false);
+
   const loadData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('client_info')
-      .select('*')
-      .eq('case_id', caseData.id)
-      .maybeSingle();
+    const [{ data }, { data: caseRow }] = await Promise.all([
+      supabase.from('client_info').select('*').eq('case_id', caseData.id).maybeSingle(),
+      supabase.from('cases').select('is_joint_filing, spouse_name, spouse_email').eq('id', caseData.id).maybeSingle(),
+    ]);
+
+    const caseSpouseName = (caseRow as any)?.spouse_name || '';
+    const caseSpouseEmail = (caseRow as any)?.spouse_email || '';
+    setIsJointFiling(Boolean((caseRow as any)?.is_joint_filing) || Boolean(caseSpouseName));
 
     if (data) {
       const loaded: ClientInfo = {
@@ -234,8 +239,8 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         expense_insurance: Number(data.expense_insurance) || 0,
         expense_other: Number(data.expense_other) || 0,
         other_expenses_description: data.other_expenses_description || '',
-        spouse_name: (data as any).spouse_name || '',
-        spouse_email: (data as any).spouse_email || '',
+        spouse_name: (data as any).spouse_name || caseSpouseName,
+        spouse_email: (data as any).spouse_email || caseSpouseEmail,
         spouse_phone: (data as any).spouse_phone || '',
         spouse_dob: (data as any).spouse_dob || null,
       };
@@ -248,6 +253,8 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         email: caseData.clientEmail,
         phone: caseData.clientPhone || '',
         date_of_birth: caseData.clientDob || null,
+        spouse_name: caseSpouseName,
+        spouse_email: caseSpouseEmail,
       };
       setInfo(initial);
       setSavedInfo(initial);
