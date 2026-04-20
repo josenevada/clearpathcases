@@ -462,16 +462,35 @@ const ClientWizard = () => {
           suggestion: result.suggestion, validatorNotes: result.validator_notes,
           validationStatus: result.validation_status, validatedAt: result.validated_at,
         };
+        // Auto-approve if validation passed cleanly (no warnings, no failures, no issues)
+        const passedCleanly =
+          result.validation_status === 'passed' &&
+          (!result.issues || result.issues.length === 0);
+
         setCaseData(prev => {
           if (!prev) return prev;
           return {
             ...prev,
             checklist: prev.checklist.map(ci => ({
               ...ci,
-              files: ci.files.map(fl => fl.id === fileId ? { ...fl, validationStatus: result.validation_status, validationResult: vr } : fl),
+              files: ci.files.map(fl => fl.id === fileId ? {
+                ...fl,
+                validationStatus: result.validation_status,
+                validationResult: vr,
+                ...(passedCleanly ? { reviewStatus: 'approved' as const, reviewNote: 'Auto-approved — passed AI validation' } : {}),
+              } : fl),
             })),
           };
         });
+
+        if (passedCleanly) {
+          await supabase.from('files').update({
+            review_status: 'approved',
+            review_note: 'Auto-approved — passed AI validation',
+          }).eq('id', fileId);
+          logActivity(caseIdForValidation, { eventType: 'file_approved', actorRole: 'system', actorName: 'ClearPath AI', description: `Auto-approved ${itemLabel} — passed AI validation`, itemId: fileId });
+        }
+
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
       } else {
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
@@ -1872,6 +1891,21 @@ const ClientWizard = () => {
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
                     onSuccess={(plaidResult) => {
+                      const plaidFiles: Array<{ id: string; name: string; uploadedAt: string }> = [];
+                      for (const acct of plaidResult.accounts) {
+                        for (let m = 0; m < 6; m++) {
+                          const d = new Date();
+                          d.setMonth(d.getMonth() - m);
+                          const monthName = d.toLocaleString('default', { month: 'long' });
+                          const year = d.getFullYear();
+                          plaidFiles.push({
+                            id: crypto.randomUUID(),
+                            name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
+                            uploadedAt: new Date().toISOString(),
+                          });
+                        }
+                      }
+
                       setCaseData(prev => {
                         if (!prev) return prev;
                         return {
@@ -1880,26 +1914,52 @@ const ClientWizard = () => {
                           checklist: prev.checklist.map(ci => {
                             if (ci.id !== currentItem.id) return ci;
                             const newFiles = [...ci.files];
-                            for (const acct of plaidResult.accounts) {
-                              for (let m = 0; m < 6; m++) {
-                                const d = new Date();
-                                d.setMonth(d.getMonth() - m);
-                                const monthName = d.toLocaleString('default', { month: 'long' });
-                                const year = d.getFullYear();
-                                newFiles.push({
-                                  id: crypto.randomUUID(),
-                                  name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
-                                  dataUrl: '',
-                                  uploadedAt: new Date().toISOString(),
-                                  reviewStatus: 'pending',
-                                  uploadedBy: 'plaid',
-                                });
-                              }
+                            for (const pf of plaidFiles) {
+                              newFiles.push({
+                                id: pf.id,
+                                name: pf.name,
+                                dataUrl: '',
+                                uploadedAt: pf.uploadedAt,
+                                reviewStatus: 'approved',
+                                reviewNote: 'Auto-approved — sourced directly from financial institution via Plaid',
+                                uploadedBy: 'plaid',
+                              });
                             }
                             return { ...ci, files: newFiles, completed: true };
                           }),
                         };
                       });
+
+                      // Persist Plaid files to DB as auto-approved
+                      (async () => {
+                        try {
+                          await supabase.from('files').insert(
+                            plaidFiles.map(pf => ({
+                              id: pf.id,
+                              case_id: caseData.id,
+                              checklist_item_id: currentItem.id,
+                              file_name: pf.name,
+                              storage_path: null,
+                              data_url: '',
+                              uploaded_at: pf.uploadedAt,
+                              review_status: 'approved',
+                              review_note: 'Auto-approved — sourced directly from financial institution via Plaid',
+                              uploaded_by: 'plaid',
+                            }))
+                          );
+                          await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
+                          await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+                          await logActivity(caseData.id, {
+                            eventType: 'file_approved',
+                            actorRole: 'system',
+                            actorName: 'ClearPath',
+                            description: `Auto-approved ${plaidFiles.length} bank statement${plaidFiles.length !== 1 ? 's' : ''} from ${plaidResult.institutionName} via Plaid`,
+                            itemId: currentItem.id,
+                          });
+                        } catch (err) {
+                          console.error('Failed to persist Plaid files:', err);
+                        }
+                      })();
                     }}
                     onManualUploadClick={() => {}}
                     manualUploadContent={

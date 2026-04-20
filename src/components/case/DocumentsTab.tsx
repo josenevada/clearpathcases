@@ -232,33 +232,113 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     }
   };
 
-  const doZipExport = async () => {
+  const buildZipFromEntries = async (entries: FileEntry[], zipFileName: string) => {
     const JSZip = (await import('jszip')).default;
     const { saveAs } = await import('file-saver');
     const zip = new JSZip();
 
-    for (const { file, item } of approvedFiles) {
+    // Group by item label to detect collisions across all selected files
+    const labelCounts = new Map<string, number>();
+    entries.forEach(({ item }) => {
+      labelCounts.set(item.label, (labelCounts.get(item.label) || 0) + 1);
+    });
+    const labelIndices = new Map<string, number>();
+
+    for (const { file, item } of entries) {
       const folder = CATEGORY_FOLDERS[item.category] || 'Other';
       const date = format(new Date(file.uploadedAt), 'yyyy-MM-dd');
       const docType = item.label.replace(/[^a-zA-Z0-9]/g, '-');
-      const ext = file.name.split('.').pop() || 'pdf';
-      const cleanName = `${clientLastName}-${docType}-${date}.${ext}`;
+      const rawExt = file.name.split('.').pop() || 'pdf';
+      const ext = rawExt.toLowerCase();
+      const hasMultiple = (labelCounts.get(item.label) || 0) > 1;
+      let cleanName: string;
+      if (hasMultiple) {
+        const idx = (labelIndices.get(item.label) || 0) + 1;
+        labelIndices.set(item.label, idx);
+        cleanName = `${clientLastName}-${docType}-${date}-${idx}.${ext}`;
+      } else {
+        cleanName = `${clientLastName}-${docType}-${date}.${ext}`;
+      }
 
       const url = await getFileUrl(file);
       if (url) {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        zip.folder(folder)?.file(cleanName, blob);
+        try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          zip.folder(folder)?.file(cleanName, blob);
+        } catch {
+          zip.folder(folder)?.file(cleanName, `Placeholder for ${file.name}`);
+        }
       } else {
         zip.folder(folder)?.file(cleanName, `Placeholder for ${file.name}`);
       }
     }
 
     const blob = await zip.generateAsync({ type: 'blob' });
-    saveAs(blob, `${clientLastName}-${caseData.id}-FilingPacket.zip`);
+    saveAs(blob, zipFileName);
+  };
+
+  const doZipExport = async () => {
+    await buildZipFromEntries(
+      approvedFiles,
+      `${clientLastName}-FilingPacket-${format(new Date(), 'yyyy-MM-dd')}.zip`
+    );
     toast.success('ZIP downloaded successfully.');
     setShowExportWarning(null);
   };
+
+  const handleDownloadSelected = useCallback(async () => {
+    const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
+    if (targets.length === 0) {
+      toast.error('No files selected.');
+      return;
+    }
+    toast.info(`Downloading ${targets.length} file${targets.length !== 1 ? 's' : ''}...`);
+    try {
+      await buildZipFromEntries(
+        targets,
+        `${clientLastName}-Selected-${format(new Date(), 'yyyy-MM-dd')}.zip`
+      );
+      toast.success(`${targets.length} file${targets.length !== 1 ? 's' : ''} downloaded.`);
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast.error('Download failed.');
+    }
+  }, [filteredFiles, selectedIds, clientLastName]);
+
+  const handleApproveAllPending = useCallback(async () => {
+    const pendingFiles = allFiles.filter(
+      f => f.file.reviewStatus !== 'approved' && f.file.reviewStatus !== 'overridden'
+    );
+    if (pendingFiles.length === 0) return;
+
+    updateCase(caseData.id, c => {
+      for (const { file, item } of pendingFiles) {
+        const found = c.checklist.find(i => i.id === item.id);
+        if (found) {
+          const f = found.files.find(ff => ff.id === file.id);
+          if (f) f.reviewStatus = 'approved';
+        }
+      }
+      return c;
+    });
+
+    await supabase
+      .from('files')
+      .update({ review_status: 'approved', review_note: null })
+      .in('id', pendingFiles.map(f => f.file.id));
+
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'file_approved',
+      actor_role: viewRole,
+      actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+      description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
+    });
+
+    toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
+    onRefresh();
+  }, [allFiles, caseData, viewRole, onRefresh]);
 
   const doPdfExport = async () => {
     const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -475,6 +555,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={handleDownloadSelected}
+              >
+                <Download className="w-4 h-4 mr-2" /> Download Selected
+              </Button>
+              <Button
+                size="sm"
                 variant="warning"
                 onClick={() => setShowBulkCorrection(true)}
               >
@@ -498,6 +585,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           )}
           {!bulkMode && (
             <div className="flex items-center gap-2">
+              {unapprovedCount > 0 && (
+                <Button variant="ghost" onClick={handleApproveAllPending}>
+                  <ShieldCheck className="w-4 h-4 mr-1" /> Approve All Pending
+                  <span className="ml-1.5 text-xs text-muted-foreground">({unapprovedCount} pending)</span>
+                </Button>
+              )}
               <Button onClick={() => handleExportCheck('zip')}>
                 <Download className="w-4 h-4 mr-1" /> Download ZIP
               </Button>
