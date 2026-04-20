@@ -1891,6 +1891,21 @@ const ClientWizard = () => {
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
                     onSuccess={(plaidResult) => {
+                      const plaidFiles: Array<{ id: string; name: string; uploadedAt: string }> = [];
+                      for (const acct of plaidResult.accounts) {
+                        for (let m = 0; m < 6; m++) {
+                          const d = new Date();
+                          d.setMonth(d.getMonth() - m);
+                          const monthName = d.toLocaleString('default', { month: 'long' });
+                          const year = d.getFullYear();
+                          plaidFiles.push({
+                            id: crypto.randomUUID(),
+                            name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
+                            uploadedAt: new Date().toISOString(),
+                          });
+                        }
+                      }
+
                       setCaseData(prev => {
                         if (!prev) return prev;
                         return {
@@ -1899,26 +1914,52 @@ const ClientWizard = () => {
                           checklist: prev.checklist.map(ci => {
                             if (ci.id !== currentItem.id) return ci;
                             const newFiles = [...ci.files];
-                            for (const acct of plaidResult.accounts) {
-                              for (let m = 0; m < 6; m++) {
-                                const d = new Date();
-                                d.setMonth(d.getMonth() - m);
-                                const monthName = d.toLocaleString('default', { month: 'long' });
-                                const year = d.getFullYear();
-                                newFiles.push({
-                                  id: crypto.randomUUID(),
-                                  name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
-                                  dataUrl: '',
-                                  uploadedAt: new Date().toISOString(),
-                                  reviewStatus: 'pending',
-                                  uploadedBy: 'plaid',
-                                });
-                              }
+                            for (const pf of plaidFiles) {
+                              newFiles.push({
+                                id: pf.id,
+                                name: pf.name,
+                                dataUrl: '',
+                                uploadedAt: pf.uploadedAt,
+                                reviewStatus: 'approved',
+                                reviewNote: 'Auto-approved — sourced directly from financial institution via Plaid',
+                                uploadedBy: 'plaid',
+                              });
                             }
                             return { ...ci, files: newFiles, completed: true };
                           }),
                         };
                       });
+
+                      // Persist Plaid files to DB as auto-approved
+                      (async () => {
+                        try {
+                          await supabase.from('files').insert(
+                            plaidFiles.map(pf => ({
+                              id: pf.id,
+                              case_id: caseData.id,
+                              checklist_item_id: currentItem.id,
+                              file_name: pf.name,
+                              storage_path: null,
+                              data_url: '',
+                              uploaded_at: pf.uploadedAt,
+                              review_status: 'approved',
+                              review_note: 'Auto-approved — sourced directly from financial institution via Plaid',
+                              uploaded_by: 'plaid',
+                            }))
+                          );
+                          await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
+                          await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+                          await logActivity(caseData.id, {
+                            eventType: 'file_approved',
+                            actorRole: 'system',
+                            actorName: 'ClearPath',
+                            description: `Auto-approved ${plaidFiles.length} bank statement${plaidFiles.length !== 1 ? 's' : ''} from ${plaidResult.institutionName} via Plaid`,
+                            itemId: currentItem.id,
+                          });
+                        } catch (err) {
+                          console.error('Failed to persist Plaid files:', err);
+                        }
+                      })();
                     }}
                     onManualUploadClick={() => {}}
                     manualUploadContent={
