@@ -277,6 +277,21 @@ const ClientWizard = () => {
           return;
         }
 
+        // Load firm's credit counseling settings
+        if (caseRow.firm_id) {
+          const { data: firmData } = await supabase
+            .from('firms')
+            .select('counseling_provider_name, counseling_provider_link, counseling_attorney_code')
+            .eq('id', caseRow.firm_id)
+            .maybeSingle();
+
+          if (firmData) {
+            setCounselingProviderLink(firmData.counseling_provider_link || null);
+            setCounselingProviderName(firmData.counseling_provider_name || null);
+            setCounselingAttorneyCode(firmData.counseling_attorney_code || null);
+          }
+        }
+
         const { data: checklistRows } = await supabase
           .from('checklist_items')
           .select('*')
