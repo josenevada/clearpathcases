@@ -1148,6 +1148,21 @@ const MarketingLanding = () => {
         </div>
       </section>
 
+      {/* Footer CTA strip */}
+      <div
+        className="py-6 px-6 text-center"
+        style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.04)' }}
+      >
+        <span className="text-[15px] text-[#8aa3b8] font-body">Ready to stop chasing documents?</span>
+        <Button
+          size="sm"
+          onClick={() => navigate('/signup')}
+          className="landing-btn-glow ml-4"
+        >
+          Start Free — No Card Needed
+        </Button>
+      </div>
+
       {/* Footer */}
       <footer className="px-6 py-8" style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
