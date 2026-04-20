@@ -124,6 +124,8 @@ const CaseDetail = () => {
   const [overrideTarget, setOverrideTarget] = useState<{ itemId: string; fileId: string } | null>(null);
   const [activeCorrectionTarget, setActiveCorrectionTarget] = useState<{ itemId: string; fileId: string } | null>(null);
   const [selectedCorrectionReason, setSelectedCorrectionReason] = useState('');
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
+  const [zipBuilding, setZipBuilding] = useState(false);
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showEditPanel, setShowEditPanel] = useState(false);
