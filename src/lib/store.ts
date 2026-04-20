@@ -109,6 +109,12 @@ export interface Case {
   clientDob?: string;
   caseCode?: string;
   courtCaseNumber?: string;
+  isJointFiling?: boolean;
+  spouseName?: string;
+  spouseEmail?: string;
+  spousePhone?: string;
+  spouseDob?: string;
+  spouseCaseCode?: string;
   chapterType: ChapterType;
   assignedParalegal: string;
   assignedAttorney: string;
