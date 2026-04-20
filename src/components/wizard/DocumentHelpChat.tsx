@@ -71,11 +71,14 @@ interface DocumentHelpChatProps {
   chapterType: string;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  language?: 'en' | 'es';
 }
 
-const ALEX_INTRO = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
+const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
+const ALEX_INTRO_ES = "Hola — ¿qué puedo ayudarte a encontrar? Puedo decirte dónde conseguir este documento, cómo debería verse, o cualquier otra cosa con la que estés atorado.";
 
-const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpenChange }: DocumentHelpChatProps) => {
+const DocumentHelpChat = ({ documentLabel, category, chapterType, isOpen, onOpenChange, language = 'en' }: DocumentHelpChatProps) => {
+  const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isOpen !== undefined ? isOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;

@@ -10,7 +10,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { document_category, client_message, messages, chapter_type } = body;
+    const { document_category, client_message, messages, chapter_type, language } = body;
 
     // Support both legacy single-message and new multi-turn chat
     const chatMessages = messages as { role: string; content: string }[] | undefined;
@@ -30,8 +30,9 @@ serve(async (req) => {
     }
 
     const chapterLabel = chapter_type === '13' ? 'Chapter 13' : 'Chapter 7';
+    const isSpanish = language === 'es';
 
-    const systemPrompt = `Your name is Alex. You're a warm, calm assistant helping someone upload documents for their bankruptcy case. You talk like a real person — short sentences, no jargon, genuinely helpful. You're not a robot and you're not a lawyer. You're just someone who knows exactly where to find every document and wants to help them get through this.
+    const baseSystemPrompt = `Your name is Alex. You're a warm, calm assistant helping someone upload documents for their bankruptcy case. You talk like a real person — short sentences, no jargon, genuinely helpful. You're not a robot and you're not a lawyer. You're just someone who knows exactly where to find every document and wants to help them get through this.
 
 You're currently helping them with: "${document_category}".
 
@@ -40,6 +41,10 @@ If they ask where to find something, give them one specific place to start — n
 Never write headers. Never write bullet lists longer than 2 items. Never write more than 2-3 sentences per reply. Never give legal advice. Never tell them they don't need a document. If something is case-specific, say "your attorney would know best on that one."
 
 Always end your reply moving them forward — something like "does that help?" or "give that a try and let me know."`;
+
+    const systemPrompt = isSpanish
+      ? `Responde siempre en español. Eres Alex, un asistente amigable que ayuda a clientes de bancarrota a encontrar y subir sus documentos.\n\n${baseSystemPrompt}`
+      : baseSystemPrompt;
 
     let apiMessages: { role: string; content: string }[];
 
