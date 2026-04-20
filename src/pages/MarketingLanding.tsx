@@ -5,7 +5,7 @@ import {
   FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, ChevronDown,
   Plus, Minus, MessageSquare, ClipboardList,
-  Building, UploadCloud, ChevronRight, Download,
+  Building, UploadCloud, ChevronRight, Download, Circle, Mail, Paperclip,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
