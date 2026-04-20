@@ -1069,6 +1069,20 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
+      <div className="max-w-3xl mx-auto py-10 px-6 text-center">
+        <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-center justify-center">
+          <p className="text-[16px] font-body font-light" style={{ color: '#8aa3b8' }}>
+            Ready to give your clients a better intake experience?
+          </p>
+          <button
+            onClick={() => navigate('/signup')}
+            className="text-primary font-semibold text-[16px] hover:underline cursor-pointer"
+          >
+            Start your free trial →
+          </button>
+        </div>
+      </div>
+
       <FeatureShowcase />
 
       <SectionDivider />
