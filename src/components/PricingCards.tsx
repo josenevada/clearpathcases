@@ -13,12 +13,17 @@ interface PlanDef {
   note?: string;
 }
 
-const LANDING_PLANS: Record<string, PlanDef> = {
+interface PlanDefWithDiff extends PlanDef {
+  differentiator?: string;
+}
+
+const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
   starter: {
     name: 'Starter',
     monthly: '$199',
     annual: '$166',
     subtitle: 'For solo practitioners',
+    differentiator: 'Solo practice · Up to 8 cases',
     features: [
       'Up to 8 active cases',
       'Full client intake wizard',
