@@ -28,6 +28,30 @@ const SSN_LABEL = 'Social Security Card';
 const SSN_LABEL_LEGACY = 'Social Security Number';
 const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address';
 
+// ─── i18n helpers ────────────────────────────────────────────────────
+const t = (en: string, es: string, lang: string) => lang === 'es' ? es : en;
+
+const DOCUMENT_TRANSLATIONS: Record<string, { label: string; description: string }> = {
+  'Pay Stubs': { label: 'Talones de Pago', description: 'Muestra tus ingresos actuales al tribunal.' },
+  'W-2s': { label: 'Formularios W-2', description: 'Declaraciones de salario de los últimos 2 años.' },
+  'Tax Returns': { label: 'Declaraciones de Impuestos', description: 'Declaraciones federales de los últimos 2 años.' },
+  'Bank Statements': { label: 'Estados de Cuenta Bancarios', description: 'Últimos 6 meses de todas tus cuentas.' },
+  'Photo ID': { label: 'Identificación con Foto', description: 'Licencia de conducir o pasaporte vigente.' },
+  'Social Security Card': { label: 'Tarjeta de Seguro Social', description: 'Original o copia certificada.' },
+  'Proof of Income': { label: 'Comprobante de Ingresos', description: 'Cualquier documento que muestre tus ingresos.' },
+  'Lease Agreement': { label: 'Contrato de Arrendamiento', description: 'Tu contrato de renta actual.' },
+};
+
+const translateDoc = (label: string, lang: string): { label: string; description?: string } => {
+  if (lang !== 'es') return { label };
+  // Try exact match, then prefix match (handles "Pay Stubs (Last 2 Months)" → "Pay Stubs")
+  if (DOCUMENT_TRANSLATIONS[label]) return DOCUMENT_TRANSLATIONS[label];
+  for (const key of Object.keys(DOCUMENT_TRANSLATIONS)) {
+    if (label.startsWith(key)) return DOCUMENT_TRANSLATIONS[key];
+  }
+  return { label };
+};
+
 const pageTransition = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
