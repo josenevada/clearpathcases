@@ -476,7 +476,7 @@ const MarketingLanding = () => {
             rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center gap-1.5 text-sm font-body text-muted-foreground hover:text-primary transition-colors duration-150 nav-link-underline relative cursor-pointer"
           >
-            Book a Demo
+            Book a Call
           </a>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
           <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free — No Card Needed</Button>
