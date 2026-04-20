@@ -227,6 +227,7 @@ export type Database = {
           client_dob: string | null
           client_email: string
           client_first_name: string | null
+          client_language: string | null
           client_last_name: string | null
           client_middle_name: string | null
           client_name: string
@@ -258,6 +259,7 @@ export type Database = {
           client_dob?: string | null
           client_email: string
           client_first_name?: string | null
+          client_language?: string | null
           client_last_name?: string | null
           client_middle_name?: string | null
           client_name: string
@@ -289,6 +291,7 @@ export type Database = {
           client_dob?: string | null
           client_email?: string
           client_first_name?: string | null
+          client_language?: string | null
           client_last_name?: string | null
           client_middle_name?: string | null
           client_name?: string
@@ -791,8 +794,11 @@ export type Database = {
       }
       firms: {
         Row: {
+          branding_accent_color: string | null
           branding_attorney_name: string | null
           branding_bar_number: string | null
+          branding_display_name: string | null
+          branding_logo_url: string | null
           counseling_attorney_code: string | null
           counseling_provider_link: string | null
           counseling_provider_name: string | null
@@ -812,8 +818,11 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          branding_accent_color?: string | null
           branding_attorney_name?: string | null
           branding_bar_number?: string | null
+          branding_display_name?: string | null
+          branding_logo_url?: string | null
           counseling_attorney_code?: string | null
           counseling_provider_link?: string | null
           counseling_provider_name?: string | null
@@ -833,8 +842,11 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          branding_accent_color?: string | null
           branding_attorney_name?: string | null
           branding_bar_number?: string | null
+          branding_display_name?: string | null
+          branding_logo_url?: string | null
           counseling_attorney_code?: string | null
           counseling_provider_link?: string | null
           counseling_provider_name?: string | null
