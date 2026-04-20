@@ -28,7 +28,6 @@ export const PLANS = {
       'Everything in Starter',
       'Plaid bank connection',
       'Document retrieval guidance',
-      'White-label client portal',
       'Priority support',
       '14-day free trial',
     ],
@@ -42,8 +41,6 @@ export const PLANS = {
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
-      'White-label client portal',
-      'Custom firm branding',
       'Dedicated onboarding call',
       'SLA support',
       '14-day free trial',

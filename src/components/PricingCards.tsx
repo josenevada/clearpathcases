@@ -61,12 +61,10 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
-      'Custom firm branding',
       'Dedicated onboarding call',
       'SLA support',
       '14-day free trial',
     ],
-    note: 'Custom branding coming soon',
   },
 };
 
