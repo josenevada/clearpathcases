@@ -601,11 +601,13 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: 
 };
 
 // ── Step 1 Form Component ────────────────────────────────────────────
-const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
+const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint, clientLanguage, setClientLanguage }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
   isJointFiling?: boolean;
   onToggleJoint?: (v: boolean) => void;
+  clientLanguage?: 'en' | 'es';
+  setClientLanguage?: (lang: 'en' | 'es') => void;
 }) => {
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
@@ -644,6 +646,34 @@ const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>
+
+      {/* Language selector */}
+      {setClientLanguage && (
+        <div className="sm:col-span-2">
+          <Label className="text-muted-foreground text-sm">Client's preferred language</Label>
+          <div className="flex gap-3 mt-1">
+            {([
+              { value: 'en' as const, label: 'English' },
+              { value: 'es' as const, label: 'Español' },
+            ]).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setClientLanguage(opt.value)}
+                className={cn(
+                  'flex-1 h-11 rounded-2xl text-sm font-bold font-display transition-all border-2',
+                  clientLanguage === opt.value
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <Label className="text-muted-foreground text-sm">Client Phone</Label>
         <Input
