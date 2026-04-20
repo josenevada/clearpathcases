@@ -80,7 +80,7 @@ interface PricingCardsProps {
 const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, isAnnual = false }: PricingCardsProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl mx-auto">
-      {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDef][]).map(([key, plan]) => {
+      {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDefWithDiff][]).map(([key, plan]) => {
         const isCurrent = currentPlan === key;
         const price = isAnnual ? plan.annual : plan.monthly;
         return (
