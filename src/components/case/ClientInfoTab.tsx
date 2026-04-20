@@ -51,6 +51,10 @@ interface ClientInfo {
   expense_insurance: number;
   expense_other: number;
   other_expenses_description: string;
+  spouse_name: string;
+  spouse_email: string;
+  spouse_phone: string;
+  spouse_dob: string | null;
 }
 
 const defaultClientInfo: ClientInfo = {
@@ -81,6 +85,10 @@ const defaultClientInfo: ClientInfo = {
   expense_insurance: 0,
   expense_other: 0,
   other_expenses_description: '',
+  spouse_name: '',
+  spouse_email: '',
+  spouse_phone: '',
+  spouse_dob: null,
 };
 
 interface AttorneyNotes {
