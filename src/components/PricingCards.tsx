@@ -151,7 +151,7 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
               ))}
             </ul>
             {plan.note && (
-              <p className="text-[12px] text-[#8aa3b8]/70 font-body mb-4 italic">{plan.note}</p>
+              <p className="text-[11px] text-muted-foreground italic mt-2 mb-4">{plan.note}</p>
             )}
             <Button
               className={`w-full transition-all duration-200 ${!isCurrent && !plan.popular ? 'border border-foreground/20' : ''}`}
