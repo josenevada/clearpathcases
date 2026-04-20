@@ -193,6 +193,7 @@ const ClientWizard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [caseData, setCaseData] = useState<Case | null>(null);
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0);
@@ -378,6 +379,7 @@ const ClientWizard = () => {
         };
 
         setCaseData(c);
+        setLanguage(((caseRow as any).client_language === 'es' ? 'es' : 'en'));
         setIsLoading(false);
         lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
 
