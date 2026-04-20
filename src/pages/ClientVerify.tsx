@@ -37,34 +37,50 @@ const ClientVerify = () => {
   const [dobError, setDobError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [caseId, setCaseId] = useState<string | null>(null);
+  const [isSpouseLink, setIsSpouseLink] = useState(false);
 
   useEffect(() => {
     if (!caseCode) return;
 
     const existingSession = getClientSession(caseCode);
     if (existingSession?.verified) {
-      navigate(`/client-portal/${caseCode}/${existingSession.caseId}`, { replace: true });
+      const suffix = isSpouseLink ? '?debtor=spouse' : '';
+      navigate(`/client-portal/${caseCode}/${existingSession.caseId}${suffix}`, { replace: true });
       return;
     }
 
     const checkCase = async () => {
       console.log('[ClientVerify] Looking up caseCode:', caseCode);
-      const { data, error } = await supabase
+
+      // Try primary case_code first
+      const { data: primaryMatch } = await supabase
         .from('cases')
         .select('id')
         .eq('case_code', caseCode)
         .neq('status', 'closed')
         .maybeSingle();
 
-      console.log('[ClientVerify] Query result:', { data, error });
-      if (data) {
-        setCaseId(data.id);
+      if (primaryMatch) {
+        setCaseId(primaryMatch.id);
+        setIsSpouseLink(false);
+      } else {
+        // Fall back to spouse_case_code
+        const { data: spouseMatch } = await supabase
+          .from('cases')
+          .select('id')
+          .eq('spouse_case_code', caseCode)
+          .neq('status', 'closed')
+          .maybeSingle();
+        if (spouseMatch) {
+          setCaseId(spouseMatch.id);
+          setIsSpouseLink(true);
+        }
       }
       setLoading(false);
     };
 
     checkCase();
-  }, [caseCode, navigate]);
+  }, [caseCode, navigate, isSpouseLink]);
 
   const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -87,20 +103,24 @@ const ClientVerify = () => {
     setDobError(null);
     setError('');
 
+    // Look up the row by either code, then check the appropriate DOB field
     const { data } = await supabase
       .from('cases')
-      .select('id, client_dob')
-      .eq('case_code', caseCode)
-      .maybeSingle();
+      .select('id, client_dob, spouse_dob' as any)
+      .or(`case_code.eq.${caseCode},spouse_case_code.eq.${caseCode}`)
+      .maybeSingle() as any;
 
     if (!data) {
       setError('Case not found. Please check your link.');
       return;
     }
 
-    if (data.client_dob === dob) {
+    const expectedDob = isSpouseLink ? data.spouse_dob : data.client_dob;
+
+    if (expectedDob === dob) {
       setClientSession(caseCode, data.id);
-      navigate(`/client-portal/${caseCode}/${data.id}`, { replace: true });
+      const suffix = isSpouseLink ? '?debtor=spouse' : '';
+      navigate(`/client-portal/${caseCode}/${data.id}${suffix}`, { replace: true });
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);

@@ -246,6 +246,7 @@ export type Database = {
           ready_to_file: boolean | null
           retention_delete_scheduled_at: string | null
           retention_notified_at: string | null
+          spouse_case_code: string | null
           spouse_email: string | null
           spouse_name: string | null
           status: string
@@ -281,6 +282,7 @@ export type Database = {
           ready_to_file?: boolean | null
           retention_delete_scheduled_at?: string | null
           retention_notified_at?: string | null
+          spouse_case_code?: string | null
           spouse_email?: string | null
           spouse_name?: string | null
           status?: string
@@ -316,6 +318,7 @@ export type Database = {
           ready_to_file?: boolean | null
           retention_delete_scheduled_at?: string | null
           retention_notified_at?: string | null
+          spouse_case_code?: string | null
           spouse_email?: string | null
           spouse_name?: string | null
           status?: string

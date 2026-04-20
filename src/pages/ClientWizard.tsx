@@ -380,6 +380,12 @@ const ClientWizard = () => {
           clientPhone: caseRow.client_phone || undefined,
           clientDob: caseRow.client_dob || undefined,
           caseCode: caseRow.case_code || undefined,
+          isJointFiling: (caseRow as any).is_joint_filing ?? false,
+          spouseName: (caseRow as any).spouse_name || undefined,
+          spouseEmail: (caseRow as any).spouse_email || undefined,
+          spousePhone: (caseRow as any).spouse_phone || undefined,
+          spouseDob: (caseRow as any).spouse_dob || undefined,
+          spouseCaseCode: (caseRow as any).spouse_case_code || undefined,
           chapterType: caseRow.chapter_type as any,
           assignedParalegal: caseRow.assigned_paralegal || '',
           assignedAttorney: caseRow.assigned_attorney || '',
@@ -595,13 +601,27 @@ const ClientWizard = () => {
     );
   }
 
-  const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+  // ─── Joint filing: which debtor is using this link? ───────────────
+  const debtorMode = (searchParams.get('debtor') === 'spouse') ? 'spouse' : 'primary';
+  const isSpouseMode = debtorMode === 'spouse';
+  const displayName = isSpouseMode && caseData.spouseName ? caseData.spouseName : caseData.clientName;
+  const displayFirstName = displayName.split(' ')[0];
+
+  // Filter the checklist by debtor mode. Items intended for the spouse are tagged
+  // with "(Spouse)" in their label. Strip that suffix when shown to the spouse.
+  const visibleChecklist = caseData.checklist
+    .filter(item => isSpouseMode ? item.label.includes('(Spouse)') : !item.label.includes('(Spouse)'))
+    .map(item => isSpouseMode
+      ? { ...item, label: item.label.replace(/\s*\(Spouse\)\s*$/i, '').trim() }
+      : item);
+
+  const categoryItems = visibleChecklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
 
   // If current category is empty, advance to next non-empty one
   if (categoryItems.length === 0) {
     const nextNonEmpty = CATEGORIES.findIndex(
       (cat, idx) => idx > currentCategoryIdx && 
-      caseData.checklist.filter(i => i.category === cat).length > 0
+      visibleChecklist.filter(i => i.category === cat).length > 0
     );
     if (nextNonEmpty !== -1) {
       setTimeout(() => {
@@ -1410,7 +1430,7 @@ const ClientWizard = () => {
                 You did it.
               </h2>
               <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
-                Every document has been sent to {attorneyName}. You've done your part — they'll take it from here.
+                {displayFirstName ? `${displayFirstName}, every` : 'Every'} document has been sent to {attorneyName}. You've done your part — they'll take it from here.
               </p>
 
               {/* Reassurance card */}
