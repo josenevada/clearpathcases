@@ -842,38 +842,53 @@ const MarketingLanding = () => {
                   className="overflow-hidden mx-auto"
                   style={{ background: '#ffffff', border: '1px solid #e2e6ea', borderRadius: 16, maxWidth: 460, boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
                 >
+                  {/* Urgent banner */}
+                  <div style={{ background: '#fce8e6', borderBottom: '1px solid #d93025', padding: '6px 16px' }}>
+                    <span style={{ fontSize: 11, color: '#c5221f' }}>🔴 4 messages marked URGENT — filing deadlines at risk</span>
+                  </div>
                   <div className="flex items-center justify-between" style={{ background: '#f1f3f4', padding: '10px 16px', borderBottom: '1px solid #e2e6ea' }}>
                     <div className="flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5" style={{ color: '#444' }} />
-                      <span className="font-semibold text-[12px]" style={{ color: '#1a1a1a' }}>Inbox</span>
+                      <span className="font-semibold text-[12px]" style={{ color: '#1a1a1a' }}>Inbox (47 unread)</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-white rounded-full px-2 py-0.5" style={{ background: '#d93025' }}>23 unread</span>
+                    <span className="text-[10px] font-semibold text-white rounded-full px-2 py-0.5" style={{ background: '#d93025' }}>47 unread</span>
                   </div>
                   <div>
                     {[
-                      { who: 'Kevin J.', subj: 'RE: RE: RE: still missing bank statements', when: '3 days ago' },
-                      { who: 'Maria R.', subj: 'I sent the wrong file sorry', when: '2 days ago' },
-                      { who: 'James C.', subj: 'what is a W-2??', when: '5 days ago' },
-                      { who: 'Linda T.', subj: 'Can you resend that checklist PDF', when: '1 week ago' },
-                      { who: 'Robert K.', subj: 'FWD: FWD: documents attached (maybe)', when: '1 week ago' },
+                      { who: 'Kevin J.', subj: 'RE: RE: RE: RE: RE: bank statements — STILL waiting', when: '4 days ago', bold: true, unread: true, color: '#1a1a1a', subjColor: '#444', padX: 18 },
+                      { who: 'Mail Delivery', subj: '⚠️ Delivery Failed: your message to kevin.james@gmail...', when: '3 days ago', bold: false, unread: false, color: '#d93025', subjColor: '#d93025', padX: 14 },
+                      { who: 'Maria R.', subj: '(no subject)', when: '3 days ago', bold: false, unread: true, color: '#1a1a1a', subjColor: '#888', padX: 18 },
+                      { who: 'James C.', subj: 'I sent the files??? did you get them??? let me know', when: '5 days ago', bold: false, unread: true, color: '#1a1a1a', subjColor: '#444', padX: 14 },
+                      { who: 'Auto-Reply', subj: 'Out of Office: I will return on...', when: '1 week ago', bold: false, unread: false, color: '#999', subjColor: '#999', italic: true, padX: 18 },
+                      { who: 'Linda T.', subj: 'can you just call me i dont understand the email', when: '1 week ago', bold: false, unread: false, color: '#1a1a1a', subjColor: '#444', padX: 14 },
+                      { who: 'Robert K.', subj: 'FWD: FWD: FWD: maybe these? not sure if right format lol', when: '2 weeks ago', bold: false, unread: false, color: '#1a1a1a', subjColor: '#444', padX: 18 },
                     ].map((e, i) => (
-                      <div key={i} className="flex items-center gap-3" style={{ padding: '10px 16px', borderBottom: '1px solid #e2e6ea', background: '#fff' }}>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold" style={{ background: '#e8eaed', color: '#444' }}>
+                      <div key={i} className="flex items-center gap-3" style={{ padding: `9px ${e.padX}px`, borderBottom: '1px solid #e2e6ea', background: '#fff' }}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0" style={{ background: '#e8eaed', color: '#444' }}>
                           {e.who.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[12px] truncate">
-                            <span className="font-semibold" style={{ color: '#1a1a1a' }}>{e.who}</span>
-                            <span style={{ color: '#444' }}> — {e.subj}</span>
+                          <p className="text-[12px] truncate" style={{ fontStyle: e.italic ? 'italic' : 'normal' }}>
+                            <span style={{ color: e.color, fontWeight: e.bold ? 700 : 600 }}>{e.who}</span>
+                            <span style={{ color: e.subjColor, fontWeight: e.bold ? 600 : 400 }}> — {e.subj}</span>
                           </p>
                         </div>
                         <span className="text-[10px] whitespace-nowrap" style={{ color: '#888' }}>{e.when}</span>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d93025' }} />
+                        {e.unread && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#d93025' }} />}
                       </div>
                     ))}
                   </div>
-                  <p className="text-[11px] italic text-center py-3" style={{ color: '#d93025' }}>
-                    ⏱️ Hours chasing. Deadlines slipping.
+                  {/* Sticky notes */}
+                  <div className="flex flex-wrap gap-2" style={{ padding: '10px 16px', borderBottom: '1px solid #e2e6ea' }}>
+                    <div style={{ background: '#fef7cd', border: '1px solid #f9ab00', borderRadius: 4, padding: '6px 10px', fontSize: 11, fontFamily: '"Comic Sans MS", cursive', color: '#5a4500', transform: 'rotate(-1deg)' }}>
+                      📌 Call Kevin re: wrong docs AGAIN
+                    </div>
+                    <div style={{ background: '#fce4ec', border: '1px solid #e91e63', borderRadius: 4, padding: '6px 10px', fontSize: 11, fontFamily: '"Comic Sans MS", cursive', color: '#880e4f', transform: 'rotate(1.5deg)' }}>
+                      📌 Maria — still missing 6 items — deadline FRI???
+                    </div>
+                  </div>
+                  <p style={{ color: '#d93025', fontSize: 11, textAlign: 'center', padding: 10, fontWeight: 'bold' }}>
+                    47 unread. 3 deadlines this week. 0 documents organized.
                   </p>
                 </motion.div>
               ) : (
