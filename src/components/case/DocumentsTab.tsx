@@ -585,6 +585,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           )}
           {!bulkMode && (
             <div className="flex items-center gap-2">
+              {unapprovedCount > 0 && (
+                <Button variant="ghost" onClick={handleApproveAllPending}>
+                  <ShieldCheck className="w-4 h-4 mr-1" /> Approve All Pending
+                  <span className="ml-1.5 text-xs text-muted-foreground">({unapprovedCount} pending)</span>
+                </Button>
+              )}
               <Button onClick={() => handleExportCheck('zip')}>
                 <Download className="w-4 h-4 mr-1" /> Download ZIP
               </Button>
