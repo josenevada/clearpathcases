@@ -40,6 +40,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
     annual: '$332',
     subtitle: 'For growing firms',
     popular: true,
+    differentiator: 'Growing firms · Plaid + white-label',
     features: [
       'Up to 25 active cases',
       'Everything in Starter',
