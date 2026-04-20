@@ -253,20 +253,21 @@ const ParalegalDashboard = () => {
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         {/* Onboarding checklist */}
-        <OnboardingChecklist
-          firmProfileComplete={onboardingState.firmProfileComplete}
-          counselingComplete={onboardingState.counselingComplete}
-          hasCases={cases.length > 0}
-          hasSentLink={onboardingState.hasSentLink}
-          onNewCase={handleNewCase}
-          onSendLink={() => {
-            if (cases.length > 0) {
-              setSendLinkCase(cases[0]);
-              setShowSendLink(true);
-            }
-          }}
-        />
-
+        {dashboardLoaded && (
+          <OnboardingChecklist
+            firmProfileComplete={onboardingState.firmProfileComplete}
+            counselingComplete={onboardingState.counselingComplete}
+            hasCases={cases.length > 0}
+            hasSentLink={onboardingState.hasSentLink}
+            onNewCase={handleNewCase}
+            onSendLink={() => {
+              if (cases.length > 0) {
+                setSendLinkCase(cases[0]);
+                setShowSendLink(true);
+              }
+            }}
+          />
+        )}
         {/* Stats bar */}
         <StatsBar cases={cases} onFilter={setStatsFilter} activeFilter={statsFilter} />
 
