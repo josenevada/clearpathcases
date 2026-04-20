@@ -91,7 +91,7 @@ export default function AlexChatDemo() {
       className="rounded-2xl border p-4"
       style={{ background: '#111f2e', border: '0.5px solid rgba(255,255,255,0.08)' }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 pb-3 border-b border-white/10">
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
           A
         </div>
