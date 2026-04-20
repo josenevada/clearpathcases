@@ -464,7 +464,9 @@ const MarketingLanding = () => {
           borderBottom: '0.5px solid rgba(255,255,255,0.06)',
         }}
       >
-        <Logo size="sm" />
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer" aria-label="Scroll to top">
+          <Logo size="sm" />
+        </button>
         <div className="flex items-center gap-4">
           <a href="#features" onClick={e => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Features</a>
           <a href="#pricing" onClick={e => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Pricing</a>
