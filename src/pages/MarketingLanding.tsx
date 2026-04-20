@@ -509,7 +509,7 @@ const MarketingLanding = () => {
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
           <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free — No Card Needed</Button>
           <Button size="lg" variant="ghost" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
-            See Features <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+            See How it Works <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
         <p className="mt-6 text-sm text-[#8aa3b8] relative" style={heroStagger(8)}>
