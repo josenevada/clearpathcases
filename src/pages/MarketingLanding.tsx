@@ -532,7 +532,7 @@ const MarketingLanding = () => {
           Two views. One seamless workflow.
         </h2>
         <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mt-4 max-w-2xl mx-auto">
-          The attorney sees documents arriving organized. The client never feels lost.
+          See the difference — then see how both sides of ClearPath work.
         </p>
 
         {/* Before / After auto-transitioning preview */}
@@ -571,15 +571,15 @@ const MarketingLanding = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.4 }}
-                  className="rounded-2xl overflow-hidden bg-destructive/[0.03]"
-                  style={{ background: '#0d1520', border: '1px solid rgba(248,113,113,0.15)' }}
+                  className="rounded-2xl overflow-hidden"
+                  style={{ background: '#ffffff', border: '1px solid #e2e6ea', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
                 >
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
-                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-[12px] text-muted-foreground">Inbox (47 unread)</span>
-                    <span className="ml-auto w-2 h-2 rounded-full bg-destructive" />
+                  <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #e2e6ea', background: '#f8f9fa' }}>
+                    <Mail className="w-3.5 h-3.5" style={{ color: '#444' }} />
+                    <span className="text-[13px] font-semibold" style={{ color: '#1a1a1a' }}>Inbox</span>
+                    <span className="ml-auto text-[10px] font-semibold text-white rounded-full px-2 py-0.5" style={{ background: '#d93025' }}>47 unread</span>
                   </div>
-                  <div className="divide-y divide-border/20">
+                  <div>
                     {[
                       { who: 'Sarah M.', subj: 'Re: Documents — still waiting on pay stubs', when: '3 days ago' },
                       { who: 'James C.', subj: 'FWD: wrong file again??', when: '2 days ago' },
@@ -587,44 +587,47 @@ const MarketingLanding = () => {
                       { who: 'Linda T.', subj: 'Can you resend the checklist?', when: '1 week ago' },
                       { who: 'Marcus W.', subj: "I don't understand what you need", when: '1 week ago' },
                     ].map((e, i) => (
-                      <div key={i} className="flex items-center gap-3 px-4 py-2">
-                        <div className="w-6 h-6 rounded-full bg-muted/30 flex items-center justify-center text-[10px] text-muted-foreground font-semibold">
+                      <div key={i} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #e2e6ea' }}>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold" style={{ background: '#e8eaed', color: '#444' }}>
                           {e.who.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-foreground/90 truncate">
-                            <span className="font-semibold">{e.who}</span> — {e.subj}
+                          <p className="text-[12px] truncate">
+                            <span className="font-semibold" style={{ color: '#1a1a1a' }}>{e.who}</span>
+                            <span style={{ color: '#444444' }}> — {e.subj}</span>
                           </p>
                         </div>
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{e.when}</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        <span className="text-[10px] whitespace-nowrap" style={{ color: '#888888' }}>{e.when}</span>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d93025' }} />
                       </div>
                     ))}
                   </div>
-                  <div className="px-4 py-3 border-t border-border/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[11px] text-muted-foreground">Document Checklist.pdf</span>
+                  <div className="px-4 py-3" style={{ background: '#ffffff' }}>
+                    <div className="rounded-lg p-3" style={{ background: '#f8f9fa', border: '1px solid #e2e6ea' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Paperclip className="w-3.5 h-3.5" style={{ color: '#444' }} />
+                        <span className="text-[11px] font-semibold" style={{ color: '#1a1a1a' }}>Document Checklist.pdf</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {[
+                          'Pay stubs (last 60 days)',
+                          'W-2s (2 years)',
+                          'Federal tax returns (2 years)',
+                          'Bank statements (6 months, all accounts)',
+                          'Photo ID (government issued)',
+                          'Social Security card',
+                          'Credit card statements (3 months)',
+                          'Loan documents',
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[11px]" style={{ color: '#444444' }}>
+                            <span className="w-3 h-3 rounded-sm inline-block" style={{ border: '1px solid #b0b6bd' }} />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="space-y-1">
-                      {[
-                        'Pay stubs (last 60 days)',
-                        'W-2s (2 years)',
-                        'Federal tax returns (2 years)',
-                        'Bank statements (6 months, all accounts)',
-                        'Photo ID (government issued)',
-                        'Social Security card',
-                        'Credit card statements (3 months)',
-                        'Loan documents',
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                          <span className="w-3 h-3 rounded-sm border border-border/50 inline-block" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                  <p className="text-destructive/70 text-[12px] text-center py-3">
+                  <p className="text-destructive/80 text-[12px] text-center py-3" style={{ background: '#f8f9fa', borderTop: '1px solid #e2e6ea' }}>
                     Hours spent chasing. Documents still missing.
                   </p>
                 </motion.div>
@@ -636,9 +639,9 @@ const MarketingLanding = () => {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.4 }}
                   className="rounded-2xl overflow-hidden"
-                  style={{ background: '#0d1520', border: '1px solid rgba(0,194,168,0.2)' }}
+                  style={{ background: '#111f2e', border: '1px solid rgba(0,194,168,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
                 >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                     <span className="font-display font-bold text-[14px] text-foreground">
                       Kevin James — Chapter 7
                     </span>
@@ -647,18 +650,18 @@ const MarketingLanding = () => {
                     </span>
                   </div>
                   <div className="px-4 pt-3">
-                    <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
+                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-primary" style={{ width: '78%' }} />
                     </div>
                   </div>
-                  <div className="divide-y divide-border/20 mt-2">
+                  <div className="mt-2">
                     {[
                       { name: 'Income & Employment', count: '4/4', state: 'done' },
                       { name: 'Bank & Financial', count: '2/2', state: 'done' },
                       { name: 'Debts & Credit', count: '2/4', state: 'partial' },
                       { name: 'Personal ID', count: '0/2', state: 'empty' },
                     ].map((row, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center gap-2.5">
                           {row.state === 'done' && <CheckCircle2 className="w-4 h-4 text-success" />}
                           {row.state === 'partial' && (
@@ -701,7 +704,16 @@ const MarketingLanding = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-16">
+        {/* Divider */}
+        <div className="flex items-center max-w-2xl mx-auto mt-4 mb-12">
+          <div className="bg-white/[0.06] h-px flex-1" />
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-6">
+            Inside ClearPath
+          </span>
+          <div className="bg-white/[0.06] h-px flex-1" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-4">
           {/* Left — attorney checklist view */}
           <div style={revealStyle(twoViewsVisible, { x: -30 })}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
