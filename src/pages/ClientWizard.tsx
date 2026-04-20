@@ -1683,6 +1683,43 @@ const ClientWizard = () => {
 
 
 
+              {currentItem?.label === 'Credit Counseling Certificate' && (
+                <div className="mt-4 mb-6 rounded-xl p-4" style={{ background: 'rgba(0,194,168,0.05)', border: '1px solid rgba(0,194,168,0.2)' }}>
+                  <p className="font-body font-semibold text-[13px] text-foreground mb-1">
+                    Complete your credit counseling
+                  </p>
+                  <p className="text-[12px] text-muted-foreground mb-3" style={{ lineHeight: '1.6' }}>
+                    The court requires this before filing. It takes about 60–90 minutes. After completing it, download your certificate and upload it here.
+                  </p>
+                  {counselingProviderLink ? (
+                    <div className="space-y-2">
+                      <a
+                        href={counselingProviderLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full text-center font-body font-semibold text-[13px] text-primary-foreground bg-primary rounded-xl py-3 hover:opacity-90 transition-opacity"
+                      >
+                        {counselingProviderName ? `Start with ${counselingProviderName} →` : 'Complete Credit Counseling →'}
+                      </a>
+                      {counselingAttorneyCode && (
+                        <p className="text-[11px] text-muted-foreground text-center">
+                          Use attorney code <span className="font-semibold text-foreground">{counselingAttorneyCode}</span> for a discounted rate
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <a
+                      href="https://www.justice.gov/ust/credit-counseling-debtor-education-information"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-center font-body font-semibold text-[13px] text-primary border border-primary/30 rounded-xl py-3 hover:bg-primary/5 transition-colors"
+                    >
+                      Find an approved provider →
+                    </a>
+                  )}
+                </div>
+              )}
+
               {isCheckpointItem ? (
                 <div className="space-y-6">
                   <div className="surface-card p-6">
