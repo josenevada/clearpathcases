@@ -360,7 +360,6 @@ const MarketingLanding = () => {
       navigate('/paralegal', { replace: true });
     }
   }, [user, loading, navigate]);
-  const [isAnnual, setIsAnnual] = useState(false);
   const reduced = usePrefersReducedMotion();
   const isMobile = useIsMobileAnimation();
 
@@ -1075,26 +1074,8 @@ const MarketingLanding = () => {
         </h2>
         <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">14-day free trial on every plan. No credit card required.</p>
 
-        {/* Monthly/Annual Toggle */}
-        <div className="flex items-center justify-center mb-10">
-          <div className="inline-flex rounded-full p-1" style={{ background: 'hsl(var(--secondary))' }}>
-            <button
-              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-all ${!isAnnual ? 'bg-primary text-primary-foreground' : 'text-[#8aa3b8] hover:text-foreground'}`}
-              onClick={() => setIsAnnual(false)}
-            >
-              Monthly
-            </button>
-            <button
-              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-all ${isAnnual ? 'bg-primary text-primary-foreground' : 'text-[#8aa3b8] hover:text-foreground'}`}
-              onClick={() => setIsAnnual(true)}
-            >
-              Annual <span className="text-xs opacity-80">2 months free</span>
-            </button>
-          </div>
-        </div>
-
         <div ref={pricingRef}>
-          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" isAnnual={isAnnual} />
+          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />
         </div>
         <div className="text-center mt-8 space-y-1">
           <p className="text-xs text-[#8aa3b8] font-body">
