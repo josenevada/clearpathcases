@@ -470,6 +470,14 @@ const MarketingLanding = () => {
         <div className="flex items-center gap-4">
           <a href="#features" onClick={e => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Features</a>
           <a href="#pricing" onClick={e => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Pricing</a>
+          <a
+            href="https://calendly.com/jose-nevada00/30min"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-body text-muted-foreground hover:text-primary transition-colors duration-150 nav-link-underline relative cursor-pointer"
+          >
+            Book a Demo
+          </a>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
           <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free — No Card Needed</Button>
         </div>
