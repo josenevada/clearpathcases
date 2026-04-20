@@ -704,7 +704,16 @@ const MarketingLanding = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-16">
+        {/* Divider */}
+        <div className="flex items-center max-w-2xl mx-auto mt-4 mb-12">
+          <div className="bg-white/[0.06] h-px flex-1" />
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-6">
+            Inside ClearPath
+          </span>
+          <div className="bg-white/[0.06] h-px flex-1" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-4">
           {/* Left — attorney checklist view */}
           <div style={revealStyle(twoViewsVisible, { x: -30 })}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
