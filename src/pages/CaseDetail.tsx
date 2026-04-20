@@ -1327,9 +1327,21 @@ const CaseDetail = () => {
                                                             <p className="mt-1 text-xs text-warning">Note: {file.reviewNote}</p>
                                                           )}
                                                         </div>
-                                                        <Badge className={`${getFileStatusBadgeClass(file.reviewStatus)} text-xs`}>
-                                                          {getFileStatusLabel(file)}
-                                                        </Badge>
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                          <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleDownloadSingle(item, file)}
+                                                            disabled={downloadingFileId === file.id}
+                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                                            title="Download file"
+                                                          >
+                                                            <Download className="w-4 h-4" />
+                                                          </Button>
+                                                          <Badge className={`${getFileStatusBadgeClass(file.reviewStatus)} text-xs`}>
+                                                            {getFileStatusLabel(file)}
+                                                          </Badge>
+                                                        </div>
                                                       </div>
 
                                                       <div className="mt-3 flex flex-wrap gap-2">
