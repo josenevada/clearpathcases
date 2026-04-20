@@ -49,6 +49,7 @@ const ParalegalDashboard = () => {
     counselingComplete: false,
     hasSentLink: false,
   });
+  const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
   const planLimits = getPlanLimits(plan);
   const activeCaseCount = cases.filter(c => c.status !== 'filed' && c.status !== 'closed').length;
