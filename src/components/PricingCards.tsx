@@ -28,6 +28,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
       'Up to 8 active cases',
       'Full client intake wizard',
       'AI document validation',
+      'Alex — AI document guide',
       'Automated SMS & email reminders',
       'Custom document checklists',
       'Case management dashboard',
@@ -40,23 +41,23 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
     annual: '$332',
     subtitle: 'For growing firms',
     popular: true,
-    differentiator: 'Growing firms · Plaid + white-label',
+    differentiator: 'Growing firms · Up to 25 cases',
     features: [
       'Up to 25 active cases',
       'Everything in Starter',
       'Plaid bank connection',
-      'Document retrieval guidance',
-      'Priority support',
       'White-label client portal',
+      'Priority support',
       '14-day free trial',
     ],
+    note: 'White-label portal coming soon',
   },
   firm: {
     name: 'Firm',
     monthly: '$699',
     annual: '$582',
     subtitle: 'For high-volume practices',
-    differentiator: 'High volume · Dedicated support',
+    differentiator: 'High volume · Up to 60 cases',
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
@@ -65,6 +66,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
       'SLA support',
       '14-day free trial',
     ],
+    note: 'Custom branding coming soon',
   },
 };
 
