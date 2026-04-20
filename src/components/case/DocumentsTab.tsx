@@ -169,6 +169,12 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       return c;
     });
 
+    const targetIds = targets.map(t => t.file.id);
+    await supabase
+      .from('files')
+      .update({ review_status: 'approved', review_note: null })
+      .in('id', targetIds);
+
     for (const { file, item } of targets) {
       await supabase.from('activity_log').insert({
         case_id: caseData.id,
