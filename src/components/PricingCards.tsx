@@ -56,6 +56,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
     monthly: '$699',
     annual: '$582',
     subtitle: 'For high-volume practices',
+    differentiator: 'High volume · Dedicated support',
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
