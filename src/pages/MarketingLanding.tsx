@@ -686,39 +686,57 @@ const MarketingLanding = () => {
                   className="overflow-hidden mx-auto"
                   style={{ background: '#ffffff', border: '1px solid #e2e6ea', borderRadius: 16, maxWidth: 460, boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
                 >
-                  <div style={{ background: '#f1f3f4', padding: '10px 16px', borderBottom: '1px solid #e2e6ea' }}>
+                  {/* Storage warning banner */}
+                  <div style={{ background: '#fef7e0', borderBottom: '1px solid #f9ab00', padding: '6px 16px' }}>
+                    <span style={{ fontSize: 11, color: '#7a5900' }}>⚠️ Storage 94% full — upgrade to receive attachments</span>
+                  </div>
+                  <div style={{ background: '#f1f3f4', padding: '10px 16px', borderBottom: '1px solid #e2e6ea', fontFamily: '"Times New Roman", serif' }}>
                     <span className="font-semibold text-[12px]" style={{ color: '#1a1a1a' }}>📧 New message from: Sarah Mitchell Law</span>
                   </div>
-                  <div style={{ padding: 16 }}>
-                    <p className="font-semibold text-[13px]" style={{ color: '#1a1a1a' }}>
-                      IMPORTANT: Documents needed for your bankruptcy filing
+                  <div style={{ padding: 16, fontFamily: '"Times New Roman", serif' }}>
+                    <p style={{ fontSize: 13, fontWeight: 'bold', color: '#1a1a1a' }}>
+                      IMPORTANT: Documents needed for your Chapter 7 bankruptcy filing — PLEASE READ CAREFULLY
                     </p>
-                    <p className="text-[12px] mt-2" style={{ color: '#444', lineHeight: 1.6 }}>
-                      Dear Kevin, Please find attached a checklist of all documents required for your Chapter 7 bankruptcy filing. Please gather and email each item to our office at your earliest convenience. If you have questions please call during business hours.
+                    <p style={{ fontSize: 12, color: '#444', lineHeight: 1.6, marginTop: 8, fontFamily: '"Times New Roman", serif' }}>
+                      Dear Kevin James, As per our previous correspondence, please find attached herewith the required documentation checklist for the purposes of your Chapter 7 bankruptcy proceeding. Kindly ensure all items are gathered and submitted to this office via email reply at your EARLIEST convenience. Failure to provide documentation in a timely manner may result in delays to your case. If you have questions please telephone the office during normal business hours (Mon-Fri, 9am-5pm only).
                     </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Paperclip className="w-3.5 h-3.5" style={{ color: '#1a75d2' }} />
-                      <span className="text-[12px]" style={{ color: '#1a75d2' }}>Document_Checklist_Final_v3.pdf</span>
+                    <div className="mt-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="w-3.5 h-3.5" style={{ color: '#1a75d2' }} />
+                        <span className="text-[11px]" style={{ color: '#1a75d2' }}>Bankruptcy_Checklist_FINAL_v3_USE_THIS_ONE.pdf</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="w-3.5 h-3.5" style={{ color: '#999' }} />
+                        <span className="text-[11px]" style={{ color: '#999', textDecoration: 'line-through' }}>Bankruptcy_Checklist_v2_OLD.pdf</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="w-3.5 h-3.5" style={{ color: '#1a75d2' }} />
+                        <span className="text-[11px]" style={{ color: '#1a75d2' }}>Instructions_READ_FIRST.docx</span>
+                      </div>
                     </div>
-                    <ul className="mt-3 space-y-1.5">
+                    <ul className="mt-3 space-y-1.5" style={{ fontFamily: '"Times New Roman", serif' }}>
                       {[
-                        'Pay stubs (last 60 days)',
-                        'W-2s (last 2 years)',
-                        'Federal tax returns (2 years)',
-                        'Bank statements (6 months — ALL accounts)',
-                        'Photo ID (government issued)',
-                        'Social Security card',
-                        'Credit card statements (3 months)',
-                        'Loan documents (auto, personal, student)',
+                        'Paystubs — most recent 60 days (biweekly = 4 stubs, weekly = 8 stubs, note: must show YTD)',
+                        'W-2 Wage statements — tax years 2022 AND 2023 (both years required, no exceptions)',
+                        'Federal 1040 tax returns — 2022 and 2023 (all pages, all schedules, all attachments)',
+                        'Bank statements — ALL accounts, ALL institutions, last 6 months (savings AND checking AND any joint accounts)',
+                        "Government-issued photo ID (driver's license OR passport — NOT expired)",
+                        'Social Security card (original or certified copy — photocopies may not be accepted)',
+                        'Credit card statements — last 3 months per card (ALL cards)',
+                        'Loan documentation — auto, personal, student (see attached instructions re: format)',
                       ].map((item, i) => (
-                        <li key={i} className="flex items-center gap-2 text-[11px]" style={{ color: '#444' }}>
-                          <span className="w-3 h-3 inline-block" style={{ border: '1px solid #b0b6bd', borderRadius: 2 }} />
-                          {item}
+                        <li key={i} className="flex items-start gap-2" style={{ fontSize: 11, color: '#444' }}>
+                          <span className="w-3 h-3 inline-block flex-shrink-0 mt-0.5" style={{ border: '1px solid #b0b6bd', borderRadius: 2 }} />
+                          <span>{item}</span>
                         </li>
                       ))}
+                      <li className="flex items-start gap-2" style={{ fontSize: 11, color: '#d93025', fontWeight: 'bold' }}>
+                        <span className="w-3 h-3 inline-block flex-shrink-0 mt-0.5" style={{ border: '1px solid #d93025', borderRadius: 2 }} />
+                        <span>⚠️ See page 2 for additional required items</span>
+                      </li>
                     </ul>
                     <p className="text-[11px] italic text-center mt-3 pb-2" style={{ color: '#888' }}>
-                      😰 Where do I even start?
+                      😰 Which version do I use? What's page 2? What's YTD?
                     </p>
                   </div>
                 </motion.div>
