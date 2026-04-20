@@ -394,13 +394,6 @@ const MarketingLanding = () => {
     setBeforeAfterState(next);
   };
   
-  const [showStickyBar, setShowStickyBar] = useState<boolean>(false);
-  useEffect(() => {
-    const onScroll = () => setShowStickyBar(window.scrollY > 600);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
   const [ctaRef, ctaVisible] = useScrollReveal<HTMLDivElement>();
@@ -462,35 +455,6 @@ const MarketingLanding = () => {
 
   return (
     <div className="min-h-screen" style={{ lineHeight: '1.7', background: 'hsl(var(--background))', overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none', boxShadow: 'none' }}>
-      {/* Sticky conversion bar */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 60,
-          background: 'rgba(10,20,32,0.95)',
-          backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(0,194,168,0.2)',
-          padding: '10px 24px',
-          transform: showStickyBar ? 'translateY(0)' : 'translateY(-100%)',
-          transition: 'transform 0.3s ease-out',
-        }}
-      >
-        <div className="max-w-6xl mx-auto hidden sm:flex items-center justify-between gap-4">
-          <p className="text-[14px] font-body text-foreground hidden md:block">Stop chasing documents.</p>
-          <div className="flex items-center gap-4 text-[12px] font-body" style={{ color: '#8aa3b8' }}>
-            <span>✓ 14-day free trial</span>
-            <span>✓ No card required</span>
-            <span>✓ First case in 60 seconds</span>
-          </div>
-          <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">
-            Start Free — No Card Needed
-          </Button>
-        </div>
-      </div>
-
       {/* Nav */}
       <nav
         className="sticky top-0 z-50 px-6 py-3 flex items-center justify-between"
@@ -1213,21 +1177,6 @@ const MarketingLanding = () => {
           </p>
         </div>
       </section>
-
-      {/* Footer CTA strip */}
-      <div
-        className="py-6 px-6 text-center"
-        style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.04)' }}
-      >
-        <span className="text-[15px] text-[#8aa3b8] font-body">Ready to stop chasing documents?</span>
-        <Button
-          size="sm"
-          onClick={() => navigate('/signup')}
-          className="landing-btn-glow ml-4"
-        >
-          Start Free — No Card Needed
-        </Button>
-      </div>
 
       {/* Footer */}
       <footer className="px-6 py-8" style={{ background: '#070f18', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
