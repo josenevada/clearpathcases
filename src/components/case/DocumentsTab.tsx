@@ -287,7 +287,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const doZipExport = async () => {
     await buildZipFromEntries(
       approvedFiles,
-      `${clientLastName}-FilingPacket-${format(new Date(), 'yyyy-MM-dd')}.zip`
+      `${clientLastName}-Documents-${format(new Date(), 'yyyy-MM-dd')}.zip`
     );
     toast.success('ZIP downloaded successfully.');
     setShowExportWarning(null);

@@ -417,7 +417,7 @@ const CaseDetail = () => {
       }
 
       const blob = await zip.generateAsync({ type: 'blob' });
-      saveAs(blob, `${lastName}-FilingPacket-${format(new Date(), 'yyyy-MM-dd')}.zip`);
+      saveAs(blob, `${lastName}-Documents-${format(new Date(), 'yyyy-MM-dd')}.zip`);
       toast.dismiss(loadingToast);
       toast.success('ZIP downloaded successfully.');
     } catch (err) {
