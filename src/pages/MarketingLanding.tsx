@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import PricingCards from '@/components/PricingCards';
+import AlexChatDemo from '@/components/AlexChatDemo';
 import {
   Accordion,
   AccordionContent,
@@ -1018,32 +1019,7 @@ const MarketingLanding = () => {
           </div>
 
           {/* Right column — chat mockup */}
-          <div
-            className="rounded-2xl border p-4"
-            style={{ background: '#111f2e', border: '0.5px solid rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">A</div>
-              <div>
-                <p className="font-body font-semibold text-foreground text-sm">Alex</p>
-                <p className="text-[11px] text-muted-foreground">Document Assistant</p>
-              </div>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
-                Where do I get my W-2?
-              </div>
-              <div className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
-                Log into your payroll portal — ADP at adp.com, Workday at workday.com, or Paychex. Go to Pay & Tax → Tax Documents and download both years.
-              </div>
-              <div className="ml-auto max-w-[80%] bg-primary/15 text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
-                I use ADP
-              </div>
-              <div className="mr-auto max-w-[80%] bg-secondary text-foreground rounded-2xl px-4 py-2.5 text-sm font-body">
-                Go to adp.com → Sign In → Pay & Tax → Tax Statements. Download 2023 and 2024 and upload them here. Takes about 2 minutes ✓
-              </div>
-            </div>
-          </div>
+          <AlexChatDemo />
         </div>
       </section>
 
