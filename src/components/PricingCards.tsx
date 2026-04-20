@@ -116,6 +116,11 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
             )}
             <h3 className="font-display font-semibold text-[17px] text-foreground">{plan.name}</h3>
             <p className="text-xs text-[#8aa3b8] font-body mt-1">{plan.subtitle}</p>
+            {plan.differentiator && (
+              <span className="text-[12px] font-body font-semibold text-primary bg-primary/10 rounded-full px-3 py-1 inline-block mt-3 mb-1 self-start">
+                {plan.differentiator}
+              </span>
+            )}
             <div className="mt-3 mb-1">
               <span className="font-display font-bold text-3xl text-foreground">{price}</span>
               <span className="text-[#8aa3b8] text-sm">/month</span>
