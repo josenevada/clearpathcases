@@ -118,7 +118,6 @@ const CaseDetail = () => {
   const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string>(CATEGORIES[0]);
-  const [noteTab, setNoteTab] = useState<'internal' | 'client'>('internal');
   const [newNote, setNewNote] = useState('');
   const [overrideNote, setOverrideNote] = useState('');
   const [overrideTarget, setOverrideTarget] = useState<{ itemId: string; fileId: string } | null>(null);
@@ -280,7 +279,7 @@ const CaseDetail = () => {
 
   const progress = calculateProgress(caseData);
   const urgencyClass = { critical: 'urgency-critical', 'at-risk': 'urgency-at-risk', normal: 'urgency-normal' }[caseData.urgency];
-  const filteredNotes = caseData.notes.filter(note => (noteTab === 'internal' ? !note.clientVisible : note.clientVisible));
+  const filteredNotes = caseData.notes.filter(note => !note.clientVisible);
 
   const getFileStatusBadgeClass = (status: FileReviewStatus) => {
     switch (status) {
@@ -713,7 +712,7 @@ const CaseDetail = () => {
       author_name: author,
       author_role: viewRole,
       content: newNote.trim(),
-      visibility: noteTab === 'client' ? 'client_visible' : 'internal',
+      visibility: 'internal',
       created_at: timestamp,
     });
 
@@ -1607,28 +1606,14 @@ const CaseDetail = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="mb-3 font-display text-lg font-bold text-foreground">Notes</h2>
-                <div className="mb-4 flex rounded-pill bg-secondary p-0.5">
-                  {(['internal', 'client'] as const).map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setNoteTab(tab)}
-                      className={`flex-1 px-3 py-1.5 text-xs font-bold capitalize rounded-pill transition-all ${
-                        noteTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {tab === 'internal' ? 'Internal' : 'Client-Visible'}
-                    </button>
-                  ))}
-                </div>
                 <div className="mb-4 max-h-[200px] space-y-2 overflow-y-auto">
                   {filteredNotes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No {noteTab} notes yet.</p>
+                    <p className="text-sm text-muted-foreground">No notes yet.</p>
                   ) : (
                     filteredNotes.map(note => (
-                      <div key={note.id} className={`rounded-md p-3 text-sm ${note.clientVisible ? 'surface-card' : 'bg-secondary'}`}>
+                      <div key={note.id} className="rounded-md p-3 text-sm bg-secondary">
                         <div className="mb-1 flex items-center gap-2">
                           <span className="text-xs font-medium text-foreground">{note.author}</span>
-                          {!note.clientVisible && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">Internal</span>}
                           <span className="ml-auto text-xs text-muted-foreground">{format(new Date(note.timestamp), 'MMM d, h:mm a')}</span>
                         </div>
                         <p className="text-muted-foreground">{note.content}</p>
@@ -1640,7 +1625,7 @@ const CaseDetail = () => {
                   <Textarea
                     value={newNote}
                     onChange={event => setNewNote(event.target.value)}
-                    placeholder={`Add ${noteTab} note...`}
+                    placeholder="Add note..."
                     className="min-h-[60px] resize-none rounded-[10px] bg-input border-border text-sm"
                   />
                 </div>
