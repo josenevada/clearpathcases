@@ -522,146 +522,284 @@ const MarketingLanding = () => {
 
       <SectionDivider />
 
-      {/* Two views — attorney + client */}
+      {/* See the difference — unified before/after for both parties */}
       <section
         ref={twoViewsRef}
         className="px-6 py-20 max-w-6xl mx-auto"
         style={revealStyle(twoViewsVisible)}
       >
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
-          Two views. One seamless workflow.
+          See the difference.
         </h2>
         <p className="text-[15px] text-[#8aa3b8] font-body font-light text-center mt-4 max-w-2xl mx-auto">
-          See the difference — then see how both sides of ClearPath work.
+          Before ClearPath, both sides suffered. After, everyone wins.
         </p>
 
-        {/* Before / After auto-transitioning preview */}
-        <div className="max-w-2xl mx-auto mb-16 mt-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => toggleBeforeAfter('before')}
-              className={`text-[12px] font-semibold uppercase tracking-wider rounded-full px-4 py-1.5 border transition-colors ${
-                beforeAfterState === 'before'
-                  ? 'bg-primary/10 text-primary border-primary/20'
-                  : 'text-muted-foreground bg-transparent border-border/40'
-              }`}
-            >
-              Before ClearPath
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleBeforeAfter('after')}
-              className={`text-[12px] font-semibold uppercase tracking-wider rounded-full px-4 py-1.5 border transition-colors ${
-                beforeAfterState === 'after'
-                  ? 'bg-primary/10 text-primary border-primary/20'
-                  : 'text-muted-foreground bg-transparent border-border/40'
-              }`}
-            >
-              With ClearPath
-            </button>
-          </div>
+        {/* Toggle pills */}
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <button
+            type="button"
+            onClick={() => toggleBeforeAfter('before')}
+            className={`rounded-full px-5 py-2 text-[13px] font-semibold transition-colors ${
+              beforeAfterState === 'before'
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'text-muted-foreground border border-transparent'
+            }`}
+          >
+            Before ClearPath
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleBeforeAfter('after')}
+            className={`rounded-full px-5 py-2 text-[13px] font-semibold transition-colors ${
+              beforeAfterState === 'after'
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'text-muted-foreground border border-transparent'
+            }`}
+          >
+            With ClearPath
+          </button>
+        </div>
 
-          <div className="rounded-2xl overflow-hidden" style={{ minHeight: 320 }}>
+        {/* Two-column unified before/after */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 items-start">
+          {/* LEFT — Your client */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
+              Your client
+            </p>
             <AnimatePresence mode="wait">
               {beforeAfterState === 'before' ? (
                 <motion.div
-                  key="before"
-                  initial={{ opacity: 0, y: 8 }}
+                  key="client-before"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.4 }}
-                  className="rounded-2xl overflow-hidden"
-                  style={{ background: '#ffffff', border: '1px solid #e2e6ea', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                  className="overflow-hidden mx-auto"
+                  style={{ background: '#ffffff', border: '1px solid #e2e6ea', borderRadius: 16, maxWidth: 460, boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
                 >
-                  <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #e2e6ea', background: '#f8f9fa' }}>
-                    <Mail className="w-3.5 h-3.5" style={{ color: '#444' }} />
-                    <span className="text-[13px] font-semibold" style={{ color: '#1a1a1a' }}>Inbox</span>
-                    <span className="ml-auto text-[10px] font-semibold text-white rounded-full px-2 py-0.5" style={{ background: '#d93025' }}>47 unread</span>
+                  <div style={{ background: '#f1f3f4', padding: '10px 16px', borderBottom: '1px solid #e2e6ea' }}>
+                    <span className="font-semibold text-[12px]" style={{ color: '#1a1a1a' }}>📧 New message from: Sarah Mitchell Law</span>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <p className="font-semibold text-[13px]" style={{ color: '#1a1a1a' }}>
+                      IMPORTANT: Documents needed for your bankruptcy filing
+                    </p>
+                    <p className="text-[12px] mt-2" style={{ color: '#444', lineHeight: 1.6 }}>
+                      Dear Kevin, Please find attached a checklist of all documents required for your Chapter 7 bankruptcy filing. Please gather and email each item to our office at your earliest convenience. If you have questions please call during business hours.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Paperclip className="w-3.5 h-3.5" style={{ color: '#1a75d2' }} />
+                      <span className="text-[12px]" style={{ color: '#1a75d2' }}>Document_Checklist_Final_v3.pdf</span>
+                    </div>
+                    <ul className="mt-3 space-y-1.5">
+                      {[
+                        'Pay stubs (last 60 days)',
+                        'W-2s (last 2 years)',
+                        'Federal tax returns (2 years)',
+                        'Bank statements (6 months — ALL accounts)',
+                        'Photo ID (government issued)',
+                        'Social Security card',
+                        'Credit card statements (3 months)',
+                        'Loan documents (auto, personal, student)',
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-[11px]" style={{ color: '#444' }}>
+                          <span className="w-3 h-3 inline-block" style={{ border: '1px solid #b0b6bd', borderRadius: 2 }} />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-[11px] italic text-center mt-3 pb-2" style={{ color: '#888' }}>
+                      😰 Where do I even start?
+                    </p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="client-after"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                >
+                  <motion.div
+                    animate={reduced ? undefined : { y: [0, -8, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{
+                      width: 260,
+                      height: 520,
+                      borderRadius: 40,
+                      background: '#0d1a27',
+                      border: '8px solid #1a2d42',
+                      boxShadow: '0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,194,168,0.15)',
+                      margin: '0 auto',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ width: 80, height: 20, background: '#1a2d42', borderRadius: '0 0 12px 12px', margin: '0 auto' }} />
+                    <div style={{ height: 3, background: '#00C2A8', width: '28%' }} />
+                    <div className="flex items-center justify-between" style={{ padding: '8px 14px' }}>
+                      <span className="font-display font-bold text-[11px] text-primary">ClearPath</span>
+                      <span className="text-[10px] text-muted-foreground">Step 1 of 6</span>
+                    </div>
+                    <div style={{ padding: '12px 14px' }}>
+                      <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-primary" />
+                      </div>
+                      <h3 className="font-display font-bold text-[15px] text-foreground mt-2">Pay Stubs</h3>
+                      <p className="text-[11px] text-primary/80 mt-1">Proves your current income to the court.</p>
+                      <div
+                        style={{
+                          border: '1.5px dashed rgba(0,194,168,0.25)',
+                          borderRadius: 12,
+                          padding: '16px 10px',
+                          textAlign: 'center',
+                          marginTop: 10,
+                          background: 'rgba(0,194,168,0.02)',
+                        }}
+                      >
+                        <UploadCloud className="w-5 h-5 text-primary/50 mx-auto mb-1" />
+                        <p className="text-[11px] text-muted-foreground">Tap to upload</p>
+                      </div>
+                      <div
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: 20,
+                          padding: '5px 12px',
+                          fontSize: 11,
+                          color: '#7FA0B8',
+                          marginTop: 10,
+                          display: 'inline-block',
+                        }}
+                      >
+                        💬 Ask Alex
+                      </div>
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px', background: 'rgba(13,26,40,0.95)' }}>
+                      <div
+                        className="bg-primary text-primary-foreground font-body font-semibold text-[12px] text-center"
+                        style={{ borderRadius: 10, padding: '10px 14px' }}
+                      >
+                        Continue →
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {beforeAfterState === 'before' ? (
+              <p className="text-destructive/60 text-[12px] text-center mt-3">
+                Confused. Overwhelmed. Likely to give up.
+              </p>
+            ) : (
+              <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
+                Guided step by step. Done in 15 minutes.
+              </p>
+            )}
+          </div>
+
+          {/* RIGHT — Your firm */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
+              Your firm
+            </p>
+            <AnimatePresence mode="wait">
+              {beforeAfterState === 'before' ? (
+                <motion.div
+                  key="firm-before"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                  className="overflow-hidden mx-auto"
+                  style={{ background: '#ffffff', border: '1px solid #e2e6ea', borderRadius: 16, maxWidth: 460, boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
+                >
+                  <div className="flex items-center justify-between" style={{ background: '#f1f3f4', padding: '10px 16px', borderBottom: '1px solid #e2e6ea' }}>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5" style={{ color: '#444' }} />
+                      <span className="font-semibold text-[12px]" style={{ color: '#1a1a1a' }}>Inbox</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-white rounded-full px-2 py-0.5" style={{ background: '#d93025' }}>23 unread</span>
                   </div>
                   <div>
                     {[
-                      { who: 'Sarah M.', subj: 'Re: Documents — still waiting on pay stubs', when: '3 days ago' },
-                      { who: 'James C.', subj: 'FWD: wrong file again??', when: '2 days ago' },
-                      { who: 'Robert K.', subj: 'RE: RE: RE: bank statements', when: '5 days ago' },
-                      { who: 'Linda T.', subj: 'Can you resend the checklist?', when: '1 week ago' },
-                      { who: 'Marcus W.', subj: "I don't understand what you need", when: '1 week ago' },
+                      { who: 'Kevin J.', subj: 'RE: RE: RE: still missing bank statements', when: '3 days ago' },
+                      { who: 'Maria R.', subj: 'I sent the wrong file sorry', when: '2 days ago' },
+                      { who: 'James C.', subj: 'what is a W-2??', when: '5 days ago' },
+                      { who: 'Linda T.', subj: 'Can you resend that checklist PDF', when: '1 week ago' },
+                      { who: 'Robert K.', subj: 'FWD: FWD: documents attached (maybe)', when: '1 week ago' },
                     ].map((e, i) => (
-                      <div key={i} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #e2e6ea' }}>
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold" style={{ background: '#e8eaed', color: '#444' }}>
+                      <div key={i} className="flex items-center gap-3" style={{ padding: '10px 16px', borderBottom: '1px solid #e2e6ea', background: '#fff' }}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold" style={{ background: '#e8eaed', color: '#444' }}>
                           {e.who.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] truncate">
                             <span className="font-semibold" style={{ color: '#1a1a1a' }}>{e.who}</span>
-                            <span style={{ color: '#444444' }}> — {e.subj}</span>
+                            <span style={{ color: '#444' }}> — {e.subj}</span>
                           </p>
                         </div>
-                        <span className="text-[10px] whitespace-nowrap" style={{ color: '#888888' }}>{e.when}</span>
+                        <span className="text-[10px] whitespace-nowrap" style={{ color: '#888' }}>{e.when}</span>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d93025' }} />
                       </div>
                     ))}
                   </div>
-                  <div className="px-4 py-3" style={{ background: '#ffffff' }}>
-                    <div className="rounded-lg p-3" style={{ background: '#f8f9fa', border: '1px solid #e2e6ea' }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Paperclip className="w-3.5 h-3.5" style={{ color: '#444' }} />
-                        <span className="text-[11px] font-semibold" style={{ color: '#1a1a1a' }}>Document Checklist.pdf</span>
-                      </div>
-                      <ul className="space-y-1">
-                        {[
-                          'Pay stubs (last 60 days)',
-                          'W-2s (2 years)',
-                          'Federal tax returns (2 years)',
-                          'Bank statements (6 months, all accounts)',
-                          'Photo ID (government issued)',
-                          'Social Security card',
-                          'Credit card statements (3 months)',
-                          'Loan documents',
-                        ].map((item, i) => (
-                          <li key={i} className="flex items-center gap-2 text-[11px]" style={{ color: '#444444' }}>
-                            <span className="w-3 h-3 rounded-sm inline-block" style={{ border: '1px solid #b0b6bd' }} />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                  <p className="text-destructive/80 text-[12px] text-center py-3" style={{ background: '#f8f9fa', borderTop: '1px solid #e2e6ea' }}>
-                    Hours spent chasing. Documents still missing.
+                  <p className="text-[11px] italic text-center py-3" style={{ color: '#d93025' }}>
+                    ⏱️ Hours chasing. Deadlines slipping.
                   </p>
                 </motion.div>
               ) : (
                 <motion.div
-                  key="after"
-                  initial={{ opacity: 0, y: 8 }}
+                  key="firm-after"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.4 }}
-                  className="rounded-2xl overflow-hidden"
-                  style={{ background: '#111f2e', border: '1px solid rgba(0,194,168,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                  className="overflow-hidden mx-auto"
+                  style={{
+                    background: '#111f2e',
+                    border: '1px solid rgba(0,194,168,0.25)',
+                    borderRadius: 16,
+                    maxWidth: 460,
+                    boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
+                  }}
                 >
-                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span className="font-display font-bold text-[14px] text-foreground">
-                      Kevin James — Chapter 7
-                    </span>
-                    <span className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
-                      78% complete
-                    </span>
+                  {/* Browser chrome */}
+                  <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-warning/60" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-success/60" />
                   </div>
-                  <div className="px-4 pt-3">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display font-bold text-[13px] text-foreground">← Kevin James</span>
+                      <span className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+                        CH.7
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">Due May 29</span>
+                  </div>
+                  <div className="px-4">
                     <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-primary" style={{ width: '78%' }} />
                     </div>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">78% complete</p>
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-3">
                     {[
                       { name: 'Income & Employment', count: '4/4', state: 'done' },
                       { name: 'Bank & Financial', count: '2/2', state: 'done' },
                       { name: 'Debts & Credit', count: '2/4', state: 'partial' },
                       { name: 'Personal ID', count: '0/2', state: 'empty' },
                     ].map((row, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-2.5" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div
+                        key={i}
+                        className="flex items-center justify-between py-3 px-4"
+                        style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                      >
                         <div className="flex items-center gap-2.5">
                           {row.state === 'done' && <CheckCircle2 className="w-4 h-4 text-success" />}
                           {row.state === 'partial' && (
@@ -695,206 +833,26 @@ const MarketingLanding = () => {
                       <button className="text-[11px] font-semibold text-primary">Review →</button>
                     </div>
                   </div>
-                  <p className="text-primary/70 text-[12px] text-center py-3">
-                    Organized on arrival. Ready to review.
-                  </p>
+                  <div className="flex items-center gap-2 px-4 pb-4">
+                    <button className="flex-1 bg-primary text-primary-foreground text-[12px] font-semibold rounded-lg py-2">
+                      Approve All
+                    </button>
+                    <button className="flex-1 border border-border text-foreground text-[12px] font-semibold rounded-lg py-2">
+                      Download ZIP
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="flex items-center max-w-2xl mx-auto mt-4 mb-12">
-          <div className="bg-white/[0.06] h-px flex-1" />
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-6">
-            Inside ClearPath
-          </span>
-          <div className="bg-white/[0.06] h-px flex-1" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mt-4">
-          {/* Left — attorney checklist view */}
-          <div style={revealStyle(twoViewsVisible, { x: -30 })}>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
-              For your paralegal
-            </p>
-            <div
-              className="rounded-2xl overflow-hidden bg-card mx-auto"
-              style={{
-                maxWidth: 460,
-                border: '1px solid hsl(172 100% 38% / 0.3)',
-                boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
-              }}
-            >
-              {/* Browser chrome */}
-              <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border/30 bg-muted/10">
-                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-                <span className="w-2.5 h-2.5 rounded-full bg-warning/60" />
-                <span className="w-2.5 h-2.5 rounded-full bg-success/60" />
-              </div>
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-[13px] text-foreground">← Kevin James</span>
-                  <span className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
-                    CH.7
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground">Due May 29</span>
-              </div>
-              {/* Progress */}
-              <div className="px-4">
-                <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: '78%' }} />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-1.5">78% complete</p>
-              </div>
-              {/* Categories */}
-              <div className="mt-3">
-                {[
-                  { name: 'Income & Employment', count: '4/4', state: 'done' },
-                  { name: 'Bank & Financial', count: '2/2', state: 'done' },
-                  { name: 'Debts & Credit', count: '2/4', state: 'partial' },
-                  { name: 'Personal ID', count: '0/2', state: 'empty' },
-                ].map((row, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between py-3 px-4 border-b border-border/40"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      {row.state === 'done' && <CheckCircle2 className="w-4 h-4 text-success" />}
-                      {row.state === 'partial' && (
-                        <div className="w-4 h-4 rounded-full border-2 border-warning relative overflow-hidden">
-                          <div className="absolute inset-0 bg-warning" style={{ clipPath: 'inset(0 50% 0 0)' }} />
-                        </div>
-                      )}
-                      {row.state === 'empty' && <Circle className="w-4 h-4 text-muted-foreground" />}
-                      <span className="text-[12px] text-foreground/90">{row.name}</span>
-                    </div>
-                    <span
-                      className={`text-[11px] font-semibold ${
-                        row.state === 'done'
-                          ? 'text-success'
-                          : row.state === 'partial'
-                          ? 'text-warning'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {row.count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {/* Action buttons */}
-              <div className="flex items-center gap-2 px-4 py-3">
-                <button className="flex-1 bg-primary text-primary-foreground text-[12px] font-semibold rounded-lg py-2">
-                  Approve All
-                </button>
-                <button className="flex-1 border border-border text-foreground text-[12px] font-semibold rounded-lg py-2">
-                  Download ZIP
-                </button>
-              </div>
-            </div>
-            <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
-              Documents arrive organized. Review and approve in minutes.
-            </p>
-          </div>
-
-          {/* Right — client phone view */}
-          <div style={revealStyle(twoViewsVisible, { x: 30 })}>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 text-center">
-              For your client
-            </p>
-            <motion.div
-              animate={reduced ? undefined : { y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                width: 260,
-                height: 520,
-                borderRadius: 40,
-                background: '#0d1a27',
-                border: '8px solid #1a2d42',
-                boxShadow: '0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,194,168,0.15)',
-                margin: '0 auto',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Notch */}
-              <div
-                style={{
-                  width: 80,
-                  height: 20,
-                  background: '#1a2d42',
-                  borderRadius: '0 0 12px 12px',
-                  margin: '0 auto',
-                }}
-              />
-              {/* Progress bar */}
-              <div style={{ height: 3, background: '#00C2A8', width: '28%' }} />
-              {/* Header */}
-              <div className="flex items-center justify-between" style={{ padding: '8px 14px' }}>
-                <span className="font-display font-bold text-[11px] text-primary">ClearPath</span>
-                <span className="text-[10px] text-muted-foreground">Step 1 of 6</span>
-              </div>
-              {/* Content */}
-              <div style={{ padding: '12px 14px' }}>
-                <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-primary" />
-                </div>
-                <h3 className="font-display font-bold text-[15px] text-foreground mt-2">Pay Stubs</h3>
-                <p className="text-[11px] text-primary/80 mt-1">Proves your current income to the court.</p>
-                <div
-                  style={{
-                    border: '1.5px dashed rgba(0,194,168,0.25)',
-                    borderRadius: 12,
-                    padding: '16px 10px',
-                    textAlign: 'center',
-                    marginTop: 10,
-                    background: 'rgba(0,194,168,0.02)',
-                  }}
-                >
-                  <UploadCloud className="w-5 h-5 text-primary/50 mx-auto mb-1" />
-                  <p className="text-[11px] text-muted-foreground">Tap to upload</p>
-                </div>
-                <div
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 20,
-                    padding: '5px 12px',
-                    fontSize: 11,
-                    color: '#7FA0B8',
-                    marginTop: 10,
-                    display: 'inline-block',
-                  }}
-                >
-                  💬 Ask Alex
-                </div>
-              </div>
-              {/* Bottom CTA */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: '12px 14px',
-                  background: 'rgba(13,26,40,0.95)',
-                }}
-              >
-                <div
-                  className="bg-primary text-primary-foreground font-body font-semibold text-[12px] text-center"
-                  style={{ borderRadius: 10, padding: '10px 14px' }}
-                >
-                  Continue →
-                </div>
-              </div>
-            </motion.div>
-            <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
-              Guided step by step. Works on any phone.
-            </p>
+            {beforeAfterState === 'before' ? (
+              <p className="text-destructive/60 text-[12px] text-center mt-3">
+                Chasing documents. Missing deadlines.
+              </p>
+            ) : (
+              <p className="text-[13px] text-[#8aa3b8] font-body font-light text-center mt-6">
+                Organized on arrival. Ready to review.
+              </p>
+            )}
           </div>
         </div>
       </section>
