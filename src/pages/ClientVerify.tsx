@@ -103,24 +103,32 @@ const ClientVerify = () => {
     setDobError(null);
     setError('');
 
-    // Look up the row by either code, then check the appropriate DOB field
-    const { data } = await supabase
+    // Look up the row by either code; client_dob lives on cases, spouse_dob on client_info
+    const { data: caseRow } = await supabase
       .from('cases')
-      .select('id, client_dob, spouse_dob' as any)
+      .select('id, client_dob')
       .or(`case_code.eq.${caseCode},spouse_case_code.eq.${caseCode}`)
-      .maybeSingle() as any;
+      .maybeSingle();
 
-    if (!data) {
+    if (!caseRow) {
       setError('Case not found. Please check your link.');
       return;
     }
 
-    const expectedDob = isSpouseLink ? data.spouse_dob : data.client_dob;
+    let expectedDob: string | null = caseRow.client_dob;
+    if (isSpouseLink) {
+      const { data: info } = await supabase
+        .from('client_info')
+        .select('spouse_dob')
+        .eq('case_id', caseRow.id)
+        .maybeSingle();
+      expectedDob = info?.spouse_dob ?? null;
+    }
 
     if (expectedDob === dob) {
-      setClientSession(caseCode, data.id);
+      setClientSession(caseCode, caseRow.id);
       const suffix = isSpouseLink ? '?debtor=spouse' : '';
-      navigate(`/client-portal/${caseCode}/${data.id}${suffix}`, { replace: true });
+      navigate(`/client-portal/${caseCode}/${caseRow.id}${suffix}`, { replace: true });
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);

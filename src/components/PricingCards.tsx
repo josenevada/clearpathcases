@@ -46,11 +46,9 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
       'Up to 25 active cases',
       'Everything in Starter',
       'Plaid bank connection',
-      'White-label client portal',
       'Priority support',
       '14-day free trial',
     ],
-    note: 'White-label portal coming soon',
   },
   firm: {
     name: 'Firm',
@@ -61,12 +59,10 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
-      'Custom firm branding',
       'Dedicated onboarding call',
       'SLA support',
       '14-day free trial',
     ],
-    note: 'Custom branding coming soon',
   },
 };
 
