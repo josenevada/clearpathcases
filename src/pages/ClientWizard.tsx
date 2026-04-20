@@ -601,7 +601,21 @@ const ClientWizard = () => {
     );
   }
 
-  const categoryItems = caseData.checklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
+  // ─── Joint filing: which debtor is using this link? ───────────────
+  const debtorMode = (searchParams.get('debtor') === 'spouse') ? 'spouse' : 'primary';
+  const isSpouseMode = debtorMode === 'spouse';
+  const displayName = isSpouseMode && caseData.spouseName ? caseData.spouseName : caseData.clientName;
+  const displayFirstName = displayName.split(' ')[0];
+
+  // Filter the checklist by debtor mode. Items intended for the spouse are tagged
+  // with "(Spouse)" in their label. Strip that suffix when shown to the spouse.
+  const visibleChecklist = caseData.checklist
+    .filter(item => isSpouseMode ? item.label.includes('(Spouse)') : !item.label.includes('(Spouse)'))
+    .map(item => isSpouseMode
+      ? { ...item, label: item.label.replace(/\s*\(Spouse\)\s*$/i, '').trim() }
+      : item);
+
+  const categoryItems = visibleChecklist.filter(item => item.category === CATEGORIES[currentCategoryIdx]);
 
   // If current category is empty, advance to next non-empty one
   if (categoryItems.length === 0) {
