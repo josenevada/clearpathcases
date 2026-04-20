@@ -386,7 +386,7 @@ const MarketingLanding = () => {
   useEffect(() => {
     const id = setInterval(() => {
       setBeforeAfterState((s) => (s === 'before' ? 'after' : 'before'));
-    }, 4000);
+    }, 5000);
     return () => clearInterval(id);
   }, []);
 
