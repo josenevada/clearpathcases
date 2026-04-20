@@ -22,6 +22,7 @@ import {
   usePrefersReducedMotion,
   useIsMobileAnimation,
 } from '@/hooks/use-scroll-reveal';
+import { useAuth } from '@/lib/auth';
 
 /* ────── helpers ────── */
 const SectionDivider = () => (
@@ -350,7 +351,15 @@ const FeatureShowcase = () => {
 /* ────── Main Component ────── */
 const MarketingLanding = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [showDemo, setShowDemo] = useState(false);
+
+  // Redirect authenticated users straight to the dashboard so they never see the marketing page.
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/paralegal', { replace: true });
+    }
+  }, [user, loading, navigate]);
   const [isAnnual, setIsAnnual] = useState(false);
   const reduced = usePrefersReducedMotion();
   const isMobile = useIsMobileAnimation();
