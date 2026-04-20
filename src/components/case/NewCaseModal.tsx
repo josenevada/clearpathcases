@@ -83,6 +83,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamLoaded, setTeamLoaded] = useState(false);
+  const [clientLanguage, setClientLanguage] = useState<'en' | 'es'>('en');
 
   useEffect(() => {
     if (!open || teamLoaded) return;
@@ -208,6 +209,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setShowSummary(false);
     setExcludedItems(new Set());
     setShowConfirmClose(false);
+    setClientLanguage('en');
     onOpenChange(false);
   };
 
@@ -286,6 +288,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
+        client_language: clientLanguage,
       } as any);
 
       // Insert included items normally
@@ -397,6 +400,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     setInfo={setInfo}
                     isJointFiling={isJointFiling}
                     onToggleJoint={(v) => setAnswers(prev => ({ ...prev, filingJointly: v }))}
+                    clientLanguage={clientLanguage}
+                    setClientLanguage={setClientLanguage}
                   />
                   <div className="flex justify-end mt-6">
                     <Button onClick={() => { setStep(2); setQuestionIdx(0); setShowSummary(false); }} disabled={!step1Valid}>
@@ -596,11 +601,13 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: 
 };
 
 // ── Step 1 Form Component ────────────────────────────────────────────
-const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
+const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint, clientLanguage, setClientLanguage }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
   isJointFiling?: boolean;
   onToggleJoint?: (v: boolean) => void;
+  clientLanguage?: 'en' | 'es';
+  setClientLanguage?: (lang: 'en' | 'es') => void;
 }) => {
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
@@ -639,6 +646,34 @@ const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint }: {
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>
+
+      {/* Language selector */}
+      {setClientLanguage && (
+        <div className="sm:col-span-2">
+          <Label className="text-muted-foreground text-sm">Client's preferred language</Label>
+          <div className="flex gap-3 mt-1">
+            {([
+              { value: 'en' as const, label: 'English' },
+              { value: 'es' as const, label: 'Español' },
+            ]).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setClientLanguage(opt.value)}
+                className={cn(
+                  'flex-1 h-11 rounded-2xl text-sm font-bold font-display transition-all border-2',
+                  clientLanguage === opt.value
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <Label className="text-muted-foreground text-sm">Client Phone</Label>
         <Input

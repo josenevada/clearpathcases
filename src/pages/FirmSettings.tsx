@@ -35,7 +35,8 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const HIDDEN_KEYS = new Set(['whitelabel', 'branding', 'retention']);
+const HIDDEN_KEYS = new Set(['whitelabel', 'retention']);
+const FIRM_ONLY_KEYS = new Set(['branding']);
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -78,10 +79,15 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const VISIBLE_NAV_GROUPS = NAV_GROUPS.map(g => ({
-  ...g,
-  items: g.items.filter(i => !HIDDEN_KEYS.has(i.key)),
-})).filter(g => g.items.length > 0);
+const buildVisibleGroups = (plan: string | null) =>
+  NAV_GROUPS.map(g => ({
+    ...g,
+    items: g.items.filter(i => {
+      if (HIDDEN_KEYS.has(i.key)) return false;
+      if (FIRM_ONLY_KEYS.has(i.key) && plan !== 'firm') return false;
+      return true;
+    }),
+  })).filter(g => g.items.length > 0);
 
 const ALL_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
@@ -102,7 +108,8 @@ const FirmSettings = () => {
   const navigate = useNavigate();
   const { group, page } = useParams<{ group?: string; page?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { refresh } = useSubscription();
+  const { refresh, plan } = useSubscription();
+  const VISIBLE_NAV_GROUPS = buildVisibleGroups(plan);
   const { theme, setTheme } = useThemePreference();
   const isMobile = useIsMobile();
 
