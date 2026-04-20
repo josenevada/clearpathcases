@@ -106,16 +106,16 @@ const ClientVerify = () => {
     // Look up the row by either code, then check the appropriate DOB field
     const { data } = await supabase
       .from('cases')
-      .select('id, client_dob, spouse_dob')
+      .select('id, client_dob, spouse_dob' as any)
       .or(`case_code.eq.${caseCode},spouse_case_code.eq.${caseCode}`)
-      .maybeSingle();
+      .maybeSingle() as any;
 
     if (!data) {
       setError('Case not found. Please check your link.');
       return;
     }
 
-    const expectedDob = isSpouseLink ? (data as any).spouse_dob : data.client_dob;
+    const expectedDob = isSpouseLink ? data.spouse_dob : data.client_dob;
 
     if (expectedDob === dob) {
       setClientSession(caseCode, data.id);
