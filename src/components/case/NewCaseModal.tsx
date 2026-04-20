@@ -66,7 +66,6 @@ const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
   { key: 'selfEmployed', question: 'Is this client self-employed or do they own a business?' },
   { key: 'hasRetirement', question: 'Does this client have retirement or investment accounts?' },
   { key: 'hasStudentLoans', question: 'Does this client have student loans?' },
-  { key: 'filingJointly', question: 'Is this client filing jointly with a spouse?' },
 ];
 
 const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
