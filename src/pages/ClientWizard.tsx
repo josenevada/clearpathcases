@@ -462,16 +462,35 @@ const ClientWizard = () => {
           suggestion: result.suggestion, validatorNotes: result.validator_notes,
           validationStatus: result.validation_status, validatedAt: result.validated_at,
         };
+        // Auto-approve if validation passed cleanly (no warnings, no failures, no issues)
+        const passedCleanly =
+          result.validation_status === 'passed' &&
+          (!result.issues || result.issues.length === 0);
+
         setCaseData(prev => {
           if (!prev) return prev;
           return {
             ...prev,
             checklist: prev.checklist.map(ci => ({
               ...ci,
-              files: ci.files.map(fl => fl.id === fileId ? { ...fl, validationStatus: result.validation_status, validationResult: vr } : fl),
+              files: ci.files.map(fl => fl.id === fileId ? {
+                ...fl,
+                validationStatus: result.validation_status,
+                validationResult: vr,
+                ...(passedCleanly ? { reviewStatus: 'approved' as const, reviewNote: 'Auto-approved — passed AI validation' } : {}),
+              } : fl),
             })),
           };
         });
+
+        if (passedCleanly) {
+          await supabase.from('files').update({
+            review_status: 'approved',
+            review_note: 'Auto-approved — passed AI validation',
+          }).eq('id', fileId);
+          logActivity(caseIdForValidation, { eventType: 'file_approved', actorRole: 'system', actorName: 'ClearPath AI', description: `Auto-approved ${itemLabel} — passed AI validation`, itemId: fileId });
+        }
+
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
       } else {
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
