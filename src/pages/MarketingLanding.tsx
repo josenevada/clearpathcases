@@ -1159,6 +1159,13 @@ const MarketingLanding = () => {
             ))}
           </Accordion>
         </div>
+        <p className="text-center text-[14px] text-[#8aa3b8] font-body font-light mt-10">
+          Still have questions?{' '}
+          <a href="mailto:hello@yourclearpath.app" className="text-primary hover:underline">
+            Email us at hello@yourclearpath.app
+          </a>
+          {' '}— we respond within one business day.
+        </p>
       </section>
 
       <SectionDivider />
