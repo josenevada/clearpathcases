@@ -469,7 +469,7 @@ const MarketingLanding = () => {
           <a href="#features" onClick={e => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Features</a>
           <a href="#pricing" onClick={e => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-muted-foreground hover:text-primary hidden sm:block transition-colors duration-150 nav-link-underline relative cursor-pointer">Pricing</a>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
-          <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free Trial</Button>
+          <Button size="sm" onClick={() => navigate('/signup')} className="landing-btn-glow">Start Free — No Card Needed</Button>
         </div>
       </nav>
 
@@ -488,9 +488,9 @@ const MarketingLanding = () => {
           Send clients a guided intake link. They upload everything from their phone. You open the case to find it organized and ready.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
-          <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free Trial</Button>
+          <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free — No Card Needed</Button>
           <Button size="lg" variant="ghost" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
-            See How It Works <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+            See Features <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
         <p className="mt-6 text-sm text-[#8aa3b8] relative" style={heroStagger(8)}>
@@ -895,7 +895,7 @@ const MarketingLanding = () => {
                   { label: 'Documents organized on arrival', cols: ['x', 'x', '-', 'check'] },
                   { label: "Works on client's phone", cols: ['-', '-', '-', 'check'] },
                   { label: 'Built for Ch. 7 & Ch. 13', cols: ['x', 'x', '-', 'check'] },
-                  { label: 'Setup in under 5 minutes', cols: ['check', 'check', 'x', 'check'] },
+                  { label: 'Personalized checklist per client', cols: ['x', 'x', 'x', 'check'] },
                 ].map((row, rowIdx) => (
                   <tr key={row.label} className={rowIdx % 2 === 1 ? 'bg-white/[0.02]' : ''}>
                     <td className="text-[14px] text-foreground font-body font-medium py-4 pr-6 min-w-[200px]">
