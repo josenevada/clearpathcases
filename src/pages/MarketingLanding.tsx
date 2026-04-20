@@ -267,7 +267,8 @@ const FeatureShowcase = () => {
   return (
     <section
       ref={showcaseRef}
-      className="px-6 py-20 max-w-6xl mx-auto"
+      id="features"
+      className="px-6 py-20 max-w-6xl mx-auto scroll-mt-24"
       style={{
         opacity: showcaseVisible ? 1 : 0,
         transform: showcaseVisible ? 'translateY(0)' : 'translateY(16px)',
@@ -476,7 +477,7 @@ const MarketingLanding = () => {
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
           <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free Trial</Button>
-          <Button size="lg" variant="ghost" onClick={() => setShowDemo(true)} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
+          <Button size="lg" variant="ghost" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
             See How It Works <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
