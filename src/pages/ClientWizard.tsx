@@ -621,7 +621,7 @@ const ClientWizard = () => {
   if (categoryItems.length === 0) {
     const nextNonEmpty = CATEGORIES.findIndex(
       (cat, idx) => idx > currentCategoryIdx && 
-      caseData.checklist.filter(i => i.category === cat).length > 0
+      visibleChecklist.filter(i => i.category === cat).length > 0
     );
     if (nextNonEmpty !== -1) {
       setTimeout(() => {
@@ -1430,7 +1430,7 @@ const ClientWizard = () => {
                 You did it.
               </h2>
               <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
-                Every document has been sent to {attorneyName}. You've done your part — they'll take it from here.
+                {displayFirstName ? `${displayFirstName}, every` : 'Every'} document has been sent to {attorneyName}. You've done your part — they'll take it from here.
               </p>
 
               {/* Reassurance card */}
