@@ -6,7 +6,7 @@ import ExemptionsTab from '@/components/case/ExemptionsTab';
 import SignaturesTab from '@/components/case/SignaturesTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -124,6 +124,8 @@ const CaseDetail = () => {
   const [overrideTarget, setOverrideTarget] = useState<{ itemId: string; fileId: string } | null>(null);
   const [activeCorrectionTarget, setActiveCorrectionTarget] = useState<{ itemId: string; fileId: string } | null>(null);
   const [selectedCorrectionReason, setSelectedCorrectionReason] = useState('');
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
+  const [zipBuilding, setZipBuilding] = useState(false);
   const [correctionDetails, setCorrectionDetails] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showEditPanel, setShowEditPanel] = useState(false);
@@ -297,6 +299,134 @@ const CaseDetail = () => {
     if (file.reviewStatus === 'correction-requested') return 'Correction Requested';
     if (file.reviewStatus === 'approved') return 'Approved';
     return 'Pending Review';
+  };
+
+  const CHECKLIST_CATEGORY_FOLDERS: Record<string, string> = {
+    'Income & Employment': '01-Income',
+    'Bank & Financial Accounts': '02-Bank-Financial',
+    'Debts & Credit': '03-Debts-Credit',
+    'Assets & Property': '04-Assets-Property',
+    'Personal Identification': '05-Personal-ID',
+    'Agreements & Confirmation': '06-Legal-Agreements',
+  };
+
+  const getClientLastName = () => {
+    const last = (caseData as any).clientLastName?.trim?.();
+    if (last) return String(last).replace(/[^a-zA-Z0-9]/g, '');
+    const parts = (caseData.clientName || 'Client').trim().split(/\s+/);
+    return (parts[parts.length - 1] || 'Client').replace(/[^a-zA-Z0-9]/g, '');
+  };
+
+  const fetchFileBlobUrl = async (file: UploadedFile): Promise<string | null> => {
+    if (file.dataUrl) return file.dataUrl;
+    if (file.storagePath) {
+      const { data } = supabase.storage.from('case-documents').getPublicUrl(file.storagePath);
+      return data.publicUrl || null;
+    }
+    return null;
+  };
+
+  const handleDownloadSingle = async (item: ChecklistItem, file: UploadedFile) => {
+    setDownloadingFileId(file.id);
+    try {
+      const url = await fetchFileBlobUrl(file);
+      if (!url) {
+        toast.error('File not available for download.');
+        return;
+      }
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+      const docType = item.label.replace(/[^a-zA-Z0-9]/g, '-');
+      const date = format(new Date(file.uploadedAt), 'yyyy-MM-dd');
+      const downloadName = `${getClientLastName()}-${docType}-${date}.${ext}`;
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast.error('Download failed.');
+    } finally {
+      setDownloadingFileId(null);
+    }
+  };
+
+  const hasApprovedFiles = caseData.checklist.some(item =>
+    item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')
+  );
+
+  const handleDownloadAllApproved = async () => {
+    const approvedEntries: { file: UploadedFile; item: ChecklistItem }[] = [];
+    caseData.checklist.forEach(item => {
+      item.files.forEach(file => {
+        if (file.reviewStatus === 'approved' || file.reviewStatus === 'overridden') {
+          approvedEntries.push({ file, item });
+        }
+      });
+    });
+    if (approvedEntries.length === 0) {
+      toast.error('No approved files to download.');
+      return;
+    }
+
+    setZipBuilding(true);
+    const loadingToast = toast.loading(`Building ZIP with ${approvedEntries.length} file${approvedEntries.length !== 1 ? 's' : ''}...`);
+    try {
+      const JSZip = (await import('jszip')).default;
+      const { saveAs } = await import('file-saver');
+      const zip = new JSZip();
+
+      const labelCounts = new Map<string, number>();
+      approvedEntries.forEach(({ item }) => {
+        labelCounts.set(item.label, (labelCounts.get(item.label) || 0) + 1);
+      });
+      const labelIndices = new Map<string, number>();
+      const lastName = getClientLastName();
+
+      for (const { file, item } of approvedEntries) {
+        const folder = CHECKLIST_CATEGORY_FOLDERS[item.category] || 'Other';
+        const date = format(new Date(file.uploadedAt), 'yyyy-MM-dd');
+        const docType = item.label.replace(/[^a-zA-Z0-9]/g, '-');
+        const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+        const hasMultiple = (labelCounts.get(item.label) || 0) > 1;
+        let cleanName: string;
+        if (hasMultiple) {
+          const idx = (labelIndices.get(item.label) || 0) + 1;
+          labelIndices.set(item.label, idx);
+          cleanName = `${lastName}-${docType}-${date}-${idx}.${ext}`;
+        } else {
+          cleanName = `${lastName}-${docType}-${date}.${ext}`;
+        }
+        const url = await fetchFileBlobUrl(file);
+        if (url) {
+          try {
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            zip.folder(folder)?.file(cleanName, blob);
+          } catch {
+            zip.folder(folder)?.file(cleanName, `Placeholder for ${file.name}`);
+          }
+        } else {
+          zip.folder(folder)?.file(cleanName, `Placeholder for ${file.name}`);
+        }
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveAs(blob, `${lastName}-FilingPacket-${format(new Date(), 'yyyy-MM-dd')}.zip`);
+      toast.dismiss(loadingToast);
+      toast.success('ZIP downloaded successfully.');
+    } catch (err) {
+      console.error('ZIP build failed:', err);
+      toast.dismiss(loadingToast);
+      toast.error('Failed to build ZIP.');
+    } finally {
+      setZipBuilding(false);
+    }
   };
 
   const resetCorrectionForm = () => {
@@ -952,14 +1082,27 @@ const CaseDetail = () => {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-3 lg:col-span-2">
               <div className="mb-4 space-y-1">
-                <div className="flex items-center gap-3">
-                  <h2 className="font-display text-lg font-bold text-foreground">Documents</h2>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-display text-lg font-bold text-foreground">Documents</h2>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                      </div>
+                      {progress}%
                     </div>
-                    {progress}%
                   </div>
+                  {hasApprovedFiles && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadAllApproved}
+                      disabled={zipBuilding}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      {zipBuilding ? 'Building…' : 'Download All Approved'}
+                    </Button>
+                  )}
                 </div>
                 {(() => {
                   const allFiles = caseData.checklist.flatMap(i => i.files);
@@ -1184,9 +1327,21 @@ const CaseDetail = () => {
                                                             <p className="mt-1 text-xs text-warning">Note: {file.reviewNote}</p>
                                                           )}
                                                         </div>
-                                                        <Badge className={`${getFileStatusBadgeClass(file.reviewStatus)} text-xs`}>
-                                                          {getFileStatusLabel(file)}
-                                                        </Badge>
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                          <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleDownloadSingle(item, file)}
+                                                            disabled={downloadingFileId === file.id}
+                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                                            title="Download file"
+                                                          >
+                                                            <Download className="w-4 h-4" />
+                                                          </Button>
+                                                          <Badge className={`${getFileStatusBadgeClass(file.reviewStatus)} text-xs`}>
+                                                            {getFileStatusLabel(file)}
+                                                          </Badge>
+                                                        </div>
                                                       </div>
 
                                                       <div className="mt-3 flex flex-wrap gap-2">
