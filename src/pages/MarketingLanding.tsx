@@ -381,6 +381,18 @@ const MarketingLanding = () => {
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
+  const [beforeAfterState, setBeforeAfterState] = useState<'before' | 'after'>('before');
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setBeforeAfterState((s) => (s === 'before' ? 'after' : 'before'));
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  const toggleBeforeAfter = (next: 'before' | 'after') => {
+    setBeforeAfterState(next);
+  };
   
   const [pricingRef, pricingVisible] = useScrollReveal<HTMLDivElement>();
   const [faqRef, faqVisible] = useScrollReveal<HTMLDivElement>();
