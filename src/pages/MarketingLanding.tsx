@@ -86,7 +86,7 @@ const DashboardMockup = ({ visible }: { visible: boolean }) => {
       };
 
   return (
-    <div ref={ref} className="relative mt-12 max-w-3xl mx-auto" style={{ ...baseStyle, overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none' }}>
+    <div ref={ref} className="relative mt-8 max-w-3xl mx-auto" style={{ ...baseStyle, overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none' }}>
       <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-primary/15 blur-3xl rounded-full pointer-events-none" />
       <div
         className="surface-card relative z-10 mockup-border-animate pb-4"
@@ -146,9 +146,9 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
-    { value: 0, prefix: '', suffix: '', label: 'Client intake completion rate on mobile', displayOverride: '100%' },
+    { value: 0, prefix: '', suffix: '', label: 'Faster than email-based document collection', displayOverride: '3x' },
     { value: 0, prefix: '', suffix: '', label: 'Clients can upload on their schedule', displayOverride: '24/7' },
-    { value: 5, prefix: '', suffix: ' min', label: 'Time to create and send your first case' },
+    { value: 0, prefix: '', suffix: '', label: 'To create a case and send the intake link', displayOverride: '60 sec' },
   ];
 
   return (
@@ -168,7 +168,7 @@ const StatsBar = () => {
               ...(reduced ? {} : { opacity: visible ? 1 : 0, transition: `opacity 0.4s ease-out ${i * 0.1}s` }),
             }}
           >
-            <p className="font-display font-bold text-[36px] md:text-[52px] text-primary" style={{ letterSpacing: '-0.01em', lineHeight: '1' }}>
+            <p className="font-display font-bold text-[28px] md:text-[42px] text-primary" style={{ letterSpacing: '-0.01em', lineHeight: '1' }}>
               {(s as any).displayOverride ? ((s as any).displayOverride) : <CountUp target={s.value} started={visible} prefix={s.prefix} suffix={s.suffix} />}
             </p>
             <p className="text-xs text-[#8aa3b8] font-body mt-2 leading-snug">{s.label}</p>
@@ -379,7 +379,6 @@ const MarketingLanding = () => {
   };
 
   const [comparisonRef, comparisonVisible] = useScrollReveal<HTMLDivElement>();
-  const [credibilityRef, credibilityVisible] = useScrollReveal<HTMLDivElement>();
   const [alexRef, alexVisible] = useScrollReveal<HTMLDivElement>();
   const [twoViewsRef, twoViewsVisible] = useScrollReveal<HTMLDivElement>();
   const [beforeAfterState, setBeforeAfterState] = useState<'before' | 'after'>('before');
@@ -475,7 +474,7 @@ const MarketingLanding = () => {
       </nav>
 
       {/* Hero */}
-      <section className="px-6 pt-16 md:pt-20 pb-6 md:pb-8 text-center max-w-4xl mx-auto relative" style={{ background: 'hsl(var(--background))', overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none' }}>
+      <section className="px-6 pt-16 md:pt-20 pb-2 md:pb-4 text-center max-w-4xl mx-auto relative" style={{ background: 'hsl(var(--background))', overflow: 'visible', border: 'none', borderLeft: 'none', outline: 'none' }}>
         <h1
           className="font-display font-bold text-[34px] md:text-[52px] text-foreground relative landing-heading-glow mx-auto"
           style={{ ...heroStagger(0), letterSpacing: '-0.01em', lineHeight: '1.08', maxWidth: '720px' }}
@@ -519,31 +518,6 @@ const MarketingLanding = () => {
 
         <DashboardMockup visible={heroLoaded} />
         <StatsBar />
-      </section>
-
-      {/* Credibility bar */}
-      <section
-        ref={credibilityRef}
-        className="max-w-4xl mx-auto py-8 px-6"
-        style={revealStyle(credibilityVisible)}
-      >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
-          {[
-            { Icon: Lock, label: 'Bank-level encryption' },
-            { Icon: Shield, label: 'SOC 2 compliant infrastructure' },
-            { Icon: CheckCircle2, label: 'Built for Ch. 7 & Ch. 13' },
-            { Icon: Clock, label: 'First case in 5 minutes' },
-          ].map(({ Icon, label }, i) => (
-            <div
-              key={label}
-              className="flex items-center justify-center gap-2 text-[13px] text-[#8aa3b8] font-body py-2 md:py-0"
-              style={i > 0 && i < 4 ? { borderLeft: '0.5px solid rgba(255,255,255,0.06)' } : undefined}
-            >
-              <Icon className="w-4 h-4 text-primary/60 flex-shrink-0" />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
       </section>
 
       <SectionDivider />
