@@ -76,15 +76,14 @@ interface PricingCardsProps {
   onSelectPlan: (plan: any) => void;
   buttonLabel?: string;
   currentPlan?: string | null;
-  isAnnual?: boolean;
 }
 
-const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, isAnnual = false }: PricingCardsProps) => {
+const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan }: PricingCardsProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl mx-auto">
       {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDefWithDiff][]).map(([key, plan]) => {
         const isCurrent = currentPlan === key;
-        const price = isAnnual ? plan.annual : plan.monthly;
+        const price = plan.monthly;
         return (
           <div
             key={key}
@@ -123,13 +122,10 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
                 {plan.differentiator}
               </span>
             )}
-            <div className="mt-3 mb-1">
+            <div className="mt-3 mb-2">
               <span className="font-display font-bold text-3xl text-foreground">{price}</span>
               <span className="text-[#8aa3b8] text-sm">/month</span>
             </div>
-            {isAnnual && (
-              <p className="text-xs text-primary font-body mb-2">Billed annually</p>
-            )}
             {plan.roiCallout && (
               <div
                 className="mb-4 inline-flex self-start items-center gap-1 px-3 py-1 rounded-full text-[13px] font-body font-semibold"
