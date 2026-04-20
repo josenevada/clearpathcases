@@ -224,6 +224,9 @@ const ClientWizard = () => {
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alexChatOpen, setAlexChatOpen] = useState(false);
+  const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
+  const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
+  const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
   const targetFixItemId = searchParams.get('fix');
 
   // Helper: update caseData in React state only (no localStorage)
