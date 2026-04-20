@@ -234,6 +234,10 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         expense_insurance: Number(data.expense_insurance) || 0,
         expense_other: Number(data.expense_other) || 0,
         other_expenses_description: data.other_expenses_description || '',
+        spouse_name: (data as any).spouse_name || '',
+        spouse_email: (data as any).spouse_email || '',
+        spouse_phone: (data as any).spouse_phone || '',
+        spouse_dob: (data as any).spouse_dob || null,
       };
       setInfo(loaded);
       setSavedInfo(loaded);
