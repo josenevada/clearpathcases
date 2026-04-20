@@ -83,6 +83,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamLoaded, setTeamLoaded] = useState(false);
+  const [clientLanguage, setClientLanguage] = useState<'en' | 'es'>('en');
 
   useEffect(() => {
     if (!open || teamLoaded) return;
@@ -208,6 +209,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setShowSummary(false);
     setExcludedItems(new Set());
     setShowConfirmClose(false);
+    setClientLanguage('en');
     onOpenChange(false);
   };
 
@@ -286,6 +288,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
+        client_language: clientLanguage,
       } as any);
 
       // Insert included items normally
@@ -397,6 +400,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     setInfo={setInfo}
                     isJointFiling={isJointFiling}
                     onToggleJoint={(v) => setAnswers(prev => ({ ...prev, filingJointly: v }))}
+                    clientLanguage={clientLanguage}
+                    setClientLanguage={setClientLanguage}
                   />
                   <div className="flex justify-end mt-6">
                     <Button onClick={() => { setStep(2); setQuestionIdx(0); setShowSummary(false); }} disabled={!step1Valid}>
