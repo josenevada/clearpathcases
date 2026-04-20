@@ -51,6 +51,10 @@ interface ClientInfo {
   expense_insurance: number;
   expense_other: number;
   other_expenses_description: string;
+  spouse_name: string;
+  spouse_email: string;
+  spouse_phone: string;
+  spouse_dob: string | null;
 }
 
 const defaultClientInfo: ClientInfo = {
@@ -81,6 +85,10 @@ const defaultClientInfo: ClientInfo = {
   expense_insurance: 0,
   expense_other: 0,
   other_expenses_description: '',
+  spouse_name: '',
+  spouse_email: '',
+  spouse_phone: '',
+  spouse_dob: null,
 };
 
 interface AttorneyNotes {
@@ -184,18 +192,25 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
   const [successHousehold, setSuccessHousehold] = useState(false);
   const [savingAttorney, setSavingAttorney] = useState(false);
   const [successAttorney, setSuccessAttorney] = useState(false);
+  const [savingSpouse, setSavingSpouse] = useState(false);
+  const [successSpouse, setSuccessSpouse] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [caseData.id]);
 
+  const [isJointFiling, setIsJointFiling] = useState(false);
+
   const loadData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('client_info')
-      .select('*')
-      .eq('case_id', caseData.id)
-      .maybeSingle();
+    const [{ data }, { data: caseRow }] = await Promise.all([
+      supabase.from('client_info').select('*').eq('case_id', caseData.id).maybeSingle(),
+      supabase.from('cases').select('is_joint_filing, spouse_name, spouse_email').eq('id', caseData.id).maybeSingle(),
+    ]);
+
+    const caseSpouseName = (caseRow as any)?.spouse_name || '';
+    const caseSpouseEmail = (caseRow as any)?.spouse_email || '';
+    setIsJointFiling(Boolean((caseRow as any)?.is_joint_filing) || Boolean(caseSpouseName));
 
     if (data) {
       const loaded: ClientInfo = {
@@ -226,6 +241,10 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         expense_insurance: Number(data.expense_insurance) || 0,
         expense_other: Number(data.expense_other) || 0,
         other_expenses_description: data.other_expenses_description || '',
+        spouse_name: (data as any).spouse_name || caseSpouseName,
+        spouse_email: (data as any).spouse_email || caseSpouseEmail,
+        spouse_phone: (data as any).spouse_phone || '',
+        spouse_dob: (data as any).spouse_dob || null,
       };
       setInfo(loaded);
       setSavedInfo(loaded);
@@ -236,6 +255,8 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
         email: caseData.clientEmail,
         phone: caseData.clientPhone || '',
         date_of_birth: caseData.clientDob || null,
+        spouse_name: caseSpouseName,
+        spouse_email: caseSpouseEmail,
       };
       setInfo(initial);
       setSavedInfo(initial);
@@ -511,6 +532,84 @@ const ClientInfoTab = ({ caseData, viewRole, actorName, onRefresh }: ClientInfoT
           </div>
         </div>
       </Section>
+
+      {/* Co-Debtor / Spouse */}
+      {isJointFiling && (
+        <Section
+          title="Co-Debtor / Spouse"
+          saving={savingSpouse}
+          hasChanges={
+            info.spouse_name !== savedInfo.spouse_name ||
+            info.spouse_email !== savedInfo.spouse_email ||
+            info.spouse_phone !== savedInfo.spouse_phone ||
+            info.spouse_dob !== savedInfo.spouse_dob
+          }
+          onSave={async () => {
+            setSavingSpouse(true);
+            try {
+              await upsertClientInfo({
+                spouse_name: info.spouse_name,
+                spouse_email: info.spouse_email,
+                spouse_phone: info.spouse_phone,
+                spouse_dob: info.spouse_dob,
+              } as any);
+              await supabase.from('cases').update({
+                spouse_name: info.spouse_name || null,
+                spouse_email: info.spouse_email || null,
+              } as any).eq('id', caseData.id);
+              setSavedInfo(prev => ({
+                ...prev,
+                spouse_name: info.spouse_name,
+                spouse_email: info.spouse_email,
+                spouse_phone: info.spouse_phone,
+                spouse_dob: info.spouse_dob,
+              }));
+              flashSuccess(setSuccessSpouse);
+              toast.success('Co-debtor information saved');
+              onRefresh();
+            } catch {
+              toast.error('Failed to save co-debtor information');
+            }
+            setSavingSpouse(false);
+          }}
+          saveSuccess={successSpouse}
+          defaultOpen
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Spouse Full Name</Label>
+              <Input value={info.spouse_name} onChange={e => update('spouse_name' as any, e.target.value)} className={inputClass} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date of Birth</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", inputClass)}>
+                    {info.spouse_dob ? format((() => { const [y,m,d] = info.spouse_dob!.split('-').map(Number); return new Date(y, m-1, d); })(), 'PPP') : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={info.spouse_dob ? (() => { const [y,m,d] = info.spouse_dob!.split('-').map(Number); return new Date(y, m-1, d); })() : undefined}
+                    onSelect={d => update('spouse_dob' as any, d ? d.toISOString().slice(0, 10) : null)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Phone Number</Label>
+              <Input type="tel" value={info.spouse_phone} onChange={e => update('spouse_phone' as any, e.target.value)} className={inputClass} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email Address</Label>
+              <Input type="email" value={info.spouse_email} onChange={e => update('spouse_email' as any, e.target.value)} className={inputClass} />
+            </div>
+          </div>
+        </Section>
+      )}
 
     </div>
   );

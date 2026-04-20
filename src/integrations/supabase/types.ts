@@ -240,11 +240,14 @@ export type Database = {
           filing_deadline: string
           firm_id: string | null
           id: string
+          is_joint_filing: boolean | null
           last_client_activity: string | null
           meeting_date: string | null
           ready_to_file: boolean | null
           retention_delete_scheduled_at: string | null
           retention_notified_at: string | null
+          spouse_email: string | null
+          spouse_name: string | null
           status: string
           urgency: string | null
           wizard_step: number | null
@@ -272,11 +275,14 @@ export type Database = {
           filing_deadline: string
           firm_id?: string | null
           id?: string
+          is_joint_filing?: boolean | null
           last_client_activity?: string | null
           meeting_date?: string | null
           ready_to_file?: boolean | null
           retention_delete_scheduled_at?: string | null
           retention_notified_at?: string | null
+          spouse_email?: string | null
+          spouse_name?: string | null
           status?: string
           urgency?: string | null
           wizard_step?: number | null
@@ -304,11 +310,14 @@ export type Database = {
           filing_deadline?: string
           firm_id?: string | null
           id?: string
+          is_joint_filing?: boolean | null
           last_client_activity?: string | null
           meeting_date?: string | null
           ready_to_file?: boolean | null
           retention_delete_scheduled_at?: string | null
           retention_notified_at?: string | null
+          spouse_email?: string | null
+          spouse_name?: string | null
           status?: string
           urgency?: string | null
           wizard_step?: number | null
@@ -489,6 +498,10 @@ export type Database = {
           other_expenses_description: string | null
           pay_frequency: string | null
           phone: string | null
+          spouse_dob: string | null
+          spouse_email: string | null
+          spouse_name: string | null
+          spouse_phone: string | null
           ssn_encrypted: string | null
           updated_at: string | null
         }
@@ -522,6 +535,10 @@ export type Database = {
           other_expenses_description?: string | null
           pay_frequency?: string | null
           phone?: string | null
+          spouse_dob?: string | null
+          spouse_email?: string | null
+          spouse_name?: string | null
+          spouse_phone?: string | null
           ssn_encrypted?: string | null
           updated_at?: string | null
         }
@@ -555,6 +572,10 @@ export type Database = {
           other_expenses_description?: string | null
           pay_frequency?: string | null
           phone?: string | null
+          spouse_dob?: string | null
+          spouse_email?: string | null
+          spouse_name?: string | null
+          spouse_phone?: string | null
           ssn_encrypted?: string | null
           updated_at?: string | null
         }

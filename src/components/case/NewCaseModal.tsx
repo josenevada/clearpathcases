@@ -288,7 +288,20 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         wizard_step: 0,
         ready_to_file: false,
         client_language: clientLanguage,
+        is_joint_filing: isJointFiling,
+        spouse_name: isJointFiling ? info.spouseName : null,
+        spouse_email: isJointFiling ? info.spouseEmail : null,
       } as any);
+
+      if (isJointFiling && info.spouseName) {
+        await supabase.from('client_info').upsert({
+          case_id: newCase.id,
+          spouse_name: info.spouseName,
+          spouse_email: info.spouseEmail || null,
+          spouse_phone: info.spousePhone || null,
+          spouse_dob: info.spouseDob || null,
+        } as any);
+      }
 
       // Insert included items normally
       const includedRows = includedChecklist.map((item, idx) => ({
