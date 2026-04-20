@@ -22,8 +22,9 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
   if (!caseData) return null;
 
   const caseCode = caseData.caseCode;
-  const portalLink = caseCode ? `${window.location.origin}/client/${caseCode}` : '';
+  const portalLink = caseCode ? `https://yourclearpath.app/client/${caseCode}` : '';
   const firstName = caseData.clientName.split(' ')[0];
+  const firmName = getFirmSettings().firmName || 'your attorney\'s office';
   const hasPhone = !!caseData.clientPhone;
   const hasEmail = !!caseData.clientEmail;
   const hasBothMissing = !hasPhone && !hasEmail;
@@ -108,8 +109,7 @@ const SendLinkModal = ({ open, onOpenChange, caseData }: SendLinkModalProps) => 
           <div className="surface-card p-4 text-sm text-muted-foreground font-body">
             <p className="mb-2 font-medium text-foreground">Message preview:</p>
             <p>
-              "Hi {firstName}, {getFirmSettings().firmName || 'your attorney\'s office'} has created your ClearPath intake portal.
-              Please upload your documents here: {portalLink}. If you have questions, reply to this message."
+              "Hi {firstName}, {firmName} has sent you a secure link to upload your bankruptcy documents through ClearPath. Get started here: {portalLink} — Reply STOP to opt out."
             </p>
           </div>
 
