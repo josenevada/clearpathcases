@@ -23,7 +23,7 @@ import {
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
 import { sendClientWelcome } from '@/lib/notifications';
-import { sendWelcomeSms } from '@/lib/sms';
+
 import { toast } from 'sonner';
 
 interface NewCaseModalProps {
