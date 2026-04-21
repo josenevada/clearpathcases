@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Sun, Moon, Building2, ClipboardList, Paintbrush, Settings } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Building2, ClipboardList, Paintbrush, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
