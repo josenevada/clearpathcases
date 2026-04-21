@@ -17,7 +17,7 @@ import BrandingTab from '@/components/settings/BrandingTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
-import { useThemePreference } from '@/hooks/use-theme';
+
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -109,7 +109,7 @@ const FirmSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { refresh, plan } = useSubscription();
   const VISIBLE_NAV_GROUPS = buildVisibleGroups(plan);
-  const { theme, setTheme } = useThemePreference();
+  
   const isMobile = useIsMobile();
 
   const [activeKey, setActiveKey] = useState(() =>
