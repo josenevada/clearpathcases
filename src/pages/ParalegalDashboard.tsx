@@ -674,23 +674,64 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             return (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSendReminder}
-                  className="text-primary hover:text-primary"
-                  disabled={hasBothMissing}
-                >
-                  <Send className="w-3.5 h-3.5 mr-1" />
-                  Remind
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {hasBothMissing && (
-              <TooltipContent>No contact info on file — edit this case to add a phone or email</TooltipContent>
-            )}
-          </Tooltip>
+                  <div className="inline-flex items-center">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleSmsClick}
+                      disabled={hasBothMissing || !hasPhone}
+                      className="rounded-r-none h-9 px-3"
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1" />
+                      Remind
+                    </Button>
+                    <Popover open={remindOpen} onOpenChange={setRemindOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); }}
+                          disabled={hasBothMissing}
+                          className="rounded-l-none border-l border-primary-foreground/30 h-9 px-2"
+                          aria-label="Reminder options"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        className="w-52 p-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRemindOpen(false);
+                            void sendReminder('sms');
+                          }}
+                          disabled={!hasPhone}
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> Send SMS only
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRemindOpen(false);
+                            void sendReminder('both');
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-secondary flex items-center gap-2"
+                        >
+                          <Mail className="w-3.5 h-3.5" /> Send email + SMS
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </TooltipTrigger>
+                {hasBothMissing && (
+                  <TooltipContent>No contact info on file — edit this case to add a phone or email</TooltipContent>
+                )}
+              </Tooltip>
             );
           })()}
         </div>
