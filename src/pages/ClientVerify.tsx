@@ -103,20 +103,27 @@ const ClientVerify = () => {
     setDobError(null);
     setError('');
 
-    // Look up the row by either code; spouse links use spouse_dob on the case row
-    const { data } = await supabase
+    // Look up the row by either code; spouse_dob lives on client_info, client_dob on cases
+    const { data: caseRow } = await supabase
       .from('cases')
-      .select('id, client_dob, spouse_dob')
+      .select('id, client_dob')
       .or(`case_code.eq.${caseCode},spouse_case_code.eq.${caseCode}`)
       .maybeSingle();
 
-    if (!data) {
+    if (!caseRow) {
       setError('Case not found. Please check your link.');
       return;
     }
 
-    const caseRow = data;
-    const expectedDob = isSpouseLink ? data.spouse_dob : data.client_dob;
+    let expectedDob: string | null = caseRow.client_dob;
+    if (isSpouseLink) {
+      const { data: info } = await supabase
+        .from('client_info')
+        .select('spouse_dob')
+        .eq('case_id', caseRow.id)
+        .maybeSingle();
+      expectedDob = info?.spouse_dob ?? null;
+    }
 
     if (expectedDob === dob) {
       setClientSession(caseCode, caseRow.id);

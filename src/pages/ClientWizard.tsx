@@ -1483,7 +1483,7 @@ const ClientWizard = () => {
         {desktopSidebar}
         {mobileSidebar}
         <div className="flex-1 flex flex-col min-h-screen">
-          <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} />
+          <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} firmDisplayName={firmDisplayName} />
           <div className="flex-1 flex items-center justify-center px-6 pb-24">
             <motion.div {...pageTransition} className="max-w-md mx-auto w-full">
               <div className="text-center mb-6">
@@ -2474,7 +2474,7 @@ const ClientWizard = () => {
   );
 };
 
-const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick }: { progress: number; step: number; totalSteps: number; stepName: string; onMenuClick?: () => void }) => (
+const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick, firmDisplayName }: { progress: number; step: number; totalSteps: number; stepName: string; onMenuClick?: () => void; firmDisplayName?: string | null }) => (
   <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm">
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-2">
