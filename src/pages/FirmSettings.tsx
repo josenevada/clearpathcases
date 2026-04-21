@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Sun, Moon, Building2, ClipboardList, Paintbrush, Settings } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Building2, ClipboardList, Paintbrush, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,7 +17,7 @@ import BrandingTab from '@/components/settings/BrandingTab';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/lib/subscription';
-import { useThemePreference } from '@/hooks/use-theme';
+
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -109,7 +109,7 @@ const FirmSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { refresh, plan } = useSubscription();
   const VISIBLE_NAV_GROUPS = buildVisibleGroups(plan);
-  const { theme, setTheme } = useThemePreference();
+  
   const isMobile = useIsMobile();
 
   const [activeKey, setActiveKey] = useState(() =>
@@ -274,50 +274,5 @@ const FirmSettings = () => {
   );
 };
 
-// ─── Display panel (extracted from inline) ───────────────────────────
-const DisplayPanel = ({ theme, setTheme }: { theme: string; setTheme: (t: 'dark' | 'light') => void }) => (
-  <div className="space-y-6">
-    <div>
-      <h2 className="font-display font-bold text-lg text-foreground mb-1">Display Preferences</h2>
-      <p className="text-sm text-muted-foreground font-body">Choose how ClearPath looks for your team and clients.</p>
-    </div>
-    <div className="surface-card p-5 space-y-4">
-      <h3 className="font-display font-bold text-foreground">Theme</h3>
-      <div className="flex gap-3">
-        <button
-          onClick={() => { setTheme('dark'); toast.success('Switched to dark mode'); }}
-          className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all ${
-            theme === 'dark'
-              ? 'border-primary bg-primary/10 text-foreground'
-              : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/30'
-          }`}
-        >
-          <Moon className="w-5 h-5" />
-          <div className="text-left">
-            <span className="block text-sm font-bold font-body">Dark</span>
-            <span className="block text-xs text-muted-foreground">Professional, focused</span>
-          </div>
-        </button>
-        <button
-          onClick={() => { setTheme('light'); toast.success('Switched to light mode'); }}
-          className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all ${
-            theme === 'light'
-              ? 'border-primary bg-primary/10 text-foreground'
-              : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/30'
-          }`}
-        >
-          <Sun className="w-5 h-5" />
-          <div className="text-left">
-            <span className="block text-sm font-bold font-body">Light</span>
-            <span className="block text-xs text-muted-foreground">Clean, approachable</span>
-          </div>
-        </button>
-      </div>
-      <p className="text-xs text-muted-foreground font-body">
-        This setting applies to both the staff dashboard and the client portal.
-      </p>
-    </div>
-  </div>
-);
 
 export default FirmSettings;
