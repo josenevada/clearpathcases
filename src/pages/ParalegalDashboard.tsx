@@ -300,6 +300,14 @@ const ParalegalDashboard = () => {
                 </Button>
               )}
             </div>
+          ) : !dashboardLoaded ? (
+            <div className="py-20 text-center">
+              <div className="space-y-3 max-w-sm mx-auto">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-16 rounded-xl bg-secondary/50 animate-pulse" />
+                ))}
+              </div>
+            </div>
           ) : cases.length === 0 ? (
             <div className="py-20 text-center">
               <p className="mb-2 text-lg font-display font-bold text-foreground">No cases yet</p>
