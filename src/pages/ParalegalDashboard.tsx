@@ -507,7 +507,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
 
   const [remindOpen, setRemindOpen] = useState(false);
 
-  const sendReminder = async (mode: 'sms' | 'both') => {
+  const sendReminder = async (mode: 'sms' | 'email' | 'both') => {
     if (hasBothMissing) return;
     try {
       if (mode === 'sms') {
@@ -528,6 +528,24 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
         } else {
           toast.success(`SMS reminder sent to ${caseData.clientName}`);
         }
+      } else if (mode === 'email') {
+        const portalLink = `https://yourclearpath.app/client/${caseData.caseCode}`;
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            type: 'general_reminder',
+            clientName: caseData.clientName,
+            clientEmail: caseData.clientEmail,
+            clientPhone: caseData.clientPhone,
+            portalLink,
+            caseId: caseData.id,
+            emailOnly: true,
+          },
+        });
+        if (!hasEmail) {
+          toast.warning('No email on file — nothing sent.');
+        } else {
+          toast.success(`Email reminder sent to ${caseData.clientName}`);
+        }
       } else {
         const result = await sendSmartReminder(caseData);
         const channels = [];
@@ -544,9 +562,9 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
     }
   };
 
-  const handleSmsClick = (e: React.MouseEvent) => {
+  const handleRemindClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    void sendReminder('sms');
+    void sendReminder('both');
   };
 
   return (
