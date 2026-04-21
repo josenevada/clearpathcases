@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, History, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, History, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, MoreVertical, Send } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -839,6 +840,44 @@ const CaseDetail = () => {
     refresh();
   };
 
+  const handleItemRemind = async (item: ChecklistItem) => {
+    if (!caseData.clientPhone && !caseData.clientEmail) {
+      toast.error('No contact info on file for this client.');
+      return;
+    }
+    const portalLink = `https://yourclearpath.app/client/${caseData.caseCode}?fix=${encodeURIComponent(item.id)}`;
+
+    try {
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          type: 'item_reminder',
+          clientName: caseData.clientName,
+          clientEmail: caseData.clientEmail,
+          clientPhone: caseData.clientPhone,
+          portalLink,
+          caseId: caseData.id,
+          smsOnly: true,
+          itemLabel: item.label,
+        },
+      });
+
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'reminder_sent',
+        actor_role: viewRole,
+        actor_name: user?.fullName || 'Staff',
+        description: `Reminder sent for ${item.label}`,
+        item_id: item.id,
+      });
+
+      toast.success(`Reminder sent for ${item.label}`);
+      refresh();
+    } catch (err) {
+      console.error('Item reminder failed:', err);
+      toast.error('Failed to send reminder.');
+    }
+  };
+
   const handleRemoveNA = async (item: ChecklistItem) => {
     const actorName = user?.fullName || 'Staff';
 
@@ -1138,6 +1177,25 @@ const CaseDetail = () => {
                                     <Badge className="bg-muted text-muted-foreground border-border text-[10px]">N/A</Badge>
                                   ) : (
                                     <span className={`text-xs ${status.colorClass}`}>{status.label}</span>
+                                  )}
+                                  {!item.completed && !item.notApplicable && (
+                                    <div onClick={e => e.stopPropagation()}>
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleItemRemind(item)}
+                                              className="h-7 px-2 text-muted-foreground hover:text-primary"
+                                            >
+                                              <Send className="w-3.5 h-3.5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Send reminder for this document</TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </div>
                                   )}
                                   {item.flaggedForAttorney && <Flag className="w-4 h-4 text-warning" />}
                                   {!item.required && !item.notApplicable && <span className="text-[10px] text-muted-foreground">Optional</span>}

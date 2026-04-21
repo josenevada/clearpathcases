@@ -11,7 +11,8 @@ type NotificationType =
   | 'deadline_reminder_3d'
   | 'inactivity_48h'
   | 'firm_welcome'
-  | 'general_reminder';
+  | 'general_reminder'
+  | 'item_reminder';
 
 interface NotificationPayload {
   type: NotificationType;
@@ -26,6 +27,8 @@ interface NotificationPayload {
   firmName?: string;
   setupLink?: string;
   filingDeadline?: string;
+  smsOnly?: boolean;
+  itemLabel?: string;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -221,6 +224,10 @@ const getSmsMessage = (payload: NotificationPayload): string | null => {
       return `Hi ${firstName}, you have documents still missing for your bankruptcy case. Complete your submission here: ${link} — Reply STOP to opt out.`;
     case 'correction_request':
       return `Hi ${firstName}, your attorney has requested a correction on one of your documents. Please review and resubmit here: ${link} — Reply STOP to opt out.`;
+    case 'item_reminder': {
+      const item = payload.itemLabel || 'a document';
+      return `Hi ${firstName}, your attorney still needs your ${item} to move forward with your case. Upload it here: ${link} — Reply STOP to opt out.`;
+    }
     default:
       return `Hi ${firstName}, your attorney's office sent you a message regarding your bankruptcy case: ${link} — Reply STOP to opt out.`;
   }
@@ -362,6 +369,13 @@ Deno.serve(async (req) => {
   if (payload.type === 'firm_welcome') {
     const email = await sendEmail(payload);
     return json({ email, sms: { status: 'skipped', detail: 'Not applicable for firm welcome' } });
+  }
+
+  // SMS-only flows (e.g. per-item reminders)
+  if (payload.smsOnly || payload.type === 'item_reminder') {
+    const sms = await sendSms(payload);
+    await logNotification(payload, { status: 'skipped' }, sms).catch(() => {});
+    return json({ email: { status: 'skipped', detail: 'SMS-only request' }, sms });
   }
 
   const [email, sms] = await Promise.all([sendEmail(payload), sendSms(payload)]);
