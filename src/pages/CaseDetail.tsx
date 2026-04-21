@@ -1614,35 +1614,67 @@ const CaseDetail = () => {
             </div>
 
             <div className="space-y-6">
-              <div>
-                <h2 className="mb-3 font-display text-lg font-bold text-foreground">Notes</h2>
-                <div className="mb-4 max-h-[200px] space-y-2 overflow-y-auto">
-                  {filteredNotes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet.</p>
-                  ) : (
-                    filteredNotes.map(note => (
-                      <div key={note.id} className="rounded-md p-3 text-sm bg-secondary">
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="text-xs font-medium text-foreground">{note.author}</span>
-                          <span className="ml-auto text-xs text-muted-foreground">{format(new Date(note.timestamp), 'MMM d, h:mm a')}</span>
-                        </div>
-                        <p className="text-muted-foreground">{note.content}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Textarea
-                    value={newNote}
-                    onChange={event => setNewNote(event.target.value)}
-                    placeholder="Add note..."
-                    className="min-h-[60px] resize-none rounded-[10px] bg-input border-border text-sm"
-                  />
-                </div>
-                <Button size="sm" onClick={handleAddNote} disabled={!newNote.trim()} className="mt-2">
-                  <MessageSquare className="w-3 h-3 mr-1" /> Add Note
-                </Button>
-              </div>
+              {!notesExpanded ? (
+                <button
+                  onClick={() => setNotesExpanded(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Notes</span>
+                    <Badge variant="secondary" className="text-xs">{filteredNotes.length}</Badge>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </button>
+              ) : (
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key="notes-panel"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="font-display text-lg font-bold text-foreground">Notes</h2>
+                      <button
+                        onClick={() => setNotesExpanded(false)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Collapse notes"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="mb-4 max-h-[200px] space-y-2 overflow-y-auto">
+                      {filteredNotes.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No notes yet.</p>
+                      ) : (
+                        filteredNotes.map(note => (
+                          <div key={note.id} className="rounded-md p-3 text-sm bg-secondary">
+                            <div className="mb-1 flex items-center gap-2">
+                              <span className="text-xs font-medium text-foreground">{note.author}</span>
+                              <span className="ml-auto text-xs text-muted-foreground">{format(new Date(note.timestamp), 'MMM d, h:mm a')}</span>
+                            </div>
+                            <p className="text-muted-foreground">{note.content}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={newNote}
+                        onChange={event => setNewNote(event.target.value)}
+                        placeholder="Add note..."
+                        className="min-h-[60px] resize-none rounded-[10px] bg-input border-border text-sm"
+                      />
+                    </div>
+                    <Button size="sm" onClick={handleAddNote} disabled={!newNote.trim()} className="mt-2">
+                      <MessageSquare className="w-3 h-3 mr-1" /> Add Note
+                    </Button>
+                  </motion.div>
+                </AnimatePresence>
+              )}
 
               <div className="surface-card p-4">
                 <p className="mb-2 text-xs text-muted-foreground">Client Portal Link</p>
