@@ -132,14 +132,6 @@ const BillingTab = () => {
             >
               Upgrade to Firm — $699/mo
             </Button>
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto sm:ml-3"
-              onClick={handleManageBilling}
-              disabled={loading}
-            >
-              Manage Billing
-            </Button>
             <div className="border-t border-border/40 pt-4 mt-4">
               <button
                 onClick={handleManageBilling}
