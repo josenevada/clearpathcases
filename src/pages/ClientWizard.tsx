@@ -1572,6 +1572,7 @@ const ClientWizard = () => {
         totalSteps={CATEGORIES.length}
         stepName={CATEGORIES[currentCategoryIdx]}
         onMenuClick={() => setSidebarOpen(true)}
+        firmDisplayName={firmDisplayName}
       />
 
       {hasPortalCorrection && openCorrectionItem && (
