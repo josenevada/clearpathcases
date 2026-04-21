@@ -2,10 +2,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle, AlertTriangle, CheckCircle2, FileCheck } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +53,10 @@ const ParalegalDashboard = () => {
 
   const planLimits = getPlanLimits(plan);
   const activeCaseCount = cases.filter(c => c.status !== 'filed' && c.status !== 'closed').length;
+  const pendingReviewCount = cases.reduce((sum, c) => {
+    if (c.status === 'filed' || c.status === 'closed') return sum;
+    return sum + c.checklist.reduce((s, item) => s + item.files.filter(f => f.reviewStatus === 'pending').length, 0);
+  }, 0);
 
   const handleNewCase = () => {
     if (planLimits.activeCases !== Infinity && activeCaseCount >= planLimits.activeCases) {
@@ -236,6 +240,16 @@ const ParalegalDashboard = () => {
           <Button variant="ghost" size="icon" onClick={() => setGlobalSearchOpen(true)}>
             <Search className="w-4 h-4" />
           </Button>
+          <div className="relative">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/review')} aria-label="Document Review Queue">
+              <FileCheck className="w-4 h-4" />
+            </Button>
+            {pendingReviewCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-white text-[9px] flex items-center justify-center font-semibold pointer-events-none">
+                {pendingReviewCount > 9 ? '9+' : pendingReviewCount}
+              </span>
+            )}
+          </div>
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>
@@ -619,7 +633,10 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           {/* Progress bar */}
           <div className="flex items-center gap-2 mb-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${progress}%`, minWidth: progress > 0 ? '8px' : '0px' }}
+              />
             </div>
             <span className="text-xs text-muted-foreground tabular-nums">{progress}%</span>
           </div>
@@ -633,6 +650,13 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
               {daysUntilDeadline > 0 ? `${daysUntilDeadline}d left` : daysUntilDeadline === 0 ? 'Due today' : 'Overdue'}
             </span>
           </div>
+
+          {/* Last activity line */}
+          <div className="text-[11px] text-muted-foreground font-body mt-1.5">
+            {caseData.lastClientActivity
+              ? `Last upload ${formatDistanceToNow(new Date(caseData.lastClientActivity), { addSuffix: true })}`
+              : 'No uploads yet'}
+          </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
           <Button
@@ -642,9 +666,26 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           >
             View case
           </Button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
+          {(() => {
+            const allComplete = caseData.checklist.length > 0 && caseData.checklist.every(item => item.completed || item.notApplicable);
+            const hasPendingDocs = caseData.checklist.some(item => item.files.some(f => f.reviewStatus === 'pending'));
+            const hideRemind = caseData.readyToFile || allComplete;
+            const wellProgressed = progress > 80 && !hasPendingDocs;
+            if (hideRemind) return null;
+            if (wellProgressed) {
+              return (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+                  className="text-xs text-muted-foreground hover:text-foreground font-body px-2 transition-colors"
+                >
+                  View
+                </button>
+              );
+            }
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -661,6 +702,8 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
               <TooltipContent>No contact info on file — edit this case to add a phone or email</TooltipContent>
             )}
           </Tooltip>
+            );
+          })()}
         </div>
       </div>
     </motion.div>
