@@ -22,7 +22,7 @@ import {
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
-import { sendClientWelcome } from '@/lib/notifications';
+
 
 import { toast } from 'sonner';
 
