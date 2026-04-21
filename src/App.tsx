@@ -18,6 +18,7 @@ import ClientWizard from "./pages/ClientWizard";
 import ClientSign from "./pages/ClientSign";
 import ParalegalDashboard from "./pages/ParalegalDashboard";
 import CaseDetail from "./pages/CaseDetail";
+import DocumentReviewQueue from "./pages/DocumentReviewQueue";
 import FirmSettings from "./pages/FirmSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Security from "./pages/Security";
