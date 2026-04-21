@@ -393,14 +393,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       console.error('Notification error:', err);
       toast.error('Case created but welcome notification failed to send.');
     });
-
-    sendWelcomeSms(
-      info.clientPhone || undefined,
-      jointDisplayName,
-      caseCode,
-      newCase.id,
-      firmSettings.firmName || 'your attorney\'s office',
-    ).catch((err) => console.error('Welcome SMS error:', err));
   };
 
   const currentQ = INTAKE_QUESTIONS[questionIdx];
