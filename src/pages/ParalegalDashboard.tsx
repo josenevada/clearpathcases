@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, differenceInDays } from 'date-fns';
@@ -317,15 +317,76 @@ const ParalegalDashboard = () => {
           )
         ) : (
           <div className="space-y-3">
-            {sortedCases.map((caseRecord, index) => (
-              <CaseCard
-                key={caseRecord.id}
-                caseData={caseRecord}
-                index={index}
-                onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)}
-                onSendLink={() => { setSendLinkCase(caseRecord); setShowSendLink(true); }}
-              />
-            ))}
+            {(() => {
+              const filtersActive = !!searchTerm.trim() || !!statsFilter;
+              if (filtersActive) {
+                return sortedCases.map((caseRecord, index) => (
+                  <CaseCard
+                    key={caseRecord.id}
+                    caseData={caseRecord}
+                    index={index}
+                    onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)}
+                    onSendLink={() => { setSendLinkCase(caseRecord); setShowSendLink(true); }}
+                  />
+                ));
+              }
+
+              const needsAttention: Case[] = [];
+              const readyToFile: Case[] = [];
+              const inProgress: Case[] = [];
+
+              sortedCases.forEach(c => {
+                if (c.readyToFile) {
+                  readyToFile.push(c);
+                  return;
+                }
+                const daysToDeadline = differenceInDays(new Date(c.filingDeadline), new Date());
+                const hasPendingReview = c.checklist.some(item => item.files.some(f => f.reviewStatus === 'pending'));
+                const isUrgent = c.urgency === 'critical' || c.urgency === 'at-risk';
+                const deadlineSoon = daysToDeadline >= 0 && daysToDeadline <= 7;
+                if (isUrgent || hasPendingReview || deadlineSoon) {
+                  needsAttention.push(c);
+                } else {
+                  inProgress.push(c);
+                }
+              });
+
+              const groups: { key: string; label: string; icon: any; color: string; cases: Case[] }[] = [
+                { key: 'attention', label: 'Needs Attention', icon: AlertTriangle, color: 'text-destructive/80', cases: needsAttention },
+                { key: 'progress', label: 'In Progress', icon: Clock, color: 'text-[#8aa3b8]', cases: inProgress },
+                { key: 'ready', label: 'Ready to File', icon: CheckCircle2, color: 'text-success', cases: readyToFile },
+              ].filter(g => g.cases.length > 0);
+
+              let runningIndex = 0;
+              return groups.map(group => {
+                const Icon = group.icon;
+                const elements = (
+                  <div key={group.key}>
+                    <div className={`flex items-center gap-2 text-[12px] font-semibold uppercase tracking-widest mb-3 mt-6 first:mt-0 ${group.color}`}>
+                      <Icon className="w-4 h-4" />
+                      <span>{group.label}</span>
+                      <span className="opacity-60">· {group.cases.length}</span>
+                    </div>
+                    <div className="border-t border-border/40 mb-3" />
+                    <div className="space-y-3">
+                      {group.cases.map(caseRecord => {
+                        const idx = runningIndex++;
+                        return (
+                          <CaseCard
+                            key={caseRecord.id}
+                            caseData={caseRecord}
+                            index={idx}
+                            onNavigate={() => navigate(`/paralegal/case/${caseRecord.id}`)}
+                            onSendLink={() => { setSendLinkCase(caseRecord); setShowSendLink(true); }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+                return elements;
+              });
+            })()}
 
             {filteredCompleted.length > 0 && (
               <div className="mt-8">
