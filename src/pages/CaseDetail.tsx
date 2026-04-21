@@ -568,42 +568,30 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleMarkReady = async () => {
+  // Auto-mark case as ready-to-file when every required item has an approved (or overridden) file,
+  // a saved-and-approved text entry, or has been marked N/A. Called after each approval.
+  const maybeAutoMarkReady = async () => {
+    if (caseData.readyToFile) return;
     const isRequiredItemComplete = (item: typeof caseData.checklist[number]) => {
       if (item.notApplicable) return true;
       if (item.textEntry?.savedAt) return item.attorneyNote?.startsWith('Approved by') ?? false;
       if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
-      return item.completed && item.files.length === 0;
+      return false;
     };
-
     const allRequiredComplete = caseData.checklist
       .filter(item => item.required)
       .every(isRequiredItemComplete);
+    if (!allRequiredComplete) return;
 
-    if (!allRequiredComplete) {
-      const blocking = caseData.checklist
-        .filter(item => item.required && !item.notApplicable)
-        .filter(item => !isRequiredItemComplete(item))
-        .map(item => item.label);
-
-      toast.error(`${blocking.length} item${blocking.length !== 1 ? 's' : ''} still need approval: ${blocking.slice(0, 2).join(', ')}${blocking.length > 2 ? ` and ${blocking.length - 2} more` : ''}`);
-      return;
-    }
-
-    await supabase.from('cases')
-      .update({ ready_to_file: true })
-      .eq('id', caseData.id);
-
+    await supabase.from('cases').update({ ready_to_file: true }).eq('id', caseData.id);
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'case_ready',
-      actor_role: 'attorney',
-      actor_name: user?.fullName || caseData.assignedAttorney,
-      description: 'Case marked as ready for filing',
+      actor_role: 'system',
+      actor_name: 'ClearPath',
+      description: 'Case automatically marked ready for filing — all required documents approved.',
     });
-
-    toast.success('Case marked ready for filing!');
-    refresh();
+    toast.success('Case is ready to file — all required documents approved.');
   };
 
   const handleDeleteCase = async () => {
@@ -1563,13 +1551,6 @@ const CaseDetail = () => {
                 );
               })}
 
-              {viewRole === 'attorney' && !caseData.readyToFile && (
-                <div className="pt-4">
-                  <Button size="lg" className="w-full" onClick={handleMarkReady}>
-                    Mark Case Ready for Filing
-                  </Button>
-                </div>
-              )}
               {caseData.readyToFile && (
                 <div className="pt-4 text-center">
                   <Badge className="bg-success/10 text-success border-success/20 text-sm px-4 py-2">
