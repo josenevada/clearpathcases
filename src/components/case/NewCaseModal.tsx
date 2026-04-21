@@ -23,7 +23,7 @@ import {
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
 import { sendClientWelcome } from '@/lib/notifications';
-import { sendWelcomeSms } from '@/lib/sms';
+
 import { toast } from 'sonner';
 
 interface NewCaseModalProps {
@@ -393,14 +393,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       console.error('Notification error:', err);
       toast.error('Case created but welcome notification failed to send.');
     });
-
-    sendWelcomeSms(
-      info.clientPhone || undefined,
-      jointDisplayName,
-      caseCode,
-      newCase.id,
-      firmSettings.firmName || 'your attorney\'s office',
-    ).catch((err) => console.error('Welcome SMS error:', err));
   };
 
   const currentQ = INTAKE_QUESTIONS[questionIdx];
