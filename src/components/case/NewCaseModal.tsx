@@ -174,16 +174,35 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const includedCount = customChecklist.length - excludedItems.size;
 
-  const groupedChecklist = useMemo(() => {
+  const groupByCategory = (list: typeof customChecklist) => {
     const map: Record<string, typeof customChecklist> = {};
-    customChecklist.forEach(item => {
+    list.forEach(item => {
       if (!map[item.category]) map[item.category] = [];
       map[item.category].push(item);
     });
     return (CATEGORIES as readonly string[])
       .filter(cat => map[cat])
       .map(cat => ({ category: cat, items: map[cat] }));
-  }, [customChecklist]);
+  };
+
+  const groupedChecklist = useMemo(
+    () => groupByCategory(customChecklist),
+    [customChecklist],
+  );
+
+  const primaryItems = useMemo(
+    () => customChecklist.filter(item => !item.label.includes('(Spouse)')),
+    [customChecklist],
+  );
+  const spouseItems = useMemo(
+    () => customChecklist.filter(item => item.label.includes('(Spouse)')),
+    [customChecklist],
+  );
+  const primaryGrouped = useMemo(() => groupByCategory(primaryItems), [primaryItems]);
+  const spouseGrouped = useMemo(() => groupByCategory(spouseItems), [spouseItems]);
+
+  const primaryExcludedCount = primaryItems.filter(i => excludedItems.has(i.id)).length;
+  const spouseExcludedCount = spouseItems.filter(i => excludedItems.has(i.id)).length;
 
   const handleClose = () => {
     if (isDirty) {
@@ -523,7 +542,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     <div className="flex items-center gap-2">
                       <Check className="w-5 h-5 text-primary" />
                       <span className="font-display font-bold text-foreground">
-                        {includedCount} documents requested
+                        {isJointFiling
+                          ? `${primaryItems.length - primaryExcludedCount} for ${info.firstName} ${info.lastName} · ${spouseItems.length - spouseExcludedCount} for ${info.spouseName.split(' ')[0]}`
+                          : `${includedCount} documents requested`}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground font-body">
@@ -536,7 +557,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   </p>
 
                   <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-                    {groupedChecklist.map(({ category, items }) => (
+                    {!isJointFiling && groupedChecklist.map(({ category, items }) => (
                       <ChecklistCategorySection
                         key={category}
                         category={category}
@@ -545,6 +566,47 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                         onToggle={toggleExcluded}
                       />
                     ))}
+
+                    {isJointFiling && (
+                      <>
+                        <div>
+                          <span className="bg-primary/10 text-primary text-[11px] font-semibold px-3 py-1 rounded-full mb-3 inline-block">
+                            👤 {info.firstName} {info.lastName}
+                          </span>
+                          <div className="space-y-3">
+                            {primaryGrouped.map(({ category, items }) => (
+                              <ChecklistCategorySection
+                                key={`p-${category}`}
+                                category={category}
+                                items={items}
+                                excludedItems={excludedItems}
+                                onToggle={toggleExcluded}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-border/40 my-4" />
+
+                        <div>
+                          <span className="bg-secondary text-muted-foreground text-[11px] font-semibold px-3 py-1 rounded-full mb-3 inline-block">
+                            👤 {info.spouseName}
+                          </span>
+                          <div className="space-y-3">
+                            {spouseGrouped.map(({ category, items }) => (
+                              <ChecklistCategorySection
+                                key={`s-${category}`}
+                                category={category.replace(' (Spouse)', '')}
+                                items={items}
+                                excludedItems={excludedItems}
+                                onToggle={toggleExcluded}
+                                labelTransform={(label) => label.replace(' (Spouse)', '')}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex justify-between mt-6">
@@ -582,11 +644,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 };
 
 // ── Checklist Category Section ───────────────────────────────────────
-const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: {
+const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, labelTransform }: {
   category: string;
   items: { id: string; label: string }[];
   excludedItems: Set<string>;
   onToggle: (id: string) => void;
+  labelTransform?: (label: string) => string;
 }) => {
   const [open, setOpen] = useState(true);
   const includedCount = items.filter(i => !excludedItems.has(i.id)).length;
@@ -619,7 +682,7 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: 
                 'text-sm font-body transition-colors',
                 excludedItems.has(item.id) ? 'text-muted-foreground line-through' : 'text-foreground'
               )}>
-                {item.label}
+                {labelTransform ? labelTransform(item.label) : item.label}
               </span>
             </label>
           ))}
