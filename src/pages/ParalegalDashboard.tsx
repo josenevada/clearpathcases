@@ -633,7 +633,10 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           {/* Progress bar */}
           <div className="flex items-center gap-2 mb-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${progress}%`, minWidth: progress > 0 ? '8px' : '0px' }}
+              />
             </div>
             <span className="text-xs text-muted-foreground tabular-nums">{progress}%</span>
           </div>
@@ -647,6 +650,13 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
               {daysUntilDeadline > 0 ? `${daysUntilDeadline}d left` : daysUntilDeadline === 0 ? 'Due today' : 'Overdue'}
             </span>
           </div>
+
+          {/* Last activity line */}
+          <div className="text-[11px] text-muted-foreground font-body mt-1.5">
+            {caseData.lastClientActivity
+              ? `Last upload ${formatDistanceToNow(new Date(caseData.lastClientActivity), { addSuffix: true })}`
+              : 'No uploads yet'}
+          </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
           <Button
@@ -656,9 +666,26 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           >
             View case
           </Button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
+          {(() => {
+            const allComplete = caseData.checklist.length > 0 && caseData.checklist.every(item => item.completed || item.notApplicable);
+            const hasPendingDocs = caseData.checklist.some(item => item.files.some(f => f.reviewStatus === 'pending'));
+            const hideRemind = caseData.readyToFile || allComplete;
+            const wellProgressed = progress > 80 && !hasPendingDocs;
+            if (hideRemind) return null;
+            if (wellProgressed) {
+              return (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+                  className="text-xs text-muted-foreground hover:text-foreground font-body px-2 transition-colors"
+                >
+                  View
+                </button>
+              );
+            }
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
                 <Button
                   variant="ghost"
                   size="sm"
