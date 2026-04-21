@@ -1,3 +1,4 @@
+// Requires PINGRAM_API_KEY in Supabase edge function environment variables.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -53,38 +54,40 @@ Deno.serve(async (req) => {
     return json({ success: true, skipped: true, reason: 'Rate limited — SMS sent within last 20 hours' });
   }
 
-  // ── Send SMS via Twilio ──
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER') || Deno.env.get('TWILIO_FROM_NUMBER');
-
-  if (!accountSid || !authToken || !fromNumber) {
-    return json({ success: true, skipped: true, reason: 'Twilio credentials not configured' });
+  // ── Send SMS via Pingram ──
+  const apiKey = Deno.env.get('PINGRAM_API_KEY');
+  if (!apiKey) {
+    return json({ success: true, skipped: true, reason: 'Pingram API key not configured' });
   }
 
-  const twilioBody = new URLSearchParams({
-    To: payload.to,
-    From: fromNumber,
-    Body: payload.body,
-  });
-
-  const twilioRes = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
+  let pingramRes: Response;
+  try {
+    pingramRes = await fetch('https://api.pingram.io/sender', {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
       },
-      body: twilioBody,
-    },
-  );
+      body: JSON.stringify({
+        type: 'clearpath_notification',
+        to: {
+          id: payload.caseId,
+          number: payload.to,
+        },
+        sms: {
+          message: payload.body,
+        },
+      }),
+    });
+  } catch (err) {
+    console.error('Pingram SMS error:', err);
+    return json({ success: false, skipped: true, reason: `Pingram error: ${String(err)}` });
+  }
 
-  const twilioData = await twilioRes.json().catch(() => ({}));
-
-  if (!twilioRes.ok) {
-    console.error('Twilio error:', twilioData);
-    return json({ success: false, skipped: true, reason: `Twilio error [${twilioRes.status}]: ${twilioData?.message || 'Unknown'}` });
+  if (!pingramRes.ok) {
+    const errText = await pingramRes.text().catch(() => '');
+    console.error('Pingram error:', errText);
+    return json({ success: false, skipped: true, reason: `Pingram error [${pingramRes.status}]: ${errText || 'Unknown'}` });
   }
 
   // ── Log to activity_log ──
@@ -105,5 +108,5 @@ Deno.serve(async (req) => {
     }),
   }).catch((err) => console.error('Failed to log SMS:', err));
 
-  return json({ success: true, sid: twilioData.sid });
+  return json({ success: true });
 });
