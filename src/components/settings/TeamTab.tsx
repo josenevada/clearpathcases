@@ -21,7 +21,7 @@ interface TeamMember {
   full_name: string;
   email: string;
   role: string;
-  last_sign_in: string | null;
+  created_at: string | null;
 }
 
 interface Invitation {
@@ -59,7 +59,7 @@ const TeamTab = () => {
     setLoading(true);
 
     const [membersRes, invitesRes, firmRes] = await Promise.all([
-      supabase.from('users').select('id, full_name, email, role, last_sign_in').eq('firm_id', user.firmId),
+      supabase.from('users').select('id, full_name, email, role, created_at').eq('firm_id', user.firmId),
       supabase.from('team_invitations').select('*').eq('firm_id', user.firmId).eq('status', 'pending'),
       supabase.from('firms').select('name').eq('id', user.firmId).single(),
     ]);
@@ -257,8 +257,39 @@ const TeamTab = () => {
                 {m.role}
               </span>
               <span className="text-xs text-muted-foreground mr-4 hidden sm:block">
-                {m.last_sign_in ? new Date(m.last_sign_in).toLocaleDateString() : 'Never'}
+                {m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Never'}
               </span>
+              {(() => {
+                const stale = !m.created_at || (Date.now() - new Date(m.created_at).getTime()) > 1000 * 60 * 60 * 24 * 14;
+                if (!stale || m.id === user?.id) return null;
+                return (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase.functions.invoke('send-invitation', {
+                          body: {
+                            firmName,
+                            inviterName: user?.fullName,
+                            recipientEmail: m.email,
+                            role: m.role,
+                            personalMessage: '',
+                          },
+                        });
+                        if (error) throw error;
+                        toast.success(`Invitation resent to ${m.email}`);
+                      } catch {
+                        toast.error('Failed to resend invitation');
+                      }
+                    }}
+                    title="Resend invite"
+                    className="mr-1"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </Button>
+                );
+              })()}
               {m.id !== user?.id && (
                 <Button variant="ghost" size="sm" onClick={() => setRemoveTarget(m)} className="text-destructive hover:text-destructive">
                   <Trash2 className="w-4 h-4" />
