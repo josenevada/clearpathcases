@@ -240,6 +240,16 @@ const ParalegalDashboard = () => {
           <Button variant="ghost" size="icon" onClick={() => setGlobalSearchOpen(true)}>
             <Search className="w-4 h-4" />
           </Button>
+          <div className="relative">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/review')} aria-label="Document Review Queue">
+              <FileCheck className="w-4 h-4" />
+            </Button>
+            {pendingReviewCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-white text-[9px] flex items-center justify-center font-semibold pointer-events-none">
+                {pendingReviewCount > 9 ? '9+' : pendingReviewCount}
+              </span>
+            )}
+          </div>
           <Button variant="ghost" size="icon" onClick={() => navigate('/paralegal/settings')}>
             <Settings className="w-4 h-4" />
           </Button>
