@@ -389,7 +389,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(true); }}>
-        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto border-border bg-background p-0">
+        <DialogContent
+          className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto border-border bg-background p-0"
+          onInteractOutside={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
+        >
           <div className="h-1 bg-secondary w-full">
             <div
               className="h-full bg-primary transition-all duration-300"
