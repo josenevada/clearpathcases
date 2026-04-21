@@ -174,16 +174,35 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const includedCount = customChecklist.length - excludedItems.size;
 
-  const groupedChecklist = useMemo(() => {
+  const groupByCategory = (list: typeof customChecklist) => {
     const map: Record<string, typeof customChecklist> = {};
-    customChecklist.forEach(item => {
+    list.forEach(item => {
       if (!map[item.category]) map[item.category] = [];
       map[item.category].push(item);
     });
     return (CATEGORIES as readonly string[])
       .filter(cat => map[cat])
       .map(cat => ({ category: cat, items: map[cat] }));
-  }, [customChecklist]);
+  };
+
+  const groupedChecklist = useMemo(
+    () => groupByCategory(customChecklist),
+    [customChecklist],
+  );
+
+  const primaryItems = useMemo(
+    () => customChecklist.filter(item => !item.label.includes('(Spouse)')),
+    [customChecklist],
+  );
+  const spouseItems = useMemo(
+    () => customChecklist.filter(item => item.label.includes('(Spouse)')),
+    [customChecklist],
+  );
+  const primaryGrouped = useMemo(() => groupByCategory(primaryItems), [primaryItems]);
+  const spouseGrouped = useMemo(() => groupByCategory(spouseItems), [spouseItems]);
+
+  const primaryExcludedCount = primaryItems.filter(i => excludedItems.has(i.id)).length;
+  const spouseExcludedCount = spouseItems.filter(i => excludedItems.has(i.id)).length;
 
   const handleClose = () => {
     if (isDirty) {
