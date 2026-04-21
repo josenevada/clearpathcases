@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import FormDataTab from '@/components/case/FormDataTab';
-import MeansTestTab from '@/components/case/MeansTestTab';
-import ExemptionsTab from '@/components/case/ExemptionsTab';
-import SignaturesTab from '@/components/case/SignaturesTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, History, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import BuildPacketTab from '@/components/case/BuildPacketTab';
+
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
@@ -67,7 +63,7 @@ import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/correct
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubscription } from '@/lib/subscription';
-import { getPlanLimits, FEATURE_GATE_INFO } from '@/lib/plan-limits';
+import { getPlanLimits } from '@/lib/plan-limits';
 import UpgradeModal from '@/components/UpgradeModal';
 
 type ViewRole = 'paralegal' | 'attorney';
@@ -111,9 +107,8 @@ const CaseDetail = () => {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabType) || 'documents';
   const { user, loading: authLoading } = useAuth();
-  const { plan, status: subStatus } = useSubscription();
+  const { plan } = useSubscription();
   const planLimits = getPlanLimits(plan);
-  const isTrial = subStatus === 'trial';
   const [caseData, setCaseData] = useState<Case | null>(null);
   const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
