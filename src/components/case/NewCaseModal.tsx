@@ -22,7 +22,7 @@ import {
   CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
-import { sendClientWelcome } from '@/lib/notifications';
+
 
 import { toast } from 'sonner';
 
@@ -371,6 +371,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       }
     } catch (err) {
       console.error('Failed to sync case to database:', err);
+      toast.error('Failed to create case — please try again.');
+      return;
     }
 
     const portalLink = `${window.location.origin}/client/${caseCode}`;
@@ -378,21 +380,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     toast.success('Case created — portal link copied to clipboard!');
     onCreated(updatedCase);
     resetAndClose();
-
-    const caseForNotification = updatedCase || { ...newCase, caseCode };
-    sendClientWelcome(caseForNotification).then(result => {
-      const channels: string[] = [];
-      if (result.email.status === 'sent') channels.push('email');
-      if (result.sms.status === 'sent') channels.push('SMS');
-      if (channels.length > 0) {
-        toast.success(`Welcome notification sent via ${channels.join(' and ')} to ${info.clientEmail}`);
-      } else {
-        toast.info('Case created. Notification delivery is pending.');
-      }
-    }).catch((err) => {
-      console.error('Notification error:', err);
-      toast.error('Case created but welcome notification failed to send.');
-    });
   };
 
   const currentQ = INTAKE_QUESTIONS[questionIdx];
