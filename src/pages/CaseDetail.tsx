@@ -109,7 +109,7 @@ const CaseDetail = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as TabType) || 'checklist';
+  const initialTab = (searchParams.get('tab') as TabType) || 'documents';
   const { user, loading: authLoading } = useAuth();
   const { plan, status: subStatus } = useSubscription();
   const planLimits = getPlanLimits(plan);
@@ -1015,9 +1015,9 @@ const CaseDetail = () => {
                 return false;
               };
               return ([
+                { key: 'documents' as TabType, label: 'Documents' },
                 { key: 'checklist' as TabType, label: 'Checklist' },
                 { key: 'client-info' as TabType, label: 'Client Info' },
-                { key: 'documents' as TabType, label: 'Documents' },
                 { key: 'activity' as TabType, label: 'Activity' },
               ]).map(tab => {
                 const locked = isFeatureGated(tab.key);
