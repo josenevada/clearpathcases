@@ -53,6 +53,10 @@ const ParalegalDashboard = () => {
 
   const planLimits = getPlanLimits(plan);
   const activeCaseCount = cases.filter(c => c.status !== 'filed' && c.status !== 'closed').length;
+  const pendingReviewCount = cases.reduce((sum, c) => {
+    if (c.status === 'filed' || c.status === 'closed') return sum;
+    return sum + c.checklist.reduce((s, item) => s + item.files.filter(f => f.reviewStatus === 'pending').length, 0);
+  }, 0);
 
   const handleNewCase = () => {
     if (planLimits.activeCases !== Infinity && activeCaseCount >= planLimits.activeCases) {
