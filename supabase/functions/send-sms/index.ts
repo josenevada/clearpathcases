@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
   let pingramRes: Response;
   try {
-    pingramRes = await fetch('https://api.pingram.io/sender', {
+    pingramRes = await fetch('https://api.pingram.io/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
