@@ -702,6 +702,8 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
               <TooltipContent>No contact info on file — edit this case to add a phone or email</TooltipContent>
             )}
           </Tooltip>
+            );
+          })()}
         </div>
       </div>
     </motion.div>
