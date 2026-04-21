@@ -153,6 +153,32 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
+  // Auto-mark case ready-to-file when every required item has an approved/overridden file,
+  // an approved text entry, or has been marked N/A. Called after each approval.
+  const maybeAutoMarkReady = useCallback(async () => {
+    if (caseData.readyToFile) return;
+    const isRequiredItemComplete = (item: ChecklistItem) => {
+      if (item.notApplicable) return true;
+      if (item.textEntry?.savedAt) return item.attorneyNote?.startsWith('Approved by') ?? false;
+      if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
+      return false;
+    };
+    const allRequiredComplete = caseData.checklist
+      .filter(item => item.required)
+      .every(isRequiredItemComplete);
+    if (!allRequiredComplete) return;
+
+    await supabase.from('cases').update({ ready_to_file: true }).eq('id', caseData.id);
+    await supabase.from('activity_log').insert({
+      case_id: caseData.id,
+      event_type: 'case_ready',
+      actor_role: 'system',
+      actor_name: 'ClearPath',
+      description: 'Case automatically marked ready for filing — all required documents approved.',
+    });
+    toast.success('Case is ready to file — all required documents approved.');
+  }, [caseData]);
+
   // Bulk approve
   const handleBulkApprove = useCallback(async () => {
     const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
@@ -187,6 +213,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     }
 
     toast.success(`${targets.length} document${targets.length !== 1 ? 's' : ''} approved`);
+    await maybeAutoMarkReady();
     clearSelection();
     onRefresh();
   }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, onRefresh]);
@@ -343,6 +370,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     });
 
     toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
+    await maybeAutoMarkReady();
     onRefresh();
   }, [allFiles, caseData, viewRole, onRefresh]);
 
@@ -458,6 +486,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       item_id: entry.item.id,
     });
     toast.success(`${entry.item.label} approved`);
+    await maybeAutoMarkReady();
     setSelectedFile(null);
     onRefresh();
   };

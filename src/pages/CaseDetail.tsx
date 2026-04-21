@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import FormDataTab from '@/components/case/FormDataTab';
-import MeansTestTab from '@/components/case/MeansTestTab';
-import ExemptionsTab from '@/components/case/ExemptionsTab';
-import SignaturesTab from '@/components/case/SignaturesTab';
 import { format, isToday, isYesterday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, Lock, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock, Download, FileText, Flag, History, MessageSquare, Pencil, PhoneOff, Trash2, Ban, Plus, Tag, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import BuildPacketTab from '@/components/case/BuildPacketTab';
+
 import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
@@ -67,7 +63,7 @@ import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/correct
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubscription } from '@/lib/subscription';
-import { getPlanLimits, FEATURE_GATE_INFO } from '@/lib/plan-limits';
+import { getPlanLimits } from '@/lib/plan-limits';
 import UpgradeModal from '@/components/UpgradeModal';
 
 type ViewRole = 'paralegal' | 'attorney';
@@ -111,9 +107,8 @@ const CaseDetail = () => {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabType) || 'documents';
   const { user, loading: authLoading } = useAuth();
-  const { plan, status: subStatus } = useSubscription();
+  const { plan } = useSubscription();
   const planLimits = getPlanLimits(plan);
-  const isTrial = subStatus === 'trial';
   const [caseData, setCaseData] = useState<Case | null>(null);
   const viewRole: ViewRole = user?.role === 'attorney' ? 'attorney' : 'paralegal';
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -457,6 +452,7 @@ const CaseDetail = () => {
     });
 
     toast.success(`${item.label} approved`);
+    await maybeAutoMarkReady();
     refresh();
   };
 
@@ -573,42 +569,30 @@ const CaseDetail = () => {
     refresh();
   };
 
-  const handleMarkReady = async () => {
+  // Auto-mark case as ready-to-file when every required item has an approved (or overridden) file,
+  // a saved-and-approved text entry, or has been marked N/A. Called after each approval.
+  const maybeAutoMarkReady = async () => {
+    if (caseData.readyToFile) return;
     const isRequiredItemComplete = (item: typeof caseData.checklist[number]) => {
       if (item.notApplicable) return true;
       if (item.textEntry?.savedAt) return item.attorneyNote?.startsWith('Approved by') ?? false;
       if (item.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden')) return true;
-      return item.completed && item.files.length === 0;
+      return false;
     };
-
     const allRequiredComplete = caseData.checklist
       .filter(item => item.required)
       .every(isRequiredItemComplete);
+    if (!allRequiredComplete) return;
 
-    if (!allRequiredComplete) {
-      const blocking = caseData.checklist
-        .filter(item => item.required && !item.notApplicable)
-        .filter(item => !isRequiredItemComplete(item))
-        .map(item => item.label);
-
-      toast.error(`${blocking.length} item${blocking.length !== 1 ? 's' : ''} still need approval: ${blocking.slice(0, 2).join(', ')}${blocking.length > 2 ? ` and ${blocking.length - 2} more` : ''}`);
-      return;
-    }
-
-    await supabase.from('cases')
-      .update({ ready_to_file: true })
-      .eq('id', caseData.id);
-
+    await supabase.from('cases').update({ ready_to_file: true }).eq('id', caseData.id);
     await supabase.from('activity_log').insert({
       case_id: caseData.id,
       event_type: 'case_ready',
-      actor_role: 'attorney',
-      actor_name: user?.fullName || caseData.assignedAttorney,
-      description: 'Case marked as ready for filing',
+      actor_role: 'system',
+      actor_name: 'ClearPath',
+      description: 'Case automatically marked ready for filing — all required documents approved.',
     });
-
-    toast.success('Case marked ready for filing!');
-    refresh();
+    toast.success('Case is ready to file — all required documents approved.');
   };
 
   const handleDeleteCase = async () => {
@@ -950,6 +934,17 @@ const CaseDetail = () => {
                 <Pencil className="w-3.5 h-3.5" /> Edit Case
               </button>
               <button
+                onClick={() => {
+                  setActiveTab('activity');
+                  setTimeout(() => {
+                    document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 50);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+              >
+                <History className="w-3.5 h-3.5" /> View Activity Log
+              </button>
+              <button
                 onClick={() => setShowDeleteDialog(true)}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-b-lg transition-colors"
               >
@@ -1017,68 +1012,28 @@ const CaseDetail = () => {
       <div className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex gap-0">
-            {(() => {
-              const isFeatureGated = (tabKey: string) => {
-                if (isTrial) return false;
-                const gatedPro = ['packet', 'form-data', 'means-test', 'exemptions', 'signatures'];
-                if (gatedPro.includes(tabKey)) return !planLimits.courtPackets;
-                return false;
-              };
-              return ([
-                { key: 'documents' as TabType, label: 'Documents' },
-                { key: 'checklist' as TabType, label: 'Checklist' },
-                { key: 'client-info' as TabType, label: 'Client Info' },
-                { key: 'activity' as TabType, label: 'Activity' },
-              ]).map(tab => {
-                const locked = isFeatureGated(tab.key);
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`border-b-2 px-5 py-3 text-sm font-bold font-body transition-all ${
-                      activeTab === tab.key
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      {locked && <Lock className="w-3 h-3" />}
-                      {tab.label}
-                      {'dot' in tab && tab.dot && !locked && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                    </span>
-                  </button>
-                );
-              });
-            })()}
+            {([
+              { key: 'documents' as TabType, label: 'Documents' },
+              { key: 'checklist' as TabType, label: 'Checklist' },
+              { key: 'client-info' as TabType, label: 'Client Info' },
+            ]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`border-b-2 px-5 py-3 text-sm font-bold font-body transition-all ${
+                  activeTab === tab.key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {/* Feature gate card for locked tabs */}
-        {(() => {
-          const gatedTabs = ['packet', 'form-data', 'means-test', 'exemptions', 'signatures'];
-          const isLocked = gatedTabs.includes(activeTab) && !isTrial && !planLimits.courtPackets;
-          if (!isLocked) return null;
-          const info = FEATURE_GATE_INFO[activeTab] || { name: activeTab, minTier: 'Professional', roi: '' };
-          return (
-            <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
-              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
-                <Lock className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-2xl font-bold font-heading text-foreground">{info.name}</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                {info.name} is available on {info.minTier} and above. Upgrade your plan to unlock this feature.
-              </p>
-              {info.roi && (
-                <p className="text-sm text-primary font-medium">{info.roi}</p>
-              )}
-              <Button onClick={() => navigate('/paralegal/settings')} className="bg-primary text-primary-foreground">
-                Upgrade Plan
-              </Button>
-            </div>
-          );
-        })()}
         {activeTab === 'client-info' && (
           <ClientInfoTab caseData={caseData} viewRole={viewRole} actorName={user?.fullName || 'Staff'} onRefresh={refresh} />
         )}
@@ -1366,6 +1321,7 @@ const CaseDetail = () => {
                                                                 description: `${user?.fullName || caseData.assignedParalegal} approved ${file.name}`,
                                                                 item_id: item.id,
                                                               });
+                                                              await maybeAutoMarkReady();
                                                               refresh();
                                                             }}
                                                           />
@@ -1597,13 +1553,6 @@ const CaseDetail = () => {
                 );
               })}
 
-              {viewRole === 'attorney' && !caseData.readyToFile && (
-                <div className="pt-4">
-                  <Button size="lg" className="w-full" onClick={handleMarkReady}>
-                    Mark Case Ready for Filing
-                  </Button>
-                </div>
-              )}
               {caseData.readyToFile && (
                 <div className="pt-4 text-center">
                   <Badge className="bg-success/10 text-success border-success/20 text-sm px-4 py-2">
@@ -1726,25 +1675,6 @@ const CaseDetail = () => {
           </div>
         )}
 
-        {activeTab === 'packet' && (isTrial || planLimits.courtPackets) && (
-          <BuildPacketTab caseData={caseData} onRefresh={refresh} />
-        )}
-
-        {activeTab === 'form-data' && (isTrial || planLimits.aiFormFilling) && (
-          <FormDataTab caseData={caseData} onRefresh={refresh} />
-        )}
-
-        {activeTab === 'means-test' && (isTrial || planLimits.meansTest) && (
-          <MeansTestTab caseData={caseData} onRefresh={refresh} />
-        )}
-
-        {activeTab === 'exemptions' && (isTrial || planLimits.exemptionOptimizer) && (
-          <ExemptionsTab caseData={caseData} onRefresh={refresh} />
-        )}
-
-        {activeTab === 'signatures' && (isTrial || planLimits.courtPackets) && (
-          <SignaturesTab caseData={caseData} onRefresh={refresh} />
-        )}
       </main>
 
       <EditCasePanel
