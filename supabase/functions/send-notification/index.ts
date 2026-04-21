@@ -28,6 +28,7 @@ interface NotificationPayload {
   setupLink?: string;
   filingDeadline?: string;
   smsOnly?: boolean;
+  emailOnly?: boolean;
   itemLabel?: string;
 }
 
@@ -376,6 +377,13 @@ Deno.serve(async (req) => {
     const sms = await sendSms(payload);
     await logNotification(payload, { status: 'skipped' }, sms).catch(() => {});
     return json({ email: { status: 'skipped', detail: 'SMS-only request' }, sms });
+  }
+
+  // Email-only flows
+  if (payload.emailOnly) {
+    const email = await sendEmail(payload);
+    await logNotification(payload, email, { status: 'skipped' }).catch(() => {});
+    return json({ email, sms: { status: 'skipped', detail: 'Email-only request' } });
   }
 
   const [email, sms] = await Promise.all([sendEmail(payload), sendSms(payload)]);
