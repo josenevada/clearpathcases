@@ -644,11 +644,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 };
 
 // ── Checklist Category Section ───────────────────────────────────────
-const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: {
+const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, labelTransform }: {
   category: string;
   items: { id: string; label: string }[];
   excludedItems: Set<string>;
   onToggle: (id: string) => void;
+  labelTransform?: (label: string) => string;
 }) => {
   const [open, setOpen] = useState(true);
   const includedCount = items.filter(i => !excludedItems.has(i.id)).length;
@@ -681,7 +682,7 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle }: 
                 'text-sm font-body transition-colors',
                 excludedItems.has(item.id) ? 'text-muted-foreground line-through' : 'text-foreground'
               )}>
-                {item.label}
+                {labelTransform ? labelTransform(item.label) : item.label}
               </span>
             </label>
           ))}
