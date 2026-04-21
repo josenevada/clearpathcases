@@ -1,3 +1,4 @@
+// Requires PINGRAM_API_KEY in Supabase edge function environment variables.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
