@@ -267,6 +267,15 @@ const CaseDetail = () => {
     void loadCaseFromSupabase(caseId);
   }, [caseId, navigate, authLoading, user]);
 
+  // Default notes panel expansion based on whether notes exist
+  useEffect(() => {
+    if (caseData) {
+      const visibleCount = caseData.notes.filter(n => !n.clientVisible).length;
+      setNotesExpanded(visibleCount > 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseData?.id]);
+
   const refresh = () => {
     if (!caseId) return;
     void loadCaseFromSupabase(caseId);
