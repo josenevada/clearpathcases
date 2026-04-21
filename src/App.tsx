@@ -98,6 +98,11 @@ const App = () => {
                     <CaseDetail />
                   </ProtectedRoute>
                 } />
+                <Route path="/paralegal/review" element={
+                  <ProtectedRoute>
+                    <DocumentReviewQueue />
+                  </ProtectedRoute>
+                } />
                 <Route path="/paralegal/settings" element={
                   <ProtectedRoute>
                     <FirmSettings />
