@@ -1041,6 +1041,17 @@ const MarketingLanding = () => {
 
       <FeatureShowcase />
 
+      <div className="py-10 text-center">
+        <p className="text-[15px] text-[#8aa3b8] font-body font-light">
+          Seen enough?{' '}
+          <span
+            onClick={() => navigate('/signup')}
+            className="text-primary font-semibold cursor-pointer hover:underline"
+          >
+            Start your free trial — no card needed →
+          </span>
+        </p>
+      </div>
       <SectionDivider />
 
       {/* Pricing */}
