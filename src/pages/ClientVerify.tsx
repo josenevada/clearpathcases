@@ -103,7 +103,7 @@ const ClientVerify = () => {
     setDobError(null);
     setError('');
 
-    // Look up the row by either code; client_dob lives on cases, spouse_dob on client_info
+    // Look up the row by either code; spouse_dob lives on client_info, client_dob on cases
     const { data: caseRow } = await supabase
       .from('cases')
       .select('id, client_dob')

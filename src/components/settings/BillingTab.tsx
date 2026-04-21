@@ -12,7 +12,7 @@ const BillingTab = () => {
   const { plan, status, daysLeft, refresh } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
-  const [, setShowPlans] = useState(false);
+  
 
   const currentPlan = plan ? PLANS[plan as PlanKey] : null;
 
@@ -131,14 +131,6 @@ const BillingTab = () => {
               disabled={loading}
             >
               Upgrade to Firm — $699/mo
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto sm:ml-3"
-              onClick={handleManageBilling}
-              disabled={loading}
-            >
-              Manage Billing
             </Button>
             <div className="border-t border-border/40 pt-4 mt-4">
               <button

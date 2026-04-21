@@ -227,6 +227,7 @@ const ClientWizard = () => {
   const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
   const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
   const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
+  const [firmDisplayName, setFirmDisplayName] = useState<string | null>(null);
   const targetFixItemId = searchParams.get('fix');
 
   // Helper: update caseData in React state only (no localStorage)
@@ -281,7 +282,7 @@ const ClientWizard = () => {
         if (caseRow.firm_id) {
           const { data: firmData } = await supabase
             .from('firms')
-            .select('counseling_provider_name, counseling_provider_link, counseling_attorney_code')
+            .select('name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
             .eq('id', caseRow.firm_id)
             .maybeSingle();
 
@@ -290,6 +291,7 @@ const ClientWizard = () => {
             setCounselingProviderName(firmData.counseling_provider_name || null);
             setCounselingAttorneyCode(firmData.counseling_attorney_code || null);
           }
+          setFirmDisplayName(firmData?.name || null);
         }
 
         const { data: checklistRows } = await supabase
@@ -1481,7 +1483,7 @@ const ClientWizard = () => {
         {desktopSidebar}
         {mobileSidebar}
         <div className="flex-1 flex flex-col min-h-screen">
-          <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} />
+          <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} firmDisplayName={firmDisplayName} />
           <div className="flex-1 flex items-center justify-center px-6 pb-24">
             <motion.div {...pageTransition} className="max-w-md mx-auto w-full">
               <div className="text-center mb-6">
@@ -1570,6 +1572,7 @@ const ClientWizard = () => {
         totalSteps={CATEGORIES.length}
         stepName={CATEGORIES[currentCategoryIdx]}
         onMenuClick={() => setSidebarOpen(true)}
+        firmDisplayName={firmDisplayName}
       />
 
       {hasPortalCorrection && openCorrectionItem && (
@@ -2472,7 +2475,7 @@ const ClientWizard = () => {
   );
 };
 
-const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick }: { progress: number; step: number; totalSteps: number; stepName: string; onMenuClick?: () => void }) => (
+const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick, firmDisplayName }: { progress: number; step: number; totalSteps: number; stepName: string; onMenuClick?: () => void; firmDisplayName?: string | null }) => (
   <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm">
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-2">
@@ -2481,7 +2484,7 @@ const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick }: { p
             <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
         )}
-        <Logo size="sm" clickable={false} />
+        {firmDisplayName ? <span className="font-display font-bold text-[15px] text-foreground">{firmDisplayName}</span> : <Logo size="sm" clickable={false} />}
       </div>
       <span className="text-sm text-muted-foreground font-body tabular-nums">
         Step {step} of {totalSteps}

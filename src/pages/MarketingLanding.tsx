@@ -457,8 +457,8 @@ const MarketingLanding = () => {
     },
     {
       q: 'How long does setup take?',
-      preview: 'Your first case in under 5 minutes. No training required.',
-      a: 'Create your account, set up your firm profile, and send your first client link in under 5 minutes. No training required — the workflow is intuitive enough that paralegals pick it up immediately.',
+      preview: 'Your first case in under 60 seconds. No training required.',
+      a: 'Create your account, set up your firm profile, and send your first client link in under 60 seconds. No training required — the workflow is intuitive enough that paralegals pick it up immediately.',
     },
   ];
 
@@ -513,7 +513,7 @@ const MarketingLanding = () => {
           </Button>
         </div>
         <p className="mt-6 text-sm text-[#8aa3b8] relative" style={heroStagger(8)}>
-          ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 5 minutes
+          ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 60 seconds
         </p>
 
         {/* Capability pills */}
@@ -1125,7 +1125,7 @@ const MarketingLanding = () => {
             The best intake experience<br />your clients have ever had.
           </h2>
           <p className="text-[#8aa3b8] font-body font-light text-[15px] md:text-[17px] mt-4 max-w-lg mx-auto" style={{ lineHeight: '1.7' }}>
-            Stop chasing documents. Start your free trial and send your first case in 5 minutes.
+            Stop chasing documents. Start your free trial and send your first case in 60 seconds.
           </p>
           <Button
             size="lg"
@@ -1147,7 +1147,7 @@ const MarketingLanding = () => {
             Start Free — No Card Needed
           </Button>
           <p className="text-[13px] text-[#8aa3b8] font-body mt-4">
-            14-day free trial · Cancel anytime · First case in 5 minutes
+            14-day free trial · Cancel anytime · First case in 60 seconds
           </p>
         </div>
       </section>
