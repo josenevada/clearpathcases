@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Sun, Moon, Building2, ClipboardList, Paintbrush, Settings } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Sun, Moon, Building2, ClipboardList, Paintbrush, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -185,6 +185,17 @@ const FirmSettings = () => {
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
         </Button>
       </header>
+
+      <div className="text-[13px] font-body text-muted-foreground px-6 py-2 border-b border-border/40 flex items-center gap-2">
+        <button
+          onClick={() => navigate('/paralegal')}
+          className="text-primary hover:underline"
+        >
+          Dashboard
+        </button>
+        <ChevronRight className="w-3 h-3" />
+        <span>Settings{activeItem ? ` · ${activeItem.label}` : ''}</span>
+      </div>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>

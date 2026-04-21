@@ -35,21 +35,27 @@ const StatsBar = ({ cases, onFilter, activeFilter }: StatsBarProps) => {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-      {stats.map(stat => (
-        <button
-          key={stat.key}
-          onClick={() => onFilter(activeFilter === stat.key ? '' : stat.key)}
-          className={`surface-card p-4 text-left transition-all hover:border-primary/30 ${
-            activeFilter === stat.key ? 'border-primary/50 bg-primary/5' : ''
-          }`}
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <stat.icon className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground font-body">{stat.label}</span>
-          </div>
-          <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-        </button>
-      ))}
+      {stats.map(stat => {
+        const isActive = activeFilter === stat.key;
+        return (
+          <button
+            key={stat.key}
+            onClick={() => onFilter(isActive ? '' : stat.key)}
+            className={`group surface-card p-4 text-left rounded-xl cursor-pointer transition-colors hover:bg-white/[0.03] hover:border-primary/30 ${
+              isActive ? 'bg-primary/5 border border-primary/20' : ''
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <stat.icon className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-body">{stat.label}</span>
+              <span className={`ml-auto text-xs text-primary transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                →
+              </span>
+            </div>
+            <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
+          </button>
+        );
+      })}
     </div>
   );
 };
