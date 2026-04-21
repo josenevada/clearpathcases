@@ -21,7 +21,7 @@ interface TeamMember {
   full_name: string;
   email: string;
   role: string;
-  last_sign_in: string | null;
+  created_at: string | null;
 }
 
 interface Invitation {
