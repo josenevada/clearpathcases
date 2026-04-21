@@ -270,7 +270,7 @@ const sendSms = async (payload: NotificationPayload) => {
   if (!message) return { status: 'skipped' as const, detail: 'No message template' };
 
   try {
-    const response = await fetch('https://api.pingram.io/sender', {
+    const response = await fetch('https://api.pingram.io/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
