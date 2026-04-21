@@ -227,6 +227,7 @@ const ClientWizard = () => {
   const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
   const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
   const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
+  const [firmDisplayName, setFirmDisplayName] = useState<string | null>(null);
   const targetFixItemId = searchParams.get('fix');
 
   // Helper: update caseData in React state only (no localStorage)
@@ -281,7 +282,7 @@ const ClientWizard = () => {
         if (caseRow.firm_id) {
           const { data: firmData } = await supabase
             .from('firms')
-            .select('counseling_provider_name, counseling_provider_link, counseling_attorney_code')
+            .select('name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
             .eq('id', caseRow.firm_id)
             .maybeSingle();
 
@@ -290,6 +291,7 @@ const ClientWizard = () => {
             setCounselingProviderName(firmData.counseling_provider_name || null);
             setCounselingAttorneyCode(firmData.counseling_attorney_code || null);
           }
+          setFirmDisplayName(firmData?.name || null);
         }
 
         const { data: checklistRows } = await supabase
@@ -2481,7 +2483,7 @@ const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick }: { p
             <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
         )}
-        <Logo size="sm" clickable={false} />
+        {firmDisplayName ? <span className="font-display font-bold text-[15px] text-foreground">{firmDisplayName}</span> : <Logo size="sm" clickable={false} />}
       </div>
       <span className="text-sm text-muted-foreground font-body tabular-nums">
         Step {step} of {totalSteps}

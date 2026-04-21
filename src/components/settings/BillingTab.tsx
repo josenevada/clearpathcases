@@ -12,7 +12,7 @@ const BillingTab = () => {
   const { plan, status, daysLeft, refresh } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
-  const [, setShowPlans] = useState(false);
+  
 
   const currentPlan = plan ? PLANS[plan as PlanKey] : null;
 
