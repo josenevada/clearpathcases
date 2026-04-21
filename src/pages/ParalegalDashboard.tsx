@@ -139,8 +139,6 @@ const ParalegalDashboard = () => {
   const filterByStats = (list: Case[]) => {
     if (!statsFilter) return list;
     switch (statsFilter) {
-      case 'active':
-        return list.filter(c => c.status !== 'filed' && c.status !== 'closed');
       case 'pending':
         return list.filter(c => c.checklist.some(item => item.files.some(f => f.reviewStatus === 'pending')));
       case 'deadlines':
@@ -148,8 +146,6 @@ const ParalegalDashboard = () => {
           const d = differenceInDays(new Date(c.filingDeadline), new Date());
           return d >= 0 && d <= 7;
         });
-      case 'ready':
-        return list.filter(c => c.readyToFile);
       default:
         return list;
     }

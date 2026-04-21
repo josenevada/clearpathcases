@@ -62,7 +62,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Appearance',
     icon: Paintbrush,
     items: [
-      { key: 'display', label: 'Display', path: '/paralegal/settings/appearance/display' },
       { key: 'whitelabel', label: 'White Label', path: '/paralegal/settings/appearance/whitelabel' },
       { key: 'branding', label: 'Branding', path: '/paralegal/settings/appearance/branding' },
     ],
@@ -162,7 +161,6 @@ const FirmSettings = () => {
       case 'team': return <TeamTab />;
       case 'templates': return <DocumentTemplatesTab />;
       case 'questions': return <IntakeQuestionsTab />;
-      case 'display': return <DisplayPanel theme={theme} setTheme={setTheme} />;
       case 'whitelabel': return <WhiteLabelTab />;
       case 'branding': return <BrandingTab />;
       case 'billing': return <BillingTab />;

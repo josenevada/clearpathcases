@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  FileText, LayoutDashboard, PackageCheck, X, CheckCircle2, XCircle,
+  FileText, LayoutDashboard, PackageCheck, CheckCircle2, XCircle,
   ArrowRight, Lock, Shield, CheckCircle, ChevronDown, Clock,
   Plus, Minus, MessageSquare, ClipboardList,
   Building, UploadCloud, ChevronRight, Download, Circle, Mail, Paperclip,
@@ -148,7 +148,7 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
-    { value: 0, prefix: '', suffix: '', label: 'Faster than email-based document collection', displayOverride: '3x' },
+    { value: 0, prefix: '', suffix: '', label: 'Average client intake completion time', displayOverride: '15 min' },
     { value: 0, prefix: '', suffix: '', label: 'Clients can upload on their schedule', displayOverride: '24/7' },
     { value: 0, prefix: '', suffix: '', label: 'To create a case and send the intake link', displayOverride: '60 sec' },
   ];
@@ -353,7 +353,7 @@ const FeatureShowcase = () => {
 const MarketingLanding = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [showDemo, setShowDemo] = useState(false);
+  
 
   // Redirect authenticated users straight to the dashboard so they never see the marketing page.
   useEffect(() => {
@@ -1174,20 +1174,6 @@ const MarketingLanding = () => {
         </div>
       </footer>
 
-      {/* Demo Modal */}
-      {showDemo && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowDemo(false)}>
-          <div className="surface-card max-w-3xl w-full p-6 relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowDemo(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="font-display font-bold text-xl text-foreground mb-4">Product Demo</h3>
-            <video autoPlay muted loop playsInline style={{ width: '100%', borderRadius: '8px' }}>
-              <source src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/marketing-videos/pay-stubs-workflow.mp4`} type="video/mp4" />
-            </video>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
