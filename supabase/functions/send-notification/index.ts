@@ -208,24 +208,21 @@ const getEmailContent = (p: NotificationPayload): { subject: string; html: strin
 
 // ─── SMS Templates ───────────────────────────────────────────────────
 
-const getSmsBody = (p: NotificationPayload): string => {
-  const firstName = p.clientName.split(' ')[0];
-
-  switch (p.type) {
+const getSmsMessage = (payload: NotificationPayload): string | null => {
+  const firstName = payload.clientName?.split(' ')[0] || 'there';
+  const link = payload.portalLink || '';
+  switch (payload.type) {
     case 'client_welcome':
-      return `Hi ${firstName}, your document portal is ready. It only takes a few minutes. Open it here: ${p.portalLink}`;
-    case 'correction_request':
-      return `Your attorney's office needs one updated document. Tap here to fix it quickly: ${p.portalLink}`;
+      return `Hi ${firstName}, your attorney has sent you a secure link to upload your bankruptcy documents. Get started here: ${link} — Reply STOP to opt out.`;
     case 'inactivity_48h':
-      return `Just a reminder — your document portal is waiting. Your attorney needs a few more items: ${p.portalLink}`;
-    case 'deadline_reminder_3d':
-      return `Your filing date is in 3 days. Please complete your documents today: ${p.portalLink}`;
     case 'deadline_reminder_7d':
-      return `Your filing date is coming up in 7 days. Please finish your documents soon: ${p.portalLink}`;
+    case 'deadline_reminder_3d':
     case 'general_reminder':
-      return `Hi ${firstName}, your attorney's office is waiting on a few more documents. It only takes a few minutes: ${p.portalLink}`;
+      return `Hi ${firstName}, you have documents still missing for your bankruptcy case. Complete your submission here: ${link} — Reply STOP to opt out.`;
+    case 'correction_request':
+      return `Hi ${firstName}, your attorney has requested a correction on one of your documents. Please review and resubmit here: ${link} — Reply STOP to opt out.`;
     default:
-      return `Hi ${firstName}, please visit your document portal: ${p.portalLink}`;
+      return `Hi ${firstName}, your attorney's office sent you a message regarding your bankruptcy case: ${link} — Reply STOP to opt out.`;
   }
 };
 
@@ -263,44 +260,45 @@ const sendEmail = async (p: NotificationPayload) => {
   return { status: 'sent' as const, detail: data.id };
 };
 
-const sendSms = async (p: NotificationPayload) => {
-  if (!p.clientPhone) {
-    return { status: 'skipped' as const, detail: 'No phone number' };
-  }
+const sendSms = async (payload: NotificationPayload) => {
+  if (!payload.clientPhone) return { status: 'skipped' as const, detail: 'No phone number' };
 
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromNumber = Deno.env.get('TWILIO_FROM_NUMBER');
+  const apiKey = Deno.env.get('PINGRAM_API_KEY');
+  if (!apiKey) return { status: 'skipped' as const, detail: 'No Pingram API key' };
 
-  if (!accountSid || !authToken || !fromNumber) {
-    return { status: 'skipped' as const, detail: 'Twilio credentials not configured' };
-  }
+  const message = getSmsMessage(payload);
+  if (!message) return { status: 'skipped' as const, detail: 'No message template' };
 
-  const body = new URLSearchParams({
-    To: p.clientPhone,
-    From: fromNumber,
-    Body: getSmsBody(p),
-  });
-
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
+  try {
+    const response = await fetch('https://api.pingram.io/sender', {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
       },
-      body,
-    },
-  );
+      body: JSON.stringify({
+        type: 'clearpath_notification',
+        to: {
+          id: payload.caseId || 'unknown',
+          number: payload.clientPhone,
+        },
+        sms: {
+          message: message,
+        },
+      }),
+    });
 
-  const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('Pingram SMS error:', err);
+      return { status: 'failed' as const, detail: err };
+    }
 
-  if (!response.ok) {
-    return { status: 'failed' as const, detail: `Twilio error [${response.status}]: ${JSON.stringify(data)}` };
+    return { status: 'sent' as const };
+  } catch (err) {
+    console.error('Pingram SMS error:', err);
+    return { status: 'failed' as const, detail: String(err) };
   }
-
-  return { status: 'sent' as const, detail: data.sid };
 };
 
 // ─── Log to activity_log table ───────────────────────────────────────
