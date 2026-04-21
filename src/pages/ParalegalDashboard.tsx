@@ -696,8 +696,8 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={handleSmsClick}
-                      disabled={hasBothMissing || !hasPhone}
+                      onClick={handleRemindClick}
+                      disabled={hasBothMissing}
                       className="rounded-r-none h-9 px-3"
                     >
                       <Send className="w-3.5 h-3.5 mr-1" />
@@ -730,17 +730,18 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
                           disabled={!hasPhone}
                           className="w-full text-left px-3 py-2 text-sm rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                          <Phone className="w-3.5 h-3.5" /> Send SMS only
+                          <Phone className="w-3.5 h-3.5" /> SMS only
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setRemindOpen(false);
-                            void sendReminder('both');
+                            void sendReminder('email');
                           }}
-                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-secondary flex items-center gap-2"
+                          disabled={!hasEmail}
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                          <Mail className="w-3.5 h-3.5" /> Send email + SMS
+                          <Mail className="w-3.5 h-3.5" /> Email only
                         </button>
                       </PopoverContent>
                     </Popover>
