@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle, AlertTriangle, CheckCircle2, FileCheck } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, Search, X, Send, Mail, Phone, AlertCircle, AlertTriangle, CheckCircle2, FileCheck, ChevronDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import GlobalSearch from '@/components/GlobalSearch';
 import { Input } from '@/components/ui/input';
 import { format, differenceInDays, formatDistanceToNow } from 'date-fns';
@@ -504,30 +505,48 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
   const hasEmail = !!caseData.clientEmail;
   const hasBothMissing = !hasPhone && !hasEmail;
 
-  const handleSendReminder = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const [remindOpen, setRemindOpen] = useState(false);
 
-    // PROMPT 2: Contact validation before sending
-    if (hasBothMissing) return; // button is disabled
-
+  const sendReminder = async (mode: 'sms' | 'both') => {
+    if (hasBothMissing) return;
     try {
-      const result = await sendSmartReminder(caseData);
-      const channels = [];
-      if (result.email.status === 'sent') channels.push('email');
-      if (result.sms.status === 'sent') channels.push('SMS');
-
-      if (!hasPhone && hasEmail) {
-        toast.warning(`Reminder sent by email only — no phone number on file for this client`);
-      } else if (!hasEmail && hasPhone) {
-        toast.warning(`Reminder sent by SMS only — no email address on file for this client`);
-      } else if (channels.length > 0) {
-        toast.success(`Reminder sent to ${caseData.clientName} via ${channels.join(' and ')}`);
+      if (mode === 'sms') {
+        const portalLink = `https://yourclearpath.app/client/${caseData.caseCode}`;
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            type: 'general_reminder',
+            clientName: caseData.clientName,
+            clientEmail: caseData.clientEmail,
+            clientPhone: caseData.clientPhone,
+            portalLink,
+            caseId: caseData.id,
+            smsOnly: true,
+          },
+        });
+        if (!hasPhone) {
+          toast.warning('No phone number on file — nothing sent.');
+        } else {
+          toast.success(`SMS reminder sent to ${caseData.clientName}`);
+        }
       } else {
-        toast.success(`Reminder queued for ${caseData.clientName}`);
+        const result = await sendSmartReminder(caseData);
+        const channels = [];
+        if (result.email.status === 'sent') channels.push('email');
+        if (result.sms.status === 'sent') channels.push('SMS');
+        if (channels.length > 0) {
+          toast.success(`Reminder sent to ${caseData.clientName} via ${channels.join(' and ')}`);
+        } else {
+          toast.warning(`Reminder queued — delivery channels unavailable`);
+        }
       }
     } catch {
       toast.error('Failed to send reminder.');
     }
+  };
+
+  const handleSmsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    void sendReminder('sms');
   };
 
   return (
@@ -589,42 +608,16 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             )}
           </div>
 
-          {/* Contact indicators — PROMPT 2 */}
-          <div className="flex items-center gap-2 mb-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!hasEmail) navigate(`/paralegal/case/${caseData.id}`);
-                  }}
-                  className="flex items-center"
-                >
-                  <Mail className={`w-3 h-3 ${hasEmail ? 'text-success' : 'text-destructive'}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{hasEmail ? caseData.clientEmail : 'No email on file — edit case to add'}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!hasPhone) navigate(`/paralegal/case/${caseData.id}`);
-                  }}
-                  className="flex items-center"
-                >
-                  <Phone className={`w-3 h-3 ${hasPhone ? 'text-success' : 'text-destructive'}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{hasPhone ? caseData.clientPhone : 'No phone on file — edit case to add'}</TooltipContent>
-            </Tooltip>
-            {hasBothMissing && (
-              <span className="flex items-center gap-1 text-[10px] text-destructive">
-                <AlertCircle className="w-3 h-3" /> No contact info
-              </span>
-            )}
-          </div>
+          {/* Contact status — only when something is missing */}
+          {hasBothMissing ? (
+            <div className="flex items-center gap-1 mb-2 text-[11px] text-destructive">
+              <AlertTriangle className="w-3 h-3" /> No contact info
+            </div>
+          ) : !hasPhone ? (
+            <div className="flex items-center gap-1 mb-2 text-[11px] text-warning">
+              <AlertTriangle className="w-3 h-3" /> No phone on file
+            </div>
+          ) : null}
 
           {/* Progress bar */}
           <div className="flex items-center gap-2 mb-2">
