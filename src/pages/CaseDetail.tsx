@@ -452,6 +452,7 @@ const CaseDetail = () => {
     });
 
     toast.success(`${item.label} approved`);
+    await maybeAutoMarkReady();
     refresh();
   };
 
@@ -1320,6 +1321,7 @@ const CaseDetail = () => {
                                                                 description: `${user?.fullName || caseData.assignedParalegal} approved ${file.name}`,
                                                                 item_id: item.id,
                                                               });
+                                                              await maybeAutoMarkReady();
                                                               refresh();
                                                             }}
                                                           />

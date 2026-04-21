@@ -187,6 +187,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     }
 
     toast.success(`${targets.length} document${targets.length !== 1 ? 's' : ''} approved`);
+    await maybeAutoMarkReady();
     clearSelection();
     onRefresh();
   }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, onRefresh]);
@@ -343,6 +344,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     });
 
     toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
+    await maybeAutoMarkReady();
     onRefresh();
   }, [allFiles, caseData, viewRole, onRefresh]);
 
@@ -458,6 +460,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       item_id: entry.item.id,
     });
     toast.success(`${entry.item.label} approved`);
+    await maybeAutoMarkReady();
     setSelectedFile(null);
     onRefresh();
   };
