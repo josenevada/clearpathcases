@@ -247,20 +247,28 @@ const getEmailContent = (p: NotificationPayload): { subject: string; html: strin
 const getSmsMessage = (payload: NotificationPayload): string | null => {
   const firstName = payload.clientName?.split(' ')[0] || 'there';
   const link = payload.portalLink || '';
+  const completionPercent = payload.completionPercent;
   switch (payload.type) {
     case 'client_welcome':
-      return `Hi ${firstName}, your attorney has sent you a secure link to upload your bankruptcy documents. Get started here: ${link} — Reply STOP to opt out.`;
+      return `Hi ${firstName}, your attorney sent you a secure link to upload your bankruptcy documents. Takes about 15 minutes on your phone. Start here: ${link} — Reply STOP to opt out.`;
+    case 'never_started':
+      return `Hi ${firstName}, your document portal is ready and waiting. It takes about 15 minutes and you can do it from your phone right now: ${link} — Reply STOP to opt out.`;
     case 'inactivity_48h':
+      return `Hi ${firstName}, you started your document upload but haven't finished. You're almost there — pick up where you left off: ${link} — Reply STOP to opt out.`;
+    case 'inactivity_96h':
+      return `Hi ${firstName}, your attorney is waiting on your documents before they can move forward with your case. It only takes a few minutes to finish: ${link} — Reply STOP to opt out.`;
     case 'deadline_reminder_7d':
+      return `Hi ${firstName}, your filing deadline is in 7 days. Your documents are ${completionPercent ?? 0}% complete — finish here: ${link} — Reply STOP to opt out.`;
     case 'deadline_reminder_3d':
-    case 'general_reminder':
-      return `Hi ${firstName}, you have documents still missing for your bankruptcy case. Complete your submission here: ${link} — Reply STOP to opt out.`;
-    case 'correction_request':
-      return `Hi ${firstName}, your attorney has requested a correction on one of your documents. Please review and resubmit here: ${link} — Reply STOP to opt out.`;
+      return `Hi ${firstName}, IMPORTANT — your filing deadline is in 3 days and documents are still missing. Please upload now: ${link} — Reply STOP to opt out.`;
     case 'item_reminder': {
       const item = payload.itemLabel || 'a document';
-      return `Hi ${firstName}, your attorney still needs your ${item} to move forward with your case. Upload it here: ${link} — Reply STOP to opt out.`;
+      return `Hi ${firstName}, your attorney still needs your ${item} to move forward. Upload it here (takes 2 minutes): ${link} — Reply STOP to opt out.`;
     }
+    case 'correction_request':
+      return `Hi ${firstName}, one quick update needed on your documents before your case can move forward. Fix it here: ${link} — Reply STOP to opt out.`;
+    case 'general_reminder':
+      return `Hi ${firstName}, your attorney is waiting on a few more documents. Finish your upload here: ${link} — Reply STOP to opt out.`;
     default:
       return `Hi ${firstName}, your attorney's office sent you a message regarding your bankruptcy case: ${link} — Reply STOP to opt out.`;
   }
