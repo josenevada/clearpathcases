@@ -207,12 +207,76 @@ export const getDocTemplates = (): TemplateItem[] => {
   return raw ? JSON.parse(raw) : buildDefaultTemplates();
 };
 
+/**
+ * Hydrate localStorage cache from the firm's saved templates in Supabase.
+ * Call once after login. If the firm has no saved templates yet, do nothing
+ * (localStorage falls back to buildDefaultTemplates()).
+ */
+export const hydrateDocTemplatesFromFirm = async (firmId: string): Promise<void> => {
+  try {
+    const { data, error } = await supabase
+      .from('firms')
+      .select('document_templates')
+      .eq('id', firmId)
+      .maybeSingle();
+    if (error) return;
+    const remote = (data as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
+    if (Array.isArray(remote) && remote.length > 0) {
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(remote));
+    }
+  } catch {
+    // non-blocking — fall back to local cache
+  }
+};
+
 export const saveDocTemplates = (templates: TemplateItem[]) => {
   localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+  // Mirror to Supabase for cross-device sync (fire-and-forget).
+  void (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('firm_id')
+        .eq('id', userId)
+        .maybeSingle();
+      const firmId = userRow?.firm_id;
+      if (!firmId) return;
+      await supabase
+        .from('firms')
+        .update({ document_templates: templates as unknown as Json })
+        .eq('id', firmId);
+    } catch {
+      // local cache already updated — silent failure is acceptable
+    }
+  })();
 };
 
 export const resetDocTemplates = () => {
   localStorage.removeItem(TEMPLATES_KEY);
+  // Clear remote copy too so other devices fall back to defaults.
+  void (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('firm_id')
+        .eq('id', userId)
+        .maybeSingle();
+      const firmId = userRow?.firm_id;
+      if (!firmId) return;
+      await supabase
+        .from('firms')
+        .update({ document_templates: null })
+        .eq('id', firmId);
+    } catch {
+      /* silent */
+    }
+  })();
 };
 
 // ─── Intake Questions ───────────────────────────────────────────────
