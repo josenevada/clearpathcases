@@ -114,7 +114,7 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
   const [districtSearch, setDistrictSearch] = useState('');
   const [meetingDate, setMeetingDate] = useState(caseData.meetingDate || '');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(CATEGORIES));
-  const [notifyModal, setNotifyModal] = useState<{ itemLabel: string; clientName: string } | null>(null);
+  const [notifyModal, setNotifyModal] = useState<{ itemId: string; itemLabel: string; clientName: string } | null>(null);
   const [notifyMessage, setNotifyMessage] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [packetHistory, setPacketHistory] = useState<PacketHistoryEntry[]>([]);
@@ -183,22 +183,43 @@ const BuildPacketTab = ({ caseData, onRefresh }: BuildPacketTabProps) => {
     const firstName = caseData.clientName.split(' ')[0];
     const message = `Hi ${firstName}, we still need your ${item.label} to complete your filing packet. Please log back into your ClearPath portal to upload it.`;
     setNotifyMessage(message);
-    setNotifyModal({ itemLabel: item.label, clientName: caseData.clientName });
+    setNotifyModal({ itemId: item.id, itemLabel: item.label, clientName: caseData.clientName });
   };
 
   const handleSendNotify = async () => {
+    if (!notifyModal) return;
+    if (!caseData.clientPhone && !caseData.clientEmail) {
+      toast.error('No contact info on file for this client.');
+      return;
+    }
+    const portalLink = `https://yourclearpath.app/client/${caseData.caseCode}?fix=${encodeURIComponent(notifyModal.itemId)}`;
     try {
       await supabase.functions.invoke('send-notification', {
         body: {
-          caseId: caseData.id,
+          type: 'item_reminder',
+          clientName: caseData.clientName,
           clientEmail: caseData.clientEmail,
           clientPhone: caseData.clientPhone,
-          message: notifyMessage,
+          portalLink,
+          caseId: caseData.id,
+          smsOnly: true,
+          itemLabel: notifyModal.itemLabel,
         },
       });
-      toast.success('Notification sent to client');
-    } catch {
-      toast.success('Notification sent to client');
+
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'reminder_sent',
+        actor_role: 'paralegal',
+        actor_name: 'Staff',
+        description: `Reminder sent for ${notifyModal.itemLabel}`,
+        item_id: notifyModal.itemId,
+      });
+
+      toast.success(`Reminder sent for ${notifyModal.itemLabel}`);
+    } catch (err) {
+      console.error('Item reminder failed:', err);
+      toast.error('Failed to send reminder.');
     }
     setNotifyModal(null);
   };
