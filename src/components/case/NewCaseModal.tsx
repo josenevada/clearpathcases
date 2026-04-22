@@ -796,7 +796,53 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
         <p className="text-xs text-muted-foreground mt-1">Required for case tracking</p>
       </div>
 
-      {/* Spouse Fields removed — joint filing toggle now lives on step 2 */}
+      {/* Spouse Fields — only when joint filing is selected on step 2 */}
+      {isJointFiling && (
+        <>
+          <div className="sm:col-span-2 mt-2">
+            <div className="h-px bg-border" />
+            <p className="text-xs font-bold text-primary mt-3 mb-1 uppercase tracking-wider">Spouse Information</p>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-muted-foreground text-sm">Spouse Full Legal Name *</Label>
+            <Input
+              value={info.spouseName}
+              onChange={e => update('spouseName', e.target.value)}
+              placeholder="Spouse full name"
+              className="mt-1 bg-input border-border rounded-[10px]"
+            />
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-sm">Spouse Email *</Label>
+            <Input
+              value={info.spouseEmail}
+              onChange={e => update('spouseEmail', e.target.value)}
+              type="email"
+              placeholder="spouse@email.com"
+              className="mt-1 bg-input border-border rounded-[10px]"
+            />
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-sm">Spouse Phone</Label>
+            <Input
+              value={info.spousePhone}
+              onChange={e => update('spousePhone', e.target.value)}
+              placeholder="(555) 000-0000"
+              className="mt-1 bg-input border-border rounded-[10px]"
+            />
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-sm">Spouse Date of Birth *</Label>
+            <Input
+              type="date"
+              value={info.spouseDob}
+              onChange={e => update('spouseDob', e.target.value)}
+              className="mt-1 bg-input border-border rounded-[10px]"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Used for portal verification</p>
+          </div>
+        </>
+      )}
     </div>
   );
 };
