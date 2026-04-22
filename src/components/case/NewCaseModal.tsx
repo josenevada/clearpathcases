@@ -200,22 +200,26 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       assignedAttorney: defaultAttorney,
       spouseName: '', spouseEmail: '', spousePhone: '', spouseDob: '',
     });
-    setAnswers({});
-    setQuestionIdx(0);
+    setAnswers({
+      isEmployed: false,
+      ownsRealEstate: false,
+      ownsVehicle: false,
+      selfEmployed: false,
+      hasRetirement: false,
+      hasStudentLoans: false,
+      hasDigitalWallets: false,
+      hasCollections: false,
+      isRenting: false,
+      hasRentalIncome: false,
+      hasDomesticSupport: false,
+      filingJointly: false,
+      mortgageInArrears: false,
+    });
     setShowSummary(false);
     setExcludedItems(new Set());
     setShowConfirmClose(false);
     setClientLanguage('en');
     onOpenChange(false);
-  };
-
-  const handleAnswer = (key: string, value: boolean) => {
-    setAnswers(prev => ({ ...prev, [key]: value }));
-    if (questionIdx < INTAKE_QUESTIONS.length - 1) {
-      setTimeout(() => setQuestionIdx(questionIdx + 1), 300);
-    } else {
-      setTimeout(() => setShowSummary(true), 300);
-    }
   };
 
   const generateCaseCode = (name: string) => {
