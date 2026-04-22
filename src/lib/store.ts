@@ -340,6 +340,9 @@ export interface IntakeAnswers {
   isEmployed: boolean;
   hasDigitalWallets: boolean;
   hasCollections: boolean;
+  isRenting: boolean;
+  hasRentalIncome: boolean;
+  hasDomesticSupport: boolean;
   mortgageInArrears?: boolean; // CH.13 only
 }
 
@@ -419,7 +422,7 @@ const exclusionMap: Record<string, string[]> = {
   ownsRealEstate: ['Mortgage Statement or Lease', 'Property Deed'],
   ownsVehicle: ['Vehicle Title or Registration'],
   hasRetirement: ['Investment/Retirement Statements'],
-  isEmployed: ['Pay Stubs (Last 2 Months)', 'Employer Name'],
+  isEmployed: ['Pay Stubs (Last 2 Months)', 'Pay Stubs (Last 6 Months)', 'Employer Name'],
   hasDigitalWallets: ['Digital Wallet Statements'],
   hasCollections: ['Collection Notices'],
 };
