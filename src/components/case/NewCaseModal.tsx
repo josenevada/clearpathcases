@@ -573,8 +573,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                     <Button variant="ghost" onClick={() => setShowSummary(false)}>
                       <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
                     </Button>
-                      <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
-                    </Button>
                     <Button onClick={handleCreate}>
                       <Link2 className="w-4 h-4 mr-1" /> Create Case & Copy Link
                     </Button>
