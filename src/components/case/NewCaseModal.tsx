@@ -302,8 +302,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         is_joint_filing: isJointFiling,
         spouse_name: isJointFiling ? info.spouseName : null,
         spouse_email: isJointFiling ? info.spouseEmail : null,
-        spouse_phone: isJointFiling ? info.spousePhone : null,
-        spouse_dob: isJointFiling ? info.spouseDob || null : null,
       } as any);
 
       if (isJointFiling && info.spouseName) {
