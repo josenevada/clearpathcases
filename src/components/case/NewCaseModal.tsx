@@ -650,9 +650,10 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, la
 };
 
 // ── Step 1 Form Component ────────────────────────────────────────────
-const Step1Form = ({ info, setInfo, clientLanguage, setClientLanguage }: {
+const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLanguage }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
+  isJointFiling?: boolean;
   clientLanguage?: 'en' | 'es';
   setClientLanguage?: (lang: 'en' | 'es') => void;
 }) => {
