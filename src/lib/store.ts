@@ -452,6 +452,11 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
         label = 'Tax Returns (Last 4 Years)';
         description = 'Upload your federal tax returns from the last four years. Chapter 13 requires a longer history to support your repayment plan.';
       }
+      // CH.13: upgrade Pay Stubs from 2 months to 6 months
+      if (chapterType === '13' && t.label === 'Pay Stubs (Last 2 Months)') {
+        label = 'Pay Stubs (Last 6 Months)';
+        description = 'Upload your pay stubs from the last 6 months. Chapter 13 requires a longer income history to support your repayment plan.';
+      }
       return {
         id: uid(),
         category: t.category,
@@ -466,6 +471,21 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
         completed: false,
       };
     });
+
+  // Renting — swap mortgage statement for rental lease
+  if (answers.isRenting) {
+    checklist = checklist.filter(i => i.label !== 'Mortgage Statement or Lease');
+    const leaseItem: ChecklistItem = {
+      id: uid(), category: 'Assets & Property',
+      label: 'Rental Lease Agreement',
+      description: 'Upload your current rental lease agreement.',
+      whyWeNeedThis: 'Your lease shows the court your current housing obligation and monthly rent payment.',
+      required: false, files: [], flaggedForAttorney: false, completed: false,
+    };
+    const propIdx = checklist.findIndex(i => i.category === 'Assets & Property');
+    if (propIdx !== -1) checklist.splice(propIdx, 0, leaseItem);
+    else checklist.push(leaseItem);
+  }
 
   // Add conditional items for "Yes" answers
   for (const [key, config] of Object.entries(conditionalItems)) {
