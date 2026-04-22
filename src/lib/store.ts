@@ -340,6 +340,9 @@ export interface IntakeAnswers {
   isEmployed: boolean;
   hasDigitalWallets: boolean;
   hasCollections: boolean;
+  isRenting: boolean;
+  hasRentalIncome: boolean;
+  hasDomesticSupport: boolean;
   mortgageInArrears?: boolean; // CH.13 only
 }
 
@@ -419,7 +422,7 @@ const exclusionMap: Record<string, string[]> = {
   ownsRealEstate: ['Mortgage Statement or Lease', 'Property Deed'],
   ownsVehicle: ['Vehicle Title or Registration'],
   hasRetirement: ['Investment/Retirement Statements'],
-  isEmployed: ['Pay Stubs (Last 2 Months)', 'Employer Name'],
+  isEmployed: ['Pay Stubs (Last 2 Months)', 'Pay Stubs (Last 6 Months)', 'Employer Name'],
   hasDigitalWallets: ['Digital Wallet Statements'],
   hasCollections: ['Collection Notices'],
 };
@@ -449,6 +452,11 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
         label = 'Tax Returns (Last 4 Years)';
         description = 'Upload your federal tax returns from the last four years. Chapter 13 requires a longer history to support your repayment plan.';
       }
+      // CH.13: upgrade Pay Stubs from 2 months to 6 months
+      if (chapterType === '13' && t.label === 'Pay Stubs (Last 2 Months)') {
+        label = 'Pay Stubs (Last 6 Months)';
+        description = 'Upload your pay stubs from the last 6 months. Chapter 13 requires a longer income history to support your repayment plan.';
+      }
       return {
         id: uid(),
         category: t.category,
@@ -463,6 +471,21 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
         completed: false,
       };
     });
+
+  // Renting — swap mortgage statement for rental lease
+  if (answers.isRenting) {
+    checklist = checklist.filter(i => i.label !== 'Mortgage Statement or Lease');
+    const leaseItem: ChecklistItem = {
+      id: uid(), category: 'Assets & Property',
+      label: 'Rental Lease Agreement',
+      description: 'Upload your current rental lease agreement.',
+      whyWeNeedThis: 'Your lease shows the court your current housing obligation and monthly rent payment.',
+      required: false, files: [], flaggedForAttorney: false, completed: false,
+    };
+    const propIdx = checklist.findIndex(i => i.category === 'Assets & Property');
+    if (propIdx !== -1) checklist.splice(propIdx, 0, leaseItem);
+    else checklist.push(leaseItem);
+  }
 
   // Add conditional items for "Yes" answers
   for (const [key, config] of Object.entries(conditionalItems)) {
@@ -499,6 +522,64 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
     ];
     const lastIncomeIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
     if (lastIncomeIdx !== -1) checklist.splice(lastIncomeIdx + 1, 0, ...ch13Income);
+
+    // Monthly expense documentation
+    const ch13Expenses: ChecklistItem[] = [{
+      id: uid(), category: 'Income & Employment',
+      label: 'Monthly Expense Documentation',
+      description: 'Upload documentation of your regular monthly expenses — utility bills, insurance statements, childcare invoices, medical bills, or any other recurring costs.',
+      whyWeNeedThis: 'Your Chapter 13 repayment plan is based on your disposable income — what\'s left after reasonable expenses. The more completely we document your expenses, the more accurate your plan will be.',
+      required: true, files: [], flaggedForAttorney: false, completed: false,
+    }];
+    const expenseInsertIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+    if (expenseInsertIdx !== -1) checklist.splice(expenseInsertIdx + 1, 0, ...ch13Expenses);
+
+    // Most recent tax refund documentation
+    const taxRefundItems: ChecklistItem[] = [{
+      id: uid(), category: 'Bank & Financial Accounts',
+      label: 'Most Recent Tax Refund Amount',
+      description: 'Upload your most recent tax refund — found on your tax return or IRS transcript.',
+      whyWeNeedThis: 'Chapter 13 trustees may claim tax refunds received during your plan period as additional plan payments. Your attorney needs to account for this upfront.',
+      required: false, files: [], flaggedForAttorney: false, completed: false,
+    }];
+    const lastBankIdxRefund = checklist.map(c => c.category).lastIndexOf('Bank & Financial Accounts');
+    if (lastBankIdxRefund !== -1) checklist.splice(lastBankIdxRefund + 1, 0, ...taxRefundItems);
+
+    // Domestic support obligations (conditional)
+    if (answers.hasDomesticSupport) {
+      const dsItems: ChecklistItem[] = [{
+        id: uid(), category: 'Income & Employment',
+        label: 'Domestic Support Order or Agreement',
+        description: 'Upload your divorce decree, court order, or written agreement showing alimony or child support obligations.',
+        whyWeNeedThis: 'Domestic support obligations are priority debts in Chapter 13 and must be current for your plan to be confirmed.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      }];
+      const dsIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+      if (dsIdx !== -1) checklist.splice(dsIdx + 1, 0, ...dsItems);
+    }
+
+    // Rental income (conditional)
+    if (answers.hasRentalIncome) {
+      const rentalIncomeDoc: ChecklistItem = {
+        id: uid(), category: 'Income & Employment',
+        label: 'Rental Income Documentation (Last 6 Months)',
+        description: 'Upload rent receipts, lease agreements, or bank deposits showing rental income for the last 6 months.',
+        whyWeNeedThis: 'Rental income is included in your disposable income calculation for your Chapter 13 repayment plan.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      };
+      const rentalPropDoc: ChecklistItem = {
+        id: uid(), category: 'Assets & Property',
+        label: 'Rental Property Documents',
+        description: 'Upload the deed, mortgage statement, and current lease for any rental properties you own.',
+        whyWeNeedThis: 'Rental properties must be accounted for in your Chapter 13 plan — the mortgage, equity, and income all affect how the plan is structured.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      };
+      const rentalIncIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+      if (rentalIncIdx !== -1) checklist.splice(rentalIncIdx + 1, 0, rentalIncomeDoc);
+      const rentalPropIdx = checklist.map(c => c.category).lastIndexOf('Assets & Property');
+      if (rentalPropIdx !== -1) checklist.splice(rentalPropIdx + 1, 0, rentalPropDoc);
+      else checklist.push(rentalPropDoc);
+    }
 
     // Property valuation (conditional on owning real estate)
     if (answers.ownsRealEstate) {

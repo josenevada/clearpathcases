@@ -1,7 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2 } from 'lucide-react';
+import {
+  CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2,
+  Briefcase, Users, Home, Building2, Car, TrendingUp, PiggyBank, GraduationCap,
+  CreditCard, Wallet, AlertTriangle, Building, Heart,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -54,26 +58,6 @@ interface TeamMember {
   role: string;
   email: string;
 }
-
-interface IntakeQuestionDef {
-  key: string;
-  question: string;
-}
-
-const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
-  { key: 'isEmployed', question: 'Is this client currently employed?' },
-  { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
-  { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
-  { key: 'selfEmployed', question: 'Is this client self-employed or do they own a business?' },
-  { key: 'hasRetirement', question: 'Does this client have retirement or investment accounts?' },
-  { key: 'hasStudentLoans', question: 'Does this client have student loans?' },
-  { key: 'hasDigitalWallets', question: 'Does this client use Venmo, PayPal, Cash App, or other digital wallets?' },
-  { key: 'hasCollections', question: 'Does this client have any accounts in collections or collection notices?' },
-];
-
-const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
-  { key: 'mortgageInArrears', question: 'Is this client behind on their mortgage payments?' },
-];
 
 const buildClientName = (first: string, last: string) =>
   [first, last].filter(Boolean).join(' ').trim();
@@ -132,47 +116,34 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     }
   }, [teamLoaded, defaultParalegal, defaultAttorney]);
 
-  const [answers, setAnswers] = useState<Record<string, boolean | undefined>>({});
-  const [questionIdx, setQuestionIdx] = useState(0);
+  const [answers, setAnswers] = useState<IntakeAnswers>({
+    isEmployed: false,
+    ownsRealEstate: false,
+    ownsVehicle: false,
+    selfEmployed: false,
+    hasRetirement: false,
+    hasStudentLoans: false,
+    hasDigitalWallets: false,
+    hasCollections: false,
+    isRenting: false,
+    hasRentalIncome: false,
+    hasDomesticSupport: false,
+    filingJointly: false,
+    mortgageInArrears: false,
+  });
   const [showSummary, setShowSummary] = useState(false);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
 
-  const INTAKE_QUESTIONS = useMemo(() => {
-    const base = [...BASE_INTAKE_QUESTIONS];
-    // Ch.13: only ask about mortgage arrears if client owns real estate
-    if (info.chapterType === '13' && answers.ownsRealEstate === true) {
-      const realEstateIdx = base.findIndex(q => q.key === 'ownsRealEstate');
-      base.splice(realEstateIdx + 1, 0, ...CH13_EXTRA_QUESTIONS);
-    }
-    return base;
-  }, [info.chapterType, answers.ownsRealEstate]);
-
   const clientName = buildClientName(info.firstName, info.lastName);
-  const isDirty = info.firstName || info.lastName || info.clientEmail || Object.keys(answers).length > 0;
+  const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
 
   const isJointFiling = answers.filingJointly === true;
   const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline &&
     (!isJointFiling || (info.spouseName && info.spouseEmail && info.spouseDob));
 
-  const allAnswered = INTAKE_QUESTIONS.every(q => answers[q.key] !== undefined);
-
-  const intakeAnswers: IntakeAnswers = {
-    ownsRealEstate: answers.ownsRealEstate ?? false,
-    ownsVehicle: answers.ownsVehicle ?? false,
-    selfEmployed: answers.selfEmployed ?? false,
-    hasRetirement: answers.hasRetirement ?? false,
-    hasStudentLoans: answers.hasStudentLoans ?? false,
-    filingJointly: answers.filingJointly ?? false,
-    isEmployed: answers.isEmployed ?? false,
-    hasDigitalWallets: answers.hasDigitalWallets ?? false,
-    hasCollections: answers.hasCollections ?? false,
-    mortgageInArrears: answers.mortgageInArrears ?? false,
-  };
-
   const customChecklist = useMemo(() => {
-    if (!allAnswered) return [];
-    return buildCustomChecklist(intakeAnswers, info.chapterType);
-  }, [allAnswered, info.chapterType, ...Object.values(answers)]);
+    return buildCustomChecklist(answers, info.chapterType);
+  }, [answers, info.chapterType]);
 
   // Reset excluded items when checklist changes
   useEffect(() => {
@@ -229,22 +200,26 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       assignedAttorney: defaultAttorney,
       spouseName: '', spouseEmail: '', spousePhone: '', spouseDob: '',
     });
-    setAnswers({});
-    setQuestionIdx(0);
+    setAnswers({
+      isEmployed: false,
+      ownsRealEstate: false,
+      ownsVehicle: false,
+      selfEmployed: false,
+      hasRetirement: false,
+      hasStudentLoans: false,
+      hasDigitalWallets: false,
+      hasCollections: false,
+      isRenting: false,
+      hasRentalIncome: false,
+      hasDomesticSupport: false,
+      filingJointly: false,
+      mortgageInArrears: false,
+    });
     setShowSummary(false);
     setExcludedItems(new Set());
     setShowConfirmClose(false);
     setClientLanguage('en');
     onOpenChange(false);
-  };
-
-  const handleAnswer = (key: string, value: boolean) => {
-    setAnswers(prev => ({ ...prev, [key]: value }));
-    if (questionIdx < INTAKE_QUESTIONS.length - 1) {
-      setTimeout(() => setQuestionIdx(questionIdx + 1), 300);
-    } else {
-      setTimeout(() => setShowSummary(true), 300);
-    }
   };
 
   const generateCaseCode = (name: string) => {
@@ -389,7 +364,23 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     resetAndClose();
   };
 
-  const currentQ = INTAKE_QUESTIONS[questionIdx];
+  const checkboxOptions: Array<{ key: keyof IntakeAnswers; icon: typeof Briefcase; label: string; ch13?: boolean }> = [
+    { key: 'isEmployed', icon: Briefcase, label: 'Currently employed' },
+    { key: 'filingJointly', icon: Users, label: 'Filing jointly with spouse' },
+    { key: 'ownsRealEstate', icon: Home, label: 'Owns real estate' },
+    { key: 'isRenting', icon: Building2, label: 'Renting (no mortgage)' },
+    { key: 'ownsVehicle', icon: Car, label: 'Owns a vehicle' },
+    { key: 'selfEmployed', icon: TrendingUp, label: 'Self-employed / business income' },
+    { key: 'hasRetirement', icon: PiggyBank, label: 'Has retirement or investment accounts' },
+    { key: 'hasStudentLoans', icon: GraduationCap, label: 'Has student loans' },
+    { key: 'hasCollections', icon: CreditCard, label: 'Has collection notices' },
+    { key: 'hasDigitalWallets', icon: Wallet, label: 'Uses Venmo, PayPal, or Cash App' },
+    ...(info.chapterType === '13' ? [
+      { key: 'mortgageInArrears' as const, icon: AlertTriangle, label: 'Behind on mortgage', ch13: true },
+      { key: 'hasRentalIncome' as const, icon: Building, label: 'Has rental income', ch13: true },
+      { key: 'hasDomesticSupport' as const, icon: Heart, label: 'Pays or receives alimony/child support', ch13: true },
+    ] : []),
+  ];
 
   return (
     <>
@@ -432,13 +423,11 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   <Step1Form
                     info={info}
                     setInfo={setInfo}
-                    isJointFiling={isJointFiling}
-                    onToggleJoint={(v) => setAnswers(prev => ({ ...prev, filingJointly: v }))}
                     clientLanguage={clientLanguage}
                     setClientLanguage={setClientLanguage}
                   />
                   <div className="flex justify-end mt-6">
-                    <Button onClick={() => { setStep(2); setQuestionIdx(0); setShowSummary(false); }} disabled={!step1Valid}>
+                    <Button onClick={() => { setStep(2); setShowSummary(false); }} disabled={!step1Valid}>
                       Next <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
@@ -447,74 +436,59 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
               {step === 2 && !showSummary && (
                 <motion.div
-                  key={`q-${questionIdx}`}
+                  key="checkboxes"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
-                  className="mt-8"
+                  className="mt-4"
                 >
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground font-body mb-2">
-                      Question {questionIdx + 1} of {INTAKE_QUESTIONS.length}
-                    </p>
-                    <h3 className="font-display font-bold text-xl text-foreground mb-8">
-                      {currentQ.question}
-                    </h3>
-                    <div className="flex gap-4 justify-center">
-                      <button
-                        onClick={() => handleAnswer(currentQ.key, true)}
-                        className={cn(
-                          'w-32 h-16 rounded-2xl text-lg font-bold font-display transition-all border-2',
-                          answers[currentQ.key] === true
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-secondary text-foreground border-border hover:border-primary/50'
-                        )}
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => handleAnswer(currentQ.key, false)}
-                        className={cn(
-                          'w-32 h-16 rounded-2xl text-lg font-bold font-display transition-all border-2',
-                          answers[currentQ.key] === false
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-secondary text-foreground border-border hover:border-primary/50'
-                        )}
-                      >
-                        No
-                      </button>
-                    </div>
+                  <h3 className="font-display font-bold text-xl text-foreground mb-1">
+                    About this client
+                  </h3>
+                  <p className="text-sm text-muted-foreground font-body mb-5">
+                    Check everything that applies. We'll build the right document checklist automatically.
+                  </p>
 
-                    <div className="flex justify-center gap-2 mt-8">
-                      {INTAKE_QUESTIONS.map((_, i) => (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {checkboxOptions.map(({ key, icon: Icon, label, ch13 }) => {
+                      const isChecked = answers[key] === true;
+                      return (
                         <button
-                          key={i}
-                          onClick={() => { if (answers[INTAKE_QUESTIONS[i].key] !== undefined || i <= questionIdx) setQuestionIdx(i); }}
-                          className={cn(
-                            'w-2 h-2 rounded-full transition-all',
-                            i === questionIdx ? 'bg-primary w-6' : answers[INTAKE_QUESTIONS[i].key] !== undefined ? 'bg-primary/50' : 'bg-secondary'
+                          key={key}
+                          type="button"
+                          onClick={() => setAnswers(prev => ({ ...prev, [key]: !prev[key] }))}
+                          className={`flex items-center gap-2.5 p-3 rounded-xl text-left transition-all border-2 ${
+                            isChecked
+                              ? 'border-primary/50 bg-primary/5 text-foreground'
+                              : 'border-transparent surface-card text-muted-foreground hover:border-border'
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${isChecked ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <span className="font-body text-[13px] leading-tight">{label}</span>
+                          {ch13 && (
+                            <span className="ml-auto text-[9px] bg-warning/10 text-warning rounded px-1 py-0.5 flex-shrink-0">13</span>
                           )}
-                        />
-                      ))}
-                    </div>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="flex justify-between mt-8">
-                    <Button variant="ghost" onClick={() => {
-                      if (questionIdx > 0) setQuestionIdx(questionIdx - 1);
-                      else setStep(1);
-                    }}>
+                  <p className="text-[11px] text-muted-foreground font-body mt-4">
+                    Not sure? Leave it unchecked — you can always add documents manually after the case is created.
+                  </p>
+
+                  <div className="flex justify-between mt-6">
+                    <Button variant="ghost" onClick={() => setStep(1)}>
                       <ArrowLeft className="w-4 h-4 mr-1" /> Back
                     </Button>
-                    {allAnswered && (
-                      <Button onClick={() => setShowSummary(true)}>
-                        Review Checklist <ArrowRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    )}
+                    <Button onClick={() => setShowSummary(true)}>
+                      Review Checklist <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
                   </div>
                 </motion.div>
               )}
+
 
               {step === 2 && showSummary && (
                 <motion.div
@@ -596,10 +570,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   </div>
 
                   <div className="flex justify-between mt-6">
-                    <Button variant="ghost" onClick={() => {
-                      setShowSummary(false);
-                      setQuestionIdx(INTAKE_QUESTIONS.length - 1);
-                    }}>
+                    <Button variant="ghost" onClick={() => setShowSummary(false)}>
                       <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
                     </Button>
                     <Button onClick={handleCreate}>
@@ -679,11 +650,10 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, la
 };
 
 // ── Step 1 Form Component ────────────────────────────────────────────
-const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint, clientLanguage, setClientLanguage }: {
+const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLanguage }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
   isJointFiling?: boolean;
-  onToggleJoint?: (v: boolean) => void;
   clientLanguage?: 'en' | 'es';
   setClientLanguage?: (lang: 'en' | 'es') => void;
 }) => {
@@ -826,47 +796,7 @@ const Step1Form = ({ info, setInfo, isJointFiling, onToggleJoint, clientLanguage
         <p className="text-xs text-muted-foreground mt-1">Required for case tracking</p>
       </div>
 
-      {/* Joint Filing Toggle */}
-      {onToggleJoint && (
-        <div className="sm:col-span-2 mt-2">
-          <div className="surface-card p-4 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-foreground text-sm font-bold">Filing jointly with a spouse?</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">Joint filings require additional spouse documents</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => onToggleJoint(true)}
-                  className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-bold transition-all border-2',
-                    isJointFiling
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'
-                  )}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onToggleJoint(false)}
-                  className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-bold transition-all border-2',
-                    isJointFiling === false
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'
-                  )}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Spouse Fields */}
+      {/* Spouse Fields — only when joint filing is selected on step 2 */}
       {isJointFiling && (
         <>
           <div className="sm:col-span-2 mt-2">
