@@ -367,6 +367,8 @@ const logNotification = async (p: NotificationPayload, emailResult: any, smsResu
     deadline_reminder_7d: '7-day deadline reminder',
     deadline_reminder_3d: '3-day deadline reminder',
     inactivity_48h: '48-hour inactivity reminder',
+    inactivity_96h: '96-hour inactivity reminder',
+    never_started: 'Never-started reminder',
     general_reminder: 'General reminder',
     firm_welcome: 'Firm welcome email',
   };
