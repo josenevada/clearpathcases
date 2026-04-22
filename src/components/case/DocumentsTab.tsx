@@ -626,9 +626,22 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   <span className="ml-1.5 text-xs text-muted-foreground">({unapprovedCount} pending)</span>
                 </Button>
               )}
-              <Button onClick={() => handleExportCheck('zip')}>
-                <Download className="w-4 h-4 mr-1" /> Download ZIP
-              </Button>
+              {getPlanLimits(plan).batchExport ? (
+                <Button onClick={() => handleExportCheck('zip')}>
+                  <Download className="w-4 h-4 mr-1" /> Download ZIP
+                </Button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button disabled variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-1.5" />Download ZIP
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Available on Professional and Firm plans</TooltipContent>
+                </Tooltip>
+              )}
             </div>
           )}
         </div>

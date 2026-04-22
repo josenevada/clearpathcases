@@ -73,7 +73,7 @@ const ExemptionsTab = ({ caseData, onRefresh }: ExemptionsTabProps) => {
   const [editingAsset, setEditingAsset] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const isGated = plan === 'solo' || plan === 'starter';
+  const isGated = plan === 'starter';
 
   const fetchData = useCallback(async () => {
     setLoading(true);

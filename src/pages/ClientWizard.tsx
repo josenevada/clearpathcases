@@ -18,6 +18,7 @@ import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { getPlanLimits } from '@/lib/plan-limits';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { sendMomentumSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
@@ -227,6 +228,7 @@ const ClientWizard = () => {
   const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
   const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
   const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
+  const [firmPlan, setFirmPlan] = useState<string>('starter');
   const [firmDisplayName, setFirmDisplayName] = useState<string | null>(null);
   const targetFixItemId = searchParams.get('fix');
 
@@ -282,7 +284,7 @@ const ClientWizard = () => {
         if (caseRow.firm_id) {
           const { data: firmData } = await supabase
             .from('firms')
-            .select('name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
+            .select('name, plan_name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
             .eq('id', caseRow.firm_id)
             .maybeSingle();
 
@@ -292,6 +294,7 @@ const ClientWizard = () => {
             setCounselingAttorneyCode(firmData.counseling_attorney_code || null);
           }
           setFirmDisplayName(firmData?.name || null);
+          setFirmPlan(firmData?.plan_name || 'starter');
         }
 
         const { data: checklistRows } = await supabase
@@ -1916,6 +1919,7 @@ const ClientWizard = () => {
                 </div>
               ) : isBankStatements && !currentItemHasOpenCorrection ? (
                 <div className="space-y-4">
+                  {getPlanLimits(firmPlan).plaidBank ? (
                   <PlaidBankConnect
                     caseId={caseData.id}
                     clientName={caseData.clientName}
@@ -2011,6 +2015,9 @@ const ClientWizard = () => {
                       ) : null
                     }
                   />
+                  ) : (
+                    <p className="text-[13px] text-muted-foreground text-center py-4">Bank connection is available on Professional and Firm plans.</p>
+                  )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <button
                       onClick={() => setShowNaFlow(true)}
