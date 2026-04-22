@@ -10,6 +10,8 @@ type NotificationType =
   | 'deadline_reminder_7d'
   | 'deadline_reminder_3d'
   | 'inactivity_48h'
+  | 'inactivity_96h'
+  | 'never_started'
   | 'firm_welcome'
   | 'general_reminder'
   | 'item_reminder';
@@ -153,16 +155,46 @@ const getEmailContent = (p: NotificationPayload): { subject: string; html: strin
 
     case 'inactivity_48h':
       return {
-        subject: 'Your document portal is waiting',
+        subject: "You're almost done — pick up where you left off",
         html: emailWrapper(`
-          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your document portal is waiting</h1>
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">You're almost there</h1>
           <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
             Hi ${firstName},
           </p>
           <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
-            Just a friendly reminder — your attorney still needs a few more documents from you. Most clients finish in under 30 minutes.
+            You started uploading your documents but haven't finished. Pick up exactly where you left off — most clients wrap up in just a few minutes.
           </p>
           ${tealButton('Continue Where I Left Off', p.portalLink)}
+        `),
+      };
+
+    case 'inactivity_96h':
+      return {
+        subject: 'Your attorney is waiting on your documents',
+        html: emailWrapper(`
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your attorney is waiting on you</h1>
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
+            Hi ${firstName},
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            Your attorney can't move forward with your case until they have your remaining documents. It only takes a few minutes to finish from your phone.
+          </p>
+          ${tealButton('Finish My Documents', p.portalLink)}
+        `),
+      };
+
+    case 'never_started':
+      return {
+        subject: 'Your document portal is ready and waiting',
+        html: emailWrapper(`
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your portal is ready</h1>
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
+            Hi ${firstName},
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            Your secure document portal is ready and waiting for you. It takes about 15 minutes and you can do it right now from your phone.
+          </p>
+          ${tealButton('Open My Portal', p.portalLink)}
         `),
       };
 
@@ -215,20 +247,28 @@ const getEmailContent = (p: NotificationPayload): { subject: string; html: strin
 const getSmsMessage = (payload: NotificationPayload): string | null => {
   const firstName = payload.clientName?.split(' ')[0] || 'there';
   const link = payload.portalLink || '';
+  const completionPercent = payload.completionPercent;
   switch (payload.type) {
     case 'client_welcome':
-      return `Hi ${firstName}, your attorney has sent you a secure link to upload your bankruptcy documents. Get started here: ${link} — Reply STOP to opt out.`;
+      return `Hi ${firstName}, your attorney sent you a secure link to upload your bankruptcy documents. Takes about 15 minutes on your phone. Start here: ${link} — Reply STOP to opt out.`;
+    case 'never_started':
+      return `Hi ${firstName}, your document portal is ready and waiting. It takes about 15 minutes and you can do it from your phone right now: ${link} — Reply STOP to opt out.`;
     case 'inactivity_48h':
+      return `Hi ${firstName}, you started your document upload but haven't finished. You're almost there — pick up where you left off: ${link} — Reply STOP to opt out.`;
+    case 'inactivity_96h':
+      return `Hi ${firstName}, your attorney is waiting on your documents before they can move forward with your case. It only takes a few minutes to finish: ${link} — Reply STOP to opt out.`;
     case 'deadline_reminder_7d':
+      return `Hi ${firstName}, your filing deadline is in 7 days. Your documents are ${completionPercent ?? 0}% complete — finish here: ${link} — Reply STOP to opt out.`;
     case 'deadline_reminder_3d':
-    case 'general_reminder':
-      return `Hi ${firstName}, you have documents still missing for your bankruptcy case. Complete your submission here: ${link} — Reply STOP to opt out.`;
-    case 'correction_request':
-      return `Hi ${firstName}, your attorney has requested a correction on one of your documents. Please review and resubmit here: ${link} — Reply STOP to opt out.`;
+      return `Hi ${firstName}, IMPORTANT — your filing deadline is in 3 days and documents are still missing. Please upload now: ${link} — Reply STOP to opt out.`;
     case 'item_reminder': {
       const item = payload.itemLabel || 'a document';
-      return `Hi ${firstName}, your attorney still needs your ${item} to move forward with your case. Upload it here: ${link} — Reply STOP to opt out.`;
+      return `Hi ${firstName}, your attorney still needs your ${item} to move forward. Upload it here (takes 2 minutes): ${link} — Reply STOP to opt out.`;
     }
+    case 'correction_request':
+      return `Hi ${firstName}, one quick update needed on your documents before your case can move forward. Fix it here: ${link} — Reply STOP to opt out.`;
+    case 'general_reminder':
+      return `Hi ${firstName}, your attorney is waiting on a few more documents. Finish your upload here: ${link} — Reply STOP to opt out.`;
     default:
       return `Hi ${firstName}, your attorney's office sent you a message regarding your bankruptcy case: ${link} — Reply STOP to opt out.`;
   }
@@ -327,6 +367,8 @@ const logNotification = async (p: NotificationPayload, emailResult: any, smsResu
     deadline_reminder_7d: '7-day deadline reminder',
     deadline_reminder_3d: '3-day deadline reminder',
     inactivity_48h: '48-hour inactivity reminder',
+    inactivity_96h: '96-hour inactivity reminder',
+    never_started: 'Never-started reminder',
     general_reminder: 'General reminder',
     firm_welcome: 'Firm welcome email',
   };
