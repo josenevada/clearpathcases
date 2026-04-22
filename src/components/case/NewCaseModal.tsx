@@ -159,6 +159,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     hasRetirement: answers.hasRetirement ?? false,
     hasStudentLoans: answers.hasStudentLoans ?? false,
     filingJointly: answers.filingJointly ?? false,
+    isEmployed: answers.isEmployed ?? true,
+    hasDigitalWallets: answers.hasDigitalWallets ?? true,
+    hasCollections: answers.hasCollections ?? true,
     mortgageInArrears: answers.mortgageInArrears ?? false,
   };
 

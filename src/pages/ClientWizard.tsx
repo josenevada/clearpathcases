@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 const EMPLOYER_LABEL = 'Employer Name';
 const SSN_LABEL = 'Social Security Card';
 const SSN_LABEL_LEGACY = 'Social Security Number';
-const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address';
+const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address' || label === 'Employer Name (Spouse)';
 
 // ─── i18n helpers ────────────────────────────────────────────────────
 const t = (en: string, es: string, lang: string) => lang === 'es' ? es : en;
