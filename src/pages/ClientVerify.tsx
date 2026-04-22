@@ -1,6 +1,6 @@
 // CLIENT FACING — no billing UI permitted
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,8 @@ const validateDob = (dateStr: string): string | null => {
 const ClientVerify = () => {
   const { caseCode } = useParams<{ caseCode: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fixItemId = searchParams.get('fix');
   const [dob, setDob] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,13 +41,21 @@ const ClientVerify = () => {
   const [caseId, setCaseId] = useState<string | null>(null);
   const [isSpouseLink, setIsSpouseLink] = useState(false);
 
+  // Build a query string that preserves both ?debtor=spouse and ?fix=<id>
+  const buildPortalQuery = (spouse: boolean) => {
+    const params = new URLSearchParams();
+    if (spouse) params.set('debtor', 'spouse');
+    if (fixItemId) params.set('fix', fixItemId);
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  };
+
   useEffect(() => {
     if (!caseCode) return;
 
     const existingSession = getClientSession(caseCode);
     if (existingSession?.verified) {
-      const suffix = isSpouseLink ? '?debtor=spouse' : '';
-      navigate(`/client-portal/${caseCode}/${existingSession.caseId}${suffix}`, { replace: true });
+      navigate(`/client-portal/${caseCode}/${existingSession.caseId}${buildPortalQuery(isSpouseLink)}`, { replace: true });
       return;
     }
 
@@ -127,8 +137,7 @@ const ClientVerify = () => {
 
     if (expectedDob === dob) {
       setClientSession(caseCode, caseRow.id);
-      const suffix = isSpouseLink ? '?debtor=spouse' : '';
-      navigate(`/client-portal/${caseCode}/${caseRow.id}${suffix}`, { replace: true });
+      navigate(`/client-portal/${caseCode}/${caseRow.id}${buildPortalQuery(isSpouseLink)}`, { replace: true });
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
