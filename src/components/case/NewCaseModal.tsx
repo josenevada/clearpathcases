@@ -489,81 +489,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                 </motion.div>
               )}
 
-              {/* legacy block start */}
-              {false && (
-                <motion.div key="legacy">
-                  <div>
-                    <p>
-                      placeholder
-                <motion.div
-                  key={`q-${questionIdx}`}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-8"
-                >
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground font-body mb-2">
-                      Question {questionIdx + 1} of {INTAKE_QUESTIONS.length}
-                    </p>
-                    <h3 className="font-display font-bold text-xl text-foreground mb-8">
-                      {currentQ.question}
-                    </h3>
-                    <div className="flex gap-4 justify-center">
-                      <button
-                        onClick={() => handleAnswer(currentQ.key, true)}
-                        className={cn(
-                          'w-32 h-16 rounded-2xl text-lg font-bold font-display transition-all border-2',
-                          answers[currentQ.key] === true
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-secondary text-foreground border-border hover:border-primary/50'
-                        )}
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => handleAnswer(currentQ.key, false)}
-                        className={cn(
-                          'w-32 h-16 rounded-2xl text-lg font-bold font-display transition-all border-2',
-                          answers[currentQ.key] === false
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-secondary text-foreground border-border hover:border-primary/50'
-                        )}
-                      >
-                        No
-                      </button>
-                    </div>
-
-                    <div className="flex justify-center gap-2 mt-8">
-                      {INTAKE_QUESTIONS.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => { if (answers[INTAKE_QUESTIONS[i].key] !== undefined || i <= questionIdx) setQuestionIdx(i); }}
-                          className={cn(
-                            'w-2 h-2 rounded-full transition-all',
-                            i === questionIdx ? 'bg-primary w-6' : answers[INTAKE_QUESTIONS[i].key] !== undefined ? 'bg-primary/50' : 'bg-secondary'
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between mt-8">
-                    <Button variant="ghost" onClick={() => {
-                      if (questionIdx > 0) setQuestionIdx(questionIdx - 1);
-                      else setStep(1);
-                    }}>
-                      <ArrowLeft className="w-4 h-4 mr-1" /> Back
-                    </Button>
-                    {allAnswered && (
-                      <Button onClick={() => setShowSummary(true)}>
-                        Review Checklist <ArrowRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    )}
-                  </div>
-                </motion.div>
-              )}
 
               {step === 2 && showSummary && (
                 <motion.div
@@ -645,10 +570,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   </div>
 
                   <div className="flex justify-between mt-6">
-                    <Button variant="ghost" onClick={() => {
-                      setShowSummary(false);
-                      setQuestionIdx(INTAKE_QUESTIONS.length - 1);
-                    }}>
+                    <Button variant="ghost" onClick={() => setShowSummary(false)}>
+                      <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
+                    </Button>
                       <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
                     </Button>
                     <Button onClick={handleCreate}>
