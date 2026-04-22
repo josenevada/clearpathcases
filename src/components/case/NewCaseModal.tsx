@@ -364,7 +364,23 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     resetAndClose();
   };
 
-  const currentQ = INTAKE_QUESTIONS[questionIdx];
+  const checkboxOptions: Array<{ key: keyof IntakeAnswers; icon: typeof Briefcase; label: string; ch13?: boolean }> = [
+    { key: 'isEmployed', icon: Briefcase, label: 'Currently employed' },
+    { key: 'filingJointly', icon: Users, label: 'Filing jointly with spouse' },
+    { key: 'ownsRealEstate', icon: Home, label: 'Owns real estate' },
+    { key: 'isRenting', icon: Building2, label: 'Renting (no mortgage)' },
+    { key: 'ownsVehicle', icon: Car, label: 'Owns a vehicle' },
+    { key: 'selfEmployed', icon: TrendingUp, label: 'Self-employed / business income' },
+    { key: 'hasRetirement', icon: PiggyBank, label: 'Has retirement or investment accounts' },
+    { key: 'hasStudentLoans', icon: GraduationCap, label: 'Has student loans' },
+    { key: 'hasCollections', icon: CreditCard, label: 'Has collection notices' },
+    { key: 'hasDigitalWallets', icon: Wallet, label: 'Uses Venmo, PayPal, or Cash App' },
+    ...(info.chapterType === '13' ? [
+      { key: 'mortgageInArrears' as const, icon: AlertTriangle, label: 'Behind on mortgage', ch13: true },
+      { key: 'hasRentalIncome' as const, icon: Building, label: 'Has rental income', ch13: true },
+      { key: 'hasDomesticSupport' as const, icon: Heart, label: 'Pays or receives alimony/child support', ch13: true },
+    ] : []),
+  ];
 
   return (
     <>
@@ -407,13 +423,11 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   <Step1Form
                     info={info}
                     setInfo={setInfo}
-                    isJointFiling={isJointFiling}
-                    onToggleJoint={(v) => setAnswers(prev => ({ ...prev, filingJointly: v }))}
                     clientLanguage={clientLanguage}
                     setClientLanguage={setClientLanguage}
                   />
                   <div className="flex justify-end mt-6">
-                    <Button onClick={() => { setStep(2); setQuestionIdx(0); setShowSummary(false); }} disabled={!step1Valid}>
+                    <Button onClick={() => { setStep(2); setShowSummary(false); }} disabled={!step1Valid}>
                       Next <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
@@ -421,6 +435,66 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
               )}
 
               {step === 2 && !showSummary && (
+                <motion.div
+                  key="checkboxes"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-4"
+                >
+                  <h3 className="font-display font-bold text-xl text-foreground mb-1">
+                    About this client
+                  </h3>
+                  <p className="text-sm text-muted-foreground font-body mb-5">
+                    Check everything that applies. We'll build the right document checklist automatically.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {checkboxOptions.map(({ key, icon: Icon, label, ch13 }) => {
+                      const isChecked = answers[key] === true;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setAnswers(prev => ({ ...prev, [key]: !prev[key] }))}
+                          className={`flex items-center gap-2.5 p-3 rounded-xl text-left transition-all border-2 ${
+                            isChecked
+                              ? 'border-primary/50 bg-primary/5 text-foreground'
+                              : 'border-transparent surface-card text-muted-foreground hover:border-border'
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${isChecked ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <span className="font-body text-[13px] leading-tight">{label}</span>
+                          {ch13 && (
+                            <span className="ml-auto text-[9px] bg-warning/10 text-warning rounded px-1 py-0.5 flex-shrink-0">13</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground font-body mt-4">
+                    Not sure? Leave it unchecked — you can always add documents manually after the case is created.
+                  </p>
+
+                  <div className="flex justify-between mt-6">
+                    <Button variant="ghost" onClick={() => setStep(1)}>
+                      <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    </Button>
+                    <Button onClick={() => setShowSummary(true)}>
+                      Review Checklist <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* legacy block start */}
+              {false && (
+                <motion.div key="legacy">
+                  <div>
+                    <p>
+                      placeholder
                 <motion.div
                   key={`q-${questionIdx}`}
                   initial={{ opacity: 0, x: 20 }}
