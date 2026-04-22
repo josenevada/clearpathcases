@@ -116,47 +116,34 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     }
   }, [teamLoaded, defaultParalegal, defaultAttorney]);
 
-  const [answers, setAnswers] = useState<Record<string, boolean | undefined>>({});
-  const [questionIdx, setQuestionIdx] = useState(0);
+  const [answers, setAnswers] = useState<IntakeAnswers>({
+    isEmployed: false,
+    ownsRealEstate: false,
+    ownsVehicle: false,
+    selfEmployed: false,
+    hasRetirement: false,
+    hasStudentLoans: false,
+    hasDigitalWallets: false,
+    hasCollections: false,
+    isRenting: false,
+    hasRentalIncome: false,
+    hasDomesticSupport: false,
+    filingJointly: false,
+    mortgageInArrears: false,
+  });
   const [showSummary, setShowSummary] = useState(false);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
 
-  const INTAKE_QUESTIONS = useMemo(() => {
-    const base = [...BASE_INTAKE_QUESTIONS];
-    // Ch.13: only ask about mortgage arrears if client owns real estate
-    if (info.chapterType === '13' && answers.ownsRealEstate === true) {
-      const realEstateIdx = base.findIndex(q => q.key === 'ownsRealEstate');
-      base.splice(realEstateIdx + 1, 0, ...CH13_EXTRA_QUESTIONS);
-    }
-    return base;
-  }, [info.chapterType, answers.ownsRealEstate]);
-
   const clientName = buildClientName(info.firstName, info.lastName);
-  const isDirty = info.firstName || info.lastName || info.clientEmail || Object.keys(answers).length > 0;
+  const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
 
   const isJointFiling = answers.filingJointly === true;
   const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline &&
     (!isJointFiling || (info.spouseName && info.spouseEmail && info.spouseDob));
 
-  const allAnswered = INTAKE_QUESTIONS.every(q => answers[q.key] !== undefined);
-
-  const intakeAnswers: IntakeAnswers = {
-    ownsRealEstate: answers.ownsRealEstate ?? false,
-    ownsVehicle: answers.ownsVehicle ?? false,
-    selfEmployed: answers.selfEmployed ?? false,
-    hasRetirement: answers.hasRetirement ?? false,
-    hasStudentLoans: answers.hasStudentLoans ?? false,
-    filingJointly: answers.filingJointly ?? false,
-    isEmployed: answers.isEmployed ?? false,
-    hasDigitalWallets: answers.hasDigitalWallets ?? false,
-    hasCollections: answers.hasCollections ?? false,
-    mortgageInArrears: answers.mortgageInArrears ?? false,
-  };
-
   const customChecklist = useMemo(() => {
-    if (!allAnswered) return [];
-    return buildCustomChecklist(intakeAnswers, info.chapterType);
-  }, [allAnswered, info.chapterType, ...Object.values(answers)]);
+    return buildCustomChecklist(answers, info.chapterType);
+  }, [answers, info.chapterType]);
 
   // Reset excluded items when checklist changes
   useEffect(() => {
