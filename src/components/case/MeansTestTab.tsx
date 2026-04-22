@@ -104,7 +104,7 @@ const MeansTestTab = ({ caseData, onRefresh }: MeansTestTabProps) => {
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Gate: Professional and Firm tiers only
-  const isGated = plan === 'solo' || plan === 'starter';
+  const isGated = plan === 'starter';
 
   const fetchData = useCallback(async () => {
     setLoading(true);

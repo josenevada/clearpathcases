@@ -460,7 +460,7 @@ const ParalegalDashboard = () => {
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
         featureName={`Active Case Limit Reached`}
-        description={`You have reached the ${getPlanLimits(plan).activeCases === 3 ? 'Solo' : 'Starter'} plan limit of ${getPlanLimits(plan).activeCases} active cases. Upgrade to ${getPlanLimits(plan).activeCases === 3 ? 'Starter' : 'Professional'} to add more.`}
+        description={`You've reached the ${plan === 'starter' ? 'Starter' : 'Professional'} plan limit of ${getPlanLimits(plan).activeCases} active cases. Upgrade to ${plan === 'starter' ? 'Professional' : 'Firm'} to add more.`}
       />
     </div>
   );

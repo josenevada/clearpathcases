@@ -227,6 +227,7 @@ const ClientWizard = () => {
   const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
   const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
   const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
+  const [firmPlan, setFirmPlan] = useState<string>('starter');
   const [firmDisplayName, setFirmDisplayName] = useState<string | null>(null);
   const targetFixItemId = searchParams.get('fix');
 
@@ -282,7 +283,7 @@ const ClientWizard = () => {
         if (caseRow.firm_id) {
           const { data: firmData } = await supabase
             .from('firms')
-            .select('name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
+            .select('name, plan_name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
             .eq('id', caseRow.firm_id)
             .maybeSingle();
 
@@ -292,6 +293,7 @@ const ClientWizard = () => {
             setCounselingAttorneyCode(firmData.counseling_attorney_code || null);
           }
           setFirmDisplayName(firmData?.name || null);
+          setFirmPlan(firmData?.plan_name || 'starter');
         }
 
         const { data: checklistRows } = await supabase

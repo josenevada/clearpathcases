@@ -1,5 +1,5 @@
 // ─── Subscription Plan Limits ─────────────────────────────────────────
-export type PlanName = 'solo' | 'starter' | 'professional' | 'firm';
+export type PlanName = 'starter' | 'professional' | 'firm';
 
 export interface PlanLimits {
   activeCases: number;
@@ -21,23 +21,6 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
-  solo: {
-    activeCases: 3,
-    staffUsers: 1,
-    advancedNotifications: false,
-    bulkActions: false,
-    whiteLabel: false,
-    customTemplatesUnlimited: false,
-    prioritySupport: false,
-    dedicatedOnboarding: false,
-    courtPackets: false,
-    aiFormFilling: false,
-    plaidBank: false,
-    meansTest: false,
-    exemptionOptimizer: false,
-    batchExport: false,
-    eSignatures: false,
-  },
   starter: {
     activeCases: 8,
     staffUsers: 2,
@@ -92,20 +75,19 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
 };
 
 export const PLAN_DISPLAY_NAMES: Record<PlanName, string> = {
-  solo: 'Solo',
   starter: 'Starter',
   professional: 'Professional',
   firm: 'Firm',
 };
 
 export function getPlanLimits(plan: string | null): PlanLimits {
-  const key = (plan || 'solo').toLowerCase() as PlanName;
-  return PLAN_LIMITS[key] || PLAN_LIMITS.solo;
+  const key = (plan || 'starter').toLowerCase() as PlanName;
+  return PLAN_LIMITS[key] || PLAN_LIMITS.starter;
 }
 
 export function getPlanDisplayName(plan: string | null): string {
-  const key = (plan || 'solo').toLowerCase() as PlanName;
-  return PLAN_DISPLAY_NAMES[key] || 'Solo';
+  const key = (plan || 'starter').toLowerCase() as PlanName;
+  return PLAN_DISPLAY_NAMES[key] || 'Starter';
 }
 
 /** Feature gating info for upgrade cards */

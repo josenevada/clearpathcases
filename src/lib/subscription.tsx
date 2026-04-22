@@ -65,7 +65,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
                 setState({
                   subscribed: true,
                   status: 'trial',
-                  plan: firm.plan_name || 'solo',
+                  plan: firm.plan_name || 'starter',
                   daysLeft,
                 });
                 setLoading(false);
@@ -81,7 +81,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
               setState({
                 subscribed: true,
                 status: 'active',
-                plan: firm.plan_name || 'solo',
+                plan: firm.plan_name || 'starter',
                 daysLeft: null,
               });
               setLoading(false);
