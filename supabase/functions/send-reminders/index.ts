@@ -82,22 +82,33 @@ Deno.serve(async (req) => {
       notificationType = 'deadline_reminder_7d';
     }
 
-    // 48-hour inactivity check
+    // "Never started" detection — welcomed but never opened portal
+    if (!notificationType && !c.last_client_activity && c.created_at) {
+      const createdAt = new Date(c.created_at);
+      const hoursSinceCreated = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceCreated >= 24) {
+        notificationType = 'never_started';
+      }
+    }
+
+    // Inactivity checks (48h first nudge, 96h second nudge)
     if (!notificationType && c.last_client_activity) {
       const lastActivity = new Date(c.last_client_activity);
       const hoursSince = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60);
-      if (hoursSince >= 48) {
+      if (hoursSince >= 96 && hoursSince < 120) {
+        notificationType = 'inactivity_96h';
+      } else if (hoursSince >= 48 && hoursSince < 96) {
         notificationType = 'inactivity_48h';
       }
     }
 
     if (!notificationType) continue;
 
-    // Check if we already sent this type today (prevent duplicates)
+    // Type-specific dedup: don't re-send the SAME type today, but allow different types
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
     const logRes = await fetch(
-      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${c.id}&event_type=eq.reminder_sent&created_at=gte.${todayStart.toISOString()}&select=id&limit=1`,
+      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${c.id}&event_type=eq.reminder_sent&created_at=gte.${todayStart.toISOString()}&description=ilike.*${notificationType}*&select=id&limit=1`,
       {
         headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
       },
