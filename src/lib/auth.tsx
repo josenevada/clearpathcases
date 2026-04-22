@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { hydrateDocTemplatesFromFirm } from '@/lib/store';
 import type { Session, User } from '@supabase/supabase-js';
 
 export type UserRole = 'super_admin' | 'paralegal' | 'attorney';
@@ -84,6 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setUser(appUser);
+      // Hydrate firm-wide document templates cache from Supabase (non-blocking).
+      void hydrateDocTemplatesFromFirm(appUser.firmId);
     } catch {
       sessionStorage.setItem(AUTH_SETUP_ERROR_KEY, 'Account setup incomplete. Please sign up again.');
       await supabase.auth.signOut();

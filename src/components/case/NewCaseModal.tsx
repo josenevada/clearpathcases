@@ -61,15 +61,18 @@ interface IntakeQuestionDef {
 }
 
 const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
+  { key: 'isEmployed', question: 'Is this client currently employed?' },
   { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
   { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
   { key: 'selfEmployed', question: 'Is this client self-employed or do they own a business?' },
   { key: 'hasRetirement', question: 'Does this client have retirement or investment accounts?' },
   { key: 'hasStudentLoans', question: 'Does this client have student loans?' },
+  { key: 'hasDigitalWallets', question: 'Does this client use Venmo, PayPal, Cash App, or other digital wallets?' },
+  { key: 'hasCollections', question: 'Does this client have any accounts in collections or collection notices?' },
 ];
 
 const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
-  { key: 'mortgageInArrears', question: 'Is this client\'s mortgage currently in arrears or behind on payments?' },
+  { key: 'mortgageInArrears', question: 'Is this client behind on their mortgage payments?' },
 ];
 
 const buildClientName = (first: string, last: string) =>
@@ -136,12 +139,13 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const INTAKE_QUESTIONS = useMemo(() => {
     const base = [...BASE_INTAKE_QUESTIONS];
-    if (info.chapterType === '13') {
+    // Ch.13: only ask about mortgage arrears if client owns real estate
+    if (info.chapterType === '13' && answers.ownsRealEstate === true) {
       const realEstateIdx = base.findIndex(q => q.key === 'ownsRealEstate');
       base.splice(realEstateIdx + 1, 0, ...CH13_EXTRA_QUESTIONS);
     }
     return base;
-  }, [info.chapterType]);
+  }, [info.chapterType, answers.ownsRealEstate]);
 
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = info.firstName || info.lastName || info.clientEmail || Object.keys(answers).length > 0;
@@ -159,9 +163,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     hasRetirement: answers.hasRetirement ?? false,
     hasStudentLoans: answers.hasStudentLoans ?? false,
     filingJointly: answers.filingJointly ?? false,
-    isEmployed: answers.isEmployed ?? true,
-    hasDigitalWallets: answers.hasDigitalWallets ?? true,
-    hasCollections: answers.hasCollections ?? true,
+    isEmployed: answers.isEmployed ?? false,
+    hasDigitalWallets: answers.hasDigitalWallets ?? false,
+    hasCollections: answers.hasCollections ?? false,
     mortgageInArrears: answers.mortgageInArrears ?? false,
   };
 
