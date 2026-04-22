@@ -1,7 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2 } from 'lucide-react';
+import {
+  CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2,
+  Briefcase, Users, Home, Building2, Car, TrendingUp, PiggyBank, GraduationCap,
+  CreditCard, Wallet, AlertTriangle, Building, Heart,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -54,26 +58,6 @@ interface TeamMember {
   role: string;
   email: string;
 }
-
-interface IntakeQuestionDef {
-  key: string;
-  question: string;
-}
-
-const BASE_INTAKE_QUESTIONS: IntakeQuestionDef[] = [
-  { key: 'isEmployed', question: 'Is this client currently employed?' },
-  { key: 'ownsRealEstate', question: 'Does this client own real estate?' },
-  { key: 'ownsVehicle', question: 'Does this client own a vehicle?' },
-  { key: 'selfEmployed', question: 'Is this client self-employed or do they own a business?' },
-  { key: 'hasRetirement', question: 'Does this client have retirement or investment accounts?' },
-  { key: 'hasStudentLoans', question: 'Does this client have student loans?' },
-  { key: 'hasDigitalWallets', question: 'Does this client use Venmo, PayPal, Cash App, or other digital wallets?' },
-  { key: 'hasCollections', question: 'Does this client have any accounts in collections or collection notices?' },
-];
-
-const CH13_EXTRA_QUESTIONS: IntakeQuestionDef[] = [
-  { key: 'mortgageInArrears', question: 'Is this client behind on their mortgage payments?' },
-];
 
 const buildClientName = (first: string, last: string) =>
   [first, last].filter(Boolean).join(' ').trim();
