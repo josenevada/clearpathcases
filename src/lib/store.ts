@@ -523,6 +523,64 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
     const lastIncomeIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
     if (lastIncomeIdx !== -1) checklist.splice(lastIncomeIdx + 1, 0, ...ch13Income);
 
+    // Monthly expense documentation
+    const ch13Expenses: ChecklistItem[] = [{
+      id: uid(), category: 'Income & Employment',
+      label: 'Monthly Expense Documentation',
+      description: 'Upload documentation of your regular monthly expenses — utility bills, insurance statements, childcare invoices, medical bills, or any other recurring costs.',
+      whyWeNeedThis: 'Your Chapter 13 repayment plan is based on your disposable income — what\'s left after reasonable expenses. The more completely we document your expenses, the more accurate your plan will be.',
+      required: true, files: [], flaggedForAttorney: false, completed: false,
+    }];
+    const expenseInsertIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+    if (expenseInsertIdx !== -1) checklist.splice(expenseInsertIdx + 1, 0, ...ch13Expenses);
+
+    // Most recent tax refund documentation
+    const taxRefundItems: ChecklistItem[] = [{
+      id: uid(), category: 'Bank & Financial Accounts',
+      label: 'Most Recent Tax Refund Amount',
+      description: 'Upload your most recent tax refund — found on your tax return or IRS transcript.',
+      whyWeNeedThis: 'Chapter 13 trustees may claim tax refunds received during your plan period as additional plan payments. Your attorney needs to account for this upfront.',
+      required: false, files: [], flaggedForAttorney: false, completed: false,
+    }];
+    const lastBankIdxRefund = checklist.map(c => c.category).lastIndexOf('Bank & Financial Accounts');
+    if (lastBankIdxRefund !== -1) checklist.splice(lastBankIdxRefund + 1, 0, ...taxRefundItems);
+
+    // Domestic support obligations (conditional)
+    if (answers.hasDomesticSupport) {
+      const dsItems: ChecklistItem[] = [{
+        id: uid(), category: 'Income & Employment',
+        label: 'Domestic Support Order or Agreement',
+        description: 'Upload your divorce decree, court order, or written agreement showing alimony or child support obligations.',
+        whyWeNeedThis: 'Domestic support obligations are priority debts in Chapter 13 and must be current for your plan to be confirmed.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      }];
+      const dsIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+      if (dsIdx !== -1) checklist.splice(dsIdx + 1, 0, ...dsItems);
+    }
+
+    // Rental income (conditional)
+    if (answers.hasRentalIncome) {
+      const rentalIncomeDoc: ChecklistItem = {
+        id: uid(), category: 'Income & Employment',
+        label: 'Rental Income Documentation (Last 6 Months)',
+        description: 'Upload rent receipts, lease agreements, or bank deposits showing rental income for the last 6 months.',
+        whyWeNeedThis: 'Rental income is included in your disposable income calculation for your Chapter 13 repayment plan.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      };
+      const rentalPropDoc: ChecklistItem = {
+        id: uid(), category: 'Assets & Property',
+        label: 'Rental Property Documents',
+        description: 'Upload the deed, mortgage statement, and current lease for any rental properties you own.',
+        whyWeNeedThis: 'Rental properties must be accounted for in your Chapter 13 plan — the mortgage, equity, and income all affect how the plan is structured.',
+        required: true, files: [], flaggedForAttorney: false, completed: false,
+      };
+      const rentalIncIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
+      if (rentalIncIdx !== -1) checklist.splice(rentalIncIdx + 1, 0, rentalIncomeDoc);
+      const rentalPropIdx = checklist.map(c => c.category).lastIndexOf('Assets & Property');
+      if (rentalPropIdx !== -1) checklist.splice(rentalPropIdx + 1, 0, rentalPropDoc);
+      else checklist.push(rentalPropDoc);
+    }
+
     // Property valuation (conditional on owning real estate)
     if (answers.ownsRealEstate) {
       const propItems: ChecklistItem[] = [
