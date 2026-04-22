@@ -10,6 +10,8 @@ type NotificationType =
   | 'deadline_reminder_7d'
   | 'deadline_reminder_3d'
   | 'inactivity_48h'
+  | 'inactivity_96h'
+  | 'never_started'
   | 'firm_welcome'
   | 'general_reminder'
   | 'item_reminder';
