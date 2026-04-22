@@ -271,6 +271,9 @@ export interface IntakeAnswers {
   hasRetirement: boolean;
   hasStudentLoans: boolean;
   filingJointly: boolean;
+  isEmployed: boolean;
+  hasDigitalWallets: boolean;
+  hasCollections: boolean;
   mortgageInArrears?: boolean; // CH.13 only
 }
 
@@ -350,6 +353,9 @@ const exclusionMap: Record<string, string[]> = {
   ownsRealEstate: ['Mortgage Statement or Lease', 'Property Deed'],
   ownsVehicle: ['Vehicle Title or Registration'],
   hasRetirement: ['Investment/Retirement Statements'],
+  isEmployed: ['Pay Stubs (Last 2 Months)', 'Employer Name'],
+  hasDigitalWallets: ['Digital Wallet Statements'],
+  hasCollections: ['Collection Notices'],
 };
 
 export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: ChapterType = '7'): ChecklistItem[] => {
@@ -363,6 +369,9 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
   if (!answers.ownsRealEstate) exclusionMap.ownsRealEstate.forEach(l => labelsToExclude.add(l));
   if (!answers.ownsVehicle) exclusionMap.ownsVehicle.forEach(l => labelsToExclude.add(l));
   if (!answers.hasRetirement) exclusionMap.hasRetirement.forEach(l => labelsToExclude.add(l));
+  if (!answers.isEmployed) exclusionMap.isEmployed.forEach(l => labelsToExclude.add(l));
+  if (!answers.hasDigitalWallets) exclusionMap.hasDigitalWallets.forEach(l => labelsToExclude.add(l));
+  if (!answers.hasCollections) exclusionMap.hasCollections.forEach(l => labelsToExclude.add(l));
 
   let checklist: ChecklistItem[] = items
     .filter(t => !labelsToExclude.has(t.label))
@@ -486,11 +495,15 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
     }
   }
 
-  // Joint filing: duplicate income & ID items for spouse
+  // Joint filing: duplicate income, ID, and core bank statement items for spouse
   if (answers.filingJointly) {
     const spouseItems: ChecklistItem[] = [];
     checklist.forEach(ci => {
-      if (ci.category === 'Income & Employment' || ci.category === 'Personal Identification') {
+      if (
+        ci.category === 'Income & Employment' ||
+        ci.category === 'Personal Identification' ||
+        (ci.category === 'Bank & Financial Accounts' && ci.label === 'Checking/Savings Statements (Last 6 Months)')
+      ) {
         spouseItems.push({
           ...ci,
           id: uid(),
@@ -502,9 +515,12 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
     const lastIncomeIdx = checklist.map(c => c.category).lastIndexOf('Income & Employment');
     const incomeSpouse = spouseItems.filter(s => s.category === 'Income & Employment');
     const idSpouse = spouseItems.filter(s => s.category === 'Personal Identification');
+    const bankSpouse = spouseItems.filter(s => s.category === 'Bank & Financial Accounts');
     if (lastIncomeIdx !== -1) checklist.splice(lastIncomeIdx + 1, 0, ...incomeSpouse);
     const lastIdIdx = checklist.map(c => c.category).lastIndexOf('Personal Identification');
     if (lastIdIdx !== -1) checklist.splice(lastIdIdx + 1, 0, ...idSpouse);
+    const lastBankIdx = checklist.map(c => c.category).lastIndexOf('Bank & Financial Accounts');
+    if (lastBankIdx !== -1) checklist.splice(lastBankIdx + 1, 0, ...bankSpouse);
   }
 
   return checklist;
