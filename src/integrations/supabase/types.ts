@@ -829,6 +829,7 @@ export type Database = {
           created_at: string | null
           default_attorney: string | null
           default_paralegal: string | null
+          document_templates: Json | null
           id: string
           name: string
           phone: string | null
@@ -853,6 +854,7 @@ export type Database = {
           created_at?: string | null
           default_attorney?: string | null
           default_paralegal?: string | null
+          document_templates?: Json | null
           id?: string
           name?: string
           phone?: string | null
@@ -877,6 +879,7 @@ export type Database = {
           created_at?: string | null
           default_attorney?: string | null
           default_paralegal?: string | null
+          document_templates?: Json | null
           id?: string
           name?: string
           phone?: string | null

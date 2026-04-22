@@ -1,4 +1,6 @@
 import { differenceInDays } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 // ─── Types ───────────────────────────────────────────────────────────
 export type ChapterType = '7' | '13';
