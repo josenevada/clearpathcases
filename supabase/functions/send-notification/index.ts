@@ -155,16 +155,46 @@ const getEmailContent = (p: NotificationPayload): { subject: string; html: strin
 
     case 'inactivity_48h':
       return {
-        subject: 'Your document portal is waiting',
+        subject: "You're almost done — pick up where you left off",
         html: emailWrapper(`
-          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your document portal is waiting</h1>
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">You're almost there</h1>
           <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
             Hi ${firstName},
           </p>
           <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
-            Just a friendly reminder — your attorney still needs a few more documents from you. Most clients finish in under 30 minutes.
+            You started uploading your documents but haven't finished. Pick up exactly where you left off — most clients wrap up in just a few minutes.
           </p>
           ${tealButton('Continue Where I Left Off', p.portalLink)}
+        `),
+      };
+
+    case 'inactivity_96h':
+      return {
+        subject: 'Your attorney is waiting on your documents',
+        html: emailWrapper(`
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your attorney is waiting on you</h1>
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
+            Hi ${firstName},
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            Your attorney can't move forward with your case until they have your remaining documents. It only takes a few minutes to finish from your phone.
+          </p>
+          ${tealButton('Finish My Documents', p.portalLink)}
+        `),
+      };
+
+    case 'never_started':
+      return {
+        subject: 'Your document portal is ready and waiting',
+        html: emailWrapper(`
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your portal is ready</h1>
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
+            Hi ${firstName},
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            Your secure document portal is ready and waiting for you. It takes about 15 minutes and you can do it right now from your phone.
+          </p>
+          ${tealButton('Open My Portal', p.portalLink)}
         `),
       };
 
