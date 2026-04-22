@@ -222,7 +222,7 @@ export const hydrateDocTemplatesFromFirm = async (firmId: string): Promise<void>
       .eq('id', firmId)
       .maybeSingle();
     if (error) return;
-    const remote = (data as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
+    const remote = (data as unknown as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
     if (Array.isArray(remote) && remote.length > 0) {
       localStorage.setItem(TEMPLATES_KEY, JSON.stringify(remote));
     }
