@@ -18,6 +18,7 @@ import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { getPlanLimits } from '@/lib/plan-limits';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { sendMomentumSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
@@ -1918,6 +1919,7 @@ const ClientWizard = () => {
                 </div>
               ) : isBankStatements && !currentItemHasOpenCorrection ? (
                 <div className="space-y-4">
+                  {getPlanLimits(firmPlan).plaidBank ? (
                   <PlaidBankConnect
                     caseId={caseData.id}
                     clientName={caseData.clientName}
@@ -2013,6 +2015,9 @@ const ClientWizard = () => {
                       ) : null
                     }
                   />
+                  ) : (
+                    <p className="text-[13px] text-muted-foreground text-center py-4">Bank connection is available on Professional and Firm plans.</p>
+                  )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <button
                       onClick={() => setShowNaFlow(true)}
