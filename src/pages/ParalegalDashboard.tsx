@@ -489,7 +489,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
       .from('activity_log')
       .select('created_at')
       .eq('case_id', caseData.id)
-      .eq('event_type', 'reminder_sent')
+      .in('event_type', ['sms_sent', 'reminder_sent', 'notification_sent'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
