@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         case_id: c.id,
-        event_type: 'reminder_sent',
+        event_type: 'sms_sent',
         actor_role: 'system',
         actor_name: 'ClearPath',
         description: `Automated reminder sent [${notificationType}]: ${c.client_name}`,
