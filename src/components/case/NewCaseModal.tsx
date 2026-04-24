@@ -2,9 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  CalendarIcon, ArrowRight, ArrowLeft, Check, ChevronDown, ChevronRight, Link2,
-  Briefcase, Users, Home, Building2, Car, TrendingUp, PiggyBank, GraduationCap,
-  CreditCard, Wallet, AlertTriangle, Building, Heart,
+  CalendarIcon, ArrowRight, ArrowLeft, ChevronDown, ChevronRight, Plus, Copy, Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -22,11 +20,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, updateCase, getFirmSettings, buildCustomChecklist, buildCh13Milestones,
-  CATEGORIES, type ChapterType, type IntakeAnswers, type Case,
+  createCase, updateCase, getFirmSettings, getDocTemplates,
+  CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
-
 
 import { toast } from 'sonner';
 
@@ -46,10 +43,6 @@ interface BasicInfo {
   filingDeadline: Date | undefined;
   assignedParalegal: string;
   assignedAttorney: string;
-  spouseName: string;
-  spouseEmail: string;
-  spousePhone: string;
-  spouseDob: string;
 }
 
 interface TeamMember {
@@ -62,6 +55,19 @@ interface TeamMember {
 const buildClientName = (first: string, last: string) =>
   [first, last].filter(Boolean).join(' ').trim();
 
+const templateToChecklistItem = (t: TemplateItem): ChecklistItem => ({
+  id: t.id,
+  category: t.category,
+  label: t.label,
+  description: t.description,
+  whyWeNeedThis: t.whyWeNeedThis,
+  required: t.required,
+  files: [],
+  flaggedForAttorney: false,
+  completed: false,
+  isCustom: t.isCustom,
+});
+
 const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const firmSettings = getFirmSettings();
   const { user } = useAuth();
@@ -69,7 +75,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamLoaded, setTeamLoaded] = useState(false);
-  const [clientLanguage, setClientLanguage] = useState<'en' | 'es'>('en');
+  const [deadlineOpen, setDeadlineOpen] = useState(false);
 
   useEffect(() => {
     if (!open || teamLoaded) return;
@@ -100,10 +106,6 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     filingDeadline: undefined,
     assignedParalegal: defaultParalegal,
     assignedAttorney: defaultAttorney,
-    spouseName: '',
-    spouseEmail: '',
-    spousePhone: '',
-    spouseDob: '',
   });
 
   useEffect(() => {
@@ -116,73 +118,47 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     }
   }, [teamLoaded, defaultParalegal, defaultAttorney]);
 
-  const [answers, setAnswers] = useState<IntakeAnswers>({
-    isEmployed: false,
-    ownsRealEstate: false,
-    ownsVehicle: false,
-    selfEmployed: false,
-    hasRetirement: false,
-    hasStudentLoans: false,
-    hasDigitalWallets: false,
-    hasCollections: false,
-    isRenting: false,
-    hasRentalIncome: false,
-    hasDomesticSupport: false,
-    filingJointly: false,
-    mortgageInArrears: false,
-  });
-  const [showSummary, setShowSummary] = useState(false);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
+  const [createdPortalLink, setCreatedPortalLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // Load templates when entering step 2
+  useEffect(() => {
+    if (step === 2 && checklist.length === 0) {
+      const templates = getDocTemplates().filter(t => t.active);
+      setChecklist(templates.map(templateToChecklistItem));
+      setExcludedItems(new Set());
+    }
+  }, [step, checklist.length]);
 
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
 
-  const isJointFiling = answers.filingJointly === true;
-  const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline &&
-    (!isJointFiling || (info.spouseName && info.spouseEmail && info.spouseDob));
+  const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline;
 
-  const customChecklist = useMemo(() => {
-    return buildCustomChecklist(answers, info.chapterType);
-  }, [answers, info.chapterType]);
+  const includedCount = checklist.length - excludedItems.size;
 
-  // Reset excluded items when checklist changes
-  useEffect(() => {
-    setExcludedItems(new Set());
-  }, [customChecklist.length]);
-
-  const includedCount = customChecklist.length - excludedItems.size;
-
-  const groupByCategory = (list: typeof customChecklist) => {
-    const map: Record<string, typeof customChecklist> = {};
-    list.forEach(item => {
+  const groupedChecklist = useMemo(() => {
+    const map: Record<string, ChecklistItem[]> = {};
+    checklist.forEach(item => {
       if (!map[item.category]) map[item.category] = [];
       map[item.category].push(item);
     });
-    return (CATEGORIES as readonly string[])
-      .filter(cat => map[cat])
-      .map(cat => ({ category: cat, items: map[cat] }));
-  };
-
-  const groupedChecklist = useMemo(
-    () => groupByCategory(customChecklist),
-    [customChecklist],
-  );
-
-  const primaryItems = useMemo(
-    () => customChecklist.filter(item => !item.label.includes('(Spouse)')),
-    [customChecklist],
-  );
-  const spouseItems = useMemo(
-    () => customChecklist.filter(item => item.label.includes('(Spouse)')),
-    [customChecklist],
-  );
-  const primaryGrouped = useMemo(() => groupByCategory(primaryItems), [primaryItems]);
-  const spouseGrouped = useMemo(() => groupByCategory(spouseItems), [spouseItems]);
-
-  const primaryExcludedCount = primaryItems.filter(i => excludedItems.has(i.id)).length;
-  const spouseExcludedCount = spouseItems.filter(i => excludedItems.has(i.id)).length;
+    const cats = (CATEGORIES as readonly string[]).filter(cat => map[cat]);
+    // include any non-standard categories (from custom-added items) at the end
+    Object.keys(map).forEach(cat => {
+      if (!cats.includes(cat)) cats.push(cat);
+    });
+    return cats.map(cat => ({ category: cat, items: map[cat] }));
+  }, [checklist]);
 
   const handleClose = () => {
+    if (createdPortalLink) {
+      resetAndClose();
+      return;
+    }
     if (isDirty) {
       setShowConfirmClose(true);
     } else {
@@ -198,27 +174,13 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       chapterType: '7', filingDeadline: undefined,
       assignedParalegal: defaultParalegal,
       assignedAttorney: defaultAttorney,
-      spouseName: '', spouseEmail: '', spousePhone: '', spouseDob: '',
     });
-    setAnswers({
-      isEmployed: false,
-      ownsRealEstate: false,
-      ownsVehicle: false,
-      selfEmployed: false,
-      hasRetirement: false,
-      hasStudentLoans: false,
-      hasDigitalWallets: false,
-      hasCollections: false,
-      isRenting: false,
-      hasRentalIncome: false,
-      hasDomesticSupport: false,
-      filingJointly: false,
-      mortgageInArrears: false,
-    });
-    setShowSummary(false);
+    setChecklist([]);
     setExcludedItems(new Set());
     setShowConfirmClose(false);
-    setClientLanguage('en');
+    setCreatedPortalLink(null);
+    setCopied(false);
+    setCreating(false);
     onOpenChange(false);
   };
 
@@ -240,20 +202,40 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     });
   };
 
+  const addCustomItem = (category: string, label: string, description: string) => {
+    const id = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newItem: ChecklistItem = {
+      id,
+      category,
+      label,
+      description,
+      whyWeNeedThis: '',
+      required: false,
+      files: [],
+      flaggedForAttorney: false,
+      completed: false,
+      isCustom: true,
+    };
+    setChecklist(prev => [...prev, newItem]);
+  };
+
+  const setQuickDeadline = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    setInfo(prev => ({ ...prev, filingDeadline: d }));
+    setDeadlineOpen(false);
+  };
+
   const handleCreate = async () => {
+    if (creating) return;
+    setCreating(true);
     const displayName = clientName;
     const caseCode = generateCaseCode(displayName);
-    const spouseCaseCode = isJointFiling && info.spouseName
-      ? `${generateCaseCode(info.spouseName)}-S`
-      : null;
-    const jointDisplayName = isJointFiling && info.spouseName
-      ? `${info.firstName} & ${info.spouseName.split(' ')[0]} ${info.lastName}`
-      : displayName;
 
-    const includedChecklist = customChecklist.filter(item => !excludedItems.has(item.id));
+    const includedChecklist = checklist.filter(item => !excludedItems.has(item.id));
 
     const newCase = createCase({
-      clientName: jointDisplayName,
+      clientName: displayName,
       clientEmail: info.clientEmail,
       clientPhone: info.clientPhone || undefined,
       chapterType: info.chapterType,
@@ -267,20 +249,13 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       ...c,
       caseCode,
       clientDob: info.clientDob || undefined,
-      isJointFiling,
-      spouseName: isJointFiling ? info.spouseName : undefined,
-      spouseEmail: isJointFiling ? info.spouseEmail : undefined,
-      spousePhone: isJointFiling ? info.spousePhone : undefined,
-      spouseDob: isJointFiling ? info.spouseDob : undefined,
-      spouseCaseCode: spouseCaseCode || undefined,
-      milestones: info.chapterType === '13' ? buildCh13Milestones() : undefined,
     }));
 
     try {
       await supabase.from('cases').upsert({
         id: newCase.id,
         firm_id: user?.firmId || null,
-        client_name: jointDisplayName,
+        client_name: displayName,
         client_first_name: info.firstName,
         client_middle_name: null,
         client_last_name: info.lastName,
@@ -293,28 +268,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         assigned_paralegal: info.assignedParalegal,
         assigned_attorney: info.assignedAttorney,
         case_code: caseCode,
-        spouse_case_code: spouseCaseCode,
         court_case_number: null,
         urgency: 'normal',
         wizard_step: 0,
         ready_to_file: false,
-        client_language: clientLanguage,
-        is_joint_filing: isJointFiling,
-        spouse_name: isJointFiling ? info.spouseName : null,
-        spouse_email: isJointFiling ? info.spouseEmail : null,
       } as any);
 
-      if (isJointFiling && info.spouseName) {
-        await supabase.from('client_info').upsert({
-          case_id: newCase.id,
-          spouse_name: info.spouseName,
-          spouse_email: info.spouseEmail || null,
-          spouse_phone: info.spousePhone || null,
-          spouse_dob: info.spouseDob || null,
-        } as any);
-      }
-
-      // Insert included items normally
       const includedRows = includedChecklist.map((item, idx) => ({
         id: item.id,
         case_id: newCase.id,
@@ -328,8 +287,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         input_type: item.label === 'Employer Name' ? 'text' : 'file',
       }));
 
-      // Insert excluded items as not_applicable
-      const excludedChecklist = customChecklist.filter(item => excludedItems.has(item.id));
+      const excludedChecklist = checklist.filter(item => excludedItems.has(item.id));
       const excludedRows = excludedChecklist.map((item, idx) => ({
         id: item.id,
         case_id: newCase.id,
@@ -352,39 +310,45 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     } catch (err) {
       console.error('Failed to sync case to database:', err);
       toast.error('Failed to create case — please try again.');
+      setCreating(false);
       return;
     }
 
     const portalLink = `${window.location.origin}/client/${caseCode}`;
-    navigator.clipboard?.writeText(portalLink);
-    toast.success('Case created — portal link copied to clipboard!');
+    setCreatedPortalLink(portalLink);
+    toast.success('Case created successfully.');
     onCreated(updatedCase);
-    resetAndClose();
+    setCreating(false);
   };
 
-  const checkboxOptions: Array<{ key: keyof IntakeAnswers; icon: typeof Briefcase; label: string; ch13?: boolean }> = [
-    { key: 'isEmployed', icon: Briefcase, label: 'Currently employed' },
-    { key: 'filingJointly', icon: Users, label: 'Filing jointly with spouse' },
-    { key: 'ownsRealEstate', icon: Home, label: 'Owns real estate' },
-    { key: 'isRenting', icon: Building2, label: 'Renting (no mortgage)' },
-    { key: 'ownsVehicle', icon: Car, label: 'Owns a vehicle' },
-    { key: 'selfEmployed', icon: TrendingUp, label: 'Self-employed / business income' },
-    { key: 'hasRetirement', icon: PiggyBank, label: 'Has retirement or investment accounts' },
-    { key: 'hasStudentLoans', icon: GraduationCap, label: 'Has student loans' },
-    { key: 'hasCollections', icon: CreditCard, label: 'Has collection notices' },
-    { key: 'hasDigitalWallets', icon: Wallet, label: 'Uses Venmo, PayPal, or Cash App' },
-    ...(info.chapterType === '13' ? [
-      { key: 'mortgageInArrears' as const, icon: AlertTriangle, label: 'Behind on mortgage', ch13: true },
-      { key: 'hasRentalIncome' as const, icon: Building, label: 'Has rental income', ch13: true },
-      { key: 'hasDomesticSupport' as const, icon: Heart, label: 'Pays or receives alimony/child support', ch13: true },
-    ] : []),
-  ];
+  const handleCopyLink = () => {
+    if (!createdPortalLink) return;
+    navigator.clipboard?.writeText(createdPortalLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const stepProgress = createdPortalLink ? 100 : (step / 3) * 100;
+  const stepTitle = createdPortalLink
+    ? 'Case Created'
+    : step === 1
+      ? 'Step 1 of 3 — Debtor Info'
+      : step === 2
+        ? 'Step 2 of 3 — Review & Confirm Documents'
+        : 'Step 3 of 3 — Confirm & Create';
+  const stepDescription = createdPortalLink
+    ? 'Share the portal link with your client to begin intake.'
+    : step === 1
+      ? 'Enter the basic details for this new case.'
+      : step === 2
+        ? 'Review the document checklist for this case. Uncheck anything you don\'t need or add custom items.'
+        : 'Review and create the case.';
 
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(true); }}>
         <DialogContent
-          className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto border-border bg-background p-0"
+          className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto border-border bg-background p-0"
           onInteractOutside={(e) => e.preventDefault()}
           onPointerDownOutside={(e) => e.preventDefault()}
           onFocusOutside={(e) => e.preventDefault()}
@@ -392,24 +356,22 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
           <div className="h-1 bg-secondary w-full">
             <div
               className="h-full bg-primary transition-all duration-300"
-              style={{ width: step === 1 ? '50%' : '100%' }}
+              style={{ width: `${stepProgress}%` }}
             />
           </div>
 
           <div className="px-6 pt-4 pb-6">
             <DialogHeader>
               <DialogTitle className="font-display font-bold text-xl text-foreground">
-                {step === 1 ? 'Step 1 of 2 — Client Info' : 'Step 2 of 2 — Customize Their Checklist'}
+                {stepTitle}
               </DialogTitle>
               <DialogDescription className="font-body text-muted-foreground">
-                {step === 1
-                  ? 'Enter the basic details for this new case.'
-                  : 'Answer a few questions about this client and we\'ll set up their document checklist automatically.'}
+                {stepDescription}
               </DialogDescription>
             </DialogHeader>
 
             <AnimatePresence mode="wait">
-              {step === 1 && (
+              {!createdPortalLink && step === 1 && (
                 <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: -20 }}
@@ -421,159 +383,137 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   <Step1Form
                     info={info}
                     setInfo={setInfo}
-                    clientLanguage={clientLanguage}
-                    setClientLanguage={setClientLanguage}
+                    deadlineOpen={deadlineOpen}
+                    setDeadlineOpen={setDeadlineOpen}
+                    onQuickDeadline={setQuickDeadline}
                   />
                   <div className="flex justify-end mt-6">
-                    <Button onClick={() => { setStep(2); setShowSummary(false); }} disabled={!step1Valid}>
+                    <Button onClick={() => setStep(2)} disabled={!step1Valid}>
                       Next <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
                 </motion.div>
               )}
 
-              {step === 2 && !showSummary && (
+              {!createdPortalLink && step === 2 && (
                 <motion.div
-                  key="checkboxes"
+                  key="step2"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                   className="mt-4"
                 >
-                  <h3 className="font-display font-bold text-xl text-foreground mb-1">
-                    About this client
-                  </h3>
-                  <p className="text-sm text-muted-foreground font-body mb-5">
-                    Check everything that applies. We'll build the right document checklist automatically.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {checkboxOptions.map(({ key, icon: Icon, label, ch13 }) => {
-                      const isChecked = answers[key] === true;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setAnswers(prev => ({ ...prev, [key]: !prev[key] }))}
-                          className={`flex items-center gap-2.5 p-3 rounded-xl text-left transition-all border-2 ${
-                            isChecked
-                              ? 'border-primary/50 bg-primary/5 text-foreground'
-                              : 'border-transparent surface-card text-muted-foreground hover:border-border'
-                          }`}
-                        >
-                          <Icon className={`w-4 h-4 flex-shrink-0 ${isChecked ? 'text-primary' : 'text-muted-foreground'}`} />
-                          <span className="font-body text-[13px] leading-tight">{label}</span>
-                          {ch13 && (
-                            <span className="ml-auto text-[9px] bg-warning/10 text-warning rounded px-1 py-0.5 flex-shrink-0">13</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <p className="text-[11px] text-muted-foreground font-body mt-4">
-                    Not sure? Leave it unchecked — you can always add documents manually after the case is created.
-                  </p>
-
-                  <div className="flex justify-between mt-6">
-                    <Button variant="ghost" onClick={() => setStep(1)}>
-                      <ArrowLeft className="w-4 h-4 mr-1" /> Back
-                    </Button>
-                    <Button onClick={() => setShowSummary(true)}>
-                      Review Checklist <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-
-              {step === 2 && showSummary && (
-                <motion.div
-                  key="checklist-editor"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-6"
-                >
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-5 h-5 text-primary" />
-                      <span className="font-display font-bold text-foreground">
-                        {isJointFiling
-                          ? `${primaryItems.length - primaryExcludedCount} for ${info.firstName} ${info.lastName} · ${spouseItems.length - spouseExcludedCount} for ${info.spouseName.split(' ')[0]}`
-                          : `${includedCount} documents requested`}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-body">
-                      {excludedItems.size > 0 && `${excludedItems.size} excluded`}
+                    <span className="font-display font-bold text-foreground">
+                      {includedCount} documents requested
                     </span>
+                    {excludedItems.size > 0 && (
+                      <span className="text-xs text-muted-foreground font-body">
+                        {excludedItems.size} excluded
+                      </span>
+                    )}
                   </div>
 
-                  <p className="text-sm text-muted-foreground font-body mb-4">
-                    Uncheck any documents this client doesn't need. Excluded items will be marked as not applicable.
-                  </p>
-
-                  <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-                    {!isJointFiling && groupedChecklist.map(({ category, items }) => (
+                  <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                    {groupedChecklist.map(({ category, items }) => (
                       <ChecklistCategorySection
                         key={category}
                         category={category}
                         items={items}
                         excludedItems={excludedItems}
                         onToggle={toggleExcluded}
+                        onAddItem={(label, description) => addCustomItem(category, label, description)}
                       />
                     ))}
-
-                    {isJointFiling && (
-                      <>
-                        <div>
-                          <span className="bg-primary/10 text-primary text-[11px] font-semibold px-3 py-1 rounded-full mb-3 inline-block">
-                            👤 {info.firstName} {info.lastName}
-                          </span>
-                          <div className="space-y-3">
-                            {primaryGrouped.map(({ category, items }) => (
-                              <ChecklistCategorySection
-                                key={`p-${category}`}
-                                category={category}
-                                items={items}
-                                excludedItems={excludedItems}
-                                onToggle={toggleExcluded}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-border/40 my-4" />
-
-                        <div>
-                          <span className="bg-secondary text-muted-foreground text-[11px] font-semibold px-3 py-1 rounded-full mb-3 inline-block">
-                            👤 {info.spouseName}
-                          </span>
-                          <div className="space-y-3">
-                            {spouseGrouped.map(({ category, items }) => (
-                              <ChecklistCategorySection
-                                key={`s-${category}`}
-                                category={category.replace(' (Spouse)', '')}
-                                items={items}
-                                excludedItems={excludedItems}
-                                onToggle={toggleExcluded}
-                                labelTransform={(label) => label.replace(' (Spouse)', '')}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
 
                   <div className="flex justify-between mt-6">
-                    <Button variant="ghost" onClick={() => setShowSummary(false)}>
-                      <ArrowLeft className="w-4 h-4 mr-1" /> Edit Answers
+                    <Button variant="ghost" onClick={() => setStep(1)}>
+                      <ArrowLeft className="w-4 h-4 mr-1" /> Back
                     </Button>
-                    <Button onClick={handleCreate}>
-                      <Link2 className="w-4 h-4 mr-1" /> Create Case & Copy Link
+                    <Button onClick={() => setStep(3)}>
+                      Next <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {!createdPortalLink && step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-6"
+                >
+                  <div className="surface-card rounded-xl p-5 space-y-3">
+                    <SummaryRow label="Client" value={clientName} />
+                    <SummaryRow label="Email" value={info.clientEmail} />
+                    {info.clientPhone && <SummaryRow label="Phone" value={info.clientPhone} />}
+                    <SummaryRow label="Chapter" value={`Chapter ${info.chapterType}`} />
+                    <SummaryRow
+                      label="Filing Deadline"
+                      value={info.filingDeadline ? format(info.filingDeadline, 'PPP') : '—'}
+                    />
+                    <SummaryRow label="Documents" value={`${includedCount} requested`} />
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button variant="ghost" onClick={() => setStep(2)} disabled={creating}>
+                      <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    </Button>
+                    <Button onClick={handleCreate} disabled={creating}>
+                      {creating ? 'Creating…' : 'Create Case'}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {createdPortalLink && (
+                <motion.div
+                  key="created"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-6"
+                >
+                  <div className="surface-card rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="font-display font-bold text-foreground">
+                        {clientName}'s case is ready
+                      </span>
+                    </div>
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider">
+                      Client portal link
+                    </Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        readOnly
+                        value={createdPortalLink}
+                        className="bg-input border-border rounded-[10px] font-mono text-xs"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCopyLink}
+                        className="flex-shrink-0"
+                      >
+                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copied ? 'Copied' : 'Copy'}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3 font-body">
+                      Share this link with your client so they can verify their identity and start uploading documents.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <Button onClick={resetAndClose}>Done</Button>
                   </div>
                 </motion.div>
               )}
@@ -598,15 +538,24 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   );
 };
 
+// ── Summary Row ──────────────────────────────────────────────────────
+const SummaryRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex items-baseline justify-between gap-3">
+    <span className="text-xs uppercase tracking-wider text-muted-foreground font-body">{label}</span>
+    <span className="text-sm text-foreground font-body text-right">{value}</span>
+  </div>
+);
+
 // ── Checklist Category Section ───────────────────────────────────────
-const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, labelTransform }: {
+const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, onAddItem }: {
   category: string;
   items: { id: string; label: string }[];
   excludedItems: Set<string>;
   onToggle: (id: string) => void;
-  labelTransform?: (label: string) => string;
+  onAddItem: (label: string, description: string) => void;
 }) => {
   const [open, setOpen] = useState(true);
+  const [adding, setAdding] = useState(false);
   const includedCount = items.filter(i => !excludedItems.has(i.id)).length;
 
   return (
@@ -637,23 +586,74 @@ const ChecklistCategorySection = ({ category, items, excludedItems, onToggle, la
                 'text-sm font-body transition-colors',
                 excludedItems.has(item.id) ? 'text-muted-foreground line-through' : 'text-foreground'
               )}>
-                {labelTransform ? labelTransform(item.label) : item.label}
+                {item.label}
               </span>
             </label>
           ))}
+
+          {adding ? (
+            <AddItemInline
+              onCancel={() => setAdding(false)}
+              onAdd={(label, description) => {
+                onAddItem(label, description);
+                setAdding(false);
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 mt-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Item
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 };
 
+// ── Inline Add Item Form ─────────────────────────────────────────────
+const AddItemInline = ({ onAdd, onCancel }: {
+  onAdd: (label: string, description: string) => void;
+  onCancel: () => void;
+}) => {
+  const [label, setLabel] = useState('');
+  const [description, setDescription] = useState('');
+  return (
+    <div className="mt-2 p-3 rounded-lg border border-border/60 bg-muted/20 space-y-2">
+      <Input
+        autoFocus
+        value={label}
+        onChange={e => setLabel(e.target.value)}
+        placeholder="Document label *"
+        className="bg-input border-border rounded-[8px] h-9 text-sm"
+      />
+      <Input
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+        placeholder="Description (optional)"
+        className="bg-input border-border rounded-[8px] h-9 text-sm"
+      />
+      <div className="flex justify-end gap-2 pt-1">
+        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" disabled={!label.trim()} onClick={() => onAdd(label.trim(), description.trim())}>
+          Add
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // ── Step 1 Form Component ────────────────────────────────────────────
-const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLanguage }: {
+const Step1Form = ({ info, setInfo, deadlineOpen, setDeadlineOpen, onQuickDeadline }: {
   info: BasicInfo;
   setInfo: (i: BasicInfo) => void;
-  isJointFiling?: boolean;
-  clientLanguage?: 'en' | 'es';
-  setClientLanguage?: (lang: 'en' | 'es') => void;
+  deadlineOpen: boolean;
+  setDeadlineOpen: (o: boolean) => void;
+  onQuickDeadline: (days: number) => void;
 }) => {
   const update = <K extends keyof BasicInfo>(key: K, value: BasicInfo[K]) => {
     setInfo({ ...info, [key]: value });
@@ -661,7 +661,6 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {/* Name fields */}
       <div>
         <Label className="text-muted-foreground text-sm">First Name *</Label>
         <Input
@@ -681,7 +680,6 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
         />
       </div>
 
-      {/* Contact info */}
       <div>
         <Label className="text-muted-foreground text-sm">Client Email *</Label>
         <Input
@@ -693,33 +691,6 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
         />
       </div>
 
-      {/* Language selector */}
-      {setClientLanguage && (
-        <div className="sm:col-span-2">
-          <Label className="text-muted-foreground text-sm">Client's preferred language</Label>
-          <div className="flex gap-3 mt-1">
-            {([
-              { value: 'en' as const, label: 'English' },
-              { value: 'es' as const, label: 'Español' },
-            ]).map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setClientLanguage(opt.value)}
-                className={cn(
-                  'flex-1 h-11 rounded-2xl text-sm font-bold font-display transition-all border-2',
-                  clientLanguage === opt.value
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div>
         <Label className="text-muted-foreground text-sm">Client Phone</Label>
         <Input
@@ -729,22 +700,23 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
           className="mt-1 bg-input border-border rounded-[10px]"
         />
       </div>
-      <div>
+
+      <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Client Date of Birth</Label>
         <Input
-          type="date"
           value={info.clientDob}
           onChange={e => update('clientDob', e.target.value)}
+          placeholder="MM/DD/YYYY"
           className="mt-1 bg-input border-border rounded-[10px]"
         />
         <p className="text-xs text-muted-foreground mt-1">Used for client portal verification</p>
       </div>
 
-      {/* Case details */}
       <div className="sm:col-span-2 mt-2">
         <div className="h-px bg-border" />
         <p className="text-xs font-bold text-primary mt-3 mb-1 uppercase tracking-wider">Case Details</p>
       </div>
+
       <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Chapter Type *</Label>
         <div className="flex gap-3 mt-1">
@@ -765,9 +737,10 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
           ))}
         </div>
       </div>
-      <div>
+
+      <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Filing Deadline *</Label>
-        <Popover>
+        <Popover open={deadlineOpen} onOpenChange={setDeadlineOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -784,63 +757,29 @@ const Step1Form = ({ info, setInfo, isJointFiling, clientLanguage, setClientLang
             <Calendar
               mode="single"
               selected={info.filingDeadline}
-              onSelect={(d) => update('filingDeadline', d)}
+              onSelect={(d) => { update('filingDeadline', d); if (d) setDeadlineOpen(false); }}
               disabled={(date) => date < new Date()}
               initialFocus
               className={cn('p-3 pointer-events-auto')}
             />
           </PopoverContent>
         </Popover>
-        <p className="text-xs text-muted-foreground mt-1">Required for case tracking</p>
+        <div className="flex gap-2 mt-2">
+          {[30, 60, 90].map(days => (
+            <Button
+              key={days}
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onQuickDeadline(days)}
+              className="rounded-full h-7 px-3 text-xs"
+            >
+              {days} days
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Required for case tracking</p>
       </div>
-
-      {/* Spouse Fields — only when joint filing is selected on step 2 */}
-      {isJointFiling && (
-        <>
-          <div className="sm:col-span-2 mt-2">
-            <div className="h-px bg-border" />
-            <p className="text-xs font-bold text-primary mt-3 mb-1 uppercase tracking-wider">Spouse Information</p>
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-muted-foreground text-sm">Spouse Full Legal Name *</Label>
-            <Input
-              value={info.spouseName}
-              onChange={e => update('spouseName', e.target.value)}
-              placeholder="Spouse full name"
-              className="mt-1 bg-input border-border rounded-[10px]"
-            />
-          </div>
-          <div>
-            <Label className="text-muted-foreground text-sm">Spouse Email *</Label>
-            <Input
-              value={info.spouseEmail}
-              onChange={e => update('spouseEmail', e.target.value)}
-              type="email"
-              placeholder="spouse@email.com"
-              className="mt-1 bg-input border-border rounded-[10px]"
-            />
-          </div>
-          <div>
-            <Label className="text-muted-foreground text-sm">Spouse Phone</Label>
-            <Input
-              value={info.spousePhone}
-              onChange={e => update('spousePhone', e.target.value)}
-              placeholder="(555) 000-0000"
-              className="mt-1 bg-input border-border rounded-[10px]"
-            />
-          </div>
-          <div>
-            <Label className="text-muted-foreground text-sm">Spouse Date of Birth *</Label>
-            <Input
-              type="date"
-              value={info.spouseDob}
-              onChange={e => update('spouseDob', e.target.value)}
-              className="mt-1 bg-input border-border rounded-[10px]"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Used for portal verification</p>
-          </div>
-        </>
-      )}
     </div>
   );
 };
