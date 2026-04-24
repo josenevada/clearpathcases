@@ -510,13 +510,6 @@ const CaseDetail = () => {
       toast.success('Correction requested. Notification delivery needs to be configured.');
     }
 
-    // Trigger 5: Correction Request SMS
-    sendCorrectionSms(
-      caseData.clientPhone,
-      caseData.clientName,
-      caseData.caseCode || caseData.id,
-      caseData.id,
-    ).catch((err) => console.error('Correction SMS error:', err));
 
     resetCorrectionForm();
     refresh();
