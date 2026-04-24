@@ -38,12 +38,14 @@ export const checkSmsGate = async (caseId: string): Promise<{ allowed: boolean; 
     return { allowed: false, reason: `Quiet hours (currently ${mstHour}:00 MST)` };
   }
 
-  // 4-hour cooldown check via Supabase activity_log
+  // 4-hour cooldown check via Supabase activity_log.
+  // Read all SMS event types (sms_sent is canonical; the others are legacy aliases
+  // kept readable so cooldown still works against historical data).
   const { data } = await supabase
     .from('activity_log')
     .select('created_at')
     .eq('case_id', caseId)
-    .eq('event_type', 'reminder_sent')
+    .in('event_type', ['sms_sent', 'reminder_sent', 'notification_sent'])
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
