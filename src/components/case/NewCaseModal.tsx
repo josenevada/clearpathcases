@@ -423,6 +423,37 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   transition={{ duration: 0.2 }}
                   className="mt-4"
                 >
+                  {availableNamedTemplates.length > 0 && (
+                    <div className="mb-4">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wider mb-2 block">
+                        Template
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { id: 'default', name: 'Default' },
+                          ...availableNamedTemplates.map(t => ({ id: t.id, name: t.name })),
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTemplateId(opt.id);
+                              loadChecklistFromTemplate(opt.id);
+                            }}
+                            className={cn(
+                              'px-3 py-1.5 rounded-full text-xs font-body border transition-all',
+                              selectedTemplateId === opt.id
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-secondary text-muted-foreground border-border hover:border-primary/50',
+                            )}
+                          >
+                            {opt.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-4">
                     <span className="font-display font-bold text-foreground">
                       {includedCount} documents requested
