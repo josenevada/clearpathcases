@@ -145,6 +145,7 @@ const SEEDED_KEY = 'cp_seeded';
 const FIRM_SETTINGS_KEY = 'cp_firmSettings';
 const TEMPLATES_KEY = 'cp_docTemplates';
 const INTAKE_QUESTIONS_KEY = 'cp_intakeQuestions';
+const NAMED_TEMPLATES_KEY = 'clearpath_named_templates';
 
 const uid = () => crypto.randomUUID();
 
@@ -187,6 +188,14 @@ export interface TemplateItem {
   active: boolean;
   isCustom: boolean;
   order: number;
+}
+
+export interface NamedTemplate {
+  id: string;
+  name: string;
+  chapterType: '7' | '13' | 'both';
+  items: TemplateItem[];
+  createdAt: string;
 }
 
 export const buildDefaultTemplates = (): TemplateItem[] => {
@@ -279,6 +288,42 @@ export const resetDocTemplates = () => {
       /* silent */
     }
   })();
+};
+
+// ─── Named Templates ────────────────────────────────────────────────
+export const getNamedTemplates = (): NamedTemplate[] => {
+  const raw = localStorage.getItem(NAMED_TEMPLATES_KEY);
+  return raw ? JSON.parse(raw) : [];
+};
+
+export const saveNamedTemplates = (templates: NamedTemplate[]) => {
+  localStorage.setItem(NAMED_TEMPLATES_KEY, JSON.stringify(templates));
+  // Mirror to Supabase firms.named_templates column (fire-and-forget).
+  void (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('firm_id')
+        .eq('id', userId)
+        .maybeSingle();
+      const firmId = userRow?.firm_id;
+      if (!firmId) return;
+      await supabase
+        .from('firms')
+        // Column may not exist yet — silent failure is acceptable.
+        .update({ named_templates: templates as unknown as Json } as never)
+        .eq('id', firmId);
+    } catch {
+      /* silent */
+    }
+  })();
+};
+
+export const getNamedTemplatesForChapter = (chapterType: '7' | '13'): NamedTemplate[] => {
+  return getNamedTemplates().filter(t => t.chapterType === chapterType || t.chapterType === 'both');
 };
 
 // ─── Intake Questions ───────────────────────────────────────────────

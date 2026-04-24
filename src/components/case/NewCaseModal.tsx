@@ -20,8 +20,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, updateCase, getFirmSettings, getDocTemplates,
-  CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem,
+  createCase, updateCase, getFirmSettings, getDocTemplates, getNamedTemplatesForChapter,
+  CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem, type NamedTemplate,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
 
@@ -123,15 +123,32 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [createdPortalLink, setCreatedPortalLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('default');
+  const [availableNamedTemplates, setAvailableNamedTemplates] = useState<NamedTemplate[]>([]);
+
+  const loadChecklistFromTemplate = (templateId: string) => {
+    if (templateId === 'default') {
+      const items = getDocTemplates().filter(t => t.active);
+      setChecklist(items.map(templateToChecklistItem));
+    } else {
+      const named = availableNamedTemplates.find(t => t.id === templateId);
+      const items = (named?.items || []).filter(t => t.active);
+      setChecklist(items.map(templateToChecklistItem));
+    }
+    setExcludedItems(new Set());
+  };
 
   // Load templates when entering step 2
   useEffect(() => {
     if (step === 2 && checklist.length === 0) {
-      const templates = getDocTemplates().filter(t => t.active);
-      setChecklist(templates.map(templateToChecklistItem));
+      const named = getNamedTemplatesForChapter(info.chapterType);
+      setAvailableNamedTemplates(named);
+      const items = getDocTemplates().filter(t => t.active);
+      setChecklist(items.map(templateToChecklistItem));
       setExcludedItems(new Set());
+      setSelectedTemplateId('default');
     }
-  }, [step, checklist.length]);
+  }, [step, checklist.length, info.chapterType]);
 
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
@@ -177,6 +194,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     });
     setChecklist([]);
     setExcludedItems(new Set());
+    setSelectedTemplateId('default');
+    setAvailableNamedTemplates([]);
     setShowConfirmClose(false);
     setCreatedPortalLink(null);
     setCopied(false);
@@ -404,6 +423,37 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
                   transition={{ duration: 0.2 }}
                   className="mt-4"
                 >
+                  {availableNamedTemplates.length > 0 && (
+                    <div className="mb-4">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wider mb-2 block">
+                        Template
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { id: 'default', name: 'Default' },
+                          ...availableNamedTemplates.map(t => ({ id: t.id, name: t.name })),
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTemplateId(opt.id);
+                              loadChecklistFromTemplate(opt.id);
+                            }}
+                            className={cn(
+                              'px-3 py-1.5 rounded-full text-xs font-body border transition-all',
+                              selectedTemplateId === opt.id
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-secondary text-muted-foreground border-border hover:border-primary/50',
+                            )}
+                          >
+                            {opt.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-4">
                     <span className="font-display font-bold text-foreground">
                       {includedCount} documents requested
