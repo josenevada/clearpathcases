@@ -732,7 +732,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
                       variant="default"
                       size="sm"
                       onClick={handleRemindClick}
-                      disabled={hasBothMissing}
+                      disabled={hasBothMissing || reminderOnCooldown}
                       className="rounded-r-none h-9 px-3"
                     >
                       <Send className="w-3.5 h-3.5 mr-1" />
@@ -744,7 +744,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
                           variant="default"
                           size="sm"
                           onClick={(e) => { e.stopPropagation(); }}
-                          disabled={hasBothMissing}
+                          disabled={hasBothMissing || reminderOnCooldown}
                           className="rounded-l-none border-l border-primary-foreground/30 h-9 px-2"
                           aria-label="Reminder options"
                         >
@@ -756,6 +756,11 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
                         className="w-52 p-1"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {lastReminderSentAt && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
+                            Last reminded: {formatDistanceToNow(new Date(lastReminderSentAt))} ago
+                          </div>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -782,9 +787,13 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
                     </Popover>
                   </div>
                 </TooltipTrigger>
-                {hasBothMissing && (
+                {hasBothMissing ? (
                   <TooltipContent>No contact info on file — edit this case to add a phone or email</TooltipContent>
-                )}
+                ) : reminderOnCooldown ? (
+                  <TooltipContent>Reminded recently — available again in {cooldownHoursRemaining}h</TooltipContent>
+                ) : lastReminderSentAt ? (
+                  <TooltipContent>Last contacted {formatDistanceToNow(new Date(lastReminderSentAt), { addSuffix: true })}</TooltipContent>
+                ) : null}
               </Tooltip>
             );
           })()}
