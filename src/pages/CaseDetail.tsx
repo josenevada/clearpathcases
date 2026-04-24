@@ -44,7 +44,7 @@ import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
 import { sendCorrectionRequest } from '@/lib/notifications';
-import { sendCorrectionSms } from '@/lib/sms';
+
 import { useAuth } from '@/lib/auth';
 import {
   updateCase,
