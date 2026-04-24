@@ -123,15 +123,32 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const [createdPortalLink, setCreatedPortalLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('default');
+  const [availableNamedTemplates, setAvailableNamedTemplates] = useState<NamedTemplate[]>([]);
+
+  const loadChecklistFromTemplate = (templateId: string) => {
+    if (templateId === 'default') {
+      const items = getDocTemplates().filter(t => t.active);
+      setChecklist(items.map(templateToChecklistItem));
+    } else {
+      const named = availableNamedTemplates.find(t => t.id === templateId);
+      const items = (named?.items || []).filter(t => t.active);
+      setChecklist(items.map(templateToChecklistItem));
+    }
+    setExcludedItems(new Set());
+  };
 
   // Load templates when entering step 2
   useEffect(() => {
     if (step === 2 && checklist.length === 0) {
-      const templates = getDocTemplates().filter(t => t.active);
-      setChecklist(templates.map(templateToChecklistItem));
+      const named = getNamedTemplatesForChapter(info.chapterType);
+      setAvailableNamedTemplates(named);
+      const items = getDocTemplates().filter(t => t.active);
+      setChecklist(items.map(templateToChecklistItem));
       setExcludedItems(new Set());
+      setSelectedTemplateId('default');
     }
-  }, [step, checklist.length]);
+  }, [step, checklist.length, info.chapterType]);
 
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
