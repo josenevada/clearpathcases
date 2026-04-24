@@ -20,6 +20,44 @@ const getCaseLanguage = async (caseId: string): Promise<'en' | 'es'> => {
   return ((data as any)?.client_language === 'es' ? 'es' : 'en');
 };
 
+/**
+ * SMS Gate — all outbound SMS must pass through this before sending.
+ * Returns { allowed: true } or { allowed: false, reason: string }
+ *
+ * Rules:
+ * - Quiet hours: only send between 8:00 AM and 8:00 PM MST (UTC-7).
+ *   MST is used as the safe default since this is an Arizona-first product.
+ * - Cooldown: no SMS to the same case within 4 hours of the last one.
+ *   Check activity_log for the most recent reminder_sent event for this caseId.
+ */
+export const checkSmsGate = async (caseId: string): Promise<{ allowed: boolean; reason?: string }> => {
+  // Quiet hours check (MST = UTC-7)
+  const nowUTC = new Date();
+  const mstHour = (nowUTC.getUTCHours() - 7 + 24) % 24;
+  if (mstHour < 8 || mstHour >= 20) {
+    return { allowed: false, reason: `Quiet hours (currently ${mstHour}:00 MST)` };
+  }
+
+  // 4-hour cooldown check via Supabase activity_log
+  const { data } = await supabase
+    .from('activity_log')
+    .select('created_at')
+    .eq('case_id', caseId)
+    .eq('event_type', 'reminder_sent')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (data?.created_at) {
+    const hoursSince = (Date.now() - new Date(data.created_at).getTime()) / (1000 * 60 * 60);
+    if (hoursSince < 4) {
+      return { allowed: false, reason: `Cooldown — last message sent ${Math.round(hoursSince * 10) / 10}h ago` };
+    }
+  }
+
+  return { allowed: true };
+};
+
 interface SendSmsParams {
   to: string;
   body: string;
