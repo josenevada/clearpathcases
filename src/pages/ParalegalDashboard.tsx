@@ -509,6 +509,16 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
 
   const sendReminder = async (mode: 'sms' | 'email' | 'both') => {
     if (hasBothMissing) return;
+
+    if (mode === 'sms' || mode === 'both') {
+      const gate = await checkSmsGate(caseData.id);
+      if (!gate.allowed) {
+        toast.warning(`SMS not sent: ${gate.reason}`);
+        if (mode === 'sms') { setRemindOpen(false); return; }
+        // For 'both' mode, continue to send email only
+      }
+    }
+
     try {
       if (mode === 'sms') {
         const portalLink = `https://yourclearpath.app/client/${caseData.caseCode}`;
