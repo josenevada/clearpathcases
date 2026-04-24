@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
       expires_at: expiresAt.toISOString(),
     });
   } catch (err) {
-    return json({ error: err.message || 'Internal error' }, 500);
+    const message = err instanceof Error ? err.message : String(err);
+    return json({ error: message || 'Internal error' }, 500);
   }
 });
