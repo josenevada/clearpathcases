@@ -194,6 +194,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     });
     setChecklist([]);
     setExcludedItems(new Set());
+    setSelectedTemplateId('default');
+    setAvailableNamedTemplates([]);
     setShowConfirmClose(false);
     setCreatedPortalLink(null);
     setCopied(false);
