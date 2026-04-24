@@ -124,6 +124,12 @@ const DigitalWalletStep = ({
     }
     setSendingSms(app.name);
     try {
+      const { checkSmsGate } = await import('@/lib/sms');
+      const gate = await checkSmsGate(caseId);
+      if (!gate.allowed) {
+        toast.error(gate.reason || 'Cannot send SMS right now. Please try again later.');
+        return;
+      }
       await sendSms({ to: clientPhone, body: app.smsBody, caseId, clientName });
       toast.success('Instructions sent to your phone!');
     } catch (err) {

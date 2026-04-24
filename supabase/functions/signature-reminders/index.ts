@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const appUrl = Deno.env.get('APP_URL') || 'https://clearpathcases.lovable.app';
     const signingUrl = `${appUrl}/sign/${req.client_token}`;
 
-    // Send SMS reminder
+    // Send SMS reminder via send-sms (which enforces quiet hours + cooldown gate)
     if (req.client_phone) {
       try {
         await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
@@ -48,7 +48,9 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json', apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
           body: JSON.stringify({
             to: req.client_phone,
-            message: `Reminder: ${req.client_name}, your bankruptcy documents still need your signature. Sign here: ${signingUrl}`,
+            body: `Reminder: ${req.client_name}, your bankruptcy documents still need your signature. Sign here: ${signingUrl}`,
+            caseId: req.case_id,
+            clientName: req.client_name,
           }),
         });
       } catch { /* optional */ }
