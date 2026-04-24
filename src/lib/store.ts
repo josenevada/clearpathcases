@@ -145,6 +145,7 @@ const SEEDED_KEY = 'cp_seeded';
 const FIRM_SETTINGS_KEY = 'cp_firmSettings';
 const TEMPLATES_KEY = 'cp_docTemplates';
 const INTAKE_QUESTIONS_KEY = 'cp_intakeQuestions';
+const NAMED_TEMPLATES_KEY = 'clearpath_named_templates';
 
 const uid = () => crypto.randomUUID();
 
