@@ -290,6 +290,42 @@ export const resetDocTemplates = () => {
   })();
 };
 
+// ─── Named Templates ────────────────────────────────────────────────
+export const getNamedTemplates = (): NamedTemplate[] => {
+  const raw = localStorage.getItem(NAMED_TEMPLATES_KEY);
+  return raw ? JSON.parse(raw) : [];
+};
+
+export const saveNamedTemplates = (templates: NamedTemplate[]) => {
+  localStorage.setItem(NAMED_TEMPLATES_KEY, JSON.stringify(templates));
+  // Mirror to Supabase firms.named_templates column (fire-and-forget).
+  void (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('firm_id')
+        .eq('id', userId)
+        .maybeSingle();
+      const firmId = userRow?.firm_id;
+      if (!firmId) return;
+      await supabase
+        .from('firms')
+        // Column may not exist yet — silent failure is acceptable.
+        .update({ named_templates: templates as unknown as Json } as never)
+        .eq('id', firmId);
+    } catch {
+      /* silent */
+    }
+  })();
+};
+
+export const getNamedTemplatesForChapter = (chapterType: '7' | '13'): NamedTemplate[] => {
+  return getNamedTemplates().filter(t => t.chapterType === chapterType || t.chapterType === 'both');
+};
+
 // ─── Intake Questions ───────────────────────────────────────────────
 export interface IntakeQuestion {
   id: string;
