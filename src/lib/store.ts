@@ -190,6 +190,14 @@ export interface TemplateItem {
   order: number;
 }
 
+export interface NamedTemplate {
+  id: string;
+  name: string;
+  chapterType: '7' | '13' | 'both';
+  items: TemplateItem[];
+  createdAt: string;
+}
+
 export const buildDefaultTemplates = (): TemplateItem[] => {
   const items = buildDefaultChecklist();
   return items.map((item, i) => ({
