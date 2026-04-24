@@ -591,6 +591,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           toast.warning(`Reminder queued — delivery channels unavailable`);
         }
       }
+      setLastReminderSentAt(new Date().toISOString());
     } catch {
       toast.error('Failed to send reminder.');
     }
