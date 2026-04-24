@@ -20,8 +20,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  createCase, updateCase, getFirmSettings, getDocTemplates,
-  CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem,
+  createCase, updateCase, getFirmSettings, getDocTemplates, getNamedTemplatesForChapter,
+  CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem, type NamedTemplate,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
 
