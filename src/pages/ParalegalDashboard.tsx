@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
 import { sendSmartReminder } from '@/lib/notifications';
+import { checkSmsGate } from '@/lib/sms';
 import { toast } from 'sonner';
 import PlanBadge from '@/components/PlanBadge';
 import UpgradeModal from '@/components/UpgradeModal';
