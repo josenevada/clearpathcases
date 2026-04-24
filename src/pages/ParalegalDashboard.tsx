@@ -470,6 +470,7 @@ const ParalegalDashboard = () => {
 // ─── Case Card ───────────────────────────────────────────────────────
 const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case; index: number; onNavigate: () => void; onSendLink: () => void }) => {
   const [meansTestStatus, setMeansTestStatus] = useState<string | null>(null);
+  const [lastReminderSentAt, setLastReminderSentAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (caseData.chapterType !== '7') return;
@@ -482,6 +483,28 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
         if (data) setMeansTestStatus(data.eligibility_result);
       });
   }, [caseData.id, caseData.chapterType]);
+
+  useEffect(() => {
+    supabase
+      .from('activity_log')
+      .select('created_at')
+      .eq('case_id', caseData.id)
+      .eq('event_type', 'reminder_sent')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.created_at) setLastReminderSentAt(data.created_at);
+      });
+  }, [caseData.id]);
+
+  const hoursSinceLastReminder = lastReminderSentAt
+    ? (Date.now() - new Date(lastReminderSentAt).getTime()) / (1000 * 60 * 60)
+    : null;
+  const reminderOnCooldown = hoursSinceLastReminder !== null && hoursSinceLastReminder < 24;
+  const cooldownHoursRemaining = hoursSinceLastReminder !== null
+    ? Math.ceil(24 - hoursSinceLastReminder)
+    : 0;
   const progress = calculateProgress(caseData);
   const hasRecentResubmission = caseHasRecentResubmission(caseData);
   const navigate = useNavigate();
