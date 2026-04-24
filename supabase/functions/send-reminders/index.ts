@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
     return json({ error: 'Missing Supabase config' }, 500);
   }
 
+  const now = new Date();
+
+  // Quiet hours guard — only send between 8 AM and 8 PM MST
+  const mstHour = (now.getUTCHours() - 7 + 24) % 24;
+  if (mstHour < 8 || mstHour >= 20) {
+    return json({ skipped: true, reason: `Outside quiet hours (${mstHour}:00 MST)` });
+  }
+
   // Fetch all non-ready cases
   const casesRes = await fetch(`${supabaseUrl}/rest/v1/cases?ready_to_file=eq.false&select=*`, {
     headers: {
@@ -36,7 +44,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Failed to fetch cases' }, 500);
   }
 
-  const now = new Date();
   const results: any[] = [];
 
   for (const c of cases) {
@@ -71,47 +78,34 @@ Deno.serve(async (req) => {
     // Skip if 100% complete
     if (pct >= 100) continue;
 
+    // Notification type priority — clean if/else chain
     let notificationType: string | null = null;
 
-    // 3-day deadline reminder
     if (daysUntilDeadline <= 3 && daysUntilDeadline > 0) {
       notificationType = 'deadline_reminder_3d';
-    }
-    // 7-day deadline reminder
-    else if (daysUntilDeadline <= 7 && daysUntilDeadline > 3) {
+    } else if (daysUntilDeadline <= 7 && daysUntilDeadline > 3) {
       notificationType = 'deadline_reminder_7d';
-    }
-
-    // "Never started" detection — welcomed but never opened portal
-    if (!notificationType && !c.last_client_activity && c.created_at) {
-      const createdAt = new Date(c.created_at);
-      const hoursSinceCreated = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    } else if (!c.last_client_activity && c.created_at) {
+      const hoursSinceCreated = (now.getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60);
       if (hoursSinceCreated >= 24) {
         notificationType = 'never_started';
       }
-    }
-
-    // Inactivity checks (48h first nudge, 96h second nudge)
-    if (!notificationType && c.last_client_activity) {
-      const lastActivity = new Date(c.last_client_activity);
-      const hoursSince = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60);
-      if (hoursSince >= 96 && hoursSince < 120) {
+    } else if (c.last_client_activity) {
+      const hoursSince = (now.getTime() - new Date(c.last_client_activity).getTime()) / (1000 * 60 * 60);
+      if (hoursSince >= 96) {
         notificationType = 'inactivity_96h';
-      } else if (hoursSince >= 48 && hoursSince < 96) {
+      } else if (hoursSince >= 48) {
         notificationType = 'inactivity_48h';
       }
     }
 
     if (!notificationType) continue;
 
-    // Type-specific dedup: don't re-send the SAME type today, but allow different types
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
+    // Global 24h dedup: skip if any reminder was sent in the last 24 hours
+    const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const logRes = await fetch(
-      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${c.id}&event_type=eq.reminder_sent&created_at=gte.${todayStart.toISOString()}&description=ilike.*${notificationType}*&select=id&limit=1`,
-      {
-        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
-      },
+      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${c.id}&event_type=eq.reminder_sent&created_at=gte.${last24hStart.toISOString()}&select=id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
     );
     const existingLogs = await logRes.json();
     if (Array.isArray(existingLogs) && existingLogs.length > 0) continue;
@@ -139,7 +133,7 @@ Deno.serve(async (req) => {
 
     const notifyResult = await notifyRes.json().catch(() => ({}));
 
-    // Log to activity_log so dedup can find this specific type
+    // Log to activity_log
     await fetch(`${supabaseUrl}/rest/v1/activity_log`, {
       method: 'POST',
       headers: {
@@ -153,7 +147,7 @@ Deno.serve(async (req) => {
         event_type: 'reminder_sent',
         actor_role: 'system',
         actor_name: 'ClearPath',
-        description: `Automated reminder sent: ${notificationType}`,
+        description: `Automated reminder sent [${notificationType}]: ${c.client_name}`,
       }),
     }).catch(() => {});
 

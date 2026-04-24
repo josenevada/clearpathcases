@@ -44,7 +44,7 @@ import EditCasePanel from '@/components/case/EditCasePanel';
 import CaseStatusDropdown from '@/components/case/CaseStatusDropdown';
 import ClientInfoTab from '@/components/case/ClientInfoTab';
 import { sendCorrectionRequest } from '@/lib/notifications';
-import { sendCorrectionSms } from '@/lib/sms';
+
 import { useAuth } from '@/lib/auth';
 import {
   updateCase,
@@ -510,13 +510,6 @@ const CaseDetail = () => {
       toast.success('Correction requested. Notification delivery needs to be configured.');
     }
 
-    // Trigger 5: Correction Request SMS
-    sendCorrectionSms(
-      caseData.clientPhone,
-      caseData.clientName,
-      caseData.caseCode || caseData.id,
-      caseData.id,
-    ).catch((err) => console.error('Correction SMS error:', err));
 
     resetCorrectionForm();
     refresh();
