@@ -88,6 +88,12 @@ export const sendWelcomeSms = async (
   const phone = await getFreshPhone(caseId, clientPhone);
   if (!phone) return;
 
+  const gate = await checkSmsGate(caseId);
+  if (!gate.allowed) {
+    console.log(`SMS gated for case ${caseId}: ${gate.reason}`);
+    return;
+  }
+
   const firstName = clientName.split(' ')[0];
   const portalLink = `${window.location.origin}/client/${caseCode}`;
   const lang = await getCaseLanguage(caseId);
@@ -107,6 +113,12 @@ export const sendCorrectionSms = async (
 ) => {
   const phone = await getFreshPhone(caseId, clientPhone);
   if (!phone) return;
+
+  const gate = await checkSmsGate(caseId);
+  if (!gate.allowed) {
+    console.log(`SMS gated for case ${caseId}: ${gate.reason}`);
+    return;
+  }
 
   const firstName = clientName.split(' ')[0];
   const portalLink = `${window.location.origin}/client/${caseCode}`;
@@ -130,6 +142,12 @@ export const sendMomentumSms = async (
 ) => {
   const phone = await getFreshPhone(caseId, clientPhone);
   if (!phone) return;
+
+  const gate = await checkSmsGate(caseId);
+  if (!gate.allowed) {
+    console.log(`SMS gated for case ${caseId}: ${gate.reason}`);
+    return;
+  }
 
   const firstName = clientName.split(' ')[0];
   const portalLink = `${window.location.origin}/client/${caseCode}`;
