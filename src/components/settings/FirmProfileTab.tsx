@@ -78,6 +78,18 @@ const FirmProfileTab = () => {
     }
   };
 
+  const handleSaveCounseling = async () => {
+    try {
+      saveCounselingProvider(counseling);
+      if (user?.firmId) {
+        await saveCounselingSettings(user.firmId, counseling);
+      }
+      toast.success('Credit counseling provider saved.');
+    } catch {
+      toast.error('Failed to save credit counseling provider.');
+    }
+  };
+
   const update = (field: keyof FirmSettings, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
