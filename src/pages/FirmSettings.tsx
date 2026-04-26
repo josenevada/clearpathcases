@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Logo from '@/components/Logo';
 import FirmProfileTab from '@/components/settings/FirmProfileTab';
 import DocumentTemplatesTab from '@/components/settings/DocumentTemplatesTab';
-import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
+
 import BillingTab from '@/components/settings/BillingTab';
 import TeamTab from '@/components/settings/TeamTab';
 import DataRetentionTab from '@/components/settings/DataRetentionTab';
@@ -54,7 +54,6 @@ const NAV_GROUPS: NavGroup[] = [
     icon: ClipboardList,
     items: [
       { key: 'templates', label: 'Document Templates', path: '/paralegal/settings/case/templates' },
-      { key: 'questions', label: 'Intake Questions', path: '/paralegal/settings/case/questions' },
     ],
   },
   {
@@ -160,7 +159,7 @@ const FirmSettings = () => {
       case 'profile': return <FirmProfileTab />;
       case 'team': return <TeamTab />;
       case 'templates': return <DocumentTemplatesTab />;
-      case 'questions': return <IntakeQuestionsTab />;
+      
       case 'whitelabel': return <WhiteLabelTab />;
       case 'branding': return <BrandingTab />;
       case 'billing': return <BillingTab />;
