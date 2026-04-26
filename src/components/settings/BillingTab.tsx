@@ -116,7 +116,7 @@ const BillingTab = () => {
                 disabled={loading}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body"
               >
-                Manage billing & cancellation →
+                Cancel subscription →
               </button>
             </div>
           </div>
@@ -132,13 +132,21 @@ const BillingTab = () => {
             >
               Upgrade to Firm — $699/mo
             </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto sm:ml-3"
+              onClick={handleManageBilling}
+              disabled={loading}
+            >
+              Switch to Starter — $199/mo
+            </Button>
             <div className="border-t border-border/40 pt-4 mt-4">
               <button
                 onClick={handleManageBilling}
                 disabled={loading}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body"
               >
-                Switch or cancel plan →
+                Cancel subscription →
               </button>
             </div>
           </div>
@@ -146,13 +154,22 @@ const BillingTab = () => {
 
         {/* Active — Firm */}
         {isActive && plan === 'firm' && (
-          <div className="surface-card p-6">
+          <div className="surface-card p-6 space-y-3">
             <Button variant="outline" onClick={handleManageBilling} disabled={loading}>
-              Manage Billing
+              Downgrade Plan
             </Button>
-            <p className="text-[12px] text-muted-foreground font-body mt-3">
-              To switch or cancel your plan, use the billing portal.
-            </p>
+            <div className="border-t border-border/40 pt-4 mt-4 space-y-2">
+              <button
+                onClick={handleManageBilling}
+                disabled={loading}
+                className="block text-sm text-muted-foreground hover:text-foreground transition-colors font-body"
+              >
+                Cancel subscription →
+              </button>
+              <p className="text-xs text-muted-foreground font-body">
+                Plan changes take effect at the end of your current billing period.
+              </p>
+            </div>
           </div>
         )}
 
