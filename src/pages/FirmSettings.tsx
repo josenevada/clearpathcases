@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Logo from '@/components/Logo';
 import FirmProfileTab from '@/components/settings/FirmProfileTab';
 import DocumentTemplatesTab from '@/components/settings/DocumentTemplatesTab';
-import IntakeQuestionsTab from '@/components/settings/IntakeQuestionsTab';
+
 import BillingTab from '@/components/settings/BillingTab';
 import TeamTab from '@/components/settings/TeamTab';
 import DataRetentionTab from '@/components/settings/DataRetentionTab';
