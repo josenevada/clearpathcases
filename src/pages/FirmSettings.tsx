@@ -159,7 +159,7 @@ const FirmSettings = () => {
       case 'profile': return <FirmProfileTab />;
       case 'team': return <TeamTab />;
       case 'templates': return <DocumentTemplatesTab />;
-      case 'questions': return <IntakeQuestionsTab />;
+      
       case 'whitelabel': return <WhiteLabelTab />;
       case 'branding': return <BrandingTab />;
       case 'billing': return <BillingTab />;
