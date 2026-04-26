@@ -54,7 +54,6 @@ const NAV_GROUPS: NavGroup[] = [
     icon: ClipboardList,
     items: [
       { key: 'templates', label: 'Document Templates', path: '/paralegal/settings/case/templates' },
-      { key: 'questions', label: 'Intake Questions', path: '/paralegal/settings/case/questions' },
     ],
   },
   {
