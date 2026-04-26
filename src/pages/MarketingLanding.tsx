@@ -1068,9 +1068,7 @@ const MarketingLanding = () => {
           <p className="text-xs text-[#8aa3b8] font-body">
             Need more than 60 cases? Enterprise pricing available — <a href="mailto:hello@yourclearpath.app" className="text-primary hover:underline">contact us</a>.
           </p>
-          <p className="text-xs text-[#8aa3b8] font-body">
-            Overage: $25/case over your plan limit.
-          </p>
+          
           <p className="text-xs text-[#8aa3b8] font-body mt-4">
             Your data is protected with bank-level encryption.{' '}
             <a href="/security" className="text-primary hover:underline">Learn more</a>
