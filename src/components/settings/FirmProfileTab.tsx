@@ -2,12 +2,32 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ExternalLink } from 'lucide-react';
 import { getDefaultFirmSettings, type FirmSettings } from '@/lib/store';
-import { fetchFirmProfileSettings, saveFirmProfileSettings } from '@/lib/dashboard-data';
+import { fetchFirmProfileSettings, saveFirmProfileSettings, fetchCounselingSettings, saveCounselingSettings } from '@/lib/dashboard-data';
 import { useAuth } from '@/lib/auth';
 import { useThemePreference } from '@/hooks/use-theme';
 import { toast } from 'sonner';
+
+const COUNSELING_KEY = 'cp_counseling_provider';
+
+interface CounselingProvider {
+  providerName: string;
+  providerLink: string;
+  attorneyCode: string;
+}
+
+const loadCounseling = (): CounselingProvider => {
+  try {
+    const raw = localStorage.getItem(COUNSELING_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { providerName: '', providerLink: '', attorneyCode: '' };
+};
+
+const saveCounselingProvider = (data: CounselingProvider) => {
+  localStorage.setItem(COUNSELING_KEY, JSON.stringify(data));
+};
 
 const FirmProfileTab = () => {
   const { user } = useAuth();
