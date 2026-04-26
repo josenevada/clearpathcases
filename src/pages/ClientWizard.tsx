@@ -2577,6 +2577,73 @@ const ClientWizard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Multi-upload label prompt */}
+      <AnimatePresence>
+        {fileLabelPromptOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4"
+            onClick={() => {
+              setPendingFile(null);
+              setFileLabelPromptOpen(false);
+              setFileLabel('');
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
+              className="surface-card w-full max-w-md rounded-2xl p-6 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-display font-semibold text-foreground mb-1">Label this file</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {currentItem ? getLabelPromptHelper(currentItem.label) : 'Add a short label so this file is easy to identify.'}
+              </p>
+              <Input
+                value={fileLabel}
+                onChange={e => setFileLabel(e.target.value)}
+                placeholder="e.g. January 2025"
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && pendingFile) {
+                    const f = pendingFile;
+                    const label = fileLabel.trim();
+                    handleFileAdd(f, undefined, label || null);
+                  }
+                }}
+                className="mb-5"
+              />
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (!pendingFile) return;
+                    const f = pendingFile;
+                    handleFileAdd(f, undefined, null);
+                  }}
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!pendingFile) return;
+                    const f = pendingFile;
+                    const label = fileLabel.trim();
+                    handleFileAdd(f, undefined, label || null);
+                  }}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       </div>
     </div>
   );
