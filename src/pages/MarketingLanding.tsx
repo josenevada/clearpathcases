@@ -576,9 +576,9 @@ const MarketingLanding = () => {
                   { label: 'AI guide answers client questions', cols: ['x', 'x', 'x', 'alex'] },
                   { label: 'Bank statements via Plaid', cols: ['x', 'x', 'x', 'plaid'] },
                   { label: 'Automatic SMS reminders', cols: ['x', 'x', '-', 'check'] },
-                  { label: 'Documents organized on arrival', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Auto-named files, organized by category', cols: ['x', 'x', '-', 'check'] },
                   { label: "Works on client's phone", cols: ['-', '-', '-', 'check'] },
-                  { label: 'Built for Ch. 7 & Ch. 13', cols: ['x', 'x', '-', 'check'] },
+                  { label: 'Custom document templates per firm', cols: ['x', 'x', 'x', 'check'] },
                   { label: 'Personalized checklist per client', cols: ['x', 'x', 'x', 'check'] },
                 ].map((row, rowIdx) => (
                   <tr key={row.label} className={rowIdx % 2 === 1 ? 'bg-white/[0.02]' : ''}>
