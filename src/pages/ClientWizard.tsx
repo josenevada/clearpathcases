@@ -188,6 +188,77 @@ const compressImage = (file: File, maxSizeMB: number = 1): Promise<File> => {
   });
 };
 
+const generateCleanFileName = (
+  itemLabel: string,
+  clientLastName: string,
+  originalFile: File,
+  userLabel?: string
+): string => {
+  const ext = (originalFile.name.split('.').pop() || 'pdf').toLowerCase();
+  const date = new Date().toISOString().slice(0, 10);
+  const lastName = clientLastName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+  const docType = itemLabel
+    .replace(/[()]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  const label = userLabel
+    ? userLabel.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    : null;
+  return label
+    ? `${lastName}-${docType}-${label}.${ext}`
+    : `${lastName}-${docType}-${date}.${ext}`;
+};
+
+const getMultiUploadLabelSuggestion = (itemLabel: string, existingCount: number): string => {
+  const now = new Date();
+  const monthNames = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
+
+  // Walk back from current month based on how many already uploaded
+  const targetDate = new Date(now.getFullYear(), now.getMonth() - existingCount, 1);
+  const month = monthNames[targetDate.getMonth()];
+  const year = targetDate.getFullYear();
+  const prevYear = now.getFullYear() - 1;
+
+  if (itemLabel.includes('Checking') || itemLabel.includes('Savings') ||
+      itemLabel.includes('Digital Wallet') || itemLabel.includes('Credit Card')) {
+    return `${month} ${year}`;
+  }
+  if (itemLabel.includes('Pay Stub')) {
+    return `${month} ${year}`;
+  }
+  if (itemLabel.includes('W-2')) {
+    return existingCount === 0 ? `${now.getFullYear()}` : `${prevYear}`;
+  }
+  if (itemLabel.includes('Tax Return')) {
+    return existingCount === 0 ? `${now.getFullYear() - 1}` : `${now.getFullYear() - 2}`;
+  }
+  return '';
+};
+
+const getLabelPromptHelper = (itemLabel: string): string => {
+  if (itemLabel.includes('Checking') || itemLabel.includes('Savings')) {
+    return 'Which month is this statement for?';
+  }
+  if (itemLabel.includes('Digital Wallet')) {
+    return 'Which month is this digital wallet statement for?';
+  }
+  if (itemLabel.includes('Credit Card')) {
+    return 'Which month is this credit card statement for?';
+  }
+  if (itemLabel.includes('Pay Stub')) {
+    return 'Which month is this pay stub from?';
+  }
+  if (itemLabel.includes('W-2')) {
+    return 'Which tax year is this W-2 from?';
+  }
+  if (itemLabel.includes('Tax Return')) {
+    return 'Which tax year is this return from?';
+  }
+  return 'Add a short label so this file is easy to identify.';
+};
+
 const ClientWizard = () => {
   const { caseId, caseCode } = useParams<{ caseId?: string; caseCode?: string }>();
   const resolvedCaseId = caseId || '';
@@ -215,6 +286,9 @@ const ClientWizard = () => {
   
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [fileLabelPromptOpen, setFileLabelPromptOpen] = useState(false);
+  const [fileLabel, setFileLabel] = useState('');
   const [showNaFlow, setShowNaFlow] = useState(false);
   const [naClientReason, setNaClientReason] = useState<string | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -675,10 +749,19 @@ const ClientWizard = () => {
     );
   };
 
-  const handleFileAdd = async (file: File, replaceFileId?: string) => {
+  const handleFileAdd = async (file: File, replaceFileId?: string, explicitLabel?: string | null) => {
     if (!currentItem) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     setPendingDuplicate(null);
+
+    // Multi-upload items: gate through label prompt before uploading
+    if (isMultiUpload && !replaceFileId && explicitLabel === undefined) {
+      const suggestion = getMultiUploadLabelSuggestion(currentItem.label, currentItem.files.length);
+      setFileLabel(suggestion);
+      setPendingFile(file);
+      setFileLabelPromptOpen(true);
+      return;
+    }
 
     // Show compression message for large files
     if (file.size > 4 * 1024 * 1024 && file.type.startsWith('image/')) {
@@ -698,8 +781,20 @@ const ClientWizard = () => {
     const newFileId = crypto.randomUUID();
     const uploadedAt = new Date().toISOString();
 
-    // Upload to Supabase Storage
-    const storagePath = `${caseData.id}/${currentItem.id}/${Date.now()}-${processedFile.name}`;
+    // Build a clean, human-readable file name
+    const clientLastName = caseData.clientName?.split(' ').pop() || 'Client';
+    const userLabel = isMultiUpload && explicitLabel ? explicitLabel : undefined;
+    const cleanFileName = generateCleanFileName(
+      currentItem.label,
+      clientLastName,
+      processedFile,
+      userLabel
+    );
+
+    // Upload to Supabase Storage with a unique path
+    const uniqueId = crypto.randomUUID().slice(0, 6);
+    const ext = (processedFile.name.split('.').pop() || 'pdf').toLowerCase();
+    const storagePath = `${caseData.id}/${currentItem.id}/${cleanFileName.replace(`.${ext}`, '')}-${uniqueId}.${ext}`;
     const { error: storageError } = await supabase.storage
       .from('case-documents')
       .upload(storagePath, processedFile, { upsert: false });
@@ -719,7 +814,7 @@ const ClientWizard = () => {
 
     const newFile = {
       id: newFileId,
-      name: processedFile.name,
+      name: cleanFileName,
       dataUrl: displayUrl,
       uploadedAt,
       reviewStatus: 'pending' as const,
@@ -768,7 +863,7 @@ const ClientWizard = () => {
           id: newFileId,
           case_id: caseData.id,
           checklist_item_id: currentItem.id,
-          file_name: processedFile.name,
+          file_name: cleanFileName,
           storage_path: storagePath,
           data_url: '',
           uploaded_at: uploadedAt,
@@ -781,7 +876,7 @@ const ClientWizard = () => {
           eventType: 'file_upload',
           actorRole: 'client',
           actorName: caseData.clientName,
-          description: `${caseData.clientName.split(' ')[0]} uploaded ${processedFile.name} for ${currentItem.label}`,
+          description: `${caseData.clientName.split(' ')[0]} uploaded ${cleanFileName} for ${currentItem.label}`,
           itemId: currentItem.id,
         });
       } catch (err) {
@@ -793,6 +888,11 @@ const ClientWizard = () => {
     if (displayUrl) {
       triggerValidation(newFileId, displayUrl, currentItem.label, caseData.id);
     }
+
+    // Reset multi-upload label prompt state after a successful upload
+    setPendingFile(null);
+    setFileLabelPromptOpen(false);
+    setFileLabel('');
 
     if (!currentItemHasOpenCorrection) {
       if (!isMultiUpload) {
@@ -807,10 +907,10 @@ const ClientWizard = () => {
           return prev;
         });
       } else {
-        toast.success(`${processedFile.name} added`, { duration: 1500 });
+        toast.success(`${cleanFileName} added`, { duration: 1500 });
       }
     } else {
-      toast.success(`${processedFile.name} added`, { duration: 1500 });
+      toast.success(`${cleanFileName} added`, { duration: 1500 });
     }
   };
 
@@ -2474,6 +2574,73 @@ const ClientWizard = () => {
                 <p className="text-white/60">Preview not available for this file type</p>
               </div>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Multi-upload label prompt */}
+      <AnimatePresence>
+        {fileLabelPromptOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4"
+            onClick={() => {
+              setPendingFile(null);
+              setFileLabelPromptOpen(false);
+              setFileLabel('');
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
+              className="surface-card w-full max-w-md rounded-2xl p-6 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-display font-semibold text-foreground mb-1">Label this file</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {currentItem ? getLabelPromptHelper(currentItem.label) : 'Add a short label so this file is easy to identify.'}
+              </p>
+              <Input
+                value={fileLabel}
+                onChange={e => setFileLabel(e.target.value)}
+                placeholder="e.g. January 2025"
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && pendingFile) {
+                    const f = pendingFile;
+                    const label = fileLabel.trim();
+                    handleFileAdd(f, undefined, label || null);
+                  }
+                }}
+                className="mb-5"
+              />
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (!pendingFile) return;
+                    const f = pendingFile;
+                    handleFileAdd(f, undefined, null);
+                  }}
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!pendingFile) return;
+                    const f = pendingFile;
+                    const label = fileLabel.trim();
+                    handleFileAdd(f, undefined, label || null);
+                  }}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
