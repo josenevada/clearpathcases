@@ -286,6 +286,9 @@ const ClientWizard = () => {
   
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [fileLabelPromptOpen, setFileLabelPromptOpen] = useState(false);
+  const [fileLabel, setFileLabel] = useState('');
   const [showNaFlow, setShowNaFlow] = useState(false);
   const [naClientReason, setNaClientReason] = useState<string | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
