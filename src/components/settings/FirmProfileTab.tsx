@@ -165,6 +165,49 @@ const FirmProfileTab = () => {
       <div className="flex justify-end mt-6">
         <Button onClick={handleSave}>Save</Button>
       </div>
+
+      {/* Credit Counseling Provider */}
+      <div className="mt-8 pt-6 border-t border-border/60">
+        <div className="flex items-center gap-2 mb-3">
+          <ExternalLink className="w-4 h-4 text-primary" />
+          <h3 className="font-display font-bold text-foreground">Credit Counseling Provider</h3>
+        </div>
+        <p className="text-xs text-muted-foreground font-body mb-4">
+          This link is shown to clients in their intake portal when they reach the Credit Counseling Certificate step. Use an EOUST-approved provider.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-muted-foreground">Provider name</Label>
+            <Input
+              value={counseling.providerName}
+              onChange={e => setCounseling(prev => ({ ...prev, providerName: e.target.value }))}
+              placeholder="e.g. Evergreen Financial Counseling"
+              className="bg-input border-border rounded-[10px]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-muted-foreground">Provider link</Label>
+            <Input
+              type="url"
+              value={counseling.providerLink}
+              onChange={e => setCounseling(prev => ({ ...prev, providerLink: e.target.value }))}
+              placeholder="https://evergreenclass.com"
+              className="bg-input border-border rounded-[10px]"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5 mb-4 max-w-sm">
+          <Label className="text-sm text-muted-foreground">Attorney code (optional)</Label>
+          <Input
+            value={counseling.attorneyCode}
+            onChange={e => setCounseling(prev => ({ ...prev, attorneyCode: e.target.value }))}
+            placeholder="e.g. ATT-12345"
+            className="bg-input border-border rounded-[10px]"
+          />
+        </div>
+        <Button size="sm" onClick={handleSaveCounseling}>Save Provider</Button>
+      </div>
     </div>
   );
 };
