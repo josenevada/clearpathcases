@@ -749,10 +749,19 @@ const ClientWizard = () => {
     );
   };
 
-  const handleFileAdd = async (file: File, replaceFileId?: string) => {
+  const handleFileAdd = async (file: File, replaceFileId?: string, explicitLabel?: string | null) => {
     if (!currentItem) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     setPendingDuplicate(null);
+
+    // Multi-upload items: gate through label prompt before uploading
+    if (isMultiUpload && !replaceFileId && explicitLabel === undefined) {
+      const suggestion = getMultiUploadLabelSuggestion(currentItem.label, currentItem.files.length);
+      setFileLabel(suggestion);
+      setPendingFile(file);
+      setFileLabelPromptOpen(true);
+      return;
+    }
 
     // Show compression message for large files
     if (file.size > 4 * 1024 * 1024 && file.type.startsWith('image/')) {
@@ -772,8 +781,20 @@ const ClientWizard = () => {
     const newFileId = crypto.randomUUID();
     const uploadedAt = new Date().toISOString();
 
-    // Upload to Supabase Storage
-    const storagePath = `${caseData.id}/${currentItem.id}/${Date.now()}-${processedFile.name}`;
+    // Build a clean, human-readable file name
+    const clientLastName = caseData.clientName?.split(' ').pop() || 'Client';
+    const userLabel = isMultiUpload && explicitLabel ? explicitLabel : undefined;
+    const cleanFileName = generateCleanFileName(
+      currentItem.label,
+      clientLastName,
+      processedFile,
+      userLabel
+    );
+
+    // Upload to Supabase Storage with a unique path
+    const uniqueId = crypto.randomUUID().slice(0, 6);
+    const ext = (processedFile.name.split('.').pop() || 'pdf').toLowerCase();
+    const storagePath = `${caseData.id}/${currentItem.id}/${cleanFileName.replace(`.${ext}`, '')}-${uniqueId}.${ext}`;
     const { error: storageError } = await supabase.storage
       .from('case-documents')
       .upload(storagePath, processedFile, { upsert: false });
@@ -793,7 +814,7 @@ const ClientWizard = () => {
 
     const newFile = {
       id: newFileId,
-      name: processedFile.name,
+      name: cleanFileName,
       dataUrl: displayUrl,
       uploadedAt,
       reviewStatus: 'pending' as const,
@@ -842,7 +863,7 @@ const ClientWizard = () => {
           id: newFileId,
           case_id: caseData.id,
           checklist_item_id: currentItem.id,
-          file_name: processedFile.name,
+          file_name: cleanFileName,
           storage_path: storagePath,
           data_url: '',
           uploaded_at: uploadedAt,
@@ -855,7 +876,7 @@ const ClientWizard = () => {
           eventType: 'file_upload',
           actorRole: 'client',
           actorName: caseData.clientName,
-          description: `${caseData.clientName.split(' ')[0]} uploaded ${processedFile.name} for ${currentItem.label}`,
+          description: `${caseData.clientName.split(' ')[0]} uploaded ${cleanFileName} for ${currentItem.label}`,
           itemId: currentItem.id,
         });
       } catch (err) {
@@ -867,6 +888,11 @@ const ClientWizard = () => {
     if (displayUrl) {
       triggerValidation(newFileId, displayUrl, currentItem.label, caseData.id);
     }
+
+    // Reset multi-upload label prompt state after a successful upload
+    setPendingFile(null);
+    setFileLabelPromptOpen(false);
+    setFileLabel('');
 
     if (!currentItemHasOpenCorrection) {
       if (!isMultiUpload) {
@@ -881,10 +907,10 @@ const ClientWizard = () => {
           return prev;
         });
       } else {
-        toast.success(`${processedFile.name} added`, { duration: 1500 });
+        toast.success(`${cleanFileName} added`, { duration: 1500 });
       }
     } else {
-      toast.success(`${processedFile.name} added`, { duration: 1500 });
+      toast.success(`${cleanFileName} added`, { duration: 1500 });
     }
   };
 
