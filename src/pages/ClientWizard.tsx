@@ -188,6 +188,77 @@ const compressImage = (file: File, maxSizeMB: number = 1): Promise<File> => {
   });
 };
 
+const generateCleanFileName = (
+  itemLabel: string,
+  clientLastName: string,
+  originalFile: File,
+  userLabel?: string
+): string => {
+  const ext = (originalFile.name.split('.').pop() || 'pdf').toLowerCase();
+  const date = new Date().toISOString().slice(0, 10);
+  const lastName = clientLastName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+  const docType = itemLabel
+    .replace(/[()]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  const label = userLabel
+    ? userLabel.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    : null;
+  return label
+    ? `${lastName}-${docType}-${label}.${ext}`
+    : `${lastName}-${docType}-${date}.${ext}`;
+};
+
+const getMultiUploadLabelSuggestion = (itemLabel: string, existingCount: number): string => {
+  const now = new Date();
+  const monthNames = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
+
+  // Walk back from current month based on how many already uploaded
+  const targetDate = new Date(now.getFullYear(), now.getMonth() - existingCount, 1);
+  const month = monthNames[targetDate.getMonth()];
+  const year = targetDate.getFullYear();
+  const prevYear = now.getFullYear() - 1;
+
+  if (itemLabel.includes('Checking') || itemLabel.includes('Savings') ||
+      itemLabel.includes('Digital Wallet') || itemLabel.includes('Credit Card')) {
+    return `${month} ${year}`;
+  }
+  if (itemLabel.includes('Pay Stub')) {
+    return `${month} ${year}`;
+  }
+  if (itemLabel.includes('W-2')) {
+    return existingCount === 0 ? `${now.getFullYear()}` : `${prevYear}`;
+  }
+  if (itemLabel.includes('Tax Return')) {
+    return existingCount === 0 ? `${now.getFullYear() - 1}` : `${now.getFullYear() - 2}`;
+  }
+  return '';
+};
+
+const getLabelPromptHelper = (itemLabel: string): string => {
+  if (itemLabel.includes('Checking') || itemLabel.includes('Savings')) {
+    return 'Which month is this statement for?';
+  }
+  if (itemLabel.includes('Digital Wallet')) {
+    return 'Which month is this digital wallet statement for?';
+  }
+  if (itemLabel.includes('Credit Card')) {
+    return 'Which month is this credit card statement for?';
+  }
+  if (itemLabel.includes('Pay Stub')) {
+    return 'Which month is this pay stub from?';
+  }
+  if (itemLabel.includes('W-2')) {
+    return 'Which tax year is this W-2 from?';
+  }
+  if (itemLabel.includes('Tax Return')) {
+    return 'Which tax year is this return from?';
+  }
+  return 'Add a short label so this file is easy to identify.';
+};
+
 const ClientWizard = () => {
   const { caseId, caseCode } = useParams<{ caseId?: string; caseCode?: string }>();
   const resolvedCaseId = caseId || '';
