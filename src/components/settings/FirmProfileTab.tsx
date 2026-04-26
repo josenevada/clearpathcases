@@ -34,6 +34,19 @@ const FirmProfileTab = () => {
   const { theme, setTheme } = useThemePreference();
   const [form, setForm] = useState<FirmSettings>(getDefaultFirmSettings());
   const [loading, setLoading] = useState(true);
+  const [counseling, setCounseling] = useState<CounselingProvider>(loadCounseling);
+
+  useEffect(() => {
+    const loadPersistedCounseling = async () => {
+      if (!user?.firmId) return;
+      try {
+        setCounseling(await fetchCounselingSettings(user.firmId));
+      } catch {
+        toast.error('Failed to load credit counseling settings.');
+      }
+    };
+    void loadPersistedCounseling();
+  }, [user?.firmId]);
 
   useEffect(() => {
     const loadSettings = async () => {
