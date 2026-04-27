@@ -36,6 +36,7 @@ const PlaidBankConnect = ({
   const [result, setResult] = useState<PlaidResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const isOAuthRedirect = typeof window !== 'undefined' && window.location.href.includes('oauth_state_id');
 
   const handlePlaidSuccess = useCallback(async (publicToken: string) => {
     setState('exchanging');
@@ -80,19 +81,30 @@ const PlaidBankConnect = ({
     token: linkToken,
     onSuccess: handlePlaidSuccess,
     onExit: handlePlaidExit,
+    receivedRedirectUri: isOAuthRedirect ? window.location.href : undefined,
   });
 
-  // Open Plaid Link once token is ready and state is link-open
+  // Auto-resume OAuth flow on redirect back from bank
+  useEffect(() => {
+    if (isOAuthRedirect) {
+      handleConnectClick();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Open Plaid Link once token is ready and state is link-open (or OAuth return)
   const prevReadyRef = useRef(false);
   useEffect(() => {
-    if (state === 'link-open' && plaidReady && linkToken && !prevReadyRef.current) {
-      prevReadyRef.current = true;
-      openPlaidLink();
+    if (plaidReady && linkToken && (state === 'link-open' || isOAuthRedirect)) {
+      if (!prevReadyRef.current) {
+        prevReadyRef.current = true;
+        openPlaidLink();
+      }
     }
-    if (state !== 'link-open') {
+    if (state !== 'link-open' && !isOAuthRedirect) {
       prevReadyRef.current = false;
     }
-  }, [state, plaidReady, linkToken, openPlaidLink]);
+  }, [state, plaidReady, linkToken, openPlaidLink, isOAuthRedirect]);
 
   const handleConnectClick = async () => {
     setState('loading-token');

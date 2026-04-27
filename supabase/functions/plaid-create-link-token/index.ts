@@ -58,6 +58,7 @@ serve(async (req) => {
         },
         country_codes: ['US'],
         language: 'en',
+        redirect_uri: 'https://yourclearpath.app/client/' + case_id,
       }),
     });
 
