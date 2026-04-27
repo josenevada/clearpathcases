@@ -14,6 +14,7 @@ import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits, FEATURE_GATE_INFO } from '@/lib/plan-limits';
 import UpgradeModal from '@/components/UpgradeModal';
 import { supabase } from '@/integrations/supabase/client';
+import { sendSms } from '@/lib/sms';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Case } from '@/lib/store';
@@ -169,14 +170,12 @@ const SignaturesTab = ({ caseData, onRefresh }: SignaturesTabProps) => {
       // Send SMS
       if (request.client_phone) {
         const appUrl = window.location.origin;
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        await fetch(`https://${projectId}.supabase.co/functions/v1/send-sms`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: request.client_phone,
-            message: `Reminder: ${request.client_name}, please sign your bankruptcy documents: ${appUrl}/sign/${request.client_token}`,
-          }),
+        await sendSms({
+          to: request.client_phone,
+          body: `Reminder: ${request.client_name}, please sign your bankruptcy documents: ${appUrl}/sign/${request.client_token}`,
+          caseId: caseData.id,
+          clientName: request.client_name,
+          bypass: true,
         });
       }
 
