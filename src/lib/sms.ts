@@ -46,7 +46,7 @@ interface SendSmsParams {
   clientName?: string;
 }
 
-export const sendSms = async (params: SendSmsParams) => {
+export const sendSms = async (params: SendSmsParams & { bypass?: boolean }) => {
   const { data, error } = await supabase.functions.invoke('send-sms', {
     body: params,
   });
