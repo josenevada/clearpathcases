@@ -8,9 +8,9 @@ const corsHeaders = {
 };
 
 const PRICE_MAP: Record<string, string> = {
-  starter: "price_1TDTgBRwKiGRq1RZ89pOglAI",
-  professional: "price_1TNEA2RwKiGRq1RZUMm0Cksg",
-  firm: "price_1TDTp5RwKiGRq1RZaqvm4t1U",
+  starter: "price_1TQZZMRp5iBrDAeZWGZaVzn0",
+  professional: "price_1TQZZSRp5iBrDAeZeSTaMzZf",
+  firm: "price_1TQZZMRp5iBrDAeZJyIsjGnq",
 };
 
 serve(async (req) => {
