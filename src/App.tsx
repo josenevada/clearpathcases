@@ -30,6 +30,7 @@ import InviteSignup from "./pages/InviteSignup";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import PlaidOAuthReturn from "./pages/PlaidOAuthReturn";
+import PlaidOAuth from "./pages/PlaidOAuth";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => {
                 <Route path="/invite/:invitationId" element={<InviteSignup />} />
 
                 {/* Client routes */}
+                <Route path="/plaid-oauth" element={<PlaidOAuth />} />
                 <Route path="/client" element={<PlaidOAuthReturn />} />
                 <Route path="/client/:caseCode" element={<ClientVerify />} />
                 <Route path="/client-portal/:caseCode/:caseId" element={<ClientWizard />} />

@@ -56,7 +56,7 @@ serve(async (req) => {
       },
       country_codes: ['US'],
       language: 'en',
-      redirect_uri: 'https://yourclearpath.app/client',
+      redirect_uri: 'https://yourclearpath.app/plaid-oauth',
     };
 
     console.log('Plaid link token request body:', JSON.stringify(plaidRequestBody));
