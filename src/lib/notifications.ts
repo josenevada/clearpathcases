@@ -40,6 +40,7 @@ interface NotificationPayload {
   firmName?: string;
   setupLink?: string;
   filingDeadline?: string;
+  bypass?: boolean;
 }
 
 export interface NotificationResult {
@@ -102,7 +103,7 @@ export const sendFirmWelcome = async (email: string, firmName: string, setupLink
  * Determines the best reminder type for a case based on its current state
  * and sends both email and SMS.
  */
-export const sendSmartReminder = async (caseData: Case): Promise<NotificationResult> => {
+export const sendSmartReminder = async (caseData: Case, options?: { bypass?: boolean }): Promise<NotificationResult> => {
   const portalLink = `${APP_BASE_URL}/client/${caseData.caseCode}`;
   const progress = calculateProgress(caseData);
   const daysLeft = differenceInDays(new Date(caseData.filingDeadline), new Date());
@@ -139,6 +140,7 @@ export const sendSmartReminder = async (caseData: Case): Promise<NotificationRes
     caseId: caseData.id,
     completionPercent: progress,
     filingDeadline: caseData.filingDeadline,
+    bypass: options?.bypass === true,
   });
 
   // Log locally
