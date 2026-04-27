@@ -126,9 +126,8 @@ Deno.serve(async (req) => {
   const pingramData = await pingramRes.json().catch(() => ({}));
 
   if (!pingramRes.ok) {
-    const errText = await pingramRes.text().catch(() => '');
-    console.error('Pingram error:', errText);
-    return json({ success: false, skipped: true, reason: `Pingram error [${pingramRes.status}]: ${errText || 'Unknown'}` });
+    console.error('Pingram error:', pingramData);
+    return json({ success: false, skipped: true, reason: `Pingram error [${pingramRes.status}]: ${JSON.stringify(pingramData) || 'Unknown'}` });
   }
 
   // ── Log to activity_log with the canonical sms_sent event type ──
