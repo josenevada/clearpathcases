@@ -350,11 +350,11 @@ const sendSms = async (payload: NotificationPayload) => {
       return { status: 'failed' as const, detail: `send-sms error [${response.status}]: ${JSON.stringify(data)}` };
     }
 
-    if (data?.skipped) {
+    if (data?.skipped || data?.success === false) {
       return { status: 'skipped' as const, detail: data.reason || 'send-sms skipped' };
     }
 
-    return { status: 'sent' as const, detail: data?.sid ?? 'ok' };
+    return { status: 'sent' as const, detail: data?.trackingId ?? data?.sid ?? 'ok' };
   } catch (err) {
     console.error('send-sms invocation error:', err);
     return { status: 'failed' as const, detail: String(err) };

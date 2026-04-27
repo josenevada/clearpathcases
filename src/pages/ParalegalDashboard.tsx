@@ -524,7 +524,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
     try {
       if (mode === 'sms') {
         const portalLink = `https://yourclearpath.app/client/${caseData.caseCode}`;
-        await supabase.functions.invoke('send-notification', {
+        const { data, error } = await supabase.functions.invoke('send-notification', {
           body: {
             type: 'general_reminder',
             clientName: caseData.clientName,
@@ -536,8 +536,11 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             bypass: true,
           },
         });
+        if (error) throw error;
         if (!hasPhone) {
           toast.warning('No phone number on file — nothing sent.');
+        } else if (data?.sms?.status !== 'sent') {
+          toast.error(data?.sms?.detail || 'SMS was not delivered.');
         } else {
           toast.success(`SMS reminder sent to ${caseData.clientName}`);
         }
