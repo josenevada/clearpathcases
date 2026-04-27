@@ -64,20 +64,7 @@ serve(async (req) => {
     const response = await fetch(`${plaidHost}/link/token/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: PLAID_CLIENT_ID,
-        secret: PLAID_SECRET,
-        user: { client_user_id: case_id },
-        client_name: 'ClearPath',
-        products: ['statements'],
-        statements: {
-          start_date: sixMonthsAgo.toISOString().split('T')[0],
-          end_date: today.toISOString().split('T')[0],
-        },
-        country_codes: ['US'],
-        language: 'en',
-        redirect_uri: 'https://yourclearpath.app',
-      }),
+      body: JSON.stringify(plaidRequestBody),
     });
 
     const data = await response.json();
