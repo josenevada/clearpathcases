@@ -4,8 +4,8 @@ export const PLANS = {
     name: 'Starter',
     price: '$199',
     priceAmount: 19900,
-    priceId: 'price_1TDTgBRwKiGRq1RZ89pOglAI',
-    productId: 'prod_UBrOqV2pBAYROP',
+    priceId: 'price_1TQZZMRp5iBrDAeZWGZaVzn0',
+    productId: 'prod_UPOMgVGJ0WWHTW',
     features: [
       'Up to 8 active cases',
       'Full client intake wizard',
@@ -20,8 +20,8 @@ export const PLANS = {
     name: 'Professional',
     price: '$399',
     priceAmount: 39900,
-    priceId: 'price_1TNEA2RwKiGRq1RZUMm0Cksg',
-    productId: 'prod_UBrP1XrK2mDP5N',
+    priceId: 'price_1TQZZSRp5iBrDAeZeSTaMzZf',
+    productId: 'prod_UPOM7UCbs7EBHQ',
     popular: true,
     features: [
       'Up to 25 active cases',
@@ -36,8 +36,8 @@ export const PLANS = {
     name: 'Firm',
     price: '$699',
     priceAmount: 69900,
-    priceId: 'price_1TDTp5RwKiGRq1RZaqvm4t1U',
-    productId: 'prod_UDoTIzLjHd2WEo',
+    priceId: 'price_1TQZZMRp5iBrDAeZJyIsjGnq',
+    productId: 'prod_UPOMckgf9MP7nV',
     features: [
       'Up to 60 active cases',
       'Everything in Professional',
