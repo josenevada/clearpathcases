@@ -58,7 +58,6 @@ serve(async (req) => {
         },
         country_codes: ['US'],
         language: 'en',
-        webhook: 'https://yourclearpath.app/api/plaid-webhook',
       }),
     });
 
