@@ -44,6 +44,23 @@ serve(async (req) => {
     const sixMonthsAgo = new Date(today);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+    const plaidRequestBody = {
+      client_id: PLAID_CLIENT_ID,
+      secret: PLAID_SECRET,
+      user: { client_user_id: case_id },
+      client_name: 'ClearPath',
+      products: ['statements'],
+      statements: {
+        start_date: sixMonthsAgo.toISOString().split('T')[0],
+        end_date: today.toISOString().split('T')[0],
+      },
+      country_codes: ['US'],
+      language: 'en',
+      redirect_uri: 'https://yourclearpath.app',
+    };
+
+    console.log('Plaid link token request body:', JSON.stringify(plaidRequestBody));
+
     const response = await fetch(`${plaidHost}/link/token/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
