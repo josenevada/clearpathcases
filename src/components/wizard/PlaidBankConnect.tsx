@@ -36,7 +36,10 @@ const PlaidBankConnect = ({
   const [result, setResult] = useState<PlaidResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [showManual, setShowManual] = useState(false);
-  const isOAuthRedirect = typeof window !== 'undefined' && window.location.href.includes('oauth_state_id');
+  const [isOAuthRedirect] = useState(() =>
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('oauth_state_id')
+  );
 
   const handlePlaidSuccess = useCallback(async (publicToken: string) => {
     setState('exchanging');
@@ -62,6 +65,7 @@ const PlaidBankConnect = ({
 
       setResult(plaidResult);
       setState('success');
+      localStorage.removeItem('plaid_oauth_case_code');
       onSuccess(plaidResult);
     } catch (err: any) {
       console.error('Plaid exchange error:', err);
@@ -107,6 +111,7 @@ const PlaidBankConnect = ({
   }, [state, plaidReady, linkToken, openPlaidLink, isOAuthRedirect]);
 
   const handleConnectClick = async () => {
+    localStorage.setItem('plaid_oauth_case_code', caseId);
     setState('loading-token');
     setErrorMsg('');
 
