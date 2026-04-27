@@ -29,6 +29,14 @@ interface SendSmsPayload {
   bypass?: boolean;
 }
 
+const normalizePhone = (phone: string) => {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  if (phone.trim().startsWith('+') && digits.length >= 10) return `+${digits}`;
+  return null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -51,6 +59,11 @@ Deno.serve(async (req) => {
   // If no phone number, skip silently
   if (!payload.to) {
     return json({ success: true, skipped: true, reason: 'No phone number' });
+  }
+
+  const normalizedPhone = normalizePhone(payload.to);
+  if (!normalizedPhone) {
+    return json({ success: true, skipped: true, reason: 'Invalid phone number format' });
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -98,7 +111,7 @@ Deno.serve(async (req) => {
         type: 'clearpath_notification',
         to: {
           id: payload.caseId,
-          number: payload.to,
+          number: normalizedPhone,
         },
         sms: {
           message: payload.body,
@@ -109,6 +122,8 @@ Deno.serve(async (req) => {
     console.error('Pingram SMS error:', err);
     return json({ success: false, skipped: true, reason: `Pingram error: ${String(err)}` });
   }
+
+  const pingramData = await pingramRes.json().catch(() => ({}));
 
   if (!pingramRes.ok) {
     const errText = await pingramRes.text().catch(() => '');
@@ -134,5 +149,5 @@ Deno.serve(async (req) => {
     }),
   }).catch((err) => console.error('Failed to log SMS:', err));
 
-  return json({ success: true });
+  return json({ success: true, trackingId: pingramData?.trackingId });
 });
