@@ -85,7 +85,10 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json', apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
           body: JSON.stringify({
             to: clientPhone,
-            message: `${clientName}, your bankruptcy filing documents are ready for your signature. Please sign here: ${signingUrl} — Link expires in 7 days.`,
+            body: `${clientName}, your bankruptcy filing documents are ready for your signature. Please sign here: ${signingUrl} — Link expires in 7 days.`,
+            caseId: case_id,
+            clientName,
+            bypass: true,
           }),
         });
       }
@@ -106,7 +109,7 @@ Deno.serve(async (req) => {
       event_type: 'signature_request_sent',
       actor_role: 'paralegal',
       actor_name: 'Staff',
-      description: `Signature request sent to ${clientName} via SMS. Expires ${expiresAt.toLocaleDateString('en-US')}.`,
+      description: `Signature request sent to ${clientName}. Expires ${expiresAt.toLocaleDateString('en-US')}.`,
     });
 
     return json({
