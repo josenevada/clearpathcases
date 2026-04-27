@@ -124,10 +124,35 @@ Deno.serve(async (req) => {
   }
 
   const pingramData = await pingramRes.json().catch(() => ({}));
+  const pingramMessages = Array.isArray(pingramData?.messages) ? pingramData.messages.map(String) : [];
+  const pingramMessageText = pingramMessages.join(' ').toLowerCase();
+  const pingramDiscarded = /discard|disabled|aborted|budget|limit|suppressed|ignored/.test(pingramMessageText);
 
   if (!pingramRes.ok) {
     console.error('Pingram error:', pingramData);
     return json({ success: false, skipped: true, reason: `Pingram error [${pingramRes.status}]: ${JSON.stringify(pingramData) || 'Unknown'}` });
+  }
+
+  if (pingramDiscarded) {
+    const reason = pingramMessages.join(' ') || 'Pingram accepted the request but discarded delivery';
+    console.error('Pingram discarded SMS:', pingramData);
+    await fetch(`${supabaseUrl}/rest/v1/activity_log`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        case_id: payload.caseId,
+        event_type: 'sms_failed',
+        actor_role: 'system',
+        actor_name: 'ClearPath',
+        description: `SMS not delivered to ${payload.clientName || 'client'}: ${reason}`,
+      }),
+    }).catch((err) => console.error('Failed to log SMS failure:', err));
+    return json({ success: false, skipped: true, reason, trackingId: pingramData?.trackingId });
   }
 
   // ── Log to activity_log with the canonical sms_sent event type ──
@@ -144,9 +169,9 @@ Deno.serve(async (req) => {
       event_type: 'sms_sent',
       actor_role: 'system',
       actor_name: 'ClearPath',
-      description: `SMS sent to ${payload.clientName || 'client'}`,
+      description: `SMS sent to ${payload.clientName || 'client'}${pingramData?.trackingId ? ` (tracking ${pingramData.trackingId})` : ''}`,
     }),
   }).catch((err) => console.error('Failed to log SMS:', err));
 
-  return json({ success: true, trackingId: pingramData?.trackingId });
+  return json({ success: true, trackingId: pingramData?.trackingId, messages: pingramMessages });
 });
