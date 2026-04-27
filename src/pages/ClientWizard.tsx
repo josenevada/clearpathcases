@@ -20,7 +20,7 @@ import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/correctio
 import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { getPlanLimits } from '@/lib/plan-limits';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
-import { sendMomentumSms } from '@/lib/sms';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -1138,20 +1138,6 @@ const ClientWizard = () => {
     // Persist wizard step to Supabase
     supabase.from('cases').update({ wizard_step: nextCategory }).eq('id', caseData.id).then(() => {});
 
-    // Trigger momentum SMS
-    const updatedProgress = calculateProgress(caseData);
-    if (updatedProgress < 100) {
-      const nextStepName = CATEGORIES[nextCategory] || 'the next step';
-      sendMomentumSms(
-        caseData.clientPhone,
-        caseData.clientName,
-        caseData.caseCode || caseData.id,
-        caseData.id,
-        completedStep,
-        updatedProgress,
-        nextStepName,
-      ).catch((err) => console.error('Momentum SMS error:', err));
-    }
   };
 
   const goBack = () => {

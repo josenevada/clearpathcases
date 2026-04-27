@@ -112,31 +112,3 @@ export const sendCorrectionSms = async (
   return sendSms({ to: phone, body, caseId, clientName });
 };
 
-export const sendMomentumSms = async (
-  clientPhone: string | undefined,
-  clientName: string,
-  caseCode: string,
-  caseId: string,
-  completedStep: number,
-  completionPercent: number,
-  nextStepName: string,
-) => {
-  const phone = await getFreshPhone(caseId, clientPhone);
-  if (!phone) return;
-
-  const gate = await checkSmsGate(caseId);
-  if (!gate.allowed) {
-    console.log(`SMS gated for case ${caseId}: ${gate.reason}`);
-    return;
-  }
-
-  const firstName = clientName.split(' ')[0];
-  const portalLink = `${window.location.origin}/client/${caseCode}`;
-  const lang = await getCaseLanguage(caseId);
-
-  const body = lang === 'es'
-    ? `¡Buen trabajo ${firstName}! Paso ${completedStep} completado. Vas al ${completionPercent} por ciento — sigue ${nextStepName}, suele tomar pocos minutos. ${portalLink}`
-    : `Great work ${firstName}. Step ${completedStep} is done. You are ${completionPercent} percent of the way there — ${nextStepName} is next and it usually takes just a few minutes. ${portalLink}`;
-
-  return sendSms({ to: phone, body, caseId, clientName });
-};
