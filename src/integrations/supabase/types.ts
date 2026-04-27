@@ -1470,6 +1470,60 @@ export type Database = {
           },
         ]
       }
+      support_tickets: {
+        Row: {
+          admin_response: string | null
+          category: string
+          created_at: string
+          firm_id: string
+          firm_name: string | null
+          id: string
+          message: string
+          priority: string
+          responded_at: string | null
+          status: string
+          subject: string
+          submitted_by_email: string
+          submitted_by_name: string
+          submitted_by_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          firm_id: string
+          firm_name?: string | null
+          id?: string
+          message: string
+          priority?: string
+          responded_at?: string | null
+          status?: string
+          subject: string
+          submitted_by_email: string
+          submitted_by_name: string
+          submitted_by_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          firm_id?: string
+          firm_name?: string | null
+          id?: string
+          message?: string
+          priority?: string
+          responded_at?: string | null
+          status?: string
+          subject?: string
+          submitted_by_email?: string
+          submitted_by_name?: string
+          submitted_by_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_invitations: {
         Row: {
           accepted_at: string | null

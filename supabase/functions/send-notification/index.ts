@@ -32,6 +32,9 @@ interface NotificationPayload {
   smsOnly?: boolean;
   emailOnly?: boolean;
   itemLabel?: string;
+  // When true, the central send-sms gate skips its 4-hour cooldown.
+  // Quiet-hours are still enforced. Used for paralegal-triggered manual sends.
+  bypass?: boolean;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -310,41 +313,50 @@ const sendEmail = async (p: NotificationPayload) => {
 
 const sendSms = async (payload: NotificationPayload) => {
   if (!payload.clientPhone) return { status: 'skipped' as const, detail: 'No phone number' };
-
-  const apiKey = Deno.env.get('PINGRAM_API_KEY');
-  if (!apiKey) return { status: 'skipped' as const, detail: 'No Pingram API key' };
+  if (!payload.caseId) return { status: 'skipped' as const, detail: 'No caseId — cannot route through send-sms gate' };
 
   const message = getSmsMessage(payload);
   if (!message) return { status: 'skipped' as const, detail: 'No message template' };
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    return { status: 'skipped' as const, detail: 'Server config missing' };
+  }
+
+  // Route through the central send-sms gate (quiet hours + cooldown + activity_log).
+  // bypass=true skips ONLY the 4-hour cooldown; quiet hours still apply.
   try {
-    const response = await fetch('https://api.pingram.io/send', {
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
       },
       body: JSON.stringify({
-        type: 'clearpath_notification',
-        to: {
-          id: payload.caseId || 'unknown',
-          number: payload.clientPhone,
-        },
-        sms: {
-          message: message,
-        },
+        to: payload.clientPhone,
+        body: message,
+        caseId: payload.caseId,
+        clientName: payload.clientName,
+        bypass: payload.bypass === true,
       }),
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      const err = await response.text();
-      console.error('Pingram SMS error:', err);
-      return { status: 'failed' as const, detail: err };
+      console.error('send-sms gate error:', data);
+      return { status: 'failed' as const, detail: `send-sms error [${response.status}]: ${JSON.stringify(data)}` };
     }
 
-    return { status: 'sent' as const };
+    if (data?.skipped) {
+      return { status: 'skipped' as const, detail: data.reason || 'send-sms skipped' };
+    }
+
+    return { status: 'sent' as const, detail: data?.sid ?? 'ok' };
   } catch (err) {
-    console.error('Pingram SMS error:', err);
+    console.error('send-sms invocation error:', err);
     return { status: 'failed' as const, detail: String(err) };
   }
 };
