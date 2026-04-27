@@ -533,6 +533,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
             portalLink,
             caseId: caseData.id,
             smsOnly: true,
+            bypass: true,
           },
         });
         if (!hasPhone) {

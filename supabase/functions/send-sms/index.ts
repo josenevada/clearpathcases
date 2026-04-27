@@ -26,6 +26,7 @@ interface SendSmsPayload {
   body: string;
   caseId: string;
   clientName?: string;
+  bypass?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -66,14 +67,17 @@ Deno.serve(async (req) => {
   }
 
   // ── Gate 2: Per-case 4-hour cooldown across all SMS event types ──
-  const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-  const cooldownRes = await fetch(
-    `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${payload.caseId}&event_type=in.(sms_sent,reminder_sent,notification_sent)&created_at=gte.${fourHoursAgo}&select=id&limit=1`,
-    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
-  );
-  const recentLogs = await cooldownRes.json();
-  if (Array.isArray(recentLogs) && recentLogs.length > 0) {
-    return json({ success: true, skipped: true, reason: 'Cooldown — SMS sent within last 4 hours' });
+  // Bypassed for paralegal-triggered manual sends (bypass: true).
+  if (!payload.bypass) {
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+    const cooldownRes = await fetch(
+      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${payload.caseId}&event_type=in.(sms_sent,reminder_sent,notification_sent)&created_at=gte.${fourHoursAgo}&select=id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const recentLogs = await cooldownRes.json();
+    if (Array.isArray(recentLogs) && recentLogs.length > 0) {
+      return json({ success: true, skipped: true, reason: 'Cooldown — SMS sent within last 4 hours' });
+    }
   }
 
   // ── Send SMS via Pingram ──

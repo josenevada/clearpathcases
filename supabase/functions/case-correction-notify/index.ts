@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -8,6 +10,7 @@ interface CorrectionNotificationPayload {
   clientName: string;
   clientPhone?: string;
   correctionLink: string;
+  caseId?: string;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -17,40 +20,40 @@ const json = (body: unknown, status = 200) =>
   });
 
 const sendSms = async (payload: CorrectionNotificationPayload) => {
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromNumber = Deno.env.get('TWILIO_FROM_NUMBER');
-
   if (!payload.clientPhone) {
     return { status: 'skipped', detail: 'Missing client phone number' };
   }
-
-  if (!accountSid || !authToken || !fromNumber) {
-    return { status: 'skipped', detail: 'Twilio credentials are not configured' };
+  if (!payload.caseId) {
+    return { status: 'skipped', detail: 'Missing caseId — cannot route through send-sms gate' };
   }
 
-  const body = new URLSearchParams({
-    To: payload.clientPhone,
-    From: fromNumber,
-    Body: `Your attorney's office needs one updated document before your case is ready. It only takes a minute to fix. Tap here: ${payload.correctionLink}`,
-  });
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    return { status: 'skipped', detail: 'Server config missing' };
+  }
 
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const supabase = createClient(supabaseUrl, serviceKey);
+  const smsBody = `Your attorney's office needs one updated document before your case is ready. It only takes a minute to fix. Tap here: ${payload.correctionLink}`;
+
+  const { data, error } = await supabase.functions.invoke('send-sms', {
+    body: {
+      to: payload.clientPhone,
+      body: smsBody,
+      caseId: payload.caseId,
+      clientName: payload.clientName,
     },
-    body,
   });
 
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    return { status: 'failed', detail: `Twilio error [${response.status}]: ${JSON.stringify(data)}` };
+  if (error) {
+    return { status: 'failed', detail: `send-sms error: ${error.message}` };
   }
 
-  return { status: 'sent', detail: data.sid };
+  if (data?.skipped) {
+    return { status: 'skipped', detail: data.reason || 'send-sms skipped' };
+  }
+
+  return { status: 'sent', detail: data?.sid ?? 'ok' };
 };
 
 const sendEmail = async (payload: CorrectionNotificationPayload) => {
