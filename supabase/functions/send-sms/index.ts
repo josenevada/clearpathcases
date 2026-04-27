@@ -26,6 +26,7 @@ interface SendSmsPayload {
   body: string;
   caseId: string;
   clientName?: string;
+  bypass?: boolean;
 }
 
 Deno.serve(async (req) => {
