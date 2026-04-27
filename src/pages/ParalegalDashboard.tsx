@@ -560,7 +560,7 @@ const CaseCard = ({ caseData, index, onNavigate, onSendLink }: { caseData: Case;
           toast.success(`Email reminder sent to ${caseData.clientName}`);
         }
       } else {
-        const result = await sendSmartReminder(caseData);
+        const result = await sendSmartReminder(caseData, { bypass: true });
         const channels = [];
         if (result.email.status === 'sent') channels.push('email');
         if (result.sms.status === 'sent') channels.push('SMS');
