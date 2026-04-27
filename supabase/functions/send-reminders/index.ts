@@ -134,24 +134,6 @@ Deno.serve(async (req) => {
 
     const notifyResult = await notifyRes.json().catch(() => ({}));
 
-    // Log to activity_log
-    await fetch(`${supabaseUrl}/rest/v1/activity_log`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({
-        case_id: c.id,
-        event_type: 'sms_sent',
-        actor_role: 'system',
-        actor_name: 'ClearPath',
-        description: `Automated reminder sent [${notificationType}]: ${c.client_name}`,
-      }),
-    }).catch(() => {});
-
     results.push({ caseId: c.id, type: notificationType, result: notifyResult });
   }
 
