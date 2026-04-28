@@ -11,6 +11,7 @@ import { fetchDashboardData } from '@/lib/dashboard-data';
 import type { Case, ChecklistItem, UploadedFile } from '@/lib/store';
 import { toast } from 'sonner';
 import Logo from '@/components/Logo';
+import { sendCorrectionRequest } from '@/lib/notifications';
 
 type StatusFilter = 'all' | 'pending' | 'correction-requested';
 
@@ -134,17 +135,48 @@ const DocumentReviewQueue = () => {
   const handleRequestCorrection = async (q: QueuedDocument) => {
     const note = window.prompt('Reason for correction (will be visible to client):', '');
     if (!note || !note.trim()) return;
+
+    const reason = note.trim();
+
+    // 1. Update file status
     const { error } = await supabase
       .from('files')
-      .update({ review_status: 'correction-requested', review_note: note.trim() })
+      .update({ review_status: 'correction-requested', review_note: reason })
       .eq('id', q.file.id);
+
     if (error) {
       toast.error('Failed to request correction.');
       return;
     }
+
+    // 2. Log activity
+    await supabase.from('activity_log').insert({
+      case_id: q.caseRecord.id,
+      event_type: 'file_correction',
+      actor_role: 'paralegal',
+      actor_name: q.caseRecord.assignedParalegal || 'Paralegal',
+      description: `Correction requested on ${q.item?.label || 'document'} — ${reason}`,
+      item_id: q.item?.id,
+    });
+
+    // 3. Send notifications via email + SMS
+    try {
+      const result = await sendCorrectionRequest(q.caseRecord, reason, q.item.id);
+      const channels: string[] = [];
+      if (result.email?.status === 'sent') channels.push('email');
+      if (result.sms?.status === 'sent') channels.push('SMS');
+
+      if (channels.length > 0) {
+        toast.success(`Correction requested. Client notified via ${channels.join(' and ')}.`);
+      } else {
+        toast.success('Correction requested. Client will see it next visit.');
+      }
+    } catch {
+      toast.success('Correction requested.');
+    }
+
     setRemovedFileIds(prev => new Set(prev).add(q.file.id));
     setReviewedCount(c => c + 1);
-    toast.success('Correction requested.');
   };
 
   const handleViewFullSize = (q: QueuedDocument) => {
