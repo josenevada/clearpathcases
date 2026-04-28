@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
 import type { Case, ChecklistItem, FirmSettings, UploadedFile } from '@/lib/store';
 
 export interface DashboardOnboardingState {
