@@ -39,10 +39,7 @@ const mapChecklist = async (rows: any[], fileRows: any[]): Promise<ChecklistItem
         .map(async (file: any) => {
           let displayUrl = file.data_url || '';
           if (file.storage_path && !displayUrl) {
-            const { data: publicUrlData } = supabase.storage
-              .from('case-documents')
-              .getPublicUrl(file.storage_path);
-            displayUrl = publicUrlData.publicUrl || '';
+            displayUrl = await getCaseDocumentSignedUrl(file.storage_path);
           }
           return {
             id: file.id,
