@@ -380,6 +380,14 @@ const DocumentReviewQueue = () => {
                                 <Button size="sm" variant="ghost" onClick={() => handleViewFullSize(q)}>
                                   <ImageIcon className="w-3.5 h-3.5 mr-1" /> View Full Size
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(q)}
+                                  className="text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                                </Button>
                               </div>
                             </div>
                           </div>
