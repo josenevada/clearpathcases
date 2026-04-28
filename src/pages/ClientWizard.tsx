@@ -321,6 +321,7 @@ const ClientWizard = () => {
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [fileLabelPromptOpen, setFileLabelPromptOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [fileLabel, setFileLabel] = useState('');
   const [showNaFlow, setShowNaFlow] = useState(false);
   const [naClientReason, setNaClientReason] = useState<string | null>(null);
