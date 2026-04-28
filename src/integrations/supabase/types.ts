@@ -1624,6 +1624,17 @@ export type Database = {
           status: string
         }[]
       }
+      get_signature_request_by_token: {
+        Args: { _token: string }
+        Returns: {
+          case_id: string
+          id: string
+          signed_at: string
+          signer_name: string
+          signer_type: string
+          token_expires_at: string
+        }[]
+      }
       get_user_firm_id: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
     }
