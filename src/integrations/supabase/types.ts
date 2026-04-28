@@ -1605,6 +1605,18 @@ export type Database = {
     Functions: {
       get_case_id_by_code: { Args: { _case_code: string }; Returns: string }
       get_firm_case_ids: { Args: never; Returns: string[] }
+      get_invitation_for_signup: {
+        Args: { _invitation_id: string }
+        Returns: {
+          email: string
+          firm_id: string
+          firm_name: string
+          id: string
+          personal_message: string
+          role: string
+          status: string
+        }[]
+      }
       get_user_firm_id: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
     }
