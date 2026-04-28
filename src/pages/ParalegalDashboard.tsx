@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import Logo from '@/components/Logo';
 import NewCaseModal from '@/components/case/NewCaseModal';
 import TrialBanner from '@/components/TrialBanner';
-import ThemeToggle from '@/components/ThemeToggle';
+
 import SubscriptionGate from '@/components/SubscriptionGate';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import StatsBar from '@/components/dashboard/StatsBar';
