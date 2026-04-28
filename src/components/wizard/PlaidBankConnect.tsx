@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface PlaidBankConnectProps {
   caseId: string;
+  caseCode?: string;
   clientName: string;
   checklistItemId: string;
   onSuccess: (result: PlaidResult) => void;
