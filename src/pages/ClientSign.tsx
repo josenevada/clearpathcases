@@ -33,22 +33,30 @@ const ClientSign = () => {
   useEffect(() => {
     if (!token) { setStep('error'); return; }
     const loadRequest = async () => {
-      const { data, error } = await supabase
-        .from('signature_requests')
-        .select('*')
-        .eq('client_token', token)
-        .maybeSingle();
-      
+      const { data: rows, error } = await supabase
+        .rpc('get_signature_request_by_token', { _token: token });
+
+      const data = Array.isArray(rows) ? rows[0] : rows;
       if (error || !data) { setStep('expired'); return; }
 
-      if (new Date(data.client_token_expires_at) < new Date()) {
+      if (new Date(data.token_expires_at) < new Date()) {
         setStep('expired'); return;
       }
-      if (data.client_signed_at) {
-        setStep('success'); setRequest(data); return;
+
+      // Normalize to the shape the rest of this component expects
+      const normalized = {
+        id: data.id,
+        case_id: data.case_id,
+        client_name: data.signer_name,
+        client_token_expires_at: data.token_expires_at,
+        client_signed_at: data.signed_at,
+      };
+
+      if (data.signed_at) {
+        setStep('success'); setRequest(normalized); return;
       }
 
-      setRequest(data);
+      setRequest(normalized);
       setStep('verify');
 
       // Log view event
@@ -57,7 +65,7 @@ const ClientSign = () => {
           signature_request_id: data.id,
           event_type: 'client_viewed',
           actor_type: 'client',
-          actor_name: data.client_name,
+          actor_name: data.signer_name,
           metadata: { user_agent: navigator.userAgent },
         });
       } catch { /* optional */ }
