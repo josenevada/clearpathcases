@@ -113,7 +113,8 @@ const PlaidBankConnect = ({
   }, [state, plaidReady, linkToken, openPlaidLink, isOAuthRedirect]);
 
   const handleConnectClick = async () => {
-    localStorage.setItem('plaid_oauth_case_code', caseId);
+    const oauthReturnPayload = JSON.stringify({ caseCode: caseCode || caseId, caseId });
+    localStorage.setItem('plaid_oauth_case_code', oauthReturnPayload);
     setState('loading-token');
     setErrorMsg('');
 
