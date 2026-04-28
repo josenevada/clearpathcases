@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import ProgressPill from '@/components/wizard/ProgressPill';
+import { Progress } from '@/components/ui/progress';
 import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
@@ -143,6 +144,38 @@ const getProgressLabel = (progress: number): string => {
   if (progress >= 51) return 'More than halfway there!';
   if (progress >= 26) return 'Good progress — keep going.';
   return 'Let\'s get started — you\'ve got this.';
+};
+
+// ─── File upload constraints ──────────────────────────────────────────
+const MAX_FILE_SIZE_MB = 25;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'image/jpeg', 'image/jpg', 'image/png',
+  'image/heic', 'image/heif', 'image/webp',
+];
+
+// ─── Upload with retry helper ─────────────────────────────────────────
+const uploadWithRetry = async (
+  storagePath: string,
+  file: Blob,
+  contentType: string,
+  maxRetries: number = 2
+): Promise<{ error: any }> => {
+  let lastError: any = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const { error } = await supabase.storage
+      .from('case-documents')
+      .upload(storagePath, file, { contentType, upsert: false });
+
+    if (!error) return { error: null };
+    lastError = error;
+
+    if (attempt < maxRetries) {
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  return { error: lastError };
 };
 
 // ─── Image compression utility ────────────────────────────────────────
@@ -288,6 +321,7 @@ const ClientWizard = () => {
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [fileLabelPromptOpen, setFileLabelPromptOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [fileLabel, setFileLabel] = useState('');
   const [showNaFlow, setShowNaFlow] = useState(false);
   const [naClientReason, setNaClientReason] = useState<string | null>(null);
@@ -763,7 +797,29 @@ const ClientWizard = () => {
       return;
     }
 
-    // Show compression message for large files
+    // Hard size limit
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error(
+        `File is too large (${Math.round(file.size / 1024 / 1024)}MB). Maximum size is ${MAX_FILE_SIZE_MB}MB. Try splitting the document or compressing it first.`
+      );
+      return;
+    }
+
+    // File type validation
+    if (
+      !ALLOWED_TYPES.includes(file.type) &&
+      !file.name.match(/\.(pdf|jpg|jpeg|png|heic|heif|webp)$/i)
+    ) {
+      toast.error('This file type is not supported. Please upload a PDF or image file.');
+      return;
+    }
+
+    // Friendly notice for large PDFs
+    if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) {
+      toast('Large PDF detected — upload may take 30-60 seconds...', { duration: 4000 });
+    }
+
+    // Show compression message for large image files
     if (file.size > 4 * 1024 * 1024 && file.type.startsWith('image/')) {
       toast('This file is a bit large. We\'re compressing it for you...', { duration: 3000 });
     }
@@ -791,19 +847,33 @@ const ClientWizard = () => {
       userLabel
     );
 
-    // Upload to Supabase Storage with a unique path
+    // Upload to Supabase Storage with a unique path (with retry + progress)
     const uniqueId = crypto.randomUUID().slice(0, 6);
     const ext = (processedFile.name.split('.').pop() || 'pdf').toLowerCase();
     const storagePath = `${caseData.id}/${currentItem.id}/${cleanFileName.replace(`.${ext}`, '')}-${uniqueId}.${ext}`;
-    const { error: storageError } = await supabase.storage
-      .from('case-documents')
-      .upload(storagePath, processedFile, { upsert: false });
+
+    setUploadProgress(10);
+    const progressTimer = setInterval(() => {
+      setUploadProgress(prev => (prev === null || prev >= 90 ? prev : prev + 10));
+    }, 400);
+
+    const { error: storageError } = await uploadWithRetry(
+      storagePath,
+      processedFile,
+      processedFile.type || 'application/octet-stream'
+    );
+
+    clearInterval(progressTimer);
 
     if (storageError) {
+      setUploadProgress(null);
       console.error('Storage upload failed:', storageError);
       toast.error('Upload failed. Please try again.');
       return;
     }
+
+    setUploadProgress(100);
+    setTimeout(() => setUploadProgress(null), 600);
 
     // Get a public URL for immediate display
     let displayUrl = '';
@@ -2215,6 +2285,14 @@ const ClientWizard = () => {
                       onChange={handleSingleFileUpload}
                     />
                   </div>
+                  {uploadProgress !== null && (
+                    <div className="space-y-1.5">
+                      <Progress value={uploadProgress} className="h-2" />
+                      <p className="text-xs text-muted-foreground text-center font-body">
+                        Uploading… {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
                 <div className="space-y-2">
