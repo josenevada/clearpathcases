@@ -32,6 +32,25 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // Attorney signing requires an authenticated session whose firm owns the case.
+    let authenticatedUserId: string | null = null;
+    if (signer_type === 'attorney') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return json({ error: 'Authentication required for attorney signing' }, 401);
+      }
+      const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(
+        authHeader.replace('Bearer ', ''),
+      );
+      if (claimsError || !claimsData?.claims) {
+        return json({ error: 'Invalid or expired session' }, 401);
+      }
+      authenticatedUserId = claimsData.claims.sub as string;
+    }
+
     // Find the signature request by token
     const tokenField = signer_type === 'spouse' ? 'spouse_token' : 'client_token';
     let query = supabase.from('signature_requests').select('*');
@@ -45,6 +64,20 @@ Deno.serve(async (req) => {
 
     const { data: request, error: fetchErr } = await query.single();
     if (fetchErr || !request) return json({ error: 'Invalid or expired signing link' }, 404);
+
+    // For attorneys, verify the case belongs to the caller's firm
+    if (signer_type === 'attorney' && authenticatedUserId) {
+      const { data: userRow } = await supabase
+        .from('users').select('firm_id, role').eq('id', authenticatedUserId).maybeSingle();
+      if (!userRow?.firm_id) {
+        return json({ error: 'User is not a member of any firm' }, 403);
+      }
+      const { data: caseRow } = await supabase
+        .from('cases').select('firm_id').eq('id', request.case_id).maybeSingle();
+      if (!caseRow || caseRow.firm_id !== userRow.firm_id) {
+        return json({ error: 'You do not have permission to sign this case' }, 403);
+      }
+    }
 
     // Check expiry for client/spouse
     if (signer_type !== 'attorney') {
