@@ -146,6 +146,38 @@ const getProgressLabel = (progress: number): string => {
   return 'Let\'s get started — you\'ve got this.';
 };
 
+// ─── File upload constraints ──────────────────────────────────────────
+const MAX_FILE_SIZE_MB = 25;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'image/jpeg', 'image/jpg', 'image/png',
+  'image/heic', 'image/heif', 'image/webp',
+];
+
+// ─── Upload with retry helper ─────────────────────────────────────────
+const uploadWithRetry = async (
+  storagePath: string,
+  file: Blob,
+  contentType: string,
+  maxRetries: number = 2
+): Promise<{ error: any }> => {
+  let lastError: any = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const { error } = await supabase.storage
+      .from('case-documents')
+      .upload(storagePath, file, { contentType, upsert: false });
+
+    if (!error) return { error: null };
+    lastError = error;
+
+    if (attempt < maxRetries) {
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  return { error: lastError };
+};
+
 // ─── Image compression utility ────────────────────────────────────────
 const compressImage = (file: File, maxSizeMB: number = 1): Promise<File> => {
   return new Promise((resolve) => {
