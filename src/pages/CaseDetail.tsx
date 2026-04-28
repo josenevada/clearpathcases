@@ -1312,8 +1312,8 @@ const CaseDetail = () => {
                                                   <div className="flex items-start gap-3">
                                                     <button
                                                       type="button"
-                                                      onClick={() => {
-                                                        const url = file.dataUrl || (file.storagePath ? supabase.storage.from('case-documents').getPublicUrl(file.storagePath).data.publicUrl : '');
+                                                      onClick={async () => {
+                                                        const url = file.dataUrl || (file.storagePath ? await getCaseDocumentSignedUrl(file.storagePath) : '');
                                                         if (url) setPreviewFile({ name: file.name, dataUrl: url, itemId: item.id, fileId: file.id, reviewStatus: file.reviewStatus });
                                                       }}
                                                       className="mt-0.5 hover:text-primary transition-colors"
@@ -1325,8 +1325,8 @@ const CaseDetail = () => {
                                                         <div>
                                                           <button
                                                             type="button"
-                                                            onClick={() => {
-                                                              const url = file.dataUrl || (file.storagePath ? supabase.storage.from('case-documents').getPublicUrl(file.storagePath).data.publicUrl : '');
+                                                            onClick={async () => {
+                                                              const url = file.dataUrl || (file.storagePath ? await getCaseDocumentSignedUrl(file.storagePath) : '');
                                                               if (url) setPreviewFile({ name: file.name, dataUrl: url, itemId: item.id, fileId: file.id, reviewStatus: file.reviewStatus });
                                                             }}
                                                             className="truncate text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors text-left"
