@@ -667,6 +667,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Request Correction
               </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Selected
+              </Button>
               <Button size="sm" variant="ghost" onClick={clearSelection}>
                 <X className="w-3.5 h-3.5" />
               </Button>
