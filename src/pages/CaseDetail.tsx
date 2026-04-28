@@ -62,6 +62,7 @@ import {
 } from '@/lib/store';
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
 import { supabase } from '@/integrations/supabase/client';
+import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
 import { toast } from 'sonner';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
@@ -155,17 +156,14 @@ const CaseDetail = () => {
       supabase.from('notes').select('*').eq('case_id', id).order('created_at', { ascending: false }),
     ]);
 
-    // Generate public URLs for files with storage_path
-    const filesWithUrls = (fileRows || []).map((f: any) => {
+    // Generate signed URLs for files with storage_path
+    const filesWithUrls = await Promise.all((fileRows || []).map(async (f: any) => {
       let displayUrl = f.data_url || '';
       if (f.storage_path && !displayUrl) {
-        const { data: publicUrlData } = supabase.storage
-          .from('case-documents')
-          .getPublicUrl(f.storage_path);
-        displayUrl = publicUrlData.publicUrl || '';
+        displayUrl = await getCaseDocumentSignedUrl(f.storage_path);
       }
       return { ...f, data_url: displayUrl };
-    });
+    }));
 
     const mapFiles = (itemId: string): UploadedFile[] =>
       filesWithUrls
@@ -325,8 +323,8 @@ const CaseDetail = () => {
   const fetchFileBlobUrl = async (file: UploadedFile): Promise<string | null> => {
     if (file.dataUrl) return file.dataUrl;
     if (file.storagePath) {
-      const { data } = supabase.storage.from('case-documents').getPublicUrl(file.storagePath);
-      return data.publicUrl || null;
+      const url = await getCaseDocumentSignedUrl(file.storagePath);
+      return url || null;
     }
     return null;
   };
