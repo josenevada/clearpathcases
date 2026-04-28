@@ -26,6 +26,7 @@ type PlaidState = 'idle' | 'loading-token' | 'link-open' | 'exchanging' | 'succe
 
 const PlaidBankConnect = ({
   caseId,
+  caseCode,
   clientName,
   checklistItemId,
   onSuccess,
