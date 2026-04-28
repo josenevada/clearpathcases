@@ -193,27 +193,24 @@ const SignaturesTab = ({ caseData, onRefresh }: SignaturesTabProps) => {
     if (!consentChecked || !typedName.trim()) return;
     setSigning(true);
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/process-signature`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data: result, error: invokeErr } = await supabase.functions.invoke('process-signature', {
+        body: {
           token: request.id,
           signer_type: 'attorney',
           typed_name: typedName.trim(),
           signature_data: signMethod === 'draw' ? signatureDataUrl : null,
           ip_address: 'captured-server-side',
           user_agent: navigator.userAgent,
-        }),
+        },
       });
-      const result = await res.json();
-      if (result.success) {
+      if (invokeErr) throw invokeErr;
+      if (result?.success) {
         toast.success('All signatures complete. Packet is ready to file.');
         setShowCountersign(false);
         await loadData();
         onRefresh();
       } else {
-        toast.error(result.error || 'Failed to countersign');
+        toast.error(result?.error || 'Failed to countersign');
       }
     } catch {
       toast.error('Failed to countersign');
