@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
 import ProgressPill from '@/components/wizard/ProgressPill';
+import { Progress } from '@/components/ui/progress';
 import StepTransition from '@/components/wizard/StepTransition';
 import MultiUploadZone, { LowCountConfirmation, MULTI_UPLOAD_CONFIGS, isMultiUploadItem } from '@/components/wizard/MultiUploadZone';
 import CorrectionBanner from '@/components/wizard/CorrectionBanner';
