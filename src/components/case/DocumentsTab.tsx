@@ -92,6 +92,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkCorrection, setShowBulkCorrection] = useState(false);
   const [bulkCorrectionNote, setBulkCorrectionNote] = useState('');
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Gather all files across all checklist items
   const allFiles: FileEntry[] = useMemo(() => {
