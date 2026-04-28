@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
+import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
 import { fetchDashboardData } from '@/lib/dashboard-data';
 import type { Case, ChecklistItem, UploadedFile } from '@/lib/store';
 import { toast } from 'sonner';
@@ -179,12 +180,13 @@ const DocumentReviewQueue = () => {
     setReviewedCount(c => c + 1);
   };
 
-  const handleViewFullSize = (q: QueuedDocument) => {
+  const handleViewFullSize = async (q: QueuedDocument) => {
     if (q.file.dataUrl) {
       window.open(q.file.dataUrl, '_blank');
     } else if (q.file.storagePath) {
-      const { data } = supabase.storage.from('case-documents').getPublicUrl(q.file.storagePath);
-      window.open(data.publicUrl, '_blank');
+      const url = await getCaseDocumentSignedUrl(q.file.storagePath);
+      if (url) window.open(url, '_blank');
+      else toast.error('No file URL available.');
     } else {
       toast.error('No file URL available.');
     }

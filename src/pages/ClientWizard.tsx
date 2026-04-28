@@ -23,6 +23,7 @@ import { getPlanLimits } from '@/lib/plan-limits';
 import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 
 import { supabase } from '@/integrations/supabase/client';
+import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name';
@@ -422,17 +423,14 @@ const ClientWizard = () => {
           .eq('case_id', resolvedCaseId)
           .order('created_at', { ascending: true });
 
-        // Generate public URLs for files that have storage_path
-        const filesWithUrls = (fileRows || []).map((f) => {
+        // Generate signed URLs for files that have storage_path
+        const filesWithUrls = await Promise.all((fileRows || []).map(async (f) => {
           let displayUrl = f.data_url || '';
           if (f.storage_path && (!f.data_url || f.data_url === '')) {
-            const { data: publicUrlData } = supabase.storage
-              .from('case-documents')
-              .getPublicUrl(f.storage_path);
-            displayUrl = publicUrlData.publicUrl || '';
+            displayUrl = await getCaseDocumentSignedUrl(f.storage_path);
           }
           return { ...f, displayUrl };
-        });
+        }));
 
         // Build checklist items from Supabase data
         const checklist: ChecklistItem[] = (checklistRows || []).map(row => {
@@ -875,12 +873,8 @@ const ClientWizard = () => {
     setUploadProgress(100);
     setTimeout(() => setUploadProgress(null), 600);
 
-    // Get a public URL for immediate display
-    let displayUrl = '';
-    const { data: publicUrlData } = supabase.storage
-      .from('case-documents')
-      .getPublicUrl(storagePath);
-    displayUrl = publicUrlData.publicUrl || '';
+    // Get a short-lived signed URL for immediate display
+    const displayUrl = await getCaseDocumentSignedUrl(storagePath);
 
     const newFile = {
       id: newFileId,

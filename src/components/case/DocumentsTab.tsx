@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
+import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -63,10 +64,7 @@ const correctionChips = ['Wrong year', 'Illegible', 'Missing pages', 'Wrong docu
 const getFileUrl = async (file: UploadedFile): Promise<string> => {
   if (file.dataUrl) return file.dataUrl;
   if (file.storagePath) {
-    const { data } = supabase.storage
-      .from('case-documents')
-      .getPublicUrl(file.storagePath);
-    return data.publicUrl || '';
+    return await getCaseDocumentSignedUrl(file.storagePath);
   }
   return '';
 };
