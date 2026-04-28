@@ -29,34 +29,18 @@ const InviteSignup = () => {
         return;
       }
 
-      const { data: inv, error: invErr } = await supabase
-        .from('team_invitations')
-        .select('*')
-        .eq('id', invitationId)
-        .single();
+      const { data: invRows, error: invErr } = await supabase
+        .rpc('get_invitation_for_signup', { _invitation_id: invitationId });
 
+      const inv = Array.isArray(invRows) ? invRows[0] : invRows;
       if (invErr || !inv) {
-        setError('This invitation could not be found.');
-        setLoading(false);
-        return;
-      }
-
-      if (inv.status === 'accepted') {
-        setError('This invitation has already been accepted.');
+        setError('This invitation could not be found or has already been accepted.');
         setLoading(false);
         return;
       }
 
       setInvitation(inv);
-
-      // Fetch firm name
-      const { data: firm } = await supabase
-        .from('firms')
-        .select('name')
-        .eq('id', inv.firm_id)
-        .single();
-
-      if (firm) setFirmName(firm.name);
+      if (inv.firm_name) setFirmName(inv.firm_name);
       setLoading(false);
     };
 
