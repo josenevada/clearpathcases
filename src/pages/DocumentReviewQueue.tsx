@@ -158,6 +158,48 @@ const DocumentReviewQueue = () => {
     }
   };
 
+  const handleDelete = async (q: QueuedDocument) => {
+    const confirmed = window.confirm('Delete this file? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      // Delete storage object first (if present)
+      if (q.file.storagePath) {
+        const { error: storageErr } = await supabase.storage
+          .from('case-documents')
+          .remove([q.file.storagePath]);
+        if (storageErr) console.warn('Storage removal failed:', storageErr);
+      }
+
+      const { error } = await supabase.from('files').delete().eq('id', q.file.id);
+      if (error) {
+        toast.error('Failed to delete file.');
+        return;
+      }
+
+      // If no other files remain for this checklist item, mark it incomplete
+      const remaining = q.item.files.filter(f => f.id !== q.file.id);
+      if (remaining.length === 0) {
+        await supabase.from('checklist_items').update({ completed: false }).eq('id', q.item.id);
+      }
+
+      await supabase.from('activity_log').insert({
+        case_id: q.caseRecord.id,
+        event_type: 'file_deleted',
+        actor_role: 'paralegal',
+        actor_name: user?.fullName || 'Paralegal',
+        description: `Deleted ${q.file.name}`,
+        item_id: q.item.id,
+      });
+
+      setRemovedFileIds(prev => new Set(prev).add(q.file.id));
+      toast.success('File deleted');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      toast.error('Delete failed.');
+    }
+  };
+
   const totalForProgress = totalPending + reviewedCount;
 
   // Cases dropdown options derived from all cases that have any pending docs
