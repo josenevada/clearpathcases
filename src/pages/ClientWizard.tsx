@@ -2285,6 +2285,14 @@ const ClientWizard = () => {
                       onChange={handleSingleFileUpload}
                     />
                   </div>
+                  {uploadProgress !== null && (
+                    <div className="space-y-1.5">
+                      <Progress value={uploadProgress} className="h-2" />
+                      <p className="text-xs text-muted-foreground text-center font-body">
+                        Uploading… {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : currentItem.files.length > 0 && currentItem.completed ? (
                 <div className="space-y-2">
