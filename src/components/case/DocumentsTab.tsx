@@ -258,6 +258,70 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     onRefresh();
   }, [caseData, filteredFiles, selectedIds, bulkCorrectionNote, viewRole, clearSelection, onRefresh]);
 
+  // Bulk delete
+  const handleBulkDelete = useCallback(async () => {
+    const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
+    if (targets.length === 0) return;
+
+    const actorName = caseData.assignedParalegal || 'Staff';
+    const targetIds = targets.map(t => t.file.id);
+    const storagePaths = targets.map(t => t.file.storagePath).filter(Boolean) as string[];
+
+    // Optimistic local state update
+    updateCase(caseData.id, c => {
+      for (const { file, item } of targets) {
+        const found = c.checklist.find(i => i.id === item.id);
+        if (found) {
+          found.files = found.files.filter(f => f.id !== file.id);
+          if (found.files.length === 0) found.completed = false;
+        }
+      }
+      return c;
+    });
+
+    try {
+      // Remove storage objects
+      if (storagePaths.length > 0) {
+        const { error: storageErr } = await supabase.storage.from('case-documents').remove(storagePaths);
+        if (storageErr) console.warn('Storage removal failed:', storageErr);
+      }
+
+      // Delete file rows
+      await supabase.from('files').delete().in('id', targetIds);
+
+      // Re-mark checklist items as incomplete if they have no remaining files
+      const affectedItemIds = Array.from(new Set(targets.map(t => t.item.id)));
+      for (const itemId of affectedItemIds) {
+        const item = caseData.checklist.find(i => i.id === itemId);
+        if (!item) continue;
+        const remaining = item.files.filter(f => !targetIds.includes(f.id));
+        if (remaining.length === 0) {
+          await supabase.from('checklist_items').update({ completed: false }).eq('id', itemId);
+        }
+      }
+
+      // Activity log entries
+      for (const { file, item } of targets) {
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'file_deleted',
+          actor_role: 'paralegal',
+          actor_name: actorName,
+          description: `${actorName} deleted ${file.name}`,
+          item_id: item.id,
+        });
+      }
+
+      toast.success(`${targets.length} document${targets.length !== 1 ? 's' : ''} deleted`);
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      toast.error('Some files could not be deleted.');
+    }
+
+    setShowBulkDeleteConfirm(false);
+    clearSelection();
+    onRefresh();
+  }, [caseData, filteredFiles, selectedIds, clearSelection, onRefresh]);
   const handleExportCheck = (type: 'zip' | 'pdf') => {
     if (unapprovedCount > 0) {
       setShowExportWarning(type);
