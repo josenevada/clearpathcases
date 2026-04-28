@@ -102,11 +102,7 @@ serve(async (req) => {
       // Use default
     }
 
-    // Step 4: Retrieve statements (last 6 months)
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 6);
-
+    // Step 4: Retrieve statements
     const statementsRes = await fetch(`${plaidHost}/statements/list`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -114,8 +110,6 @@ serve(async (req) => {
         client_id: PLAID_CLIENT_ID,
         secret: PLAID_SECRET,
         access_token: accessToken,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
       }),
     });
 
@@ -183,36 +177,12 @@ serve(async (req) => {
         }
       }
     } else {
-      // Statements API may not be available in sandbox - that's OK
-      console.log('Statements API returned:', statementsRes.status);
+      const errBody = await statementsRes.text();
+      console.error('Plaid /statements/list error:', statementsRes.status, errBody);
     }
 
-    // Even if no statements retrieved via API (sandbox limitation), 
-    // create a placeholder record showing the connection was made
     if (statementsRetrieved === 0) {
-      // In sandbox, create representative file records
-      for (const acct of connectedAccounts) {
-        for (let m = 0; m < 6; m++) {
-          const d = new Date();
-          d.setMonth(d.getMonth() - m);
-          const monthName = d.toLocaleString('default', { month: 'long' });
-          const year = d.getFullYear();
-          const fileName = `${institutionName}-${acct.type}-${monthName}-${year}.pdf`;
-          const fileId = crypto.randomUUID();
-
-          await supabase.from('files').insert({
-            id: fileId,
-            case_id,
-            checklist_item_id: checklist_item_id || case_id,
-            file_name: fileName,
-            uploaded_by: 'plaid',
-            review_status: 'pending',
-            review_note: 'Auto-retrieved via Plaid bank connection',
-          });
-
-          statementsRetrieved++;
-        }
-      }
+      console.warn(`No statements retrieved for case ${case_id}. Plaid may not have statements available for this institution.`);
     }
 
     // Mark checklist item as complete
