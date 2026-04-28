@@ -11,7 +11,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import Logo from '@/components/Logo';
-import ThemeToggle from '@/components/ThemeToggle';
+
 import PlanBadge from '@/components/PlanBadge';
 import { getAllCases, type Case } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
