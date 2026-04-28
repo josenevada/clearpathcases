@@ -2008,6 +2008,7 @@ const ClientWizard = () => {
                   {getPlanLimits(firmPlan).plaidBank ? (
                   <PlaidBankConnect
                     caseId={caseData.id}
+                    caseCode={caseCode || caseData.caseCode}
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
                     onSuccess={(plaidResult) => {
