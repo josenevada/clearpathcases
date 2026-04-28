@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 
 const InviteSignup = () => {
   const { invitationId } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -23,14 +25,14 @@ const InviteSignup = () => {
 
   useEffect(() => {
     const fetchInvitation = async () => {
-      if (!invitationId) {
-        setError('Invalid invitation link');
+      if (!invitationId || !token) {
+        setError('This invitation link is invalid or missing its security token.');
         setLoading(false);
         return;
       }
 
       const { data: invRows, error: invErr } = await supabase
-        .rpc('get_invitation_for_signup', { _invitation_id: invitationId });
+        .rpc('get_invitation_for_signup', { _invitation_id: invitationId, _token: token });
 
       const inv = Array.isArray(invRows) ? invRows[0] : invRows;
       if (invErr || !inv) {
@@ -45,7 +47,7 @@ const InviteSignup = () => {
     };
 
     fetchInvitation();
-  }, [invitationId]);
+  }, [invitationId, token]);
 
   const handleSignup = async () => {
     if (!fullName || !password || !invitation) {
@@ -82,11 +84,11 @@ const InviteSignup = () => {
         });
       if (userError) throw userError;
 
-      // Mark invitation as accepted
-      await supabase
-        .from('team_invitations')
-        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-        .eq('id', invitation.id);
+      // Mark invitation as accepted via token-gated RPC
+      await supabase.rpc('accept_team_invitation', {
+        _invitation_id: invitation.id,
+        _token: token,
+      });
 
       toast.success('Account created! Please check your email to verify your account.');
       navigate('/login?verified=pending');
