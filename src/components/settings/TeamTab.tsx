@@ -106,10 +106,11 @@ const TeamTab = () => {
         .single();
       if (insertError) throw insertError;
 
-      // Send email
+      // Send email (token is required so the recipient can accept the invite)
       const { error: emailError } = await supabase.functions.invoke('send-invitation', {
         body: {
           invitationId: invite.id,
+          token: (invite as any).token,
           firmName,
           inviterName: user.fullName,
           recipientEmail: inviteEmail,
@@ -137,6 +138,7 @@ const TeamTab = () => {
       const { error } = await supabase.functions.invoke('send-invitation', {
         body: {
           invitationId: inv.id,
+          token: (inv as any).token,
           firmName,
           inviterName: inv.invited_by || user?.fullName,
           recipientEmail: inv.email,

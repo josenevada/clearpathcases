@@ -1535,6 +1535,7 @@ export type Database = {
           personal_message: string | null
           role: string
           status: string
+          token: string
         }
         Insert: {
           accepted_at?: string | null
@@ -1546,6 +1547,7 @@ export type Database = {
           personal_message?: string | null
           role?: string
           status?: string
+          token?: string
         }
         Update: {
           accepted_at?: string | null
@@ -1557,6 +1559,7 @@ export type Database = {
           personal_message?: string | null
           role?: string
           status?: string
+          token?: string
         }
         Relationships: []
       }
@@ -1603,10 +1606,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_team_invitation: {
+        Args: { _invitation_id: string; _token: string }
+        Returns: boolean
+      }
       get_case_id_by_code: { Args: { _case_code: string }; Returns: string }
       get_firm_case_ids: { Args: never; Returns: string[] }
       get_invitation_for_signup: {
-        Args: { _invitation_id: string }
+        Args: { _invitation_id: string; _token: string }
         Returns: {
           email: string
           firm_id: string

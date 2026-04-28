@@ -11,12 +11,16 @@ serve(async (req) => {
   }
 
   try {
-    const { invitationId, firmName, inviterName, recipientEmail, role, personalMessage } = await req.json();
+    const { invitationId, token, firmName, inviterName, recipientEmail, role, personalMessage } = await req.json();
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) throw new Error("RESEND_API_KEY not configured");
 
-    const inviteUrl = `https://yourclearpath.app/invite/${invitationId}`;
+    if (!invitationId || !token) {
+      throw new Error("invitationId and token are required");
+    }
+
+    const inviteUrl = `https://yourclearpath.app/invite/${invitationId}?token=${encodeURIComponent(token)}`;
 
     const emailHtml = `
       <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #ffffff;">
