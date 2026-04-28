@@ -797,7 +797,29 @@ const ClientWizard = () => {
       return;
     }
 
-    // Show compression message for large files
+    // Hard size limit
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error(
+        `File is too large (${Math.round(file.size / 1024 / 1024)}MB). Maximum size is ${MAX_FILE_SIZE_MB}MB. Try splitting the document or compressing it first.`
+      );
+      return;
+    }
+
+    // File type validation
+    if (
+      !ALLOWED_TYPES.includes(file.type) &&
+      !file.name.match(/\.(pdf|jpg|jpeg|png|heic|heif|webp)$/i)
+    ) {
+      toast.error('This file type is not supported. Please upload a PDF or image file.');
+      return;
+    }
+
+    // Friendly notice for large PDFs
+    if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) {
+      toast('Large PDF detected — upload may take 30-60 seconds...', { duration: 4000 });
+    }
+
+    // Show compression message for large image files
     if (file.size > 4 * 1024 * 1024 && file.type.startsWith('image/')) {
       toast('This file is a bit large. We\'re compressing it for you...', { duration: 3000 });
     }
@@ -825,19 +847,33 @@ const ClientWizard = () => {
       userLabel
     );
 
-    // Upload to Supabase Storage with a unique path
+    // Upload to Supabase Storage with a unique path (with retry + progress)
     const uniqueId = crypto.randomUUID().slice(0, 6);
     const ext = (processedFile.name.split('.').pop() || 'pdf').toLowerCase();
     const storagePath = `${caseData.id}/${currentItem.id}/${cleanFileName.replace(`.${ext}`, '')}-${uniqueId}.${ext}`;
-    const { error: storageError } = await supabase.storage
-      .from('case-documents')
-      .upload(storagePath, processedFile, { upsert: false });
+
+    setUploadProgress(10);
+    const progressTimer = setInterval(() => {
+      setUploadProgress(prev => (prev === null || prev >= 90 ? prev : prev + 10));
+    }, 400);
+
+    const { error: storageError } = await uploadWithRetry(
+      storagePath,
+      processedFile,
+      processedFile.type || 'application/octet-stream'
+    );
+
+    clearInterval(progressTimer);
 
     if (storageError) {
+      setUploadProgress(null);
       console.error('Storage upload failed:', storageError);
       toast.error('Upload failed. Please try again.');
       return;
     }
+
+    setUploadProgress(100);
+    setTimeout(() => setUploadProgress(null), 600);
 
     // Get a public URL for immediate display
     let displayUrl = '';
