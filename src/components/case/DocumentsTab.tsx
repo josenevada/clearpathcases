@@ -92,6 +92,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkCorrection, setShowBulkCorrection] = useState(false);
   const [bulkCorrectionNote, setBulkCorrectionNote] = useState('');
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Gather all files across all checklist items
   const allFiles: FileEntry[] = useMemo(() => {
@@ -257,6 +258,70 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     onRefresh();
   }, [caseData, filteredFiles, selectedIds, bulkCorrectionNote, viewRole, clearSelection, onRefresh]);
 
+  // Bulk delete
+  const handleBulkDelete = useCallback(async () => {
+    const targets = filteredFiles.filter(fe => selectedIds.has(fe.file.id));
+    if (targets.length === 0) return;
+
+    const actorName = caseData.assignedParalegal || 'Staff';
+    const targetIds = targets.map(t => t.file.id);
+    const storagePaths = targets.map(t => t.file.storagePath).filter(Boolean) as string[];
+
+    // Optimistic local state update
+    updateCase(caseData.id, c => {
+      for (const { file, item } of targets) {
+        const found = c.checklist.find(i => i.id === item.id);
+        if (found) {
+          found.files = found.files.filter(f => f.id !== file.id);
+          if (found.files.length === 0) found.completed = false;
+        }
+      }
+      return c;
+    });
+
+    try {
+      // Remove storage objects
+      if (storagePaths.length > 0) {
+        const { error: storageErr } = await supabase.storage.from('case-documents').remove(storagePaths);
+        if (storageErr) console.warn('Storage removal failed:', storageErr);
+      }
+
+      // Delete file rows
+      await supabase.from('files').delete().in('id', targetIds);
+
+      // Re-mark checklist items as incomplete if they have no remaining files
+      const affectedItemIds = Array.from(new Set(targets.map(t => t.item.id)));
+      for (const itemId of affectedItemIds) {
+        const item = caseData.checklist.find(i => i.id === itemId);
+        if (!item) continue;
+        const remaining = item.files.filter(f => !targetIds.includes(f.id));
+        if (remaining.length === 0) {
+          await supabase.from('checklist_items').update({ completed: false }).eq('id', itemId);
+        }
+      }
+
+      // Activity log entries
+      for (const { file, item } of targets) {
+        await supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'file_deleted',
+          actor_role: 'paralegal',
+          actor_name: actorName,
+          description: `${actorName} deleted ${file.name}`,
+          item_id: item.id,
+        });
+      }
+
+      toast.success(`${targets.length} document${targets.length !== 1 ? 's' : ''} deleted`);
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      toast.error('Some files could not be deleted.');
+    }
+
+    setShowBulkDeleteConfirm(false);
+    clearSelection();
+    onRefresh();
+  }, [caseData, filteredFiles, selectedIds, clearSelection, onRefresh]);
   const handleExportCheck = (type: 'zip' | 'pdf') => {
     if (unapprovedCount > 0) {
       setShowExportWarning(type);
@@ -601,6 +666,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 onClick={() => setShowBulkCorrection(true)}
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Request Correction
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Selected
               </Button>
               <Button size="sm" variant="ghost" onClick={clearSelection}>
                 <X className="w-3.5 h-3.5" />
@@ -1227,6 +1299,30 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
               }}
             >
               Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation dialog */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              Delete {selectedIds.size} document{selectedIds.size !== 1 ? 's' : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. The client will need to re-upload any deleted files.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleBulkDelete}
+            >
+              Delete {selectedIds.size} document{selectedIds.size !== 1 ? 's' : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
