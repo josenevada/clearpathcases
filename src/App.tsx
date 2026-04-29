@@ -26,6 +26,7 @@ import Packets from "./pages/Packets";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import SmsConsent from "./pages/SmsConsent";
+import SmsOptInPreview from "./pages/SmsOptInPreview";
 import InviteSignup from "./pages/InviteSignup";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
@@ -76,6 +77,7 @@ const App = () => {
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/sms-consent" element={<SmsConsent />} />
+                <Route path="/sms-opt-in-preview" element={<SmsOptInPreview />} />
                 <Route path="/portal" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />

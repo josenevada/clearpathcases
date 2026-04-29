@@ -25,7 +25,7 @@ const SmsConsent = () => {
             {[
               { step: '1', text: "The client's attorney sends them a secure intake link via email." },
               { step: '2', text: 'The client opens the link and enters their phone number in the document portal, where a clear SMS consent checkbox is displayed.' },
-              { step: '3', quote: "I agree to receive SMS updates about my bankruptcy case documents from my attorney's firm via ClearPath. Message & data rates may apply. Reply STOP to opt out at any time." },
+              { step: '3', quote: "I agree to receive SMS updates about my bankruptcy case documents from my attorney's firm via ClearPath. Message & data rates may apply. Reply STOP to opt out or HELP for help anytime." },
               { step: '4', text: 'Only after the client checks the consent box does ClearPath send any SMS messages.' },
             ].map(({ step, text, quote }) => (
               <div key={step} className="flex gap-4 items-start">
@@ -77,7 +77,7 @@ const SmsConsent = () => {
                   </svg>
                 </span>
                 <span className="font-body text-[13px] leading-snug" style={{ color: '#EDF0F4' }}>
-                  I agree to receive SMS updates about my bankruptcy case documents. Msg &amp; data rates may apply. Reply STOP to opt out anytime.
+                  I agree to receive SMS updates about my bankruptcy case documents. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help anytime.
                 </span>
               </label>
 
