@@ -19,21 +19,22 @@ const SmsConsent = () => {
             How Clients Are Enrolled
           </h2>
           <p className="font-body text-base leading-relaxed mb-4" style={{ color: '#8aa3b8' }}>
-            ClearPath sends SMS messages to bankruptcy clients strictly on behalf of licensed law firms. Before any message is sent, clients must provide explicit consent through a two-step SMS opt-in process:
+            ClearPath sends SMS messages to bankruptcy clients strictly on behalf of licensed law firms. Before any message is sent, clients must provide explicit consent through a web-based opt-in flow in the secure client portal:
           </p>
           <div className="space-y-4 pl-1">
             {[
-              { step: '1', text: "The client's attorney enters their phone number when creating their case." },
-              { step: '2', text: '"[Firm Name] would like to send you SMS updates about your bankruptcy case documents. Reply YES to receive updates or NO to decline. Msg & data rates may apply."' },
-              { step: '3', text: 'Only after the client replies YES does ClearPath send any further messages.' },
-            ].map(({ step, text }) => (
+              { step: '1', text: "The client's attorney sends them a secure intake link via email." },
+              { step: '2', text: 'The client opens the link and enters their phone number in the document portal, where a clear SMS consent checkbox is displayed.' },
+              { step: '3', quote: "I agree to receive SMS updates about my bankruptcy case documents from my attorney's firm via ClearPath. Message & data rates may apply. Reply STOP to opt out at any time." },
+              { step: '4', text: 'Only after the client checks the consent box does ClearPath send any SMS messages.' },
+            ].map(({ step, text, quote }) => (
               <div key={step} className="flex gap-4 items-start">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-body font-bold text-sm" style={{ background: 'rgba(0,194,168,0.12)', color: '#00C2A8' }}>
                   {step}
                 </span>
                 <p className="font-body text-base leading-relaxed pt-1" style={{ color: '#8aa3b8' }}>
-                  {step === '2' ? (
-                    <>The client receives a consent request: <span className="italic" style={{ color: '#EDF0F4' }}>{text}</span></>
+                  {quote ? (
+                    <>The client checks the box to confirm: <span className="italic" style={{ color: '#EDF0F4' }}>"{quote}"</span></>
                   ) : text}
                 </p>
               </div>
@@ -47,45 +48,51 @@ const SmsConsent = () => {
             What Clients See
           </h2>
           <p className="font-body text-sm leading-relaxed mb-6" style={{ color: '#8aa3b8' }}>
-            Example SMS consent conversation shown to every client before messages are sent.
+            Example of the web-based consent form shown in the secure client portal before any SMS messages are sent.
           </p>
 
-          <div className="mx-auto max-w-sm rounded-[2.5rem] p-3 mb-6" style={{ background: '#1a2433', border: '0.5px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px -10px rgba(0,0,0,0.6)' }}>
-            <div className="rounded-[2rem] px-4 py-6 space-y-3" style={{ background: '#0a1420', minHeight: '480px' }}>
-              <div className="text-center pb-3 mb-2" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
-                <p className="font-body text-xs" style={{ color: '#8aa3b8' }}>Messages</p>
-                <p className="font-body text-sm font-semibold" style={{ color: '#EDF0F4' }}>Johnson Law</p>
-              </div>
+          <div className="mx-auto max-w-md rounded-2xl p-6 md:p-8 mb-6" style={{ background: '#1a2433', border: '0.5px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px -10px rgba(0,0,0,0.6)' }}>
+            {/* Faux browser chrome */}
+            <div className="flex items-center gap-1.5 pb-5 mb-5" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+              <span className="ml-3 font-body text-xs" style={{ color: '#8aa3b8' }}>yourclearpath.app/client</span>
+            </div>
 
-              {/* Incoming bubble 1 */}
-              <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5" style={{ background: '#EDF0F4', color: '#0d1b2a' }}>
-                  <p className="font-body text-[13px] leading-snug">
-                    Johnson Law would like to send you SMS updates about your bankruptcy case documents. You'll receive your document portal link and upload reminders. Reply YES to confirm or STOP to decline. Msg &amp; data rates may apply.
-                  </p>
+            <div className="space-y-5">
+              <div>
+                <label className="block font-body text-xs font-medium mb-2" style={{ color: '#EDF0F4' }}>
+                  Your phone number
+                </label>
+                <div className="w-full rounded-lg px-3.5 py-2.5 font-body text-[14px]" style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)', color: '#8aa3b8' }}>
+                  (555) 000-0000
                 </div>
               </div>
 
-              {/* Outgoing bubble */}
-              <div className="flex justify-end">
-                <div className="rounded-2xl rounded-br-md px-4 py-2" style={{ background: '#00C2A8', color: '#0d1b2a' }}>
-                  <p className="font-body text-[13px] font-semibold">YES</p>
-                </div>
-              </div>
+              <label className="flex gap-3 items-start cursor-default">
+                <span className="flex-shrink-0 mt-0.5 w-4 h-4 rounded flex items-center justify-center" style={{ background: '#00C2A8' }}>
+                  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6L5 8.5L9.5 4" stroke="#0d1b2a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className="font-body text-[13px] leading-snug" style={{ color: '#EDF0F4' }}>
+                  I agree to receive SMS updates about my bankruptcy case documents. Msg &amp; data rates may apply. Reply STOP to opt out anytime.
+                </span>
+              </label>
 
-              {/* Incoming bubble 2 */}
-              <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5" style={{ background: '#EDF0F4', color: '#0d1b2a' }}>
-                  <p className="font-body text-[13px] leading-snug">
-                    Confirmed. Your document portal is ready: yourclearpath.app/client/example. Reply STOP to opt out anytime.
-                  </p>
-                </div>
-              </div>
+              <button type="button" className="w-full rounded-lg py-2.5 font-body font-semibold text-sm" style={{ background: '#00C2A8', color: '#0d1b2a' }}>
+                Continue
+              </button>
+
+              <p className="font-body text-xs text-center" style={{ color: '#8aa3b8' }}>
+                Your number is never shared with third parties.
+              </p>
             </div>
           </div>
 
           <p className="font-body text-base leading-relaxed" style={{ color: '#8aa3b8' }}>
-            Every client must reply <span className="font-bold" style={{ color: '#EDF0F4' }}>YES</span> before receiving any further messages. Clients who reply <span className="font-bold" style={{ color: '#EDF0F4' }}>NO</span> or <span className="font-bold" style={{ color: '#EDF0F4' }}>STOP</span> receive no further messages. This two-step confirmation is required before any document portal links or reminders are sent.
+            Consent is collected directly through the secure client portal before any messages are sent. Clients who do not check the consent box receive no SMS messages. The consent checkbox and phone number input are required steps in the intake flow — no message is sent without both.
           </p>
         </section>
 
