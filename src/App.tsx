@@ -26,6 +26,7 @@ import Packets from "./pages/Packets";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import SmsConsent from "./pages/SmsConsent";
+import SmsOptInPreview from "./pages/SmsOptInPreview";
 import InviteSignup from "./pages/InviteSignup";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
