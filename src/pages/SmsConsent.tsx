@@ -77,7 +77,7 @@ const SmsConsent = () => {
                   </svg>
                 </span>
                 <span className="font-body text-[13px] leading-snug" style={{ color: '#EDF0F4' }}>
-                  I agree to receive SMS updates about my bankruptcy case documents. Msg &amp; data rates may apply. Reply STOP to opt out anytime.
+                  I agree to receive SMS updates about my bankruptcy case documents. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help anytime.
                 </span>
               </label>
 
