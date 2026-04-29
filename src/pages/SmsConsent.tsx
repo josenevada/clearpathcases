@@ -19,21 +19,22 @@ const SmsConsent = () => {
             How Clients Are Enrolled
           </h2>
           <p className="font-body text-base leading-relaxed mb-4" style={{ color: '#8aa3b8' }}>
-            ClearPath sends SMS messages to bankruptcy clients strictly on behalf of licensed law firms. Before any message is sent, clients must provide explicit consent through a two-step SMS opt-in process:
+            ClearPath sends SMS messages to bankruptcy clients strictly on behalf of licensed law firms. Before any message is sent, clients must provide explicit consent through a web-based opt-in flow in the secure client portal:
           </p>
           <div className="space-y-4 pl-1">
             {[
-              { step: '1', text: "The client's attorney enters their phone number when creating their case." },
-              { step: '2', text: '"[Firm Name] would like to send you SMS updates about your bankruptcy case documents. Reply YES to receive updates or NO to decline. Msg & data rates may apply."' },
-              { step: '3', text: 'Only after the client replies YES does ClearPath send any further messages.' },
-            ].map(({ step, text }) => (
+              { step: '1', text: "The client's attorney sends them a secure intake link via email." },
+              { step: '2', text: 'The client opens the link and enters their phone number in the document portal, where a clear SMS consent checkbox is displayed.' },
+              { step: '3', quote: "I agree to receive SMS updates about my bankruptcy case documents from my attorney's firm via ClearPath. Message & data rates may apply. Reply STOP to opt out at any time." },
+              { step: '4', text: 'Only after the client checks the consent box does ClearPath send any SMS messages.' },
+            ].map(({ step, text, quote }) => (
               <div key={step} className="flex gap-4 items-start">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-body font-bold text-sm" style={{ background: 'rgba(0,194,168,0.12)', color: '#00C2A8' }}>
                   {step}
                 </span>
                 <p className="font-body text-base leading-relaxed pt-1" style={{ color: '#8aa3b8' }}>
-                  {step === '2' ? (
-                    <>The client receives a consent request: <span className="italic" style={{ color: '#EDF0F4' }}>{text}</span></>
+                  {quote ? (
+                    <>The client checks the box to confirm: <span className="italic" style={{ color: '#EDF0F4' }}>"{quote}"</span></>
                   ) : text}
                 </p>
               </div>
