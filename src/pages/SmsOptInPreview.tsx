@@ -58,7 +58,10 @@ const SmsOptInPreview = () => {
                 style={{ borderColor: '#00C2A8' }}
               />
               <span className="font-body text-[13px] leading-snug text-foreground">
-                I agree to receive SMS messages about my bankruptcy case documents from my attorney's firm via ClearPath. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help anytime.
+                I agree to receive SMS messages about my bankruptcy case documents from my attorney's firm via ClearPath. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help anytime. View our{' '}
+                <a href="/terms" style={{ color: '#00C2A8' }} className="hover:underline">Terms of Service</a>
+                {' '}and{' '}
+                <a href="/privacy" style={{ color: '#00C2A8' }} className="hover:underline">Privacy Policy</a>.
               </span>
             </label>
 
