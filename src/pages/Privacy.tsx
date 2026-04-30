@@ -121,6 +121,11 @@ const Privacy = () => {
             We do not share documents, financial data, or client information with any third party beyond what is strictly 
             necessary for the services described above.
           </p>
+          <p>
+            For details about SMS communications, including how we collect consent, what messages we send, and how to opt out, 
+            please refer to our{' '}
+            <a href="/sms-consent" className="text-primary hover:underline">SMS Policy</a> at yourclearpath.app/sms-policy.
+          </p>
         </Section>
 
         <Section title="Data Storage and Security">
