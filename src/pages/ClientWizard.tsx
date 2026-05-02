@@ -963,7 +963,8 @@ const ClientWizard = () => {
     }
 
     // Reset multi-upload label prompt state after a successful upload
-    setPendingFile(null);
+    // (queue advancement is handled separately by advanceFileQueue)
+    setCurrentPendingFile(null);
     setFileLabelPromptOpen(false);
     setFileLabel('');
 
