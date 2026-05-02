@@ -209,9 +209,9 @@ const ParalegalDashboard = () => {
           style={{ background: 'rgba(245,166,35,0.1)', borderLeft: '3px solid #f5a623' }}
         >
           <span className="text-foreground">
-            You're on the Starter plan. Unlock AI form filling, means test engine, and exemption optimizer on Professional.{' '}
+            You're on the Starter plan. Unlock Plaid bank connection, bulk export, and priority support on Professional.{' '}
             <button onClick={() => navigate('/paralegal/settings')} className="text-primary font-medium hover:underline">
-              Upgrade for $599/mo →
+              Upgrade for $399/mo →
             </button>
           </span>
           <button
