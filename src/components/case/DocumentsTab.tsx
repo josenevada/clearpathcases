@@ -597,6 +597,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
 
     setCorrectionNote('');
     setSelectedFile(null);
+    onRefresh();
   };
 
   const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
