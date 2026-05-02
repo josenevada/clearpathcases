@@ -1531,7 +1531,7 @@ const ClientWizard = () => {
 
   // Desktop sidebar (always visible on lg+)
   const desktopSidebar = (
-    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-[100dvh] sticky top-0 overflow-y-auto">
+    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-[100dvh] sticky top-0 overflow-y-auto pb-16">
       <WizardSidebar
         checklist={caseData.checklist}
         currentCategoryIdx={currentCategoryIdx}
