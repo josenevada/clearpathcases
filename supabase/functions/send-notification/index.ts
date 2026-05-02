@@ -251,17 +251,42 @@ const getSmsMessage = (payload: NotificationPayload): string | null => {
   const firstName = payload.clientName?.split(' ')[0] || 'there';
   const link = payload.portalLink || '';
   const completionPercent = payload.completionPercent;
+  const dayVariant = new Date().getDate() % 3; // 0, 1, or 2
   switch (payload.type) {
     case 'client_welcome':
       return `Hi ${firstName}, your attorney sent you a secure link to upload your bankruptcy documents. Takes about 15 minutes on your phone. Start here: ${link} — Reply STOP to opt out.`;
-    case 'never_started':
-      return `Hi ${firstName}, your document portal is ready and waiting. It takes about 15 minutes and you can do it from your phone right now: ${link} — Reply STOP to opt out.`;
-    case 'inactivity_48h':
-      return `Hi ${firstName}, you started your document upload but haven't finished. You're almost there — pick up where you left off: ${link} — Reply STOP to opt out.`;
-    case 'inactivity_96h':
-      return `Hi ${firstName}, your attorney is waiting on your documents before they can move forward with your case. It only takes a few minutes to finish: ${link} — Reply STOP to opt out.`;
-    case 'deadline_reminder_7d':
-      return `Hi ${firstName}, your filing deadline is in 7 days. Your documents are ${completionPercent ?? 0}% complete — finish here: ${link} — Reply STOP to opt out.`;
+    case 'never_started': {
+      const variants = [
+        `Hi ${firstName}, your document portal is ready — takes about 15 minutes on your phone: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, your attorney set up a secure portal for your case documents. Start here when you're ready: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, haven't seen you in the portal yet. Your attorney needs these documents to get started: ${link} — Reply STOP to opt out.`,
+      ];
+      return variants[dayVariant];
+    }
+    case 'inactivity_48h': {
+      const variants = [
+        `Hi ${firstName}, you left off on your documents — want to knock a few out now? Takes about 5 minutes: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, your document portal is still waiting on a few items. You're closer than you think: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, quick reminder — your attorney needs a few more documents from you. Pick up here: ${link} — Reply STOP to opt out.`,
+      ];
+      return variants[dayVariant];
+    }
+    case 'inactivity_96h': {
+      const variants = [
+        `Hi ${firstName}, your attorney can't move your case forward without the remaining documents. It only takes a few minutes: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, a few documents are still missing from your file. Your attorney is waiting — finish here: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, still missing some documents. Your case is on hold until they're uploaded: ${link} — Reply STOP to opt out.`,
+      ];
+      return variants[dayVariant];
+    }
+    case 'deadline_reminder_7d': {
+      const variants = [
+        `Hi ${firstName}, your filing deadline is in 7 days. Documents are ${completionPercent ?? 0}% complete — finish here: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, one week until your filing date. Let's get those last documents uploaded: ${link} — Reply STOP to opt out.`,
+        `Hi ${firstName}, 7 days left before your deadline. Your attorney needs the remaining documents ASAP: ${link} — Reply STOP to opt out.`,
+      ];
+      return variants[dayVariant];
+    }
     case 'deadline_reminder_3d':
       return `Hi ${firstName}, IMPORTANT — your filing deadline is in 3 days and documents are still missing. Please upload now: ${link} — Reply STOP to opt out.`;
     case 'item_reminder': {

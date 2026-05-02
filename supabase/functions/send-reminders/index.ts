@@ -101,15 +101,35 @@ Deno.serve(async (req) => {
 
     if (!notificationType) continue;
 
-    // Global 24h dedup: skip if any SMS was sent in the last 24 hours
-    // (reads all SMS event types — sms_sent canonical + legacy aliases)
-    const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    // Skip if any notification was sent today (MST calendar day)
+    const mstMidnight = new Date(now);
+    mstMidnight.setUTCHours(7, 0, 0, 0); // 7 UTC = midnight MST
+    if (mstMidnight > now) mstMidnight.setUTCDate(mstMidnight.getUTCDate() - 1);
+
     const logRes = await fetch(
-      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${c.id}&event_type=in.(sms_sent,reminder_sent,notification_sent)&created_at=gte.${last24hStart.toISOString()}&select=id&limit=1`,
+      `${supabaseUrl}/rest/v1/activity_log?case_id=eq.${c.id}&event_type=in.(sms_sent,reminder_sent,notification_sent,reminder_attempted)&created_at=gte.${mstMidnight.toISOString()}&select=id&limit=1`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
     );
     const existingLogs = await logRes.json();
     if (Array.isArray(existingLogs) && existingLogs.length > 0) continue;
+
+    // Log attempt before sending to prevent duplicates even on failure
+    await fetch(`${supabaseUrl}/rest/v1/activity_log`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        case_id: c.id,
+        event_type: 'reminder_attempted',
+        actor_role: 'system',
+        actor_name: 'ClearPath',
+        description: `Automated reminder attempted [${notificationType}]: ${c.client_name}`,
+      }),
+    });
 
     // Send notification
     const notifyRes = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
