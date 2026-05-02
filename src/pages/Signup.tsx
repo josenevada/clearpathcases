@@ -168,16 +168,17 @@ const Signup = () => {
         throw new Error('Failed to create account. Please try again.');
       }
 
-      const resolvedFirmId = await provisionWorkspace({
+      // Defer workspace provisioning until email is verified
+      sessionStorage.setItem('pendingProvision', JSON.stringify({
         userId: authData.user.id,
         firmName,
         fullName,
         email,
-      });
+      }));
 
-      setFirmId(resolvedFirmId);
-      sessionStorage.removeItem('selected_plan');
-      setStep(1);
+      setStep(1); // Verify Email
+      setLoading(false);
+      return;
     } catch (err: any) {
       await supabase.auth.signOut();
       toast.error(err.message || 'Account setup failed — please try again');
