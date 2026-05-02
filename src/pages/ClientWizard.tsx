@@ -2198,7 +2198,25 @@ const ClientWizard = () => {
                     }
                   />
                   ) : (
-                    <p className="text-[13px] text-muted-foreground text-center py-4">Bank connection is available on Professional and Firm plans.</p>
+                    <div className="space-y-3">
+                      <p className="text-[13px] text-muted-foreground text-center py-2">Bank auto-connection is available on Professional and Firm plans.</p>
+                      {multiConfig && (
+                        <MultiUploadZone
+                          files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
+                          config={multiConfig}
+                          onFileAdd={(file: File) => {
+                            const existing = currentItem.files.find(f => f.name === file.name);
+                            if (existing) {
+                              setPendingDuplicate({ file, existingFileId: existing.id });
+                            } else {
+                              handleFileAdd(file);
+                            }
+                          }}
+                          onFileDelete={handleFileDelete}
+                          onFilePreview={(f) => setPreviewFile({ name: f.name, dataUrl: f.dataUrl })}
+                        />
+                      )}
+                    </div>
                   )}
                   <div className="flex flex-col items-center gap-2 mt-2">
                     <button
