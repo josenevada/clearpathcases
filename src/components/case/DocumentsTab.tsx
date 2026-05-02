@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import DocumentViewer from '@/components/case/DocumentViewer';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
+import { sendCorrectionRequest } from '@/lib/notifications';
 
 type ViewRole = 'paralegal' | 'attorney';
 
@@ -247,6 +248,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         description: `Correction requested on ${item.label} — '${bulkCorrectionNote}'`,
         item_id: item.id,
       });
+    }
+
+    // Notify the client once (the SMS gate cooldown would suppress duplicates anyway)
+    try {
+      await sendCorrectionRequest(caseData, bulkCorrectionNote, targets[0].item.id);
+    } catch (err) {
+      console.error('Bulk correction notification failed:', err);
     }
 
     toast.success(`Correction requested on ${targets.length} document${targets.length !== 1 ? 's' : ''}`);
@@ -576,9 +584,26 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       description: `Correction requested on ${entry.item.label} — '${correctionNote}'`,
       item_id: entry.item.id,
     });
+
+    // Notify the client via email + SMS
+    try {
+      const result = await sendCorrectionRequest(caseData, correctionNote, entry.item.id);
+      const channels: string[] = [];
+      if (result.email?.status === 'sent') channels.push('email');
+      if (result.sms?.status === 'sent') channels.push('SMS');
+      if (channels.length > 0) {
+        toast.success(`Correction requested — client notified via ${channels.join(' & ')}`);
+      } else {
+        const reason = result.sms?.detail || result.email?.detail || 'no channel available';
+        toast.success(`Correction requested (notification skipped: ${reason})`);
+      }
+    } catch (err) {
+      console.error('Correction notification failed:', err);
+      toast.success('Correction requested (notification failed to send)');
+    }
+
     setCorrectionNote('');
     setSelectedFile(null);
-    toast.success('Correction requested');
     onRefresh();
   };
 
