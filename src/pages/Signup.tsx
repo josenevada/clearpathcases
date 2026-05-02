@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import { Check, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 import { useAuth } from '@/lib/auth';
 
-const STEPS = ['Create Account', 'All Set'];
+const STEPS = ['Account', 'Verify Email', 'Firm Setup', 'Plan'];
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -20,6 +20,19 @@ const Signup = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const handleResendVerification = async () => {
+    await supabase.auth.resend({ type: 'signup', email });
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown(c => {
+        if (c <= 1) { clearInterval(interval); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    toast.success('Verification email resent.');
+  };
 
   // Step 0
   const [fullName, setFullName] = useState('');
@@ -97,7 +110,7 @@ const Signup = () => {
 
         setFirmId(resolvedFirmId);
         sessionStorage.removeItem('selected_plan');
-        setStep(1);
+        setStep(2);
       } catch (err: any) {
         console.error('Google onboarding error:', err);
         toast.error(err.message || 'Failed to set up account');
@@ -130,7 +143,7 @@ const Signup = () => {
 
         setFirmId(resolvedFirmId);
         sessionStorage.removeItem('selected_plan');
-        setStep(1);
+        setStep(2);
         return;
       }
 
@@ -155,16 +168,17 @@ const Signup = () => {
         throw new Error('Failed to create account. Please try again.');
       }
 
-      const resolvedFirmId = await provisionWorkspace({
+      // Defer workspace provisioning until email is verified
+      sessionStorage.setItem('pendingProvision', JSON.stringify({
         userId: authData.user.id,
         firmName,
         fullName,
         email,
-      });
+      }));
 
-      setFirmId(resolvedFirmId);
-      sessionStorage.removeItem('selected_plan');
-      setStep(1);
+      setStep(1); // Verify Email
+      setLoading(false);
+      return;
     } catch (err: any) {
       await supabase.auth.signOut();
       toast.error(err.message || 'Account setup failed — please try again');
@@ -261,6 +275,35 @@ const Signup = () => {
           )}
 
           {step === 1 && (
+            <motion.div key="s-verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6 py-8">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Check your email</h2>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                  We sent a verification link to <strong>{email}</strong>. Click the link in that email to continue setting up your account.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Didn't get it? Check your spam folder, or
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResendVerification}
+                  disabled={resendCooldown > 0}
+                >
+                  {resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : 'Resend verification email'}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <Check className="w-8 h-8 text-primary" />

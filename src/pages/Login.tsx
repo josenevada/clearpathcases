@@ -61,6 +61,37 @@ const Login = () => {
           redirectingRef.current = true;
           // Use setTimeout to avoid Supabase deadlock on nested calls
           setTimeout(async () => {
+            // Handle deferred workspace provisioning (post email-verification)
+            const pendingRaw = sessionStorage.getItem('pendingProvision');
+            if (pendingRaw) {
+              try {
+                const pending = JSON.parse(pendingRaw);
+                if (pending.userId === session.user.id) {
+                  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                  const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userId: pending.userId,
+                      firmName: pending.firmName,
+                      fullName: pending.fullName,
+                      email: pending.email,
+                      planName: sessionStorage.getItem('selected_plan') || 'starter',
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok || !data?.firmId) {
+                    throw new Error(data?.error || 'Failed to set up workspace');
+                  }
+                  sessionStorage.removeItem('pendingProvision');
+                  sessionStorage.removeItem('selected_plan');
+                }
+              } catch (err: any) {
+                console.error('Deferred provisioning error:', err);
+                toast.error(err.message || 'Failed to finish workspace setup');
+              }
+            }
+
             const { data: userData } = await supabase
               .from('users')
               .select('role, firm_id')
