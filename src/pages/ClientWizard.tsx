@@ -1775,6 +1775,25 @@ const ClientWizard = () => {
     </div>
   );
 
+  if (caseCompleted || caseData?.readyToFile) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+          className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-8"
+        >
+          <CheckCircle2 className="w-14 h-14 text-primary" strokeWidth={2.5} />
+        </motion.div>
+        <h1 className="font-display text-4xl font-bold text-foreground mb-4">You're all done!</h1>
+        <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
+          Your attorney has been notified and will review your documents. You'll hear from them soon.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] flex flex-row">
       {desktopSidebar}
