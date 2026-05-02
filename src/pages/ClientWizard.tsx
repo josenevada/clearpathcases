@@ -320,7 +320,8 @@ const ClientWizard = () => {
   
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingFileQueue, setPendingFileQueue] = useState<File[]>([]);
+  const [currentPendingFile, setCurrentPendingFile] = useState<File | null>(null);
   const [fileLabelPromptOpen, setFileLabelPromptOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [fileLabel, setFileLabel] = useState('');
@@ -781,6 +782,27 @@ const ClientWizard = () => {
     );
   };
 
+  const advanceFileQueue = () => {
+    setPendingFileQueue(prev => {
+      const remaining = prev.slice(1);
+      if (remaining.length > 0) {
+        const nextFile = remaining[0];
+        setCurrentPendingFile(nextFile);
+        const suggestion = getMultiUploadLabelSuggestion(
+          currentItem?.label || '',
+          (currentItem?.files.length || 0)
+        );
+        setFileLabel(suggestion);
+        setFileLabelPromptOpen(true);
+      } else {
+        setCurrentPendingFile(null);
+        setFileLabelPromptOpen(false);
+        setFileLabel('');
+      }
+      return remaining;
+    });
+  };
+
   const handleFileAdd = async (file: File, replaceFileId?: string, explicitLabel?: string | null) => {
     if (!currentItem) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
@@ -788,10 +810,18 @@ const ClientWizard = () => {
 
     // Multi-upload items: gate through label prompt before uploading
     if (isMultiUpload && !replaceFileId && explicitLabel === undefined) {
-      const suggestion = getMultiUploadLabelSuggestion(currentItem.label, currentItem.files.length);
-      setFileLabel(suggestion);
-      setPendingFile(file);
-      setFileLabelPromptOpen(true);
+      // Add to queue instead of overwriting
+      setPendingFileQueue(prev => {
+        const newQueue = [...prev, file];
+        // If this is the first file in the queue, show the prompt immediately
+        if (prev.length === 0) {
+          const suggestion = getMultiUploadLabelSuggestion(currentItem.label, currentItem.files.length);
+          setFileLabel(suggestion);
+          setCurrentPendingFile(file);
+          setFileLabelPromptOpen(true);
+        }
+        return newQueue;
+      });
       return;
     }
 
@@ -954,7 +984,8 @@ const ClientWizard = () => {
     }
 
     // Reset multi-upload label prompt state after a successful upload
-    setPendingFile(null);
+    // (queue advancement is handled separately by advanceFileQueue)
+    setCurrentPendingFile(null);
     setFileLabelPromptOpen(false);
     setFileLabel('');
 
@@ -2646,7 +2677,8 @@ const ClientWizard = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4"
             onClick={() => {
-              setPendingFile(null);
+              setPendingFileQueue([]);
+              setCurrentPendingFile(null);
               setFileLabelPromptOpen(false);
               setFileLabel('');
             }}
@@ -2660,19 +2692,25 @@ const ClientWizard = () => {
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-lg font-display font-semibold text-foreground mb-1">Label this file</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-2">
                 {currentItem ? getLabelPromptHelper(currentItem.label) : 'Add a short label so this file is easy to identify.'}
               </p>
+              {pendingFileQueue.length > 1 && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  {pendingFileQueue.length} files selected — labeling one at a time
+                </p>
+              )}
               <Input
                 value={fileLabel}
                 onChange={e => setFileLabel(e.target.value)}
                 placeholder="e.g. January 2025"
                 autoFocus
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && pendingFile) {
-                    const f = pendingFile;
+                  if (e.key === 'Enter' && currentPendingFile) {
+                    const f = currentPendingFile;
                     const label = fileLabel.trim();
                     handleFileAdd(f, undefined, label || null);
+                    advanceFileQueue();
                   }
                 }}
                 className="mb-5"
@@ -2681,19 +2719,21 @@ const ClientWizard = () => {
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    if (!pendingFile) return;
-                    const f = pendingFile;
+                    if (!currentPendingFile) return;
+                    const f = currentPendingFile;
                     handleFileAdd(f, undefined, null);
+                    advanceFileQueue();
                   }}
                 >
                   Skip
                 </Button>
                 <Button
                   onClick={() => {
-                    if (!pendingFile) return;
-                    const f = pendingFile;
+                    if (!currentPendingFile) return;
+                    const f = currentPendingFile;
                     const label = fileLabel.trim();
                     handleFileAdd(f, undefined, label || null);
+                    advanceFileQueue();
                   }}
                 >
                   Confirm
