@@ -58,7 +58,7 @@ const WizardSidebar = ({ checklist, currentCategoryIdx, currentItemIdx, onNaviga
       </div>
 
       {/* Categories */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto py-2 pb-16">
         {CATEGORIES.map((category, catIdx) => {
           const catItems = checklist.filter(i => i.category === category);
           if (catItems.length === 0) return null;
