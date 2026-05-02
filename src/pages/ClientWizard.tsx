@@ -680,7 +680,7 @@ const ClientWizard = () => {
 
   if (isLoading || !caseData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6">
         <Logo size="md" clickable={false} />
         {loadError ? (
           <div className="mt-8 text-center max-w-md">
@@ -701,7 +701,7 @@ const ClientWizard = () => {
 
   if (caseData.checklist.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6">
         <Logo size="md" clickable={false} />
         <div className="mt-8 text-center max-w-md">
           <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
@@ -1531,7 +1531,7 @@ const ClientWizard = () => {
 
   // Desktop sidebar (always visible on lg+)
   const desktopSidebar = (
-    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-screen sticky top-0 overflow-y-auto">
+    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-[100dvh] sticky top-0 overflow-y-auto">
       <WizardSidebar
         checklist={caseData.checklist}
         currentCategoryIdx={currentCategoryIdx}
@@ -1570,10 +1570,10 @@ const ClientWizard = () => {
   if (progress === 100 && !showMilestone && !showSuccess) {
     const attorneyName = caseData.assignedAttorney || 'your attorney';
     return (
-      <div className="min-h-screen flex flex-row">
+      <div className="min-h-[100dvh] flex flex-row">
         {desktopSidebar}
         {mobileSidebar}
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-[100dvh]">
           {hasPortalCorrection && openCorrectionItem && (
             <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
           )}
@@ -1663,10 +1663,10 @@ const ClientWizard = () => {
   // Multi-correction action screen
   if (showMultiCorrectionScreen) {
     return (
-      <div className="min-h-screen flex flex-row">
+      <div className="min-h-[100dvh] flex flex-row">
         {desktopSidebar}
         {mobileSidebar}
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-[100dvh]">
           <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} firmDisplayName={firmDisplayName} />
           <div className="flex-1 flex items-center justify-center px-6 pb-24">
             <motion.div {...pageTransition} className="max-w-md mx-auto w-full">
@@ -1746,10 +1746,10 @@ const ClientWizard = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-row">
+    <div className="min-h-[100dvh] flex flex-row">
       {desktopSidebar}
       {mobileSidebar}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-[100dvh]">
       <WizardHeader
         progress={progress}
         step={currentCategoryIdx + 1}
@@ -2898,7 +2898,7 @@ class WizardErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6">
           <Logo size="md" clickable={false} />
           <div className="mt-8 text-center max-w-md">
             <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
