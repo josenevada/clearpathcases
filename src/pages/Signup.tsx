@@ -20,6 +20,19 @@ const Signup = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const handleResendVerification = async () => {
+    await supabase.auth.resend({ type: 'signup', email });
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown(c => {
+        if (c <= 1) { clearInterval(interval); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    toast.success('Verification email resent.');
+  };
 
   // Step 0
   const [fullName, setFullName] = useState('');
