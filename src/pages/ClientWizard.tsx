@@ -789,10 +789,18 @@ const ClientWizard = () => {
 
     // Multi-upload items: gate through label prompt before uploading
     if (isMultiUpload && !replaceFileId && explicitLabel === undefined) {
-      const suggestion = getMultiUploadLabelSuggestion(currentItem.label, currentItem.files.length);
-      setFileLabel(suggestion);
-      setPendingFile(file);
-      setFileLabelPromptOpen(true);
+      // Add to queue instead of overwriting
+      setPendingFileQueue(prev => {
+        const newQueue = [...prev, file];
+        // If this is the first file in the queue, show the prompt immediately
+        if (prev.length === 0) {
+          const suggestion = getMultiUploadLabelSuggestion(currentItem.label, currentItem.files.length);
+          setFileLabel(suggestion);
+          setCurrentPendingFile(file);
+          setFileLabelPromptOpen(true);
+        }
+        return newQueue;
+      });
       return;
     }
 
