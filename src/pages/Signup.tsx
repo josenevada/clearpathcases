@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import GoogleSignInButton, { OAuthDivider } from '@/components/GoogleSignInButton';
 import { useAuth } from '@/lib/auth';
 
-const STEPS = ['Create Account', 'All Set'];
+const STEPS = ['Account', 'Verify Email', 'Firm Setup', 'Plan'];
 
 const Signup = () => {
   const navigate = useNavigate();
