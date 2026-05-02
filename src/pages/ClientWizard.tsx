@@ -305,6 +305,7 @@ const ClientWizard = () => {
   const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0);
   const [currentItemIdx, setCurrentItemIdx] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [caseCompleted, setCaseCompleted] = useState(false);
   const [showMilestone, setShowMilestone] = useState<number | null>(null);
   const [checkpointConfirmed, setCheckpointConfirmed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
@@ -680,7 +681,7 @@ const ClientWizard = () => {
 
   if (isLoading || !caseData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6">
         <Logo size="md" clickable={false} />
         {loadError ? (
           <div className="mt-8 text-center max-w-md">
@@ -701,7 +702,7 @@ const ClientWizard = () => {
 
   if (caseData.checklist.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6">
         <Logo size="md" clickable={false} />
         <div className="mt-8 text-center max-w-md">
           <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
@@ -1204,9 +1205,38 @@ const ClientWizard = () => {
         if (firstIdx >= 0) setCurrentItemIdx(firstIdx);
         return;
       }
-      setShowStepTransition(currentCategoryIdx);
+      // Check if there are any further non-empty categories
+      const hasMore = CATEGORIES.slice(currentCategoryIdx + 1).some(cat =>
+        caseData?.checklist.some(item => item.category === cat)
+      );
+      if (hasMore) {
+        setShowStepTransition(currentCategoryIdx);
+      } else {
+        markCaseComplete();
+      }
+    } else {
+      // Last item of last category
+      markCaseComplete();
     }
   };
+
+  const markCaseComplete = async () => {
+    if (!caseData) return;
+    setCaseCompleted(true);
+    try {
+      await supabase.from('cases').update({ ready_to_file: true }).eq('id', caseData.id);
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'case_ready',
+        actor_role: 'client',
+        actor_name: caseData.clientName,
+        description: `${caseData.clientName} completed all wizard steps — case ready for attorney review`,
+      });
+    } catch (err) {
+      console.error('Failed to mark case complete:', err);
+    }
+  };
+
 
   const handleStepTransitionContinue = () => {
     if (showStepTransition === null || !caseData) return;
@@ -1531,7 +1561,7 @@ const ClientWizard = () => {
 
   // Desktop sidebar (always visible on lg+)
   const desktopSidebar = (
-    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-screen sticky top-0 overflow-y-auto">
+    <div className="hidden lg:block w-[220px] flex-shrink-0 border-r border-border h-[100dvh] sticky top-0 overflow-y-auto pb-16">
       <WizardSidebar
         checklist={caseData.checklist}
         currentCategoryIdx={currentCategoryIdx}
@@ -1570,10 +1600,10 @@ const ClientWizard = () => {
   if (progress === 100 && !showMilestone && !showSuccess) {
     const attorneyName = caseData.assignedAttorney || 'your attorney';
     return (
-      <div className="min-h-screen flex flex-row">
+      <div className="min-h-[100dvh] flex flex-row">
         {desktopSidebar}
         {mobileSidebar}
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-[100dvh]">
           {hasPortalCorrection && openCorrectionItem && (
             <CorrectionBanner onFixNow={() => jumpToItem(openCorrectionItem.id, caseData)} isOnCorrectionItem={false} />
           )}
@@ -1663,10 +1693,10 @@ const ClientWizard = () => {
   // Multi-correction action screen
   if (showMultiCorrectionScreen) {
     return (
-      <div className="min-h-screen flex flex-row">
+      <div className="min-h-[100dvh] flex flex-row">
         {desktopSidebar}
         {mobileSidebar}
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-[100dvh]">
           <WizardHeader progress={progress} step={currentCategoryIdx + 1} totalSteps={CATEGORIES.length} stepName={CATEGORIES[currentCategoryIdx]} onMenuClick={() => setSidebarOpen(true)} firmDisplayName={firmDisplayName} />
           <div className="flex-1 flex items-center justify-center px-6 pb-24">
             <motion.div {...pageTransition} className="max-w-md mx-auto w-full">
@@ -1745,11 +1775,30 @@ const ClientWizard = () => {
     </div>
   );
 
+  if (caseCompleted || caseData?.readyToFile) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+          className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-8"
+        >
+          <CheckCircle2 className="w-14 h-14 text-primary" strokeWidth={2.5} />
+        </motion.div>
+        <h1 className="font-display text-4xl font-bold text-foreground mb-4">You're all done!</h1>
+        <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
+          Your attorney has been notified and will review your documents. You'll hear from them soon.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-row">
+    <div className="min-h-[100dvh] flex flex-row">
       {desktopSidebar}
       {mobileSidebar}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-[100dvh]">
       <WizardHeader
         progress={progress}
         step={currentCategoryIdx + 1}
@@ -2898,7 +2947,7 @@ class WizardErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6">
           <Logo size="md" clickable={false} />
           <div className="mt-8 text-center max-w-md">
             <AlertTriangle className="w-10 h-10 text-warning mx-auto mb-4" />
