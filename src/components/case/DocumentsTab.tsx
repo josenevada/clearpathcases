@@ -577,10 +577,26 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       description: `Correction requested on ${entry.item.label} — '${correctionNote}'`,
       item_id: entry.item.id,
     });
+
+    // Notify the client via email + SMS
+    try {
+      const result = await sendCorrectionRequest(caseData, correctionNote, entry.item.id);
+      const channels: string[] = [];
+      if (result.email?.status === 'sent') channels.push('email');
+      if (result.sms?.status === 'sent') channels.push('SMS');
+      if (channels.length > 0) {
+        toast.success(`Correction requested — client notified via ${channels.join(' & ')}`);
+      } else {
+        const reason = result.sms?.detail || result.email?.detail || 'no channel available';
+        toast.success(`Correction requested (notification skipped: ${reason})`);
+      }
+    } catch (err) {
+      console.error('Correction notification failed:', err);
+      toast.success('Correction requested (notification failed to send)');
+    }
+
     setCorrectionNote('');
     setSelectedFile(null);
-    toast.success('Correction requested');
-    onRefresh();
   };
 
   const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
