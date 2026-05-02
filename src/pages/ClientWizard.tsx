@@ -2677,7 +2677,8 @@ const ClientWizard = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4"
             onClick={() => {
-              setPendingFile(null);
+              setPendingFileQueue([]);
+              setCurrentPendingFile(null);
               setFileLabelPromptOpen(false);
               setFileLabel('');
             }}
@@ -2691,19 +2692,25 @@ const ClientWizard = () => {
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-lg font-display font-semibold text-foreground mb-1">Label this file</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-2">
                 {currentItem ? getLabelPromptHelper(currentItem.label) : 'Add a short label so this file is easy to identify.'}
               </p>
+              {pendingFileQueue.length > 1 && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  {pendingFileQueue.length} files selected — labeling one at a time
+                </p>
+              )}
               <Input
                 value={fileLabel}
                 onChange={e => setFileLabel(e.target.value)}
                 placeholder="e.g. January 2025"
                 autoFocus
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && pendingFile) {
-                    const f = pendingFile;
+                  if (e.key === 'Enter' && currentPendingFile) {
+                    const f = currentPendingFile;
                     const label = fileLabel.trim();
                     handleFileAdd(f, undefined, label || null);
+                    advanceFileQueue();
                   }
                 }}
                 className="mb-5"
@@ -2712,19 +2719,21 @@ const ClientWizard = () => {
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    if (!pendingFile) return;
-                    const f = pendingFile;
+                    if (!currentPendingFile) return;
+                    const f = currentPendingFile;
                     handleFileAdd(f, undefined, null);
+                    advanceFileQueue();
                   }}
                 >
                   Skip
                 </Button>
                 <Button
                   onClick={() => {
-                    if (!pendingFile) return;
-                    const f = pendingFile;
+                    if (!currentPendingFile) return;
+                    const f = currentPendingFile;
                     const label = fileLabel.trim();
                     handleFileAdd(f, undefined, label || null);
+                    advanceFileQueue();
                   }}
                 >
                   Confirm
