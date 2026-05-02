@@ -529,6 +529,18 @@ const ClientWizard = () => {
           }
         }
 
+        // If case is marked ready_to_file but a correction request is open,
+        // drop the client directly into that item instead of the completion screen.
+        const openCorrection = getOpenCorrectionItem(c);
+        if (openCorrection) {
+          const correctionPosition = getChecklistItemPosition(c, openCorrection.id);
+          if (correctionPosition) {
+            setCurrentCategoryIdx(correctionPosition.categoryIdx);
+            setCurrentItemIdx(correctionPosition.itemIdx);
+            return;
+          }
+        }
+
         // Find the first category with incomplete items
         let resumeCatIdx = 0;
         let resumeItemIdx = 0;
@@ -1775,7 +1787,8 @@ const ClientWizard = () => {
     </div>
   );
 
-  if (caseCompleted || caseData?.readyToFile) {
+  const pendingCorrectionItem = caseData ? getOpenCorrectionItem(caseData) : undefined;
+  if ((caseCompleted || caseData?.readyToFile) && !pendingCorrectionItem) {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center">
         <motion.div

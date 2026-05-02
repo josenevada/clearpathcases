@@ -944,14 +944,23 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                       variant="ghost"
                       size="icon"
                       title="Download"
-                      onClick={() => {
-                        if (selectedFile.file.dataUrl) {
-                          const a = document.createElement('a');
-                          a.href = selectedFile.file.dataUrl;
-                          a.download = selectedFile.file.name;
-                          a.click();
-                        }
-                      }}
+                       onClick={async () => {
+                         if (!selectedFile.file.dataUrl) return;
+                         try {
+                           const response = await fetch(selectedFile.file.dataUrl);
+                           const blob = await response.blob();
+                           const blobUrl = URL.createObjectURL(blob);
+                           const a = document.createElement('a');
+                           a.href = blobUrl;
+                           a.download = selectedFile.file.name;
+                           document.body.appendChild(a);
+                           a.click();
+                           document.body.removeChild(a);
+                           URL.revokeObjectURL(blobUrl);
+                         } catch {
+                           window.open(selectedFile.file.dataUrl, '_blank');
+                         }
+                       }}
                     >
                       <Download className="w-4 h-4" />
                     </Button>

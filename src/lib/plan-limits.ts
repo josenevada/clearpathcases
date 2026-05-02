@@ -35,7 +35,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     plaidBank: false,
     meansTest: false,
     exemptionOptimizer: false,
-    batchExport: false,
+    batchExport: true,
     eSignatures: false,
   },
   professional: {
