@@ -110,7 +110,7 @@ const Signup = () => {
 
         setFirmId(resolvedFirmId);
         sessionStorage.removeItem('selected_plan');
-        setStep(1);
+        setStep(2);
       } catch (err: any) {
         console.error('Google onboarding error:', err);
         toast.error(err.message || 'Failed to set up account');
