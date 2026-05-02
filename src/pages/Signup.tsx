@@ -275,6 +275,35 @@ const Signup = () => {
           )}
 
           {step === 1 && (
+            <motion.div key="s-verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6 py-8">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Check your email</h2>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                  We sent a verification link to <strong>{email}</strong>. Click the link in that email to continue setting up your account.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Didn't get it? Check your spam folder, or
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResendVerification}
+                  disabled={resendCooldown > 0}
+                >
+                  {resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : 'Resend verification email'}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <Check className="w-8 h-8 text-primary" />
