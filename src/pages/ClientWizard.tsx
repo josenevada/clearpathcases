@@ -529,6 +529,18 @@ const ClientWizard = () => {
           }
         }
 
+        // If case is marked ready_to_file but a correction request is open,
+        // drop the client directly into that item instead of the completion screen.
+        const openCorrection = getOpenCorrectionItem(c);
+        if (openCorrection) {
+          const correctionPosition = getChecklistItemPosition(c, openCorrection.id);
+          if (correctionPosition) {
+            setCurrentCategoryIdx(correctionPosition.categoryIdx);
+            setCurrentItemIdx(correctionPosition.itemIdx);
+            return;
+          }
+        }
+
         // Find the first category with incomplete items
         let resumeCatIdx = 0;
         let resumeItemIdx = 0;
