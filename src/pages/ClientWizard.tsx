@@ -320,7 +320,8 @@ const ClientWizard = () => {
   
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingFileQueue, setPendingFileQueue] = useState<File[]>([]);
+  const [currentPendingFile, setCurrentPendingFile] = useState<File | null>(null);
   const [fileLabelPromptOpen, setFileLabelPromptOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [fileLabel, setFileLabel] = useState('');
