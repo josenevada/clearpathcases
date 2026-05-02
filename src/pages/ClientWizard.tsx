@@ -782,6 +782,27 @@ const ClientWizard = () => {
     );
   };
 
+  const advanceFileQueue = () => {
+    setPendingFileQueue(prev => {
+      const remaining = prev.slice(1);
+      if (remaining.length > 0) {
+        const nextFile = remaining[0];
+        setCurrentPendingFile(nextFile);
+        const suggestion = getMultiUploadLabelSuggestion(
+          currentItem?.label || '',
+          (currentItem?.files.length || 0)
+        );
+        setFileLabel(suggestion);
+        setFileLabelPromptOpen(true);
+      } else {
+        setCurrentPendingFile(null);
+        setFileLabelPromptOpen(false);
+        setFileLabel('');
+      }
+      return remaining;
+    });
+  };
+
   const handleFileAdd = async (file: File, replaceFileId?: string, explicitLabel?: string | null) => {
     if (!currentItem) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
