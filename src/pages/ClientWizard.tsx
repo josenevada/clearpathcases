@@ -1205,9 +1205,38 @@ const ClientWizard = () => {
         if (firstIdx >= 0) setCurrentItemIdx(firstIdx);
         return;
       }
-      setShowStepTransition(currentCategoryIdx);
+      // Check if there are any further non-empty categories
+      const hasMore = CATEGORIES.slice(currentCategoryIdx + 1).some(cat =>
+        caseData?.checklist.some(item => item.category === cat)
+      );
+      if (hasMore) {
+        setShowStepTransition(currentCategoryIdx);
+      } else {
+        markCaseComplete();
+      }
+    } else {
+      // Last item of last category
+      markCaseComplete();
     }
   };
+
+  const markCaseComplete = async () => {
+    if (!caseData) return;
+    setCaseCompleted(true);
+    try {
+      await supabase.from('cases').update({ ready_to_file: true }).eq('id', caseData.id);
+      await supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'case_ready',
+        actor_role: 'client',
+        actor_name: caseData.clientName,
+        description: `${caseData.clientName} completed all wizard steps — case ready for attorney review`,
+      });
+    } catch (err) {
+      console.error('Failed to mark case complete:', err);
+    }
+  };
+
 
   const handleStepTransitionContinue = () => {
     if (showStepTransition === null || !caseData) return;
