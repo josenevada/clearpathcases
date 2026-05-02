@@ -250,6 +250,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       });
     }
 
+    // Notify the client once (the SMS gate cooldown would suppress duplicates anyway)
+    try {
+      await sendCorrectionRequest(caseData, bulkCorrectionNote, targets[0].item.id);
+    } catch (err) {
+      console.error('Bulk correction notification failed:', err);
+    }
+
     toast.success(`Correction requested on ${targets.length} document${targets.length !== 1 ? 's' : ''}`);
     setBulkCorrectionNote('');
     setShowBulkCorrection(false);
