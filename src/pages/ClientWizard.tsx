@@ -1775,7 +1775,8 @@ const ClientWizard = () => {
     </div>
   );
 
-  if (caseCompleted || caseData?.readyToFile) {
+  const pendingCorrectionItem = caseData ? getOpenCorrectionItem(caseData) : undefined;
+  if ((caseCompleted || caseData?.readyToFile) && !pendingCorrectionItem) {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center">
         <motion.div
