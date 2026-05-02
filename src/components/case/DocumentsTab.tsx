@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import DocumentViewer from '@/components/case/DocumentViewer';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
+import { sendCorrectionRequest } from '@/lib/notifications';
 
 type ViewRole = 'paralegal' | 'attorney';
 
