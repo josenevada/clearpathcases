@@ -229,7 +229,7 @@ const FeatureVideo = ({ src, motionKey }: { src: string; motionKey: string }) =>
         aspectRatio: '16 / 10',
         borderRadius: '12px',
         display: 'block',
-        objectFit: 'cover',
+        objectFit: 'contain',
       }}
     >
       <source src={src} type="video/mp4" />
