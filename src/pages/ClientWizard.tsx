@@ -1635,6 +1635,26 @@ const ClientWizard = () => {
               >
                 ← Go back to review
               </button>
+
+              <div className="mt-8 pt-6 border-t border-border/30">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Need to update or replace a document?
+                </p>
+                <p className="text-xs text-muted-foreground mb-2 sm:hidden">
+                  Tap the menu icon to jump to any document.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentCategoryIdx(0);
+                    setCurrentItemIdx(0);
+                  }}
+                  className="text-sm"
+                >
+                  ← Review my documents
+                </Button>
+              </div>
             </motion.div>
           </div>
         </div>
