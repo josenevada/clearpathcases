@@ -3,37 +3,46 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { seedIfNeeded } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { SubscriptionProvider } from "@/lib/subscription";
 
+// Marketing landing kept eager — it's the LCP target on "/"
 import MarketingLanding from "./pages/MarketingLanding";
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ResetPassword from "./pages/ResetPassword";
-import ClientVerify from "./pages/ClientVerify";
-import ClientWizard from "./pages/ClientWizard";
-import ClientSign from "./pages/ClientSign";
-import ParalegalDashboard from "./pages/ParalegalDashboard";
-import CaseDetail from "./pages/CaseDetail";
-import DocumentReviewQueue from "./pages/DocumentReviewQueue";
-import FirmSettings from "./pages/FirmSettings";
-import AdminDashboard from "./pages/AdminDashboard";
-import Security from "./pages/Security";
-import Packets from "./pages/Packets";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import SmsConsent from "./pages/SmsConsent";
-import SmsOptInPreview from "./pages/SmsOptInPreview";
-import InviteSignup from "./pages/InviteSignup";
-import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
-import PlaidOAuthReturn from "./pages/PlaidOAuthReturn";
-import PlaidOAuth from "./pages/PlaidOAuth";
+
+// All other routes lazy-loaded to reduce initial JS / TBT
+const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ClientVerify = lazy(() => import("./pages/ClientVerify"));
+const ClientWizard = lazy(() => import("./pages/ClientWizard"));
+const ClientSign = lazy(() => import("./pages/ClientSign"));
+const ParalegalDashboard = lazy(() => import("./pages/ParalegalDashboard"));
+const CaseDetail = lazy(() => import("./pages/CaseDetail"));
+const DocumentReviewQueue = lazy(() => import("./pages/DocumentReviewQueue"));
+const FirmSettings = lazy(() => import("./pages/FirmSettings"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Security = lazy(() => import("./pages/Security"));
+const Packets = lazy(() => import("./pages/Packets"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const SmsConsent = lazy(() => import("./pages/SmsConsent"));
+const SmsOptInPreview = lazy(() => import("./pages/SmsOptInPreview"));
+const InviteSignup = lazy(() => import("./pages/InviteSignup"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PlaidOAuthReturn = lazy(() => import("./pages/PlaidOAuthReturn"));
+const PlaidOAuth = lazy(() => import("./pages/PlaidOAuth"));
 
 const queryClient = new QueryClient();
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-pulse text-muted-foreground font-body">Loading…</div>
+  </div>
+);
 
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) => {
   const { user, loading } = useAuth();
@@ -71,6 +80,7 @@ const App = () => {
           <ScrollToTop />
           <AuthProvider>
             <SubscriptionProvider>
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/" element={<MarketingLanding />} />
                 <Route path="/security" element={<Security />} />
@@ -133,6 +143,7 @@ const App = () => {
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </SubscriptionProvider>
           </AuthProvider>
         </BrowserRouter>
