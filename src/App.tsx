@@ -8,11 +8,10 @@ import { seedIfNeeded } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { SubscriptionProvider } from "@/lib/subscription";
 
-// Marketing landing kept eager — it's the LCP target on "/"
-import MarketingLanding from "./pages/MarketingLanding";
 import ScrollToTop from "./components/ScrollToTop";
 
-// All other routes lazy-loaded to reduce initial JS / TBT
+// All routes lazy-loaded to reduce initial JS / TBT
+const MarketingLanding = lazy(() => import("./pages/MarketingLanding"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));

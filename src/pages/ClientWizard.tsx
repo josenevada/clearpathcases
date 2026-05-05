@@ -353,11 +353,18 @@ const ClientWizard = () => {
       setLoadError(null);
 
       try {
-        const { data: caseRow } = await supabase
-          .from('cases')
-          .select('*')
-          .eq('id', resolvedCaseId)
-          .maybeSingle();
+        // Fetch case + caseId-only dependencies in parallel
+        const [caseResult, checklistResult, fileResult, activityResult] = await Promise.all([
+          supabase.from('cases').select('*').eq('id', resolvedCaseId).maybeSingle(),
+          supabase.from('checklist_items').select('*').eq('case_id', resolvedCaseId).order('sort_order', { ascending: true }),
+          supabase.from('files').select('*').eq('case_id', resolvedCaseId),
+          supabase.from('activity_log').select('id,event_type,description,created_at,actor_role').eq('case_id', resolvedCaseId).order('created_at', { ascending: true }),
+        ]);
+
+        const caseRow = caseResult.data;
+        const checklistRows = checklistResult.data;
+        const fileRows = fileResult.data;
+        const activityRows = activityResult.data;
 
         if (!caseRow) {
           setLoadError('Case not found. The link may be incorrect or expired.');
@@ -365,7 +372,7 @@ const ClientWizard = () => {
           return;
         }
 
-        // Load firm's credit counseling settings
+        // Load firm's credit counseling settings (needs firm_id from case)
         if (caseRow.firm_id) {
           const { data: firmData } = await supabase
             .from('firms')
@@ -381,23 +388,6 @@ const ClientWizard = () => {
           setFirmDisplayName(firmData?.name || null);
           setFirmPlan(firmData?.plan_name || 'starter');
         }
-
-        const { data: checklistRows } = await supabase
-          .from('checklist_items')
-          .select('*')
-          .eq('case_id', resolvedCaseId)
-          .order('sort_order', { ascending: true });
-
-        const { data: fileRows } = await supabase
-          .from('files')
-          .select('*')
-          .eq('case_id', resolvedCaseId);
-
-        const { data: activityRows } = await supabase
-          .from('activity_log')
-          .select('*')
-          .eq('case_id', resolvedCaseId)
-          .order('created_at', { ascending: true });
 
         // Generate signed URLs for files that have storage_path
         const filesWithUrls = await Promise.all((fileRows || []).map(async (f) => {
