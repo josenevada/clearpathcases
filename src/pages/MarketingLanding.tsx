@@ -223,10 +223,13 @@ const FeatureVideo = ({ src, motionKey }: { src: string; motionKey: string }) =>
       muted
       loop
       playsInline
+      preload="metadata"
       style={{
         width: '100%',
+        aspectRatio: '16 / 10',
         borderRadius: '12px',
         display: 'block',
+        objectFit: 'cover',
       }}
     >
       <source src={src} type="video/mp4" />
