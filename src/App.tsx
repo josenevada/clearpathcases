@@ -80,6 +80,7 @@ const App = () => {
           <ScrollToTop />
           <AuthProvider>
             <SubscriptionProvider>
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/" element={<MarketingLanding />} />
                 <Route path="/security" element={<Security />} />
