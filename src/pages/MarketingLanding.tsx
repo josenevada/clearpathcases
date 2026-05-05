@@ -1074,7 +1074,7 @@ const MarketingLanding = () => {
           
           <p className="text-xs text-[#8aa3b8] font-body mt-4">
             Your data is protected with bank-level encryption.{' '}
-            <a href="/security" className="text-primary hover:underline">Learn more</a>
+            <a href="/security" className="text-primary hover:underline" aria-label="Learn more about ClearPath security">Learn more about our security</a>
           </p>
         </div>
       </section>
