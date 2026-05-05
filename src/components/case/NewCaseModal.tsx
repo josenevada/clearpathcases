@@ -753,12 +753,52 @@ const Step1Form = ({ info, setInfo, deadlineOpen, setDeadlineOpen, onQuickDeadli
 
       <div className="sm:col-span-2">
         <Label className="text-muted-foreground text-sm">Client Date of Birth</Label>
-        <Input
-          value={info.clientDob}
-          onChange={e => update('clientDob', e.target.value)}
-          placeholder="MM/DD/YYYY"
-          className="mt-1 bg-input border-border rounded-[10px]"
-        />
+        <div className="flex gap-2 mt-1">
+          {/* Month */}
+          <select
+            value={info.clientDob ? info.clientDob.split('/')[0] || '' : ''}
+            onChange={e => {
+              const parts = (info.clientDob || '').split('/');
+              update('clientDob', `${e.target.value}/${parts[1] || ''}/${parts[2] || ''}`);
+            }}
+            className="flex-1 h-10 px-3 rounded-[10px] bg-input border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Month</option>
+            {['January','February','March','April','May','June',
+              'July','August','September','October','November','December']
+              .map((m, i) => (
+                <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>
+              ))}
+          </select>
+          {/* Day */}
+          <select
+            value={info.clientDob ? info.clientDob.split('/')[1] || '' : ''}
+            onChange={e => {
+              const parts = (info.clientDob || '').split('/');
+              update('clientDob', `${parts[0] || ''}/${e.target.value}/${parts[2] || ''}`);
+            }}
+            className="w-20 h-10 px-3 rounded-[10px] bg-input border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Day</option>
+            {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+          {/* Year */}
+          <select
+            value={info.clientDob ? info.clientDob.split('/')[2] || '' : ''}
+            onChange={e => {
+              const parts = (info.clientDob || '').split('/');
+              update('clientDob', `${parts[0] || ''}/${parts[1] || ''}/${e.target.value}`);
+            }}
+            className="w-24 h-10 px-3 rounded-[10px] bg-input border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Year</option>
+            {Array.from({ length: 100 }, (_, i) => String(new Date().getFullYear() - 18 - i)).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">Used for client portal verification</p>
       </div>
 
