@@ -358,7 +358,7 @@ const ClientWizard = () => {
           supabase.from('cases').select('*').eq('id', resolvedCaseId).maybeSingle(),
           supabase.from('checklist_items').select('*').eq('case_id', resolvedCaseId).order('sort_order', { ascending: true }),
           supabase.from('files').select('*').eq('case_id', resolvedCaseId),
-          supabase.from('activity_log').select('id,event_type,description,created_at,actor_role').eq('case_id', resolvedCaseId).order('created_at', { ascending: true }),
+          supabase.from('activity_log').select('id,event_type,description,created_at,actor_role,actor_name,item_id').eq('case_id', resolvedCaseId).order('created_at', { ascending: true }),
         ]);
 
         const caseRow = caseResult.data;
