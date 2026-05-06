@@ -374,6 +374,7 @@ const MarketingLanding = () => {
 
   // Hero staggered entrance state
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
   useEffect(() => {
     if (reduced) { setHeroLoaded(true); return; }
     const t = requestAnimationFrame(() => setHeroLoaded(true));
