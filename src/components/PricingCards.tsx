@@ -73,9 +73,10 @@ interface PricingCardsProps {
   buttonLabel?: string;
   currentPlan?: string | null;
   showEnterprise?: boolean;
+  onEnterpriseClick?: () => void;
 }
 
-const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, showEnterprise = false }: PricingCardsProps) => {
+const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, showEnterprise = false, onEnterpriseClick }: PricingCardsProps) => {
   return (
     <div className={`grid grid-cols-1 sm:grid-cols-2 ${showEnterprise ? 'lg:grid-cols-4 max-w-6xl' : 'lg:grid-cols-3 max-w-5xl'} gap-5 w-full mx-auto`}>
       {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDefWithDiff][]).map(([key, plan]) => {
@@ -193,11 +194,11 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
             ))}
           </ul>
           <Button
-            asChild
             className="w-full transition-all duration-200"
             style={{ padding: '14px 28px', boxShadow: '0 0 24px rgba(0,194,168,0.3)' }}
+            onClick={() => onEnterpriseClick?.()}
           >
-            <a href="mailto:jose@meetclearpath.co?subject=Enterprise%20Plan%20Inquiry">Contact Us</a>
+            Contact Us
           </Button>
           <p className="text-[11px] text-muted-foreground text-center mt-3">We'll respond within 1 business day.</p>
         </div>

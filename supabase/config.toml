@@ -45,3 +45,6 @@ verify_jwt = false
 [functions.provision-workspace]
 verify_jwt = false
 
+
+[functions.send-enterprise-inquiry]
+verify_jwt = false

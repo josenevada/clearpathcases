@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import PricingCards from '@/components/PricingCards';
 import AlexChatDemo from '@/components/AlexChatDemo';
+import EnterpriseInquiryModal from '@/components/EnterpriseInquiryModal';
 import {
   Accordion,
   AccordionContent,
@@ -374,6 +375,7 @@ const MarketingLanding = () => {
 
   // Hero staggered entrance state
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
   useEffect(() => {
     if (reduced) { setHeroLoaded(true); return; }
     const t = requestAnimationFrame(() => setHeroLoaded(true));
@@ -1065,7 +1067,7 @@ const MarketingLanding = () => {
         <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">30-day free trial on every plan. No credit card required.</p>
 
         <div ref={pricingRef}>
-          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" showEnterprise />
+          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" showEnterprise onEnterpriseClick={() => setEnterpriseModalOpen(true)} />
         </div>
         <div className="text-center mt-8 space-y-1">
           <p className="text-xs text-[#8aa3b8] font-body mt-4">
@@ -1182,6 +1184,7 @@ const MarketingLanding = () => {
         </div>
       </footer>
 
+      <EnterpriseInquiryModal open={enterpriseModalOpen} onOpenChange={setEnterpriseModalOpen} />
     </div>
   );
 };
