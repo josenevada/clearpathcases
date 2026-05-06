@@ -72,11 +72,12 @@ interface PricingCardsProps {
   onSelectPlan: (plan: any) => void;
   buttonLabel?: string;
   currentPlan?: string | null;
+  showEnterprise?: boolean;
 }
 
-const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan }: PricingCardsProps) => {
+const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, showEnterprise = false }: PricingCardsProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl mx-auto">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${showEnterprise ? 'lg:grid-cols-4 max-w-6xl' : 'lg:grid-cols-3 max-w-5xl'} gap-5 w-full mx-auto`}>
       {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDefWithDiff][]).map(([key, plan]) => {
         const isCurrent = currentPlan === key;
         const price = plan.monthly;
@@ -160,6 +161,47 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
           </div>
         );
       })}
+      {showEnterprise && (
+        <div
+          className="relative flex flex-col px-6 py-6 rounded-xl transition-all duration-200"
+          style={{
+            background: '#1A2433',
+            border: '1px solid #00C2A8',
+            boxShadow: '0 8px 48px rgba(0,0,0,0.4), 0 0 32px rgba(0,194,168,0.12)',
+          }}
+        >
+          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-xs">
+            ENTERPRISE
+          </Badge>
+          <h3 className="font-display font-semibold text-[17px] text-foreground">Enterprise</h3>
+          <p className="text-xs text-[#8aa3b8] font-body mt-1">For high-volume firms doing 50+ cases/month</p>
+          <div className="mt-3 mb-2">
+            <span className="font-display font-bold text-2xl text-foreground">Custom pricing</span>
+          </div>
+          <ul className="space-y-2 mb-6 flex-1 mt-2">
+            {[
+              'Unlimited active cases',
+              'Dedicated onboarding support',
+              'Custom document templates',
+              'Plaid bank connection included',
+              'Priority support & SLA',
+            ].map((f) => (
+              <li key={f} className="flex items-start gap-2 text-[15px] text-[#8aa3b8] font-light" style={{ lineHeight: '1.7' }}>
+                <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <Button
+            asChild
+            className="w-full transition-all duration-200"
+            style={{ padding: '14px 28px', boxShadow: '0 0 24px rgba(0,194,168,0.3)' }}
+          >
+            <a href="mailto:jose@meetclearpath.co?subject=Enterprise%20Plan%20Inquiry">Contact Us</a>
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-3">We'll respond within 1 business day.</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -1058,20 +1058,16 @@ const MarketingLanding = () => {
       <SectionDivider />
 
       {/* Pricing */}
-      <section id="pricing" className="px-6 py-16 max-w-6xl mx-auto">
+      <section id="pricing" className="px-6 py-16 max-w-7xl mx-auto">
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-4 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
           Simple pricing.<br />Free to start.
         </h2>
         <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">30-day free trial on every plan. No credit card required.</p>
 
         <div ref={pricingRef}>
-          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />
+          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" showEnterprise />
         </div>
         <div className="text-center mt-8 space-y-1">
-          <p className="text-xs text-[#8aa3b8] font-body">
-            Need more than 60 cases? Enterprise pricing available — <a href="mailto:hello@yourclearpath.app" className="text-primary hover:underline">contact us</a>.
-          </p>
-          
           <p className="text-xs text-[#8aa3b8] font-body mt-4">
             Your data is protected with bank-level encryption.{' '}
             <a href="/security" className="text-primary hover:underline" aria-label="Learn more about ClearPath security">Learn more about our security</a>
