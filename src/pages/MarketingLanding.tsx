@@ -1066,7 +1066,7 @@ const MarketingLanding = () => {
         <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">30-day free trial on every plan. No credit card required.</p>
 
         <div ref={pricingRef}>
-          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" showEnterprise />
+          <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" showEnterprise onEnterpriseClick={() => setEnterpriseModalOpen(true)} />
         </div>
         <div className="text-center mt-8 space-y-1">
           <p className="text-xs text-[#8aa3b8] font-body mt-4">
