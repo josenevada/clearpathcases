@@ -273,7 +273,7 @@ const FeatureShowcase = () => {
     <section
       ref={showcaseRef}
       id="features"
-      className="px-6 py-20 max-w-6xl mx-auto scroll-mt-24"
+      className="px-6 py-20 max-w-7xl mx-auto scroll-mt-24"
       style={{
         opacity: showcaseVisible ? 1 : 0,
         transform: showcaseVisible ? 'translateY(0)' : 'translateY(16px)',
@@ -288,7 +288,7 @@ const FeatureShowcase = () => {
       </p>
 
       <div
-        className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 items-start"
+        className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 items-start overflow-visible"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
@@ -328,8 +328,8 @@ const FeatureShowcase = () => {
           })}
         </div>
 
-        <div>
-          <div>
+        <div className="overflow-visible">
+          <div className="overflow-visible">
             <AnimatePresence mode="wait">{mockups[active]}</AnimatePresence>
           </div>
 
