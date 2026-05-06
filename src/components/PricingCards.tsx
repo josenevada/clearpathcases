@@ -72,11 +72,12 @@ interface PricingCardsProps {
   onSelectPlan: (plan: any) => void;
   buttonLabel?: string;
   currentPlan?: string | null;
+  showEnterprise?: boolean;
 }
 
-const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan }: PricingCardsProps) => {
+const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentPlan, showEnterprise = false }: PricingCardsProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl mx-auto">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${showEnterprise ? 'lg:grid-cols-4 max-w-6xl' : 'lg:grid-cols-3 max-w-5xl'} gap-5 w-full mx-auto`}>
       {(Object.entries(LANDING_PLANS) as [LandingPlanKey, PlanDefWithDiff][]).map(([key, plan]) => {
         const isCurrent = currentPlan === key;
         const price = plan.monthly;
