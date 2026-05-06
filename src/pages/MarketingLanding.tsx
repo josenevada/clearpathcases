@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import PricingCards from '@/components/PricingCards';
 import AlexChatDemo from '@/components/AlexChatDemo';
+import EnterpriseInquiryModal from '@/components/EnterpriseInquiryModal';
 import {
   Accordion,
   AccordionContent,
