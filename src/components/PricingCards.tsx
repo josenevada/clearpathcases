@@ -194,11 +194,11 @@ const PricingCards = ({ onSelectPlan, buttonLabel = 'Start Free Trial', currentP
             ))}
           </ul>
           <Button
-            asChild
             className="w-full transition-all duration-200"
             style={{ padding: '14px 28px', boxShadow: '0 0 24px rgba(0,194,168,0.3)' }}
+            onClick={() => onEnterpriseClick?.()}
           >
-            <a href="mailto:jose@meetclearpath.co?subject=Enterprise%20Plan%20Inquiry">Contact Us</a>
+            Contact Us
           </Button>
           <p className="text-[11px] text-muted-foreground text-center mt-3">We'll respond within 1 business day.</p>
         </div>
