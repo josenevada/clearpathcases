@@ -1184,6 +1184,7 @@ const MarketingLanding = () => {
         </div>
       </footer>
 
+      <EnterpriseInquiryModal open={enterpriseModalOpen} onOpenChange={setEnterpriseModalOpen} />
     </div>
   );
 };
