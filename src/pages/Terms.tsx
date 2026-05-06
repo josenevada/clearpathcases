@@ -111,7 +111,7 @@ const Terms = () => {
           <SubSection title="4.1 Plans and Pricing">
             <ul className="list-disc pl-6 space-y-2">
               <li>ClearPath offers subscription plans at the following tiers: Solo at $49 per month, Starter at $99 per month, Professional at $249 per month, and Firm at $799 per month. Current pricing is available at yourclearpath.app.</li>
-              <li>Each new account receives a 14-day free trial with no credit card required. At the end of the trial period, continued use requires selecting a paid plan.</li>
+              <li>Each new account receives a 30-day free trial with no credit card required. At the end of the trial period, continued use requires selecting a paid plan.</li>
               <li>We reserve the right to modify pricing with 30 days advance notice to active subscribers.</li>
             </ul>
           </SubSection>

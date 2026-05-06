@@ -187,7 +187,7 @@ const Signup = () => {
     }
   };
 
-  const trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+  const trialEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
   });
 
@@ -321,7 +321,7 @@ const Signup = () => {
                 Go to Dashboard →
               </Button>
               <p className="text-sm text-muted-foreground font-body">
-                Your 14-day free trial ends on {trialEndDate}. No credit card needed until then.
+                Your 30-day free trial ends on {trialEndDate}. No credit card needed until then.
               </p>
             </motion.div>
           )}

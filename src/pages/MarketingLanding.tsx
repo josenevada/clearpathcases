@@ -516,7 +516,7 @@ const MarketingLanding = () => {
           </Button>
         </div>
         <p className="mt-6 text-sm text-[#8aa3b8] relative" style={heroStagger(8)}>
-          ✓ 14-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 60 seconds
+          ✓ 30-day free trial &nbsp;&nbsp; ✓ No credit card required &nbsp;&nbsp; ✓ First case in 60 seconds
         </p>
 
         {/* Capability pills */}
@@ -1062,7 +1062,7 @@ const MarketingLanding = () => {
         <h2 className="font-display font-bold text-[28px] md:text-[40px] text-foreground text-center mb-4 landing-heading-glow" style={{ letterSpacing: '-0.01em', lineHeight: '1.1' }}>
           Simple pricing.<br />Free to start.
         </h2>
-        <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">14-day free trial on every plan. No credit card required.</p>
+        <p className="text-[15px] text-[#8aa3b8] text-center mb-8 font-body font-light">30-day free trial on every plan. No credit card required.</p>
 
         <div ref={pricingRef}>
           <PricingCards onSelectPlan={handlePlan} buttonLabel="Start Free — No Card Needed" />
@@ -1159,7 +1159,7 @@ const MarketingLanding = () => {
             Start Free — No Card Needed
           </Button>
           <p className="text-[13px] text-[#8aa3b8] font-body mt-4">
-            14-day free trial · Cancel anytime · First case in 60 seconds
+            30-day free trial · Cancel anytime · First case in 60 seconds
           </p>
         </div>
       </section>

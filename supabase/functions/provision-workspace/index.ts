@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     }
 
     const firmId = crypto.randomUUID();
-    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const selectedPlan = planName || "starter";
 
     // Insert firm

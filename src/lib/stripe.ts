@@ -13,7 +13,7 @@ export const PLANS = {
       'Automated SMS & email reminders',
       'Basic case management',
       'Document checklist customization',
-      '14-day free trial',
+      '30-day free trial',
     ],
   },
   professional: {
@@ -29,7 +29,7 @@ export const PLANS = {
       'Plaid bank connection',
       'Document retrieval guidance',
       'Priority support',
-      '14-day free trial',
+      '30-day free trial',
     ],
   },
   firm: {
@@ -43,7 +43,7 @@ export const PLANS = {
       'Everything in Professional',
       'Dedicated onboarding call',
       'SLA support',
-      '14-day free trial',
+      '30-day free trial',
     ],
   },
 } as const;
