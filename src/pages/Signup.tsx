@@ -133,42 +133,13 @@ const Signup = () => {
     }
   };
 
-  // Handle Google OAuth redirect — go directly to success screen
+  // Legacy ?from=google entry now redirects to /onboarding
   useEffect(() => {
     if (searchParams.get('from') !== 'google') return;
-    const raw = sessionStorage.getItem('google_oauth_user');
-    if (!raw) return;
-
-    const googleUser = JSON.parse(raw);
     sessionStorage.removeItem('google_oauth_user');
-
-    (async () => {
-      setLoading(true);
-      try {
-        const defaultFirmName = googleUser.email.split('@')[1]?.split('.')[0] || 'My Firm';
-        setFullName(googleUser.fullName);
-        setEmail(googleUser.email);
-        setFirmName('');
-
-        const resolvedFirmId = await provisionWorkspace({
-          userId: googleUser.userId,
-          firmName: defaultFirmName,
-          fullName: googleUser.fullName,
-          email: googleUser.email,
-        });
-
-        setFirmId(resolvedFirmId);
-        sessionStorage.removeItem('selected_plan');
-        setStep(2);
-      } catch (err: any) {
-        console.error('Google onboarding error:', err);
-        toast.error(err.message || 'Failed to set up account');
-        setStep(0);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [searchParams]);
+    sessionStorage.removeItem('google_oauth_needs_onboarding');
+    navigate('/onboarding', { replace: true });
+  }, [searchParams, navigate]);
 
   const handleCreateAccount = async () => {
     if (!fullName || !firmName || (!isResumeOnboarding && (!email || !password))) {
