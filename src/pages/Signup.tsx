@@ -138,7 +138,7 @@ const Signup = () => {
 
       if (existingUser?.firm_id) {
         localStorage.removeItem('pendingProvision');
-        navigate('/paralegal');
+        window.location.replace('/paralegal');
       } else {
         try {
           const resolvedFirmId = await provisionWorkspace({
