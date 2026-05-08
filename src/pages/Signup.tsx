@@ -113,23 +113,9 @@ const Signup = () => {
   };
 
   const handleExistingAccount = async () => {
-    localStorage.setItem('pendingProvision', JSON.stringify({
-      userId: '',
-      firmName,
-      fullName,
-      email,
-    }));
-
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInData?.user && !signInError) {
-      localStorage.setItem('pendingProvision', JSON.stringify({
-        userId: signInData.user.id,
-        firmName,
-        fullName,
-        email,
-      }));
-
       const { data: existingUser } = await supabase
         .from('users')
         .select('firm_id')
@@ -137,29 +123,12 @@ const Signup = () => {
         .maybeSingle();
 
       if (existingUser?.firm_id) {
-        localStorage.removeItem('pendingProvision');
         window.location.replace('/paralegal');
       } else {
-        try {
-          const resolvedFirmId = await provisionWorkspace({
-            userId: signInData.user.id,
-            firmName,
-            fullName,
-            email,
-          });
-          setFirmId(resolvedFirmId);
-          sessionStorage.removeItem('selected_plan');
-          localStorage.removeItem('pendingProvision');
-          window.location.replace('/paralegal');
-        } catch (error) {
-          localStorage.removeItem('pendingProvision');
-          toast.error(error instanceof Error ? error.message : 'Failed to set up workspace');
-          return;
-        }
+        navigate('/onboarding');
       }
     } else {
-      localStorage.removeItem('pendingProvision');
-      toast.error('An account with this email already exists. Please sign in instead.');
+      toast.error('An account with this email already exists. Please sign in.', { duration: 5000 });
       navigate('/login');
     }
   };
