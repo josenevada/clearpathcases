@@ -45,26 +45,18 @@ const Onboarding = () => {
     })();
   }, [navigate]);
 
-  const callProvision = async (payload: any, attempt = 0): Promise<Response> => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    try {
-      const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok && attempt < 1) {
-        await new Promise(r => setTimeout(r, 2000));
-        return callProvision(payload, attempt + 1);
-      }
-      return res;
-    } catch (err) {
-      if (attempt < 1) {
-        await new Promise(r => setTimeout(r, 2000));
-        return callProvision(payload, attempt + 1);
-      }
-      throw err;
+  const callProvision = async (
+    payload: any,
+    attempt = 0
+  ): Promise<{ data: any; error: any }> => {
+    const { data, error } = await supabase.functions.invoke('provision-workspace', {
+      body: payload,
+    });
+    if (error && attempt < 1) {
+      await new Promise(r => setTimeout(r, 2000));
+      return callProvision(payload, attempt + 1);
     }
+    return { data, error };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,16 +85,15 @@ const Onboarding = () => {
         localStorage.getItem('selected_plan') ||
         'starter';
 
-      const res = await callProvision({
+      const { data, error: invokeError } = await callProvision({
         userId,
         firmName: firmName.trim(),
         fullName: fullName.trim(),
         email,
         planName: selectedPlan,
       });
-      const data = await res.json();
-      if (!res.ok || !data?.firmId) {
-        throw new Error(data?.error || 'Failed to set up workspace');
+      if (invokeError || !data?.firmId) {
+        throw new Error(invokeError?.message || data?.error || 'Failed to set up workspace');
       }
 
       sessionStorage.removeItem('selected_plan');
