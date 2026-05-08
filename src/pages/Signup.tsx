@@ -72,7 +72,6 @@ const Signup = () => {
     email: string;
   }): Promise<string> => {
     const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const provisionPayload = {
       userId: wsUserId,
       firmName: wsFirmName,
@@ -81,32 +80,22 @@ const Signup = () => {
       planName: selectedPlan,
     };
 
-    const callProvision = async (retryCount = 0): Promise<Response> => {
-      try {
-        const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(provisionPayload),
-        });
-        if (!res.ok && retryCount < 1) {
-          await new Promise(r => setTimeout(r, 2000));
-          return callProvision(retryCount + 1);
-        }
-        return res;
-      } catch (err) {
-        if (retryCount < 1) {
-          await new Promise(r => setTimeout(r, 2000));
-          return callProvision(retryCount + 1);
-        }
-        throw err;
+    const callProvision = async (
+      retryCount = 0
+    ): Promise<{ data: any; error: any }> => {
+      const { data, error } = await supabase.functions.invoke('provision-workspace', {
+        body: provisionPayload,
+      });
+      if (error && retryCount < 1) {
+        await new Promise(r => setTimeout(r, 2000));
+        return callProvision(retryCount + 1);
       }
+      return { data, error };
     };
 
-    const res = await callProvision();
-
-    const data = await res.json();
-    if (!res.ok || !data?.firmId) {
-      throw new Error(data?.error || 'Failed to set up workspace');
+    const { data, error: invokeError } = await callProvision();
+    if (invokeError || !data?.firmId) {
+      throw new Error(invokeError?.message || data?.error || 'Failed to set up workspace');
     }
 
     return data.firmId;
