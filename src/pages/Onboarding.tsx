@@ -157,6 +157,11 @@ const Onboarding = () => {
                 required
               />
             </div>
+            {error && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive font-body">
+                {error}
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Finishing…' : 'Finish Setup'}
             </Button>
