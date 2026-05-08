@@ -216,15 +216,21 @@ const Signup = () => {
         throw new Error('Failed to create account. Please try again.');
       }
 
-      // Defer workspace provisioning until email is verified.
-      // Use localStorage so it survives the email-verification round trip
-      // (the verification link often opens in a different tab/browser session).
-      localStorage.setItem('pendingProvision', JSON.stringify({
-        userId: authData.user.id,
-        firmName,
-        fullName,
-        email,
-      }));
+      // Provision the workspace immediately — do not wait for email verification.
+      // The verification email is informational only; provisioning must succeed
+      // here so the verification link can be opened on any device.
+      try {
+        await provisionWorkspace({
+          userId: authData.user.id,
+          firmName,
+          fullName,
+          email,
+        });
+        sessionStorage.removeItem('selected_plan');
+      } catch (provisionErr: any) {
+        console.error('Provisioning error during signup:', provisionErr);
+        toast.error(provisionErr?.message || 'Account created, but workspace setup failed. Please contact support.');
+      }
 
       setStep(1); // Verify Email
       setLoading(false);
