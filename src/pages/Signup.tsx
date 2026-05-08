@@ -113,6 +113,13 @@ const Signup = () => {
   };
 
   const handleExistingAccount = async () => {
+    localStorage.setItem('pendingProvision', JSON.stringify({
+      userId: '',
+      firmName,
+      fullName,
+      email,
+    }));
+
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInData?.user && !signInError) {
@@ -146,10 +153,11 @@ const Signup = () => {
           window.location.replace('/paralegal');
         } catch (error) {
           localStorage.removeItem('pendingProvision');
-          throw error;
+          toast.error(error instanceof Error ? error.message : 'Failed to set up workspace');
         }
       }
     } else {
+      localStorage.removeItem('pendingProvision');
       toast.error('An account with this email already exists. Please sign in instead.');
       navigate('/login');
     }
