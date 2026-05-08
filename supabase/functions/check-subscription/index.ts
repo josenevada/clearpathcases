@@ -86,22 +86,35 @@ serve(async (req) => {
 
     // Check Stripe subscription
     if (firm.subscription_status === "active" && firm.stripe_customer_id) {
-      const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-      const subscriptions = await stripe.subscriptions.list({
-        customer: firm.stripe_customer_id,
-        status: "active",
-        limit: 1,
-      });
+      try {
+        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" as any });
+        const subscriptions = await stripe.subscriptions.list({
+          customer: firm.stripe_customer_id,
+          status: "active",
+          limit: 1,
+        });
 
-      if (subscriptions.data.length > 0) {
-        const sub = subscriptions.data[0];
-        const productId = sub.items.data[0]?.price?.product;
+        if (subscriptions.data.length > 0) {
+          const sub = subscriptions.data[0];
+          const productId = sub.items.data[0]?.price?.product;
+          return new Response(JSON.stringify({
+            subscribed: true,
+            status: "active",
+            plan: firm.plan_name,
+            product_id: productId,
+            subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } catch (stripeErr) {
+        console.error("Stripe lookup failed:", (stripeErr as Error).message);
+        // Fall through to DB-based status — never 500 on Stripe failure
         return new Response(JSON.stringify({
           subscribed: true,
           status: "active",
           plan: firm.plan_name,
-          product_id: productId,
-          subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
+          stripe_error: true,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -113,9 +126,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error("check-subscription error:", (error as Error).message, (error as Error).stack);
+    // Never 500 — return safe default so auth/login flows are never blocked
+    return new Response(JSON.stringify({ subscribed: false, status: "error", error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 200,
     });
   }
 });
