@@ -77,20 +77,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const appUser = await fetchAppUser(nextSession.user);
 
       if (!appUser?.firmId) {
-        // If a workspace provisioning payload is queued (post email-verification),
-        // don't sign out — Login.tsx will provision the firm and we'll re-hydrate.
-        const hasPendingProvision =
-          localStorage.getItem('pendingProvision') ||
-          sessionStorage.getItem('pendingProvision');
-        if (hasPendingProvision) {
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-        sessionStorage.setItem(AUTH_SETUP_ERROR_KEY, 'Account setup incomplete. Please sign up again.');
-        await supabase.auth.signOut();
-        clearAuthState();
+        // No firm record yet — this is a freshly-signed-up user (typically
+        // Google OAuth) who hasn't completed firm setup. Keep them signed in
+        // and let the /onboarding page collect their firm name.
+        setUser(null);
         setLoading(false);
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname;
+          const skip =
+            path.startsWith('/onboarding') ||
+            path.startsWith('/signup') ||
+            path.startsWith('/login') ||
+            path.startsWith('/invite') ||
+            path.startsWith('/reset-password');
+          if (!skip) {
+            window.location.replace('/onboarding');
+          }
+        }
         return;
       }
 

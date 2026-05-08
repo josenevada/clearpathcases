@@ -113,23 +113,9 @@ const Signup = () => {
   };
 
   const handleExistingAccount = async () => {
-    localStorage.setItem('pendingProvision', JSON.stringify({
-      userId: '',
-      firmName,
-      fullName,
-      email,
-    }));
-
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInData?.user && !signInError) {
-      localStorage.setItem('pendingProvision', JSON.stringify({
-        userId: signInData.user.id,
-        firmName,
-        fullName,
-        email,
-      }));
-
       const { data: existingUser } = await supabase
         .from('users')
         .select('firm_id')
@@ -137,69 +123,23 @@ const Signup = () => {
         .maybeSingle();
 
       if (existingUser?.firm_id) {
-        localStorage.removeItem('pendingProvision');
         window.location.replace('/paralegal');
       } else {
-        try {
-          const resolvedFirmId = await provisionWorkspace({
-            userId: signInData.user.id,
-            firmName,
-            fullName,
-            email,
-          });
-          setFirmId(resolvedFirmId);
-          sessionStorage.removeItem('selected_plan');
-          localStorage.removeItem('pendingProvision');
-          window.location.replace('/paralegal');
-        } catch (error) {
-          localStorage.removeItem('pendingProvision');
-          toast.error(error instanceof Error ? error.message : 'Failed to set up workspace');
-          return;
-        }
+        navigate('/onboarding');
       }
     } else {
-      localStorage.removeItem('pendingProvision');
-      toast.error('An account with this email already exists. Please sign in instead.');
+      toast.error('An account with this email already exists. Please sign in.', { duration: 5000 });
       navigate('/login');
     }
   };
 
-  // Handle Google OAuth redirect — go directly to success screen
+  // Legacy ?from=google entry now redirects to /onboarding
   useEffect(() => {
     if (searchParams.get('from') !== 'google') return;
-    const raw = sessionStorage.getItem('google_oauth_user');
-    if (!raw) return;
-
-    const googleUser = JSON.parse(raw);
     sessionStorage.removeItem('google_oauth_user');
-
-    (async () => {
-      setLoading(true);
-      try {
-        const defaultFirmName = googleUser.email.split('@')[1]?.split('.')[0] || 'My Firm';
-        setFullName(googleUser.fullName);
-        setEmail(googleUser.email);
-        setFirmName('');
-
-        const resolvedFirmId = await provisionWorkspace({
-          userId: googleUser.userId,
-          firmName: defaultFirmName,
-          fullName: googleUser.fullName,
-          email: googleUser.email,
-        });
-
-        setFirmId(resolvedFirmId);
-        sessionStorage.removeItem('selected_plan');
-        setStep(2);
-      } catch (err: any) {
-        console.error('Google onboarding error:', err);
-        toast.error(err.message || 'Failed to set up account');
-        setStep(0);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [searchParams]);
+    sessionStorage.removeItem('google_oauth_needs_onboarding');
+    navigate('/onboarding', { replace: true });
+  }, [searchParams, navigate]);
 
   const handleCreateAccount = async () => {
     if (!fullName || !firmName || (!isResumeOnboarding && (!email || !password))) {
@@ -247,15 +187,21 @@ const Signup = () => {
         throw new Error('Failed to create account. Please try again.');
       }
 
-      // Defer workspace provisioning until email is verified.
-      // Use localStorage so it survives the email-verification round trip
-      // (the verification link often opens in a different tab/browser session).
-      localStorage.setItem('pendingProvision', JSON.stringify({
-        userId: authData.user.id,
-        firmName,
-        fullName,
-        email,
-      }));
+      // Provision the workspace immediately — do not wait for email verification.
+      // The verification email is informational only; provisioning must succeed
+      // here so the verification link can be opened on any device.
+      try {
+        await provisionWorkspace({
+          userId: authData.user.id,
+          firmName,
+          fullName,
+          email,
+        });
+        sessionStorage.removeItem('selected_plan');
+      } catch (provisionErr: any) {
+        console.error('Provisioning error during signup:', provisionErr);
+        toast.error(provisionErr?.message || 'Account created, but workspace setup failed. Please contact support.');
+      }
 
       setStep(1); // Verify Email
       setLoading(false);

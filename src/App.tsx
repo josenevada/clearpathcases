@@ -15,6 +15,7 @@ const MarketingLanding = lazy(() => import("./pages/MarketingLanding"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ClientVerify = lazy(() => import("./pages/ClientVerify"));
 const ClientWizard = lazy(() => import("./pages/ClientWizard"));
@@ -91,6 +92,7 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/invite/:invitationId" element={<InviteSignup />} />
 

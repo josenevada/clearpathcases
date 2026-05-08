@@ -28,31 +28,26 @@ const Login = () => {
   useEffect(() => {
     if (searchParams.get('verified') === 'true') {
       setVerified(true);
-      const pending =
-        localStorage.getItem('pendingProvision') ||
-        sessionStorage.getItem('pendingProvision');
+      (async () => {
+        const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+        if (!verifiedUser) {
+          window.history.replaceState({}, '', '/login');
+          return;
+        }
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('firm_id, role')
+          .eq('id', verifiedUser.id)
+          .maybeSingle();
 
-      if (!pending) {
-        setTimeout(async () => {
-          const { data: { user: verifiedUser } } = await supabase.auth.getUser();
-          if (!verifiedUser) return;
-
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('id, firm_id, role')
-            .eq('id', verifiedUser.id)
-            .maybeSingle();
-
-          if (existingUser?.firm_id) {
-            navigate(existingUser.role === 'super_admin' ? '/admin/dashboard' : '/paralegal', { replace: true });
-          } else {
-            await supabase.auth.signOut();
-            navigate('/signup?error=incomplete_setup', { replace: true });
-          }
-        }, 0);
-      }
-
-      window.history.replaceState({}, '', '/login');
+        if (existingUser?.firm_id) {
+          navigate(existingUser.role === 'super_admin' ? '/admin/dashboard' : '/paralegal', { replace: true });
+        } else {
+          // Provisioning didn't run or failed — send them back to sign up
+          navigate('/signup?retry=true', { replace: true });
+        }
+        window.history.replaceState({}, '', '/login');
+      })();
     }
     if (searchParams.get('expired') === 'true') {
       toast.error('Your session expired. Please sign in again.');
@@ -78,102 +73,27 @@ const Login = () => {
             navigate('/signup?resume=onboarding', { replace: true });
             return;
           }
-
-          // Skip redirect if user needs onboarding (Google OAuth new user)
-          if (sessionStorage.getItem('google_oauth_needs_onboarding')) {
+          if (searchParams.get('verified') === 'true') {
+            // The verified-email handler above takes care of routing.
             return;
           }
           redirectingRef.current = true;
-          // Use setTimeout to avoid Supabase deadlock on nested calls
           setTimeout(async () => {
-            // Handle deferred workspace provisioning (post email-verification).
-            // Read from localStorage first (survives cross-tab email link),
-            // fall back to sessionStorage for backward compatibility.
-            const isVerified = searchParams.get('verified') === 'true';
-            const pendingRaw =
-              localStorage.getItem('pendingProvision') ||
-              sessionStorage.getItem('pendingProvision');
-            const hadPendingProvision = Boolean(pendingRaw);
-            if (pendingRaw) {
-              try {
-                const pending = JSON.parse(pendingRaw);
-                if (pending.userId === session.user.id) {
-                  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                  const provisionPayload = {
-                    userId: pending.userId,
-                    firmName: pending.firmName,
-                    fullName: pending.fullName,
-                    email: pending.email,
-                    planName:
-                      localStorage.getItem('selected_plan') ||
-                      sessionStorage.getItem('selected_plan') ||
-                      'starter',
-                  };
-                  const callProvision = async (retryCount = 0): Promise<Response> => {
-                    try {
-                      const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(provisionPayload),
-                      });
-                      if (!res.ok && retryCount < 1) {
-                        await new Promise(r => setTimeout(r, 2000));
-                        return callProvision(retryCount + 1);
-                      }
-                      return res;
-                    } catch (err) {
-                      if (retryCount < 1) {
-                        await new Promise(r => setTimeout(r, 2000));
-                        return callProvision(retryCount + 1);
-                      }
-                      throw err;
-                    }
-                  };
-                  const res = await callProvision();
-                  const data = await res.json();
-                  if (!res.ok || !data?.firmId) {
-                    throw new Error(data?.error || 'Failed to set up workspace');
-                  }
-                  localStorage.removeItem('pendingProvision');
-                  sessionStorage.removeItem('pendingProvision');
-                  localStorage.removeItem('selected_plan');
-                  sessionStorage.removeItem('selected_plan');
-                }
-              } catch (err: any) {
-                console.error('Deferred provisioning error:', err);
-                toast.error(err.message || 'Failed to finish workspace setup');
-              }
-            }
-
             const { data: userData } = await supabase
               .from('users')
               .select('role, firm_id')
               .eq('id', session.user.id)
               .maybeSingle();
 
-            // No user/firm record — account setup incomplete
             if (!userData?.firm_id) {
-              if (isVerified && !hadPendingProvision) {
-                await supabase.auth.signOut();
-                redirectingRef.current = false;
-                navigate('/signup?error=incomplete_setup', { replace: true });
-                return;
-              }
-              await supabase.auth.signOut();
+              // OAuth/new user without a firm — send to onboarding
               redirectingRef.current = false;
-              toast.error('Account setup incomplete. Please sign up again.');
+              navigate('/onboarding', { replace: true });
               return;
             }
 
-            // If we just provisioned, AuthProvider's user state is still null —
-            // do a hard navigate so it re-hydrates with the new firm_id.
-            const justProvisioned = hadPendingProvision;
-            const target = userData?.role === 'super_admin' ? '/admin/dashboard' : '/paralegal';
-            if (justProvisioned) {
-              window.location.replace(target);
-            } else {
-              navigate(target, { replace: true });
-            }
+            const target = userData.role === 'super_admin' ? '/admin/dashboard' : '/paralegal';
+            navigate(target, { replace: true });
           }, 0);
         }
       }

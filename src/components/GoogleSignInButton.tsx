@@ -52,15 +52,11 @@ const GoogleSignInButton = ({ label = 'Continue with Google' }: GoogleSignInButt
         .maybeSingle();
 
       if (!existingUser?.firm_id) {
-        // New user — store metadata for signup flow
-        sessionStorage.setItem('google_oauth_user', JSON.stringify({
-          email: session.user.email,
-          fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
-          userId: session.user.id,
-        }));
-        // Set flag so Login's onAuthStateChange doesn't redirect to dashboard
-        sessionStorage.setItem('google_oauth_needs_onboarding', 'true');
-        window.location.href = '/signup?from=google';
+        // New OAuth user — go to /onboarding to collect firm name.
+        // Do NOT auto-provision with a derived/empty firm name.
+        sessionStorage.removeItem('google_oauth_user');
+        sessionStorage.removeItem('google_oauth_needs_onboarding');
+        window.location.href = '/onboarding';
       }
       // If existingUser exists, onAuthStateChange in Login will handle the redirect
     } catch (err) {
