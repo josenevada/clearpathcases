@@ -75,6 +75,7 @@ const Onboarding = () => {
     }
     if (!userId) return;
 
+    setError(null);
     setLoading(true);
     try {
       const selectedPlan =
@@ -98,7 +99,12 @@ const Onboarding = () => {
       localStorage.removeItem('selected_plan');
       window.location.replace('/paralegal');
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to set up workspace');
+      console.error('Provision error:', err);
+      const msg =
+        err?.message ||
+        'Something went wrong setting up your account. Please try again or contact support at hello@yourclearpath.app';
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   };
