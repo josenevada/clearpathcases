@@ -43,8 +43,8 @@ const Login = () => {
         if (existingUser?.firm_id) {
           navigate(existingUser.role === 'super_admin' ? '/admin/dashboard' : '/paralegal', { replace: true });
         } else {
-          // Provisioning didn't run or failed — send them back to sign up
-          navigate('/signup?retry=true', { replace: true });
+          // Provisioning didn't run or failed — let user finish setup on /onboarding
+          navigate('/onboarding', { replace: true });
         }
         window.history.replaceState({}, '', '/login');
       })();
