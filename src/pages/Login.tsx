@@ -115,12 +115,9 @@ const Login = () => {
               return;
             }
 
-            // If we just provisioned, AuthProvider's user is still null —
+            // If we just provisioned, AuthProvider's user state is still null —
             // do a hard navigate so it re-hydrates with the new firm_id.
-            const justProvisioned =
-              !localStorage.getItem('pendingProvision') &&
-              !sessionStorage.getItem('pendingProvision') &&
-              !pendingRaw === false;
+            const justProvisioned = Boolean(pendingRaw);
             const target = userData?.role === 'super_admin' ? '/admin/dashboard' : '/paralegal';
             if (justProvisioned) {
               window.location.replace(target);
