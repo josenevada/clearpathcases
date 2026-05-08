@@ -45,6 +45,16 @@ const Signup = () => {
   const onboardingSessionUser = isResumeOnboarding ? session?.user ?? null : null;
 
   useEffect(() => {
+    if (searchParams.get('error') === 'incomplete_setup') {
+      toast.error(
+        'Your account was created but setup did not complete. Please sign in to finish setting up your account.',
+        { duration: 6000 }
+      );
+      navigate('/login', { replace: true });
+    }
+  }, [navigate, searchParams]);
+
+  useEffect(() => {
     if (!onboardingSessionUser) return;
     setFullName(onboardingSessionUser.user_metadata?.full_name || onboardingSessionUser.user_metadata?.name || '');
     setEmail(onboardingSessionUser.email || '');
@@ -63,18 +73,36 @@ const Signup = () => {
   }): Promise<string> => {
     const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const provisionPayload = {
+      userId: wsUserId,
+      firmName: wsFirmName,
+      fullName: wsFullName,
+      email: wsEmail,
+      planName: selectedPlan,
+    };
 
-    const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: wsUserId,
-        firmName: wsFirmName,
-        fullName: wsFullName,
-        email: wsEmail,
-        planName: selectedPlan,
-      }),
-    });
+    const callProvision = async (retryCount = 0): Promise<Response> => {
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(provisionPayload),
+        });
+        if (!res.ok && retryCount < 1) {
+          await new Promise(r => setTimeout(r, 2000));
+          return callProvision(retryCount + 1);
+        }
+        return res;
+      } catch (err) {
+        if (retryCount < 1) {
+          await new Promise(r => setTimeout(r, 2000));
+          return callProvision(retryCount + 1);
+        }
+        throw err;
+      }
+    };
+
+    const res = await callProvision();
 
     const data = await res.json();
     if (!res.ok || !data?.firmId) {
@@ -82,6 +110,58 @@ const Signup = () => {
     }
 
     return data.firmId;
+  };
+
+  const handleExistingAccount = async () => {
+    localStorage.setItem('pendingProvision', JSON.stringify({
+      userId: '',
+      firmName,
+      fullName,
+      email,
+    }));
+
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInData?.user && !signInError) {
+      localStorage.setItem('pendingProvision', JSON.stringify({
+        userId: signInData.user.id,
+        firmName,
+        fullName,
+        email,
+      }));
+
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('firm_id')
+        .eq('id', signInData.user.id)
+        .maybeSingle();
+
+      if (existingUser?.firm_id) {
+        localStorage.removeItem('pendingProvision');
+        window.location.replace('/paralegal');
+      } else {
+        try {
+          const resolvedFirmId = await provisionWorkspace({
+            userId: signInData.user.id,
+            firmName,
+            fullName,
+            email,
+          });
+          setFirmId(resolvedFirmId);
+          sessionStorage.removeItem('selected_plan');
+          localStorage.removeItem('pendingProvision');
+          window.location.replace('/paralegal');
+        } catch (error) {
+          localStorage.removeItem('pendingProvision');
+          toast.error(error instanceof Error ? error.message : 'Failed to set up workspace');
+          return;
+        }
+      }
+    } else {
+      localStorage.removeItem('pendingProvision');
+      toast.error('An account with this email already exists. Please sign in instead.');
+      navigate('/login');
+    }
   };
 
   // Handle Google OAuth redirect — go directly to success screen
@@ -159,8 +239,7 @@ const Signup = () => {
 
       const repeatedSignup = (authData.user?.identities ?? []).length === 0;
       if (repeatedSignup) {
-        toast.error('This email already has an account. Sign in to finish setting up your workspace.');
-        navigate(`/login?resume=onboarding&email=${encodeURIComponent(email)}`);
+        await handleExistingAccount();
         return;
       }
 
@@ -182,6 +261,13 @@ const Signup = () => {
       setLoading(false);
       return;
     } catch (err: any) {
+      if (
+        err.message?.includes('already registered') ||
+        err.message?.includes('already exists')
+      ) {
+        await handleExistingAccount();
+        return;
+      }
       await supabase.auth.signOut();
       toast.error(err.message || 'Account setup failed — please try again');
     } finally {

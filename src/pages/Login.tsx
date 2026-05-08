@@ -28,6 +28,31 @@ const Login = () => {
   useEffect(() => {
     if (searchParams.get('verified') === 'true') {
       setVerified(true);
+      const pending =
+        localStorage.getItem('pendingProvision') ||
+        sessionStorage.getItem('pendingProvision');
+
+      if (!pending) {
+        setTimeout(async () => {
+          const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+          if (!verifiedUser) return;
+
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('id, firm_id, role')
+            .eq('id', verifiedUser.id)
+            .maybeSingle();
+
+          if (existingUser?.firm_id) {
+            navigate(existingUser.role === 'super_admin' ? '/admin/dashboard' : '/paralegal', { replace: true });
+          } else {
+            await supabase.auth.signOut();
+            navigate('/signup?error=incomplete_setup', { replace: true });
+          }
+        }, 0);
+      }
+
+      window.history.replaceState({}, '', '/login');
     }
     if (searchParams.get('expired') === 'true') {
       toast.error('Your session expired. Please sign in again.');
@@ -41,7 +66,7 @@ const Login = () => {
       setLoginError(authSetupError);
       toast.error(authSetupError);
     }
-  }, [searchParams]);
+  }, [navigate, searchParams]);
 
   // Central redirect handler — fires when auth state confirms a valid session
   useEffect(() => {
@@ -64,28 +89,47 @@ const Login = () => {
             // Handle deferred workspace provisioning (post email-verification).
             // Read from localStorage first (survives cross-tab email link),
             // fall back to sessionStorage for backward compatibility.
+            const isVerified = searchParams.get('verified') === 'true';
             const pendingRaw =
               localStorage.getItem('pendingProvision') ||
               sessionStorage.getItem('pendingProvision');
+            const hadPendingProvision = Boolean(pendingRaw);
             if (pendingRaw) {
               try {
                 const pending = JSON.parse(pendingRaw);
                 if (pending.userId === session.user.id) {
                   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                  const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      userId: pending.userId,
-                      firmName: pending.firmName,
-                      fullName: pending.fullName,
-                      email: pending.email,
-                      planName:
-                        localStorage.getItem('selected_plan') ||
-                        sessionStorage.getItem('selected_plan') ||
-                        'starter',
-                    }),
-                  });
+                  const provisionPayload = {
+                    userId: pending.userId,
+                    firmName: pending.firmName,
+                    fullName: pending.fullName,
+                    email: pending.email,
+                    planName:
+                      localStorage.getItem('selected_plan') ||
+                      sessionStorage.getItem('selected_plan') ||
+                      'starter',
+                  };
+                  const callProvision = async (retryCount = 0): Promise<Response> => {
+                    try {
+                      const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(provisionPayload),
+                      });
+                      if (!res.ok && retryCount < 1) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        return callProvision(retryCount + 1);
+                      }
+                      return res;
+                    } catch (err) {
+                      if (retryCount < 1) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        return callProvision(retryCount + 1);
+                      }
+                      throw err;
+                    }
+                  };
+                  const res = await callProvision();
                   const data = await res.json();
                   if (!res.ok || !data?.firmId) {
                     throw new Error(data?.error || 'Failed to set up workspace');
@@ -109,6 +153,12 @@ const Login = () => {
 
             // No user/firm record — account setup incomplete
             if (!userData?.firm_id) {
+              if (isVerified && !hadPendingProvision) {
+                await supabase.auth.signOut();
+                redirectingRef.current = false;
+                navigate('/signup?error=incomplete_setup', { replace: true });
+                return;
+              }
               await supabase.auth.signOut();
               redirectingRef.current = false;
               toast.error('Account setup incomplete. Please sign up again.');
@@ -117,7 +167,7 @@ const Login = () => {
 
             // If we just provisioned, AuthProvider's user state is still null —
             // do a hard navigate so it re-hydrates with the new firm_id.
-            const justProvisioned = Boolean(pendingRaw);
+            const justProvisioned = hadPendingProvision;
             const target = userData?.role === 'super_admin' ? '/admin/dashboard' : '/paralegal';
             if (justProvisioned) {
               window.location.replace(target);
