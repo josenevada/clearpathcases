@@ -39,18 +39,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user already has a firm
-    const { data: existingUser } = await admin
+    // Check if user already has a firm (by id)
+    const { data: existingById } = await admin
       .from("users")
-      .select("firm_id")
+      .select("id, firm_id")
       .eq("id", userId)
       .maybeSingle();
 
-    if (existingUser?.firm_id) {
-      return new Response(JSON.stringify({ firmId: existingUser.firm_id }), {
+    if (existingById?.firm_id) {
+      return new Response(JSON.stringify({ firmId: existingById.firm_id }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check for an orphan row by email (different id, e.g. from a previous failed signup)
+    const { data: existingByEmail } = await admin
+      .from("users")
+      .select("id, firm_id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingByEmail && existingByEmail.id !== userId) {
+      if (existingByEmail.firm_id) {
+        // Email belongs to another active account — return its firm and stop.
+        return new Response(JSON.stringify({ firmId: existingByEmail.firm_id }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Orphan row with no firm — delete it so we can insert the current auth user.
+      await admin.from("users").delete().eq("id", existingByEmail.id);
     }
 
     // Generate slug
