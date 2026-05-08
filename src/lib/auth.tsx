@@ -77,12 +77,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const appUser = await fetchAppUser(nextSession.user);
 
       if (!appUser?.firmId) {
-        // No firm record yet — this is a freshly-signed-up user (typically
-        // Google OAuth) who hasn't completed firm setup. Keep them signed in
-        // and let the /onboarding page collect their firm name.
+        // No firm record yet. Only redirect OAuth users to /onboarding —
+        // email/password signups are still being provisioned in the background
+        // and must NOT be redirected, or they'll loop on the onboarding page.
         setUser(null);
         setLoading(false);
         if (typeof window !== 'undefined') {
+          const provider = nextSession.user?.app_metadata?.provider;
+          const isOAuthUser = provider && provider !== 'email';
           const path = window.location.pathname;
           const skip =
             path.startsWith('/onboarding') ||
@@ -90,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             path.startsWith('/login') ||
             path.startsWith('/invite') ||
             path.startsWith('/reset-password');
-          if (!skip) {
+          if (isOAuthUser && !skip) {
             window.location.replace('/onboarding');
           }
         }
