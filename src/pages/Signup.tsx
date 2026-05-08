@@ -71,7 +71,7 @@ const Signup = () => {
     fullName: string;
     email: string;
   }): Promise<string> => {
-    const selectedPlan = localStorage.getItem('selected_plan') || sessionStorage.getItem('selected_plan') || 'starter';
+    const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const provisionPayload = {
       userId: wsUserId,
@@ -207,7 +207,6 @@ const Signup = () => {
             });
             setFirmId(resolvedFirmId);
             sessionStorage.removeItem('selected_plan');
-            localStorage.removeItem('selected_plan');
             navigate('/paralegal');
           }
         } else {
@@ -259,7 +258,6 @@ const Signup = () => {
             });
             setFirmId(resolvedFirmId);
             sessionStorage.removeItem('selected_plan');
-            localStorage.removeItem('selected_plan');
             navigate('/paralegal');
           }
         } else {
