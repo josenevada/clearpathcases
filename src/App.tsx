@@ -92,6 +92,7 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/invite/:invitationId" element={<InviteSignup />} />
 
