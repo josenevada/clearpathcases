@@ -112,6 +112,49 @@ const Signup = () => {
     return data.firmId;
   };
 
+  const handleExistingAccount = async () => {
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInData?.user && !signInError) {
+      localStorage.setItem('pendingProvision', JSON.stringify({
+        userId: signInData.user.id,
+        firmName,
+        fullName,
+        email,
+      }));
+
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('firm_id')
+        .eq('id', signInData.user.id)
+        .maybeSingle();
+
+      if (existingUser?.firm_id) {
+        localStorage.removeItem('pendingProvision');
+        navigate('/paralegal');
+      } else {
+        try {
+          const resolvedFirmId = await provisionWorkspace({
+            userId: signInData.user.id,
+            firmName,
+            fullName,
+            email,
+          });
+          setFirmId(resolvedFirmId);
+          sessionStorage.removeItem('selected_plan');
+          localStorage.removeItem('pendingProvision');
+          window.location.replace('/paralegal');
+        } catch (error) {
+          localStorage.removeItem('pendingProvision');
+          throw error;
+        }
+      }
+    } else {
+      toast.error('An account with this email already exists. Please sign in instead.');
+      navigate('/login');
+    }
+  };
+
   // Handle Google OAuth redirect — go directly to success screen
   useEffect(() => {
     if (searchParams.get('from') !== 'google') return;
