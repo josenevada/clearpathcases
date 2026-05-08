@@ -66,7 +66,7 @@ const Login = () => {
       setLoginError(authSetupError);
       toast.error(authSetupError);
     }
-  }, [searchParams]);
+  }, [navigate, searchParams]);
 
   // Central redirect handler — fires when auth state confirms a valid session
   useEffect(() => {
