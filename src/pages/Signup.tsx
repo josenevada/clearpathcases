@@ -187,8 +187,33 @@ const Signup = () => {
 
       const repeatedSignup = (authData.user?.identities ?? []).length === 0;
       if (repeatedSignup) {
-        toast.error('This email already has an account. Sign in to finish setting up your workspace.');
-        navigate(`/login?resume=onboarding&email=${encodeURIComponent(email)}`);
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (signInData?.user && !signInError) {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('firm_id')
+            .eq('id', signInData.user.id)
+            .maybeSingle();
+
+          if (existingUser?.firm_id) {
+            navigate('/paralegal');
+          } else {
+            const resolvedFirmId = await provisionWorkspace({
+              userId: signInData.user.id,
+              firmName,
+              fullName,
+              email,
+            });
+            setFirmId(resolvedFirmId);
+            sessionStorage.removeItem('selected_plan');
+            localStorage.removeItem('selected_plan');
+            navigate('/paralegal');
+          }
+        } else {
+          toast.error('An account with this email already exists. Please sign in instead.');
+          navigate('/login');
+        }
         return;
       }
 
@@ -210,6 +235,39 @@ const Signup = () => {
       setLoading(false);
       return;
     } catch (err: any) {
+      if (
+        err.message?.includes('already registered') ||
+        err.message?.includes('already exists')
+      ) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (signInData?.user && !signInError) {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('firm_id')
+            .eq('id', signInData.user.id)
+            .maybeSingle();
+
+          if (existingUser?.firm_id) {
+            navigate('/paralegal');
+          } else {
+            const resolvedFirmId = await provisionWorkspace({
+              userId: signInData.user.id,
+              firmName,
+              fullName,
+              email,
+            });
+            setFirmId(resolvedFirmId);
+            sessionStorage.removeItem('selected_plan');
+            localStorage.removeItem('selected_plan');
+            navigate('/paralegal');
+          }
+        } else {
+          toast.error('An account with this email already exists. Please sign in instead.');
+          navigate('/login');
+        }
+        return;
+      }
       await supabase.auth.signOut();
       toast.error(err.message || 'Account setup failed — please try again');
     } finally {
