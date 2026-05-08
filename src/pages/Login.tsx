@@ -61,8 +61,12 @@ const Login = () => {
           redirectingRef.current = true;
           // Use setTimeout to avoid Supabase deadlock on nested calls
           setTimeout(async () => {
-            // Handle deferred workspace provisioning (post email-verification)
-            const pendingRaw = sessionStorage.getItem('pendingProvision');
+            // Handle deferred workspace provisioning (post email-verification).
+            // Read from localStorage first (survives cross-tab email link),
+            // fall back to sessionStorage for backward compatibility.
+            const pendingRaw =
+              localStorage.getItem('pendingProvision') ||
+              sessionStorage.getItem('pendingProvision');
             if (pendingRaw) {
               try {
                 const pending = JSON.parse(pendingRaw);
@@ -76,14 +80,19 @@ const Login = () => {
                       firmName: pending.firmName,
                       fullName: pending.fullName,
                       email: pending.email,
-                      planName: sessionStorage.getItem('selected_plan') || 'starter',
+                      planName:
+                        localStorage.getItem('selected_plan') ||
+                        sessionStorage.getItem('selected_plan') ||
+                        'starter',
                     }),
                   });
                   const data = await res.json();
                   if (!res.ok || !data?.firmId) {
                     throw new Error(data?.error || 'Failed to set up workspace');
                   }
+                  localStorage.removeItem('pendingProvision');
                   sessionStorage.removeItem('pendingProvision');
+                  localStorage.removeItem('selected_plan');
                   sessionStorage.removeItem('selected_plan');
                 }
               } catch (err: any) {
@@ -106,10 +115,14 @@ const Login = () => {
               return;
             }
 
-            if (userData?.role === 'super_admin') {
-              navigate('/admin/dashboard', { replace: true });
+            // If we just provisioned, AuthProvider's user state is still null —
+            // do a hard navigate so it re-hydrates with the new firm_id.
+            const justProvisioned = Boolean(pendingRaw);
+            const target = userData?.role === 'super_admin' ? '/admin/dashboard' : '/paralegal';
+            if (justProvisioned) {
+              window.location.replace(target);
             } else {
-              navigate('/paralegal', { replace: true });
+              navigate(target, { replace: true });
             }
           }, 0);
         }

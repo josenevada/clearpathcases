@@ -168,8 +168,10 @@ const Signup = () => {
         throw new Error('Failed to create account. Please try again.');
       }
 
-      // Defer workspace provisioning until email is verified
-      sessionStorage.setItem('pendingProvision', JSON.stringify({
+      // Defer workspace provisioning until email is verified.
+      // Use localStorage so it survives the email-verification round trip
+      // (the verification link often opens in a different tab/browser session).
+      localStorage.setItem('pendingProvision', JSON.stringify({
         userId: authData.user.id,
         firmName,
         fullName,
