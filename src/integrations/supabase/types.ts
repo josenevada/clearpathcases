@@ -839,6 +839,7 @@ export type Database = {
           slug: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_id: string | null
           subscription_status: string | null
           trial_ends_at: string | null
         }
@@ -864,6 +865,7 @@ export type Database = {
           slug?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
         }
@@ -889,6 +891,7 @@ export type Database = {
           slug?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
         }
