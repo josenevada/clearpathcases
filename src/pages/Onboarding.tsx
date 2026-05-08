@@ -12,6 +12,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [firmName, setFirmName] = useState('');
   const [email, setEmail] = useState('');
@@ -74,6 +75,7 @@ const Onboarding = () => {
     }
     if (!userId) return;
 
+    setError(null);
     setLoading(true);
     try {
       const selectedPlan =
@@ -97,7 +99,12 @@ const Onboarding = () => {
       localStorage.removeItem('selected_plan');
       window.location.replace('/paralegal');
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to set up workspace');
+      console.error('Provision error:', err);
+      const msg =
+        err?.message ||
+        'Something went wrong setting up your account. Please try again or contact support at hello@yourclearpath.app';
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   };
@@ -150,6 +157,11 @@ const Onboarding = () => {
                 required
               />
             </div>
+            {error && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive font-body">
+                {error}
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Finishing…' : 'Finish Setup'}
             </Button>
