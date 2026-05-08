@@ -77,6 +77,16 @@ const Onboarding = () => {
 
     setError(null);
     setLoading(true);
+
+    // Wait for OAuth session cookie to be fully written before calling provision
+    await new Promise(r => setTimeout(r, 500));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast.error('Session expired. Please sign in again.');
+      navigate('/login');
+      setLoading(false);
+      return;
+    }
     try {
       const selectedPlan =
         sessionStorage.getItem('selected_plan') ||
