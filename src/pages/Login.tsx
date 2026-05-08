@@ -28,31 +28,26 @@ const Login = () => {
   useEffect(() => {
     if (searchParams.get('verified') === 'true') {
       setVerified(true);
-      const pending =
-        localStorage.getItem('pendingProvision') ||
-        sessionStorage.getItem('pendingProvision');
+      (async () => {
+        const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+        if (!verifiedUser) {
+          window.history.replaceState({}, '', '/login');
+          return;
+        }
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('firm_id, role')
+          .eq('id', verifiedUser.id)
+          .maybeSingle();
 
-      if (!pending) {
-        setTimeout(async () => {
-          const { data: { user: verifiedUser } } = await supabase.auth.getUser();
-          if (!verifiedUser) return;
-
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('id, firm_id, role')
-            .eq('id', verifiedUser.id)
-            .maybeSingle();
-
-          if (existingUser?.firm_id) {
-            navigate(existingUser.role === 'super_admin' ? '/admin/dashboard' : '/paralegal', { replace: true });
-          } else {
-            await supabase.auth.signOut();
-            navigate('/signup?error=incomplete_setup', { replace: true });
-          }
-        }, 0);
-      }
-
-      window.history.replaceState({}, '', '/login');
+        if (existingUser?.firm_id) {
+          navigate(existingUser.role === 'super_admin' ? '/admin/dashboard' : '/paralegal', { replace: true });
+        } else {
+          // Provisioning didn't run or failed — send them back to sign up
+          navigate('/signup?retry=true', { replace: true });
+        }
+        window.history.replaceState({}, '', '/login');
+      })();
     }
     if (searchParams.get('expired') === 'true') {
       toast.error('Your session expired. Please sign in again.');
