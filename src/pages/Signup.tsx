@@ -154,6 +154,7 @@ const Signup = () => {
         } catch (error) {
           localStorage.removeItem('pendingProvision');
           toast.error(error instanceof Error ? error.message : 'Failed to set up workspace');
+          return;
         }
       }
     } else {
