@@ -230,32 +230,7 @@ const Signup = () => {
 
       const repeatedSignup = (authData.user?.identities ?? []).length === 0;
       if (repeatedSignup) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (signInData?.user && !signInError) {
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('firm_id')
-            .eq('id', signInData.user.id)
-            .maybeSingle();
-
-          if (existingUser?.firm_id) {
-            navigate('/paralegal');
-          } else {
-            const resolvedFirmId = await provisionWorkspace({
-              userId: signInData.user.id,
-              firmName,
-              fullName,
-              email,
-            });
-            setFirmId(resolvedFirmId);
-            sessionStorage.removeItem('selected_plan');
-            navigate('/paralegal');
-          }
-        } else {
-          toast.error('An account with this email already exists. Please sign in instead.');
-          navigate('/login');
-        }
+        await handleExistingAccount();
         return;
       }
 
@@ -281,32 +256,7 @@ const Signup = () => {
         err.message?.includes('already registered') ||
         err.message?.includes('already exists')
       ) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (signInData?.user && !signInError) {
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('firm_id')
-            .eq('id', signInData.user.id)
-            .maybeSingle();
-
-          if (existingUser?.firm_id) {
-            navigate('/paralegal');
-          } else {
-            const resolvedFirmId = await provisionWorkspace({
-              userId: signInData.user.id,
-              firmName,
-              fullName,
-              email,
-            });
-            setFirmId(resolvedFirmId);
-            sessionStorage.removeItem('selected_plan');
-            navigate('/paralegal');
-          }
-        } else {
-          toast.error('An account with this email already exists. Please sign in instead.');
-          navigate('/login');
-        }
+        await handleExistingAccount();
         return;
       }
       await supabase.auth.signOut();
