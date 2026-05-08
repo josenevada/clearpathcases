@@ -85,16 +85,15 @@ const Onboarding = () => {
         localStorage.getItem('selected_plan') ||
         'starter';
 
-      const res = await callProvision({
+      const { data, error: invokeError } = await callProvision({
         userId,
         firmName: firmName.trim(),
         fullName: fullName.trim(),
         email,
         planName: selectedPlan,
       });
-      const data = await res.json();
-      if (!res.ok || !data?.firmId) {
-        throw new Error(data?.error || 'Failed to set up workspace');
+      if (invokeError || !data?.firmId) {
+        throw new Error(invokeError?.message || data?.error || 'Failed to set up workspace');
       }
 
       sessionStorage.removeItem('selected_plan');
