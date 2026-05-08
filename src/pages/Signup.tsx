@@ -45,6 +45,16 @@ const Signup = () => {
   const onboardingSessionUser = isResumeOnboarding ? session?.user ?? null : null;
 
   useEffect(() => {
+    if (searchParams.get('error') === 'incomplete_setup') {
+      toast.error(
+        'Your account was created but setup did not complete. Please sign in to finish setting up your account.',
+        { duration: 6000 }
+      );
+      navigate('/login', { replace: true });
+    }
+  }, [navigate, searchParams]);
+
+  useEffect(() => {
     if (!onboardingSessionUser) return;
     setFullName(onboardingSessionUser.user_metadata?.full_name || onboardingSessionUser.user_metadata?.name || '');
     setEmail(onboardingSessionUser.email || '');
@@ -61,20 +71,38 @@ const Signup = () => {
     fullName: string;
     email: string;
   }): Promise<string> => {
-    const selectedPlan = sessionStorage.getItem('selected_plan') || 'starter';
+    const selectedPlan = localStorage.getItem('selected_plan') || sessionStorage.getItem('selected_plan') || 'starter';
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const provisionPayload = {
+      userId: wsUserId,
+      firmName: wsFirmName,
+      fullName: wsFullName,
+      email: wsEmail,
+      planName: selectedPlan,
+    };
 
-    const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: wsUserId,
-        firmName: wsFirmName,
-        fullName: wsFullName,
-        email: wsEmail,
-        planName: selectedPlan,
-      }),
-    });
+    const callProvision = async (retryCount = 0): Promise<Response> => {
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/provision-workspace`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(provisionPayload),
+        });
+        if (!res.ok && retryCount < 1) {
+          await new Promise(r => setTimeout(r, 2000));
+          return callProvision(retryCount + 1);
+        }
+        return res;
+      } catch (err) {
+        if (retryCount < 1) {
+          await new Promise(r => setTimeout(r, 2000));
+          return callProvision(retryCount + 1);
+        }
+        throw err;
+      }
+    };
+
+    const res = await callProvision();
 
     const data = await res.json();
     if (!res.ok || !data?.firmId) {
