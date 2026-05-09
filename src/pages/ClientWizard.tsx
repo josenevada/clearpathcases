@@ -623,6 +623,7 @@ const ClientWizard = () => {
 
   const handleSidebarNavigate = useCallback((catIdx: number, itemIdx: number) => {
     setWhyOpen(false); setShowSuccess(false); setShowMilestone(null); setShowStepTransition(null);
+    setIsReviewing(true);
     setCurrentCategoryIdx(catIdx);
     setCurrentItemIdx(itemIdx);
     setSearchParams({}, { replace: true });
