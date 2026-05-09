@@ -1541,7 +1541,7 @@ const ClientWizard = () => {
     </AnimatePresence>
   );
 
-  if (progress === 100 && !showMilestone && !showSuccess) {
+  if (progress === 100 && !showMilestone && !showSuccess && !isReviewing) {
     const attorneyName = caseData.assignedAttorney || 'your attorney';
     return (
       <div className="min-h-[100dvh] flex flex-row">
