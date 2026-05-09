@@ -1639,6 +1639,7 @@ const ClientWizard = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    setIsReviewing(true);
                     setCurrentCategoryIdx(0);
                     setCurrentItemIdx(0);
                   }}
