@@ -284,6 +284,7 @@ const ClientWizard = () => {
   const [currentItemIdx, setCurrentItemIdx] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [caseCompleted, setCaseCompleted] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
   const [showMilestone, setShowMilestone] = useState<number | null>(null);
   const [checkpointConfirmed, setCheckpointConfirmed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
