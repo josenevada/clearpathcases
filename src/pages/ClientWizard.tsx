@@ -1740,7 +1740,7 @@ const ClientWizard = () => {
   );
 
   const pendingCorrectionItem = caseData ? getOpenCorrectionItem(caseData) : undefined;
-  if ((caseCompleted || caseData?.readyToFile) && !pendingCorrectionItem) {
+  if ((caseCompleted || caseData?.readyToFile) && !pendingCorrectionItem && !isReviewing) {
     return (
       <div className="min-h-[100dvh] flex flex-row">
         {desktopSidebar}
@@ -1760,12 +1760,21 @@ const ClientWizard = () => {
           </p>
           <button
             onClick={() => {
+              setIsReviewing(true);
+              setShowSuccess(false);
               setCurrentCategoryIdx(0);
               setCurrentItemIdx(0);
             }}
             className="mt-6 text-sm text-primary underline hover:opacity-80 transition-opacity"
           >
             ← Review or update my documents
+          </button>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="mt-4 flex items-center gap-2 text-sm text-primary sm:hidden"
+          >
+            <Menu className="w-4 h-4" />
+            View my documents
           </button>
         </div>
       </div>
