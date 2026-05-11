@@ -527,7 +527,16 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   };
 
   const handleApprove = async (entry: FileEntry) => {
-    // Optimistic update — close panel and show toast immediately
+    // Optimistic local update — flip review status immediately so the row
+    // visually moves to "Approved" without waiting for the refetch.
+    updateCase(caseData.id, c => {
+      const found = c.checklist.find(i => i.id === entry.item.id);
+      if (found) {
+        const f = found.files.find(ff => ff.id === entry.file.id);
+        if (f) f.reviewStatus = 'approved';
+      }
+      return c;
+    });
     setSelectedFile(null);
     toast.success(`${entry.item.label} approved`);
 
