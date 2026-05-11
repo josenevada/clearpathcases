@@ -690,9 +690,10 @@ const CaseDetail = () => {
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     const noteId = crypto.randomUUID();
-    const author = viewRole === 'paralegal' 
-      ? (caseData.assignedParalegal || user?.fullName || 'Staff')
-      : (caseData.assignedAttorney || user?.fullName || 'Attorney');
+    const author = user?.fullName ||
+      (viewRole === 'paralegal'
+        ? caseData.assignedParalegal || 'Staff'
+        : caseData.assignedAttorney || 'Attorney');
     const timestamp = new Date().toISOString();
 
     await supabase.from('notes').insert({
