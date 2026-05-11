@@ -32,7 +32,7 @@ const OnboardingChecklist = ({ firmProfileComplete, counselingComplete, hasTempl
       icon: BookOpen,
     },
     {
-      label: 'Make sure your document checklist looks good',
+      label: 'Review your document checklist (tap to confirm)',
       done: hasTemplate,
       action: () => {
         try { localStorage.setItem('clearpath_templates_configured', '1'); } catch {}
