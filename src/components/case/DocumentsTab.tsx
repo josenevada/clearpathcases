@@ -407,25 +407,30 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     );
     if (pendingFiles.length === 0) return;
 
-    try {
-      await supabase
-        .from('files')
-        .update({ review_status: 'approved', review_note: null })
-        .in('id', pendingFiles.map(f => f.file.id));
+    // Optimistic — show toast immediately
+    toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
 
-      await supabase.from('activity_log').insert({
-        case_id: caseData.id,
-        event_type: 'file_approved',
-        actor_role: viewRole,
-        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
-        description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
-      });
-      toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
+    // Run all writes in the background
+    try {
+      await Promise.all([
+        supabase
+          .from('files')
+          .update({ review_status: 'approved', review_note: null })
+          .in('id', pendingFiles.map(f => f.file.id)),
+
+        supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'file_approved',
+          actor_role: viewRole,
+          actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+          description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
+        }),
+      ]);
       await maybeAutoMarkReady();
       onRefresh();
     } catch (err) {
       console.error('Approve all failed:', err);
-      toast.error('Failed to approve documents — please try again.');
+      toast.error('Approval failed — please refresh and try again.');
     }
   }, [allFiles, caseData, viewRole, maybeAutoMarkReady, onRefresh]);
 
