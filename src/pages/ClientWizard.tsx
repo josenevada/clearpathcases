@@ -229,7 +229,27 @@ const generateCleanFileName = (
   userLabel?: string
 ): string => {
   const ext = (originalFile.name.split('.').pop() || 'pdf').toLowerCase();
-  const date = new Date().toISOString().slice(0, 10);
+  const extractDateFromFilename = (filename: string): string => {
+    const name = filename.replace(/\.[^/.]+$/, '');
+    const monthDayYear = name.match(
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})[,\s]+(\d{4})\b/i
+    );
+    if (monthDayYear) {
+      const mon = monthDayYear[1].charAt(0).toUpperCase() + monthDayYear[1].slice(1, 3).toLowerCase();
+      return `${mon}-${monthDayYear[2].padStart(2, '0')}-${monthDayYear[3]}`;
+    }
+    const isoDate = name.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+    if (isoDate) return isoDate[0];
+    const monthYear = name.match(
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})\b/i
+    );
+    if (monthYear) {
+      const mon = monthYear[1].charAt(0).toUpperCase() + monthYear[1].slice(1, 3).toLowerCase();
+      return `${mon}-${monthYear[2]}`;
+    }
+    return new Date().toISOString().slice(0, 10);
+  };
+  const date = userLabel ? new Date().toISOString().slice(0, 10) : extractDateFromFilename(originalFile.name);
   const lastName = clientLastName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
   const docType = itemLabel
     .replace(/[()]/g, '')
