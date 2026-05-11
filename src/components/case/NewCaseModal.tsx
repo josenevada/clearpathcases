@@ -164,7 +164,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
           .select('document_templates')
           .eq('id', user.firmId)
           .maybeSingle();
-        const remote = (data as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
+        const remote = (data as unknown as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
         if (Array.isArray(remote) && remote.length > 0) {
           items = remote.filter(t => t.active);
           // Refresh the local cache for any other readers (settings UI, etc.)
