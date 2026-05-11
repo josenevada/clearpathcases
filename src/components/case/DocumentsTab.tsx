@@ -618,21 +618,19 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const categorySummary = useMemo(() => {
     return (CATEGORIES as readonly string[]).map(cat => {
       const items = caseData.checklist.filter(i => i.category === cat);
-      const withFiles = items.filter(i => i.files.length > 0);
-      const approved = withFiles.filter(i => i.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden'));
-      const pending = withFiles.filter(i => i.files.some(f => f.reviewStatus === 'pending'));
-      const corrections = withFiles.filter(i => i.files.some(f => f.reviewStatus === 'correction-requested'));
-      const requiredItems = items.filter(i => i.required);
-      const requiredApproved = requiredItems.filter(i => i.files.some(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden'));
+      const allCatFiles = items.flatMap(i => i.files);
+      const approvedCount = allCatFiles.filter(f => f.reviewStatus === 'approved' || f.reviewStatus === 'overridden').length;
+      const pendingCount = allCatFiles.filter(f => f.reviewStatus === 'pending').length;
+      const correctionsCount = allCatFiles.filter(f => f.reviewStatus === 'correction-requested').length;
 
       let status: 'complete' | 'in-progress' | 'not-started' | 'attention';
-      if (approved.length === 0 && pending.length === 0 && corrections.length === 0) status = 'not-started';
-      else if (corrections.length > 0) status = 'attention';
-      else if (pending.length > 0) status = 'in-progress';
-      else if (approved.length > 0) status = 'complete';
+      if (approvedCount === 0 && pendingCount === 0 && correctionsCount === 0) status = 'not-started';
+      else if (correctionsCount > 0) status = 'attention';
+      else if (pendingCount > 0) status = 'in-progress';
+      else if (approvedCount > 0) status = 'complete';
       else status = 'not-started';
 
-      return { category: cat, approved: approved.length, pending: pending.length, corrections: corrections.length, total: items.length, status };
+      return { category: cat, approved: approvedCount, pending: pendingCount, corrections: correctionsCount, total: allCatFiles.length, status };
     });
   }, [caseData]);
 
