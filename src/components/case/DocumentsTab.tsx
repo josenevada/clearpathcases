@@ -789,7 +789,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                   'surface-card-hover p-4 cursor-pointer relative',
                   isSelected && 'ring-2 ring-primary/50 bg-primary/5'
                 )}
-                onClick={() => { setSelectedFile({ file, item }); setCorrectionNote(''); setFeedbackMode('idle'); setFeedbackDocType(''); setFeedbackNotes(''); }}
+                onClick={() => { setSelectedFile({ file, item }); setCorrectionNote(''); }}
               >
                 {/* Checkbox — only for plans with bulk actions */}
                 {bulkActionsEnabled ? (
