@@ -717,13 +717,9 @@ const ClientWizard = () => {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     setPendingDuplicate(null);
 
-    // Multi-upload items: auto-apply suggested label silently
+    // Multi-upload items: skip auto-label step
     if (isMultiUpload && !replaceFileId && explicitLabel === undefined) {
-      const autoLabel = getMultiUploadLabelSuggestion(
-        currentItem.label,
-        currentItem.files.length
-      );
-      handleFileAdd(file, replaceFileId, autoLabel || null);
+      handleFileAdd(file, replaceFileId, null);
       return;
     }
 
