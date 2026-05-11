@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldCheck, ExternalLink, Trash2, CheckSquare, Lock } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, CheckCircle, X, Shield, ShieldCheck, ExternalLink, Trash2, CheckSquare, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
