@@ -20,7 +20,7 @@ import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import StatsBar from '@/components/dashboard/StatsBar';
 
 import SendLinkModal from '@/components/dashboard/SendLinkModal';
-import { getAllCases, saveCases, calculateProgress, type Case } from '@/lib/store';
+import { getAllCases, saveCases, calculateProgress, getNamedTemplates, type Case } from '@/lib/store';
 import { caseHasRecentResubmission } from '@/lib/corrections';
 import { useAuth } from '@/lib/auth';
 import { useSubscription } from '@/lib/subscription';
