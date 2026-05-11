@@ -57,7 +57,7 @@ const buildClientName = (first: string, last: string) =>
   [first, last].filter(Boolean).join(' ').trim();
 
 const templateToChecklistItem = (t: TemplateItem): ChecklistItem => ({
-  id: t.id,
+  id: crypto.randomUUID(),
   category: t.category,
   label: t.label,
   description: t.description,
@@ -231,7 +231,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   };
 
   const addCustomItem = (category: string, label: string, description: string) => {
-    const id = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const id = crypto.randomUUID();
     const newItem: ChecklistItem = {
       id,
       category,
@@ -280,7 +280,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     }));
 
     try {
-      await supabase.from('cases').upsert({
+      const { error: caseInsertError } = await supabase.from('cases').upsert({
         id: newCase.id,
         firm_id: user?.firmId || null,
         client_name: displayName,
@@ -301,6 +301,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         wizard_step: 0,
         ready_to_file: false,
       } as any);
+
+      if (caseInsertError) throw caseInsertError;
 
       const includedRows = includedChecklist.map((item, idx) => ({
         id: item.id,
@@ -333,7 +335,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
       const allRows = [...includedRows, ...excludedRows];
       if (allRows.length > 0) {
-        await supabase.from('checklist_items').insert(allRows);
+        const { error: checklistInsertError } = await supabase.from('checklist_items').insert(allRows);
+        if (checklistInsertError) throw checklistInsertError;
       }
     } catch (err) {
       console.error('Failed to sync case to database:', err);
