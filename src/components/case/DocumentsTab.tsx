@@ -522,27 +522,32 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   };
 
   const handleApprove = async (entry: FileEntry) => {
-    try {
-      await supabase.from('files').update({
-        review_status: 'approved',
-        review_note: null,
-      }).eq('id', entry.file.id);
+    // Optimistic update — close panel and show toast immediately
+    setSelectedFile(null);
+    toast.success(`${entry.item.label} approved`);
 
-      await supabase.from('activity_log').insert({
-        case_id: caseData.id,
-        event_type: 'file_approved',
-        actor_role: 'attorney',
-        actor_name: caseData.assignedAttorney,
-        description: `Attorney approved ${entry.item.label}`,
-        item_id: entry.item.id,
-      });
-      toast.success(`${entry.item.label} approved`);
+    // Write to Supabase in background
+    try {
+      await Promise.all([
+        supabase.from('files').update({
+          review_status: 'approved',
+          review_note: null,
+        }).eq('id', entry.file.id),
+
+        supabase.from('activity_log').insert({
+          case_id: caseData.id,
+          event_type: 'file_approved',
+          actor_role: 'attorney',
+          actor_name: caseData.assignedAttorney,
+          description: `Attorney approved ${entry.item.label}`,
+          item_id: entry.item.id,
+        }),
+      ]);
       await maybeAutoMarkReady();
-      setSelectedFile(null);
       onRefresh();
     } catch (err) {
       console.error('Approve failed:', err);
-      toast.error('Failed to approve — please try again.');
+      toast.error('Approval failed — please refresh and try again.');
     }
   };
 
