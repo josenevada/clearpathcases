@@ -879,10 +879,6 @@ const ClientWizard = () => {
       }
     })();
 
-    // Trigger AI validation in the background (use signed URL for validation)
-    if (displayUrl) {
-      triggerValidation(newFileId, displayUrl, currentItem.label, caseData.id);
-    }
 
     if (!currentItemHasOpenCorrection) {
       if (!isMultiUpload) {
