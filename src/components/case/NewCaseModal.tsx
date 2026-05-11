@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   createCase, updateCase, getFirmSettings, getDocTemplates, getNamedTemplatesForChapter,
+  buildDefaultTemplates,
   CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem, type NamedTemplate,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
@@ -128,7 +129,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const loadChecklistFromTemplate = (templateId: string) => {
     if (templateId === 'default') {
-      const items = getDocTemplates().filter(t => t.active);
+      let items = getDocTemplates().filter(t => t.active);
+      if (items.length === 0) items = buildDefaultTemplates().filter(t => t.active);
       setChecklist(items.map(templateToChecklistItem));
     } else {
       const named = availableNamedTemplates.find(t => t.id === templateId);
@@ -143,7 +145,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     if (step === 2 && checklist.length === 0) {
       const named = getNamedTemplatesForChapter(info.chapterType);
       setAvailableNamedTemplates(named);
-      const items = getDocTemplates().filter(t => t.active);
+      let items = getDocTemplates().filter(t => t.active);
+      // Safety net: if the firm's stored templates yield no active items,
+      // fall back to ClearPath defaults so cases are never created empty.
+      if (items.length === 0) {
+        items = buildDefaultTemplates().filter(t => t.active);
+      }
       setChecklist(items.map(templateToChecklistItem));
       setExcludedItems(new Set());
       setSelectedTemplateId('default');
