@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, X, Shield, ShieldCheck, ExternalLink, Trash2, CheckSquare, Lock } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, CheckCircle, X, Shield, ShieldCheck, ExternalLink, Trash2, CheckSquare, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1032,11 +1032,18 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 {/* Actions */}
                 {viewRole === 'attorney' && (
                   <div className="space-y-3 pt-2 border-t border-border">
-                    <div className="flex gap-2">
-                      <Button variant="success" className="flex-1" onClick={() => handleApprove(selectedFile)}>
-                        <Check className="w-4 h-4 mr-1" /> Approve
-                      </Button>
-                    </div>
+                    {selectedFile.file.reviewStatus !== 'approved' && selectedFile.file.reviewStatus !== 'overridden' ? (
+                      <div className="flex gap-2">
+                        <Button variant="success" className="flex-1" onClick={() => handleApprove(selectedFile)}>
+                          <Check className="w-4 h-4 mr-1" /> Approve
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-success text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Approved</span>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex gap-1 flex-wrap">
                         {correctionChips.map(chip => (
