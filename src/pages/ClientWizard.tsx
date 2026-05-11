@@ -222,75 +222,6 @@ const compressImage = (file: File, maxSizeMB: number = 1): Promise<File> => {
   });
 };
 
-const generateCleanFileName = (
-  itemLabel: string,
-  clientLastName: string,
-  originalFile: File,
-  userLabel?: string
-): string => {
-  const ext = (originalFile.name.split('.').pop() || 'pdf').toLowerCase();
-  const extractDateFromFilename = (filename: string): string => {
-    const name = filename.replace(/\.[^/.]+$/, '');
-    const monthDayYear = name.match(
-      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})[,\s]+(\d{4})\b/i
-    );
-    if (monthDayYear) {
-      const mon = monthDayYear[1].charAt(0).toUpperCase() + monthDayYear[1].slice(1, 3).toLowerCase();
-      return `${mon}-${monthDayYear[2].padStart(2, '0')}-${monthDayYear[3]}`;
-    }
-    const isoDate = name.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-    if (isoDate) return isoDate[0];
-    const monthYear = name.match(
-      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})\b/i
-    );
-    if (monthYear) {
-      const mon = monthYear[1].charAt(0).toUpperCase() + monthYear[1].slice(1, 3).toLowerCase();
-      return `${mon}-${monthYear[2]}`;
-    }
-    return new Date().toISOString().slice(0, 10);
-  };
-  const date = userLabel ? new Date().toISOString().slice(0, 10) : extractDateFromFilename(originalFile.name);
-  const lastName = clientLastName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
-  const docType = itemLabel
-    .replace(/[()]/g, '')
-    .replace(/[^a-zA-Z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-  const label = userLabel
-    ? userLabel.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
-    : null;
-  return label
-    ? `${lastName}-${docType}-${label}.${ext}`
-    : `${lastName}-${docType}-${date}.${ext}`;
-};
-
-const getMultiUploadLabelSuggestion = (itemLabel: string, existingCount: number): string => {
-  const now = new Date();
-  const monthNames = ['January','February','March','April','May','June',
-    'July','August','September','October','November','December'];
-
-  // Walk back from current month based on how many already uploaded
-  const targetDate = new Date(now.getFullYear(), now.getMonth() - existingCount, 1);
-  const month = monthNames[targetDate.getMonth()];
-  const year = targetDate.getFullYear();
-  const prevYear = now.getFullYear() - 1;
-
-  if (itemLabel.includes('Checking') || itemLabel.includes('Savings') ||
-      itemLabel.includes('Digital Wallet') || itemLabel.includes('Credit Card')) {
-    return `${month} ${year}`;
-  }
-  if (itemLabel.includes('Pay Stub')) {
-    return `${month} ${year}`;
-  }
-  if (itemLabel.includes('W-2')) {
-    return existingCount === 0 ? `${now.getFullYear()}` : `${prevYear}`;
-  }
-  if (itemLabel.includes('Tax Return')) {
-    return existingCount === 0 ? `${now.getFullYear() - 1}` : `${now.getFullYear() - 2}`;
-  }
-  return '';
-};
-
 const ClientWizard = () => {
   const { caseId, caseCode } = useParams<{ caseId?: string; caseCode?: string }>();
   const resolvedCaseId = caseId || '';
@@ -786,13 +717,9 @@ const ClientWizard = () => {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     setPendingDuplicate(null);
 
-    // Multi-upload items: auto-apply suggested label silently
+    // Multi-upload items: skip auto-label step
     if (isMultiUpload && !replaceFileId && explicitLabel === undefined) {
-      const autoLabel = getMultiUploadLabelSuggestion(
-        currentItem.label,
-        currentItem.files.length
-      );
-      handleFileAdd(file, replaceFileId, autoLabel || null);
+      handleFileAdd(file, replaceFileId, null);
       return;
     }
 
@@ -836,15 +763,8 @@ const ClientWizard = () => {
     const newFileId = crypto.randomUUID();
     const uploadedAt = new Date().toISOString();
 
-    // Build a clean, human-readable file name
-    const clientLastName = caseData.clientName?.split(' ').pop() || 'Client';
-    const userLabel = isMultiUpload && explicitLabel ? explicitLabel : undefined;
-    const cleanFileName = generateCleanFileName(
-      currentItem.label,
-      clientLastName,
-      processedFile,
-      userLabel
-    );
+    // Use the original filename the client uploaded
+    const cleanFileName = processedFile.name;
 
     // Upload to Supabase Storage with a unique path (with retry + progress)
     const uniqueId = crypto.randomUUID().slice(0, 6);
