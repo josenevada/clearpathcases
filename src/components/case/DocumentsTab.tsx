@@ -407,35 +407,27 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     );
     if (pendingFiles.length === 0) return;
 
-    updateCase(caseData.id, c => {
-      for (const { file, item } of pendingFiles) {
-        const found = c.checklist.find(i => i.id === item.id);
-        if (found) {
-          const f = found.files.find(ff => ff.id === file.id);
-          if (f) f.reviewStatus = 'approved';
-        }
-      }
-      return c;
-    });
-
-    toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
-
-    void (async () => {
+    try {
       await supabase
         .from('files')
         .update({ review_status: 'approved', review_note: null })
         .in('id', pendingFiles.map(f => f.file.id));
 
-      void supabase.from('activity_log').insert({
+      await supabase.from('activity_log').insert({
         case_id: caseData.id,
         event_type: 'file_approved',
         actor_role: viewRole,
         actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
         description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
       });
-      void maybeAutoMarkReady();
-    })();
-  }, [allFiles, caseData, viewRole, maybeAutoMarkReady]);
+      toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
+      await maybeAutoMarkReady();
+      onRefresh();
+    } catch (err) {
+      console.error('Approve all failed:', err);
+      toast.error('Failed to approve documents — please try again.');
+    }
+  }, [allFiles, caseData, viewRole, maybeAutoMarkReady, onRefresh]);
 
   const doPdfExport = async () => {
     const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -530,20 +522,13 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   };
 
   const handleApprove = async (entry: FileEntry) => {
-    updateCase(caseData.id, c => {
-      const found = c.checklist.find(i => i.id === entry.item.id);
-      if (found && found.files.length > 0) {
-        const f = found.files.find(f => f.id === entry.file.id);
-        if (f) f.reviewStatus = 'approved';
-      }
-      return c;
-    });
-    // Persist to Supabase (fire-and-forget — UI already updated optimistically)
-    toast.success(`${entry.item.label} approved`);
-    setSelectedFile(null);
-    void (async () => {
-      await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', entry.file.id);
-      void supabase.from('activity_log').insert({
+    try {
+      await supabase.from('files').update({
+        review_status: 'approved',
+        review_note: null,
+      }).eq('id', entry.file.id);
+
+      await supabase.from('activity_log').insert({
         case_id: caseData.id,
         event_type: 'file_approved',
         actor_role: 'attorney',
@@ -551,8 +536,14 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
         description: `Attorney approved ${entry.item.label}`,
         item_id: entry.item.id,
       });
-      void maybeAutoMarkReady();
-    })();
+      toast.success(`${entry.item.label} approved`);
+      await maybeAutoMarkReady();
+      setSelectedFile(null);
+      onRefresh();
+    } catch (err) {
+      console.error('Approve failed:', err);
+      toast.error('Failed to approve — please try again.');
+    }
   };
 
   const handleCorrection = async (entry: FileEntry) => {
