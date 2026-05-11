@@ -764,6 +764,7 @@ export type Database = {
       }
       files: {
         Row: {
+          ai_validation_status: string
           case_id: string
           checklist_item_id: string
           data_url: string | null
@@ -776,6 +777,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          ai_validation_status?: string
           case_id: string
           checklist_item_id: string
           data_url?: string | null
@@ -788,6 +790,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          ai_validation_status?: string
           case_id?: string
           checklist_item_id?: string
           data_url?: string | null
