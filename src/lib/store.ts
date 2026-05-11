@@ -230,13 +230,18 @@ export const hydrateDocTemplatesFromFirm = async (firmId: string): Promise<void>
       .select('document_templates')
       .eq('id', firmId)
       .maybeSingle();
-    if (error) return;
-    const remote = (data as unknown as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
+    const remote = error ? null : (data as unknown as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
     if (Array.isArray(remote) && remote.length > 0) {
       localStorage.setItem(TEMPLATES_KEY, JSON.stringify(remote));
+    } else {
+      // No templates saved yet — seed with defaults so we always have something to work with
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(buildDefaultTemplates()));
     }
   } catch {
-    // non-blocking — fall back to local cache
+    // On error, ensure defaults are available
+    if (!localStorage.getItem(TEMPLATES_KEY)) {
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(buildDefaultTemplates()));
+    }
   }
 };
 
