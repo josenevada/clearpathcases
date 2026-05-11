@@ -391,18 +391,29 @@ const DocumentReviewQueue = () => {
                         >
                           <div className="flex items-start gap-4">
                             {/* Preview */}
-                            <div className="flex-shrink-0 w-20 h-20 rounded-lg border border-border/60 bg-secondary/30 flex items-center justify-center overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => openPreview(q)}
+                              className="flex-shrink-0 w-20 h-20 rounded-lg border border-border/60 bg-secondary/30 flex items-center justify-center overflow-hidden hover:border-primary/40 transition-colors cursor-pointer"
+                              aria-label={`Preview ${q.item.label}`}
+                            >
                               {isImage(q.file) && q.file.dataUrl ? (
                                 <img src={q.file.dataUrl} alt={q.file.name} className="w-full h-full object-cover" />
                               ) : (
                                 <FileText className="w-8 h-8 text-muted-foreground" />
                               )}
-                            </div>
+                            </button>
 
                             {/* Body */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-display font-semibold text-[16px] text-foreground truncate">{q.item.label}</h3>
+                                <button
+                                  type="button"
+                                  onClick={() => openPreview(q)}
+                                  className="font-display font-semibold text-[16px] text-foreground truncate hover:text-primary transition-colors text-left"
+                                >
+                                  {q.item.label}
+                                </button>
                                 {q.file.reviewStatus === 'correction-requested' && (
                                   <Badge className="border-warning/20 bg-warning/10 text-warning text-[10px]">
                                     Correction Requested
