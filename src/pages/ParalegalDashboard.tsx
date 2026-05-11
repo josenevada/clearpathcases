@@ -269,7 +269,7 @@ const ParalegalDashboard = () => {
           <OnboardingChecklist
             firmProfileComplete={onboardingState.firmProfileComplete}
             counselingComplete={onboardingState.counselingComplete}
-            hasTemplate={getNamedTemplates().length > 0}
+            hasTemplate={getNamedTemplates().length > 0 || localStorage.getItem('clearpath_templates_configured') === '1'}
             hasCases={cases.length > 0}
             hasSentLink={onboardingState.hasSentLink}
             onNewCase={handleNewCase}
