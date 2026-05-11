@@ -1,16 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, ThumbsUp, FileText, Search, Eye } from 'lucide-react';
-import { getDocumentHelp, getValidationHelpMessage, type DocumentHelpContent } from '@/lib/document-help';
+import { getDocumentHelp } from '@/lib/document-help';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentHelpPanelProps {
   itemLabel: string;
   caseId: string;
   caseName: string;
-  /** Latest validation status from any file on this item */
-  validationStatus?: string;
-  validationSuggestion?: string;
   /** Whether the item has any files uploaded */
   hasFiles: boolean;
   /** External signal to force-open the panel */
@@ -22,9 +19,6 @@ const DocumentHelpPanel = ({
   itemLabel,
   caseId,
   caseName,
-  validationStatus,
-  validationSuggestion,
-  hasFiles,
   forceOpen,
   onForceOpenHandled,
 }: DocumentHelpPanelProps) => {
@@ -33,14 +27,12 @@ const DocumentHelpPanel = ({
   const helpContent = getDocumentHelp(itemLabel);
   const hasLoggedOpen = useRef(false);
 
-  // Reset state when item changes
   useEffect(() => {
     setIsOpen(false);
     setFeedbackGiven(false);
     hasLoggedOpen.current = false;
   }, [itemLabel]);
 
-  // Handle force-open from parent (inactivity, validation, soft-block)
   useEffect(() => {
     if (forceOpen && !isOpen) {
       setIsOpen(true);
@@ -86,10 +78,6 @@ const DocumentHelpPanel = ({
 
   if (!helpContent) return null;
 
-  const validationMessage = validationStatus
-    ? getValidationHelpMessage(validationStatus, validationSuggestion)
-    : null;
-
   return (
     <div className="mb-4">
       <button
@@ -110,17 +98,6 @@ const DocumentHelpPanel = ({
             className="overflow-hidden"
           >
             <div className="mt-3 surface-card p-5 rounded-xl border border-primary/10 space-y-4">
-              {/* Validation-aware contextual message */}
-              {validationMessage && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-sm text-warning bg-warning/5 border border-warning/15 rounded-lg px-3 py-2.5 font-body leading-relaxed"
-                >
-                  {validationMessage}
-                </motion.div>
-              )}
-
               <HelpSection
                 icon={<FileText className="w-4 h-4 text-primary flex-shrink-0" />}
                 title="What is this?"
@@ -137,7 +114,6 @@ const DocumentHelpPanel = ({
                 content={helpContent.whatItLooksLike}
               />
 
-              {/* Feedback */}
               <div className="pt-2 border-t border-[hsl(var(--surface-border))]">
                 {feedbackGiven ? (
                   <p className="text-xs text-muted-foreground font-body">Thanks for the feedback.</p>

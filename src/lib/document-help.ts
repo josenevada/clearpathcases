@@ -110,16 +110,3 @@ export function getDocumentHelp(label: string): DocumentHelpContent | null {
   return null;
 }
 
-// Generate validation-aware contextual message
-export function getValidationHelpMessage(validationStatus: string, suggestion?: string): string | null {
-  if (validationStatus === 'warning') {
-    if (suggestion?.toLowerCase().includes('year') || suggestion?.toLowerCase().includes('old')) {
-      return 'Hmm, this looks like it might be from the wrong year. Here\'s how to find the right one.';
-    }
-    return 'Something about this document doesn\'t look quite right. Here\'s what we\'re looking for.';
-  }
-  if (validationStatus === 'failed') {
-    return 'This might not be the right document. No worries — here\'s what it should look like so you can find the right one.';
-  }
-  return null;
-}

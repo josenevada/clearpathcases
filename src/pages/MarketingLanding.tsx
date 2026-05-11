@@ -441,11 +441,6 @@ const MarketingLanding = () => {
       a: 'When you create a case, ClearPath sends your client a secure link via SMS and email. They verify their identity, then follow a guided wizard through each required document one at a time. Plain English instructions tell them exactly what to upload and why. Most clients complete the full intake on their phone without calling the firm once.',
     },
     {
-      q: 'What happens if a client uploads the wrong document?',
-      preview: 'AI validates every document instantly and tells the client right away.',
-      a: 'ClearPath checks every uploaded document the moment it arrives — verifying document type, legibility, and flagging issues like wrong year or wrong account. If something is wrong the client sees an immediate message explaining what to fix. Corrections happen in real time, not days later when a paralegal reviews.',
-    },
-    {
       q: 'What if a client doesn\'t finish uploading?',
       preview: 'Automatic reminders go out so your team never has to chase.',
       a: 'ClearPath automatically sends SMS and email reminders when a client hasn\'t completed their intake. Reminders are targeted — if a client uploaded some documents but not others, they receive a message listing exactly what\'s still missing.',
@@ -577,7 +572,6 @@ const MarketingLanding = () => {
               <tbody>
                 {[
                   { label: 'Client guided step by step', cols: ['x', 'x', '-', 'check'] },
-                  { label: 'AI validates every document', cols: ['x', 'x', 'x', 'check'] },
                   { label: 'AI guide answers client questions', cols: ['x', 'x', 'x', 'alex'] },
                   { label: 'Bank statements via Plaid', cols: ['x', 'x', 'x', 'plaid'] },
                   { label: 'Automatic SMS reminders', cols: ['x', 'x', '-', 'check'] },
@@ -1171,7 +1165,7 @@ const MarketingLanding = () => {
               <span className="text-sm text-[#8aa3b8] font-body">Bankruptcy document intake, simplified.</span>
             </div>
             <span className="text-[12px] text-[#8aa3b8] font-body md:ml-11">
-              Chapter 7 &amp; 13 · Guided Client Intake · AI Validation
+              Chapter 7 &amp; 13 · Guided Client Intake
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-[#8aa3b8]">

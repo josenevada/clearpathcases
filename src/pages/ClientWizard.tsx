@@ -20,7 +20,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { getPlanLimits } from '@/lib/plan-limits';
-import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
+
 
 import { supabase } from '@/integrations/supabase/client';
 import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
@@ -247,7 +247,7 @@ const ClientWizard = () => {
   const [ssnValue, setSsnValue] = useState('');
   const [ssnVisible, setSsnVisible] = useState(false);
   const [ssnError, setSsnError] = useState('');
-  const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
+  
   
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
@@ -2352,20 +2352,6 @@ const ClientWizard = () => {
                     </button>
                     <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf" onChange={handleSingleFileUpload} />
                   </div>
-                  {/* Validation status indicator */}
-                  {currentItem.files.map(file => (
-                    <FileValidationIndicator
-                      key={`val-${file.id}`}
-                      file={file}
-                      isValidating={validatingFiles.has(file.id)}
-                      onAction={(action) => handleValidationAction(file.id, action, caseData)}
-                      onReplace={() => fileInputRef.current?.click()}
-                      onRemove={() => {
-                        handleFileDelete(file.id);
-                        setTimeout(() => fileInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-                      }}
-                    />
-                  ))}
                 </div>
               ) : (
                 <>

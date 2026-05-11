@@ -63,7 +63,7 @@ import {
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
 import { supabase } from '@/integrations/supabase/client';
 import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
-import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
+
 import { toast } from 'sonner';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
@@ -278,15 +278,6 @@ const CaseDetail = () => {
 
     setCaseData(builtCase);
 
-    // Fire background validation for files missing ai_validation_status
-    const labelByItemId = new Map<string, string>((checklistRows || []).map((r: any) => [r.id, r.label]));
-    const unvalidatedFiles = filesWithUrls.filter((f: any) => !f.ai_validation_status);
-    unvalidatedFiles.forEach((f: any) => {
-      if (f.storage_path) {
-        const label = labelByItemId.get(f.checklist_item_id) || '';
-        void triggerParalegalValidation(f.id, f.storage_path, label);
-      }
-    });
   };
 
   useEffect(() => {
@@ -1132,20 +1123,6 @@ const CaseDetail = () => {
                     </Button>
                   )}
                 </div>
-                {(() => {
-                  const allFiles = caseData.checklist.flatMap(i => i.files);
-                  const validated = allFiles.filter(f => f.validationStatus === 'passed' || f.validationStatus === 'client-confirmed');
-                  const needsReview = allFiles.filter(f => f.validationStatus === 'warning' || f.validationStatus === 'failed' || f.validationStatus === 'client-override');
-                  const total = allFiles.length;
-                  if (total === 0) return null;
-                  if (needsReview.length > 0) {
-                    return <p className="text-xs text-warning">{validated.length} of {total} documents validated — {needsReview.length} need review</p>;
-                  }
-                  if (validated.length === total && total > 0) {
-                    return <p className="text-xs text-success">All documents validated</p>;
-                  }
-                  return null;
-                })()}
               </div>
 
               {CATEGORIES.map(category => {

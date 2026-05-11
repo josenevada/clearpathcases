@@ -54,14 +54,8 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
       {/* Uploaded files list */}
       <AnimatePresence>
         {files.map(f => {
-          const vs = f.validationStatus;
-          const vr = f.validationResult;
-          const flagged = isFlagged(vs);
-          const validationIcon = vs === 'passed' ? <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-            : vs === 'validating' ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
-            : vs === 'warning' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-            : vs === 'failed' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-            : <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />;
+          const flagged = false;
+          const validationIcon = <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />;
 
           return (
             <motion.div
