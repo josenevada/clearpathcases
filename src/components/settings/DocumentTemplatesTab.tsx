@@ -83,16 +83,6 @@ const DocumentTemplatesTab = () => {
               Configure the master checklist for new cases. Changes apply to new cases only.
             </p>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  markTemplatesConfigured();
-                  toast.success('Default template confirmed.');
-                }}
-              >
-                Use as-is
-              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="sm"><RotateCcw className="w-4 h-4 mr-1" /> Restore Defaults</Button>
