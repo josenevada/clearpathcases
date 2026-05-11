@@ -151,7 +151,7 @@ const CaseDetail = () => {
 
     const [{ data: checklistRows }, { data: fileRows }, { data: activityRows }, { data: noteRows }] = await Promise.all([
       supabase.from('checklist_items').select('*').eq('case_id', id).order('sort_order', { ascending: true }),
-      supabase.from('files').select('id, checklist_item_id, case_id, file_name, storage_path, uploaded_at, uploaded_by, review_status, review_note').eq('case_id', id),
+      supabase.from('files').select('id, checklist_item_id, case_id, file_name, storage_path, uploaded_at, uploaded_by, review_status, review_note, ai_validation_status').eq('case_id', id),
       supabase.from('activity_log').select('*').eq('case_id', id).order('created_at', { ascending: false }),
       supabase.from('notes').select('*').eq('case_id', id).order('created_at', { ascending: false }),
     ]);
