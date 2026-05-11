@@ -281,6 +281,16 @@ const CaseDetail = () => {
     };
 
     setCaseData(builtCase);
+
+    // Fire background validation for files missing ai_validation_status
+    const labelByItemId = new Map<string, string>((checklistRows || []).map((r: any) => [r.id, r.label]));
+    const unvalidatedFiles = filesWithUrls.filter((f: any) => !f.ai_validation_status);
+    unvalidatedFiles.forEach((f: any) => {
+      if (f.storage_path) {
+        const label = labelByItemId.get(f.checklist_item_id) || '';
+        void triggerParalegalValidation(f.id, f.storage_path, label);
+      }
+    });
   };
 
   useEffect(() => {
