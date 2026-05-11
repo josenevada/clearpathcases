@@ -149,7 +149,9 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
       // Safety net: if the firm's stored templates yield no active items,
       // fall back to ClearPath defaults so cases are never created empty.
       if (items.length === 0) {
-        items = buildDefaultTemplates().filter(t => t.active);
+        const defaults = buildDefaultTemplates();
+        saveDocTemplates(defaults);
+        items = defaults.filter(t => t.active);
       }
       setChecklist(items.map(templateToChecklistItem));
       setExcludedItems(new Set());
