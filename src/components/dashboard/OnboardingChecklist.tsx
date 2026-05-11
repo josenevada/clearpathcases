@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, X, Building2, BookOpen, Plus, Send } from 'lucide-react';
+import { CheckCircle2, Circle, X, Building2, BookOpen, Plus, Send, FileText } from 'lucide-react';
 
 interface OnboardingChecklistProps {
   firmProfileComplete: boolean;
   counselingComplete: boolean;
+  hasTemplate: boolean;
   hasCases: boolean;
   hasSentLink: boolean;
   onNewCase: () => void;
   onSendLink: () => void;
 }
 
-const OnboardingChecklist = ({ firmProfileComplete, counselingComplete, hasCases, hasSentLink, onNewCase, onSendLink }: OnboardingChecklistProps) => {
+const OnboardingChecklist = ({ firmProfileComplete, counselingComplete, hasTemplate, hasCases, hasSentLink, onNewCase, onSendLink }: OnboardingChecklistProps) => {
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
 
