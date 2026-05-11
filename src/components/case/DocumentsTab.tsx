@@ -1032,11 +1032,18 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 {/* Actions */}
                 {viewRole === 'attorney' && (
                   <div className="space-y-3 pt-2 border-t border-border">
-                    <div className="flex gap-2">
-                      <Button variant="success" className="flex-1" onClick={() => handleApprove(selectedFile)}>
-                        <Check className="w-4 h-4 mr-1" /> Approve
-                      </Button>
-                    </div>
+                    {selectedFile.file.reviewStatus !== 'approved' && selectedFile.file.reviewStatus !== 'overridden' ? (
+                      <div className="flex gap-2">
+                        <Button variant="success" className="flex-1" onClick={() => handleApprove(selectedFile)}>
+                          <Check className="w-4 h-4 mr-1" /> Approve
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-success text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Approved</span>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex gap-1 flex-wrap">
                         {correctionChips.map(chip => (
