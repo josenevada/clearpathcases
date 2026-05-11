@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   createCase, updateCase, getFirmSettings, getDocTemplates, getNamedTemplatesForChapter,
-  buildDefaultTemplates,
+  buildDefaultTemplates, saveDocTemplates,
   CATEGORIES, type ChapterType, type Case, type ChecklistItem, type TemplateItem, type NamedTemplate,
 } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
