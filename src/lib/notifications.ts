@@ -111,8 +111,12 @@ export const sendSmartReminder = async (caseData: Case, options?: { bypass?: boo
 
   let type: NotificationType = 'general_reminder';
 
+  // Priority 0: Brand new case — never been welcomed
+  if (!caseData.lastClientActivity) {
+    type = 'client_welcome';
+  }
   // Priority 1: Open correction
-  if (hasOpenCorrection(caseData)) {
+  else if (hasOpenCorrection(caseData)) {
     type = 'correction_request';
   }
   // Priority 2: 3-day deadline
