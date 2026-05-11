@@ -13,6 +13,8 @@ import type { Case, ChecklistItem, UploadedFile } from '@/lib/store';
 import { toast } from 'sonner';
 import Logo from '@/components/Logo';
 import { sendCorrectionRequest } from '@/lib/notifications';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import DocumentViewer from '@/components/case/DocumentViewer';
 
 type StatusFilter = 'all' | 'pending' | 'correction-requested';
 
