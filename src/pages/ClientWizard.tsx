@@ -116,7 +116,7 @@ const DOCUMENT_ICONS: Record<string, React.ComponentType<{ className?: string }>
 
 // Human subtitles for each document step
 const WARM_SUBTITLES: Record<string, string> = {
-  'Pay Stubs (Last 2 Months)': 'This shows the court what you currently earn — it\'s one of the most important documents in your filing.',
+  'Pay Stubs (Last 2 Months)': "Upload all pay stubs from the last 2 months. If you're paid biweekly, that's typically 4-5 stubs. If you're paid monthly, that's 2. Include every stub you have — your attorney needs the complete picture of your income.",
   'W-2s (Last 2 Years)': 'These help paint a picture of your work history over the past couple of years.',
   'Tax Returns (Last 2 Years)': 'Your tax returns give the court a full view of your financial year — we need the last two.',
   'Employer Name': 'Just your current employer\'s name — this goes on the official paperwork.',
