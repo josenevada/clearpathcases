@@ -157,13 +157,13 @@ const CaseDetail = () => {
       supabase.from('notes').select('*').eq('case_id', id).order('created_at', { ascending: false }),
     ]);
 
-    // Generate signed URLs for files with storage_path
-    const filesWithUrls = await Promise.all((fileRows || []).map(async (f: any) => {
-      let displayUrl = f.data_url || '';
-      if (f.storage_path && !displayUrl) {
-        displayUrl = await getCaseDocumentSignedUrl(f.storage_path);
-      }
-      return { ...f, data_url: displayUrl };
+    // Skip eager signed-URL generation — URLs are now signed lazily when a
+    // file is opened/previewed/downloaded. Generating them upfront triggers
+    // one storage round-trip per file and can stall the whole case load when
+    // storage is slow.
+    const filesWithUrls = (fileRows || []).map((f: any) => ({
+      ...f,
+      data_url: f.data_url || '',
     }));
 
     const mapFiles = (itemId: string): UploadedFile[] =>
