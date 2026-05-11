@@ -56,8 +56,13 @@ interface TeamMember {
 const buildClientName = (first: string, last: string) =>
   [first, last].filter(Boolean).join(' ').trim();
 
+const normalizeClientDob = (dob: string) => {
+  const [month, day, year] = dob.split('/');
+  return month && day && year ? `${year}-${month}-${day}` : '';
+};
+
 const templateToChecklistItem = (t: TemplateItem): ChecklistItem => ({
-  id: t.id,
+  id: crypto.randomUUID(),
   category: t.category,
   label: t.label,
   description: t.description,
@@ -162,7 +167,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
 
-  const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline;
+  const step1Valid = info.firstName && info.lastName && info.clientEmail && normalizeClientDob(info.clientDob) && info.filingDeadline;
 
   const includedCount = checklist.length - excludedItems.size;
 
@@ -231,7 +236,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   };
 
   const addCustomItem = (category: string, label: string, description: string) => {
-    const id = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const id = crypto.randomUUID();
     const newItem: ChecklistItem = {
       id,
       category,
@@ -259,6 +264,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setCreating(true);
     const displayName = clientName;
     const caseCode = generateCaseCode(displayName);
+    const normalizedClientDob = normalizeClientDob(info.clientDob);
 
     const includedChecklist = checklist.filter(item => !excludedItems.has(item.id));
 
@@ -276,11 +282,11 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     const updatedCase = updateCase(newCase.id, (c) => ({
       ...c,
       caseCode,
-      clientDob: info.clientDob || undefined,
+      clientDob: normalizedClientDob || undefined,
     }));
 
     try {
-      await supabase.from('cases').upsert({
+      const { error: caseInsertError } = await supabase.from('cases').upsert({
         id: newCase.id,
         firm_id: user?.firmId || null,
         client_name: displayName,
@@ -290,7 +296,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         client_suffix: null,
         client_email: info.clientEmail,
         client_phone: info.clientPhone || null,
-        client_dob: info.clientDob || null,
+        client_dob: normalizedClientDob || null,
         chapter_type: info.chapterType,
         filing_deadline: info.filingDeadline!.toISOString().split('T')[0],
         assigned_paralegal: info.assignedParalegal,
@@ -301,6 +307,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         wizard_step: 0,
         ready_to_file: false,
       } as any);
+
+      if (caseInsertError) throw caseInsertError;
 
       const includedRows = includedChecklist.map((item, idx) => ({
         id: item.id,
@@ -333,7 +341,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
       const allRows = [...includedRows, ...excludedRows];
       if (allRows.length > 0) {
-        await supabase.from('checklist_items').insert(allRows);
+        const { error: checklistInsertError } = await supabase.from('checklist_items').insert(allRows);
+        if (checklistInsertError) throw checklistInsertError;
       }
     } catch (err) {
       console.error('Failed to sync case to database:', err);
