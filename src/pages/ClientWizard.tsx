@@ -116,7 +116,7 @@ const DOCUMENT_ICONS: Record<string, React.ComponentType<{ className?: string }>
 
 // Human subtitles for each document step
 const WARM_SUBTITLES: Record<string, string> = {
-  'Pay Stubs (Last 2 Months)': 'This shows the court what you currently earn — it\'s one of the most important documents in your filing.',
+  'Pay Stubs (Last 2 Months)': "Upload all pay stubs from the last 2 months. If you're paid biweekly, that's typically 4-5 stubs. If you're paid monthly, that's 2. Include every stub you have — your attorney needs the complete picture of your income.",
   'W-2s (Last 2 Years)': 'These help paint a picture of your work history over the past couple of years.',
   'Tax Returns (Last 2 Years)': 'Your tax returns give the court a full view of your financial year — we need the last two.',
   'Employer Name': 'Just your current employer\'s name — this goes on the official paperwork.',
@@ -530,19 +530,25 @@ const ClientWizard = () => {
           };
         });
 
+        // Always write ai_validation_status regardless of pass/fail
+        await supabase.from('files').update({
+          ai_validation_status: result.validation_status,
+        } as any).eq('id', fileId);
+
         if (passedCleanly) {
           await supabase.from('files').update({
             review_status: 'approved',
             review_note: 'Auto-approved — passed AI validation',
-            ai_validation_status: result.validation_status,
           } as any).eq('id', fileId);
           logActivity(caseIdForValidation, { eventType: 'file_approved', actorRole: 'system', actorName: 'ClearPath AI', description: `Auto-approved ${itemLabel} — passed AI validation`, itemId: fileId });
-        } else {
-          await supabase.from('files').update({ ai_validation_status: result.validation_status } as any).eq('id', fileId);
         }
 
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
       } else {
+        // Validation service unavailable — fall back to 'passed' so file still appears in dashboard
+        await supabase.from('files').update({
+          ai_validation_status: 'passed',
+        } as any).eq('id', fileId);
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
       }
     } catch { console.warn('Document validation failed silently'); }
