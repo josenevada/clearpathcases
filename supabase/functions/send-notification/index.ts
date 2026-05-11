@@ -221,14 +221,14 @@ const getEmailContent = (p: NotificationPayload): { subject: string; html: strin
 
     case 'general_reminder':
       return {
-        subject: 'Reminder about your documents',
+        subject: 'Your document portal is waiting for you',
         html: emailWrapper(`
-          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Reminder about your documents</h1>
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your document portal is waiting for you</h1>
           <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">
             Hi ${firstName},
           </p>
           <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
-            Your attorney's office is waiting on a few more documents from you. It only takes a few minutes to finish.
+            Your attorney's office sent you a secure document portal. It takes most people about 30 minutes and you can do it from your phone.
           </p>
           ${tealButton('Open My Portal', p.portalLink)}
         `),
