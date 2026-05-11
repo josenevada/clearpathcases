@@ -186,27 +186,28 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     });
 
     const targetIds = targets.map(t => t.file.id);
-    await supabase
-      .from('files')
-      .update({ review_status: 'approved', review_note: null })
-      .in('id', targetIds);
-
-    for (const { file, item } of targets) {
-      await supabase.from('activity_log').insert({
-        case_id: caseData.id,
-        event_type: 'file_approved',
-        actor_role: viewRole,
-        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
-        description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved ${item.label}`,
-        item_id: item.id,
-      });
-    }
-
     toast.success(`${targets.length} document${targets.length !== 1 ? 's' : ''} approved`);
-    await maybeAutoMarkReady();
     clearSelection();
-    onRefresh();
-  }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, onRefresh]);
+
+    void (async () => {
+      await supabase
+        .from('files')
+        .update({ review_status: 'approved', review_note: null })
+        .in('id', targetIds);
+
+      void supabase.from('activity_log').insert(
+        targets.map(({ item }) => ({
+          case_id: caseData.id,
+          event_type: 'file_approved',
+          actor_role: viewRole,
+          actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+          description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved ${item.label}`,
+          item_id: item.id,
+        }))
+      );
+      void maybeAutoMarkReady();
+    })();
+  }, [caseData, filteredFiles, selectedIds, viewRole, clearSelection, maybeAutoMarkReady]);
 
   // Bulk correction
   const handleBulkCorrection = useCallback(async () => {
@@ -417,23 +418,24 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       return c;
     });
 
-    await supabase
-      .from('files')
-      .update({ review_status: 'approved', review_note: null })
-      .in('id', pendingFiles.map(f => f.file.id));
-
-    await supabase.from('activity_log').insert({
-      case_id: caseData.id,
-      event_type: 'file_approved',
-      actor_role: viewRole,
-      actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
-      description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
-    });
-
     toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
-    await maybeAutoMarkReady();
-    onRefresh();
-  }, [allFiles, caseData, viewRole, onRefresh]);
+
+    void (async () => {
+      await supabase
+        .from('files')
+        .update({ review_status: 'approved', review_note: null })
+        .in('id', pendingFiles.map(f => f.file.id));
+
+      void supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'file_approved',
+        actor_role: viewRole,
+        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+        description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
+      });
+      void maybeAutoMarkReady();
+    })();
+  }, [allFiles, caseData, viewRole, maybeAutoMarkReady]);
 
   const doPdfExport = async () => {
     const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -536,20 +538,21 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       }
       return c;
     });
-    // Persist to Supabase
-    await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', entry.file.id);
-    await supabase.from('activity_log').insert({
-      case_id: caseData.id,
-      event_type: 'file_approved',
-      actor_role: 'attorney',
-      actor_name: caseData.assignedAttorney,
-      description: `Attorney approved ${entry.item.label}`,
-      item_id: entry.item.id,
-    });
+    // Persist to Supabase (fire-and-forget — UI already updated optimistically)
     toast.success(`${entry.item.label} approved`);
-    await maybeAutoMarkReady();
     setSelectedFile(null);
-    onRefresh();
+    void (async () => {
+      await supabase.from('files').update({ review_status: 'approved', review_note: null }).eq('id', entry.file.id);
+      void supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'file_approved',
+        actor_role: 'attorney',
+        actor_name: caseData.assignedAttorney,
+        description: `Attorney approved ${entry.item.label}`,
+        item_id: entry.item.id,
+      });
+      void maybeAutoMarkReady();
+    })();
   };
 
   const handleCorrection = async (entry: FileEntry) => {
@@ -830,7 +833,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                     {CATEGORY_SHORT[item.category] || item.category}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    {file.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
                     <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
                       {file.reviewStatus.replace('-', ' ')}
                     </Badge>
