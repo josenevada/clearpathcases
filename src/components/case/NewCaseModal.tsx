@@ -129,7 +129,8 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
 
   const loadChecklistFromTemplate = (templateId: string) => {
     if (templateId === 'default') {
-      const items = getDocTemplates().filter(t => t.active);
+      let items = getDocTemplates().filter(t => t.active);
+      if (items.length === 0) items = buildDefaultTemplates().filter(t => t.active);
       setChecklist(items.map(templateToChecklistItem));
     } else {
       const named = availableNamedTemplates.find(t => t.id === templateId);
