@@ -324,6 +324,14 @@ const ClientWizard = () => {
           return;
         }
 
+        if (!checklistRows || checklistRows.length === 0) {
+          setLoadError(
+            'Your document portal is being set up. Please try again in a moment or contact your attorney\'s office.'
+          );
+          setIsLoading(false);
+          return;
+        }
+
         // Load firm's credit counseling settings (needs firm_id from case)
         if (caseRow.firm_id) {
           const { data: firmData } = await supabase
