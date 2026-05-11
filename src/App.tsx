@@ -30,7 +30,7 @@ const Packets = lazy(() => import("./pages/Packets"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const SmsConsent = lazy(() => import("./pages/SmsConsent"));
-const SmsOptInPreview = lazy(() => import("./pages/SmsOptInPreview"));
+
 const InviteSignup = lazy(() => import("./pages/InviteSignup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PlaidOAuthReturn = lazy(() => import("./pages/PlaidOAuthReturn"));
