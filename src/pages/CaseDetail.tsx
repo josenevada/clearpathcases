@@ -168,6 +168,10 @@ const CaseDetail = () => {
     const mapFiles = (itemId: string): UploadedFile[] =>
       filesWithUrls
         .filter((f: any) => f.checklist_item_id === itemId)
+        .filter((f: any) => {
+          const status = f.ai_validation_status;
+          return status && status !== 'pending' && status !== 'validating';
+        })
         .map((f: any) => ({
           id: f.id,
           name: f.file_name,
@@ -177,6 +181,7 @@ const CaseDetail = () => {
           reviewStatus: f.review_status || 'pending',
           reviewNote: f.review_note || undefined,
           uploadedBy: f.uploaded_by || 'client',
+          validationStatus: f.ai_validation_status || 'pending',
         }));
 
     const checklist: ChecklistItem[] = (checklistRows || []).map((row: any) => ({
