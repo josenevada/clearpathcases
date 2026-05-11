@@ -763,15 +763,8 @@ const ClientWizard = () => {
     const newFileId = crypto.randomUUID();
     const uploadedAt = new Date().toISOString();
 
-    // Build a clean, human-readable file name
-    const clientLastName = caseData.clientName?.split(' ').pop() || 'Client';
-    const userLabel = isMultiUpload && explicitLabel ? explicitLabel : undefined;
-    const cleanFileName = generateCleanFileName(
-      currentItem.label,
-      clientLastName,
-      processedFile,
-      userLabel
-    );
+    // Use the original filename the client uploaded
+    const cleanFileName = processedFile.name;
 
     // Upload to Supabase Storage with a unique path (with retry + progress)
     const uniqueId = crypto.randomUUID().slice(0, 6);
