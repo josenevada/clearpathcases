@@ -191,10 +191,6 @@ const CaseDetail = () => {
     const mapFiles = (itemId: string): UploadedFile[] =>
       filesWithUrls
         .filter((f: any) => f.checklist_item_id === itemId)
-        .filter((f: any) => {
-          // Only hide files actively being validated
-          return f.ai_validation_status !== 'validating';
-        })
         .map((f: any) => ({
           id: f.id,
           name: f.file_name,

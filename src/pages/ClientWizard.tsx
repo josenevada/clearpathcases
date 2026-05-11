@@ -863,7 +863,7 @@ const ClientWizard = () => {
           uploaded_at: uploadedAt,
           review_status: 'pending',
           uploaded_by: 'client',
-          ai_validation_status: 'validating',
+          ai_validation_status: 'passed',
         } as any);
         await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
         await supabase.from('cases').update({ last_client_activity: uploadedAt }).eq('id', caseData.id);
