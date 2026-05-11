@@ -418,23 +418,24 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
       return c;
     });
 
-    await supabase
-      .from('files')
-      .update({ review_status: 'approved', review_note: null })
-      .in('id', pendingFiles.map(f => f.file.id));
-
-    await supabase.from('activity_log').insert({
-      case_id: caseData.id,
-      event_type: 'file_approved',
-      actor_role: viewRole,
-      actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
-      description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
-    });
-
     toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
-    await maybeAutoMarkReady();
-    onRefresh();
-  }, [allFiles, caseData, viewRole, onRefresh]);
+
+    void (async () => {
+      await supabase
+        .from('files')
+        .update({ review_status: 'approved', review_note: null })
+        .in('id', pendingFiles.map(f => f.file.id));
+
+      void supabase.from('activity_log').insert({
+        case_id: caseData.id,
+        event_type: 'file_approved',
+        actor_role: viewRole,
+        actor_name: viewRole === 'attorney' ? caseData.assignedAttorney : caseData.assignedParalegal,
+        description: `${viewRole === 'attorney' ? 'Attorney' : 'Paralegal'} approved all pending documents (${pendingFiles.length})`,
+      });
+      void maybeAutoMarkReady();
+    })();
+  }, [allFiles, caseData, viewRole, maybeAutoMarkReady]);
 
   const doPdfExport = async () => {
     const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
