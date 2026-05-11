@@ -31,7 +31,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
       'Automated SMS & email reminders',
       'Custom document checklists',
       'Case management dashboard',
-      '14-day free trial',
+      '30-day free trial',
     ],
   },
   professional: {
@@ -46,7 +46,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
       'Everything in Starter',
       'Plaid bank connection',
       'Priority support',
-      '14-day free trial',
+      '30-day free trial',
     ],
   },
   firm: {
@@ -60,7 +60,7 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
       'Everything in Professional',
       'Dedicated onboarding call',
       'SLA support',
-      '14-day free trial',
+      '30-day free trial',
     ],
   },
 };
