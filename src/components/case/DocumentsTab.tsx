@@ -407,7 +407,17 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
     );
     if (pendingFiles.length === 0) return;
 
-    // Optimistic — show toast immediately
+    // Optimistic local update — flip every pending file to "approved" now.
+    updateCase(caseData.id, c => {
+      for (const { file, item } of pendingFiles) {
+        const found = c.checklist.find(i => i.id === item.id);
+        if (found) {
+          const f = found.files.find(ff => ff.id === file.id);
+          if (f) f.reviewStatus = 'approved';
+        }
+      }
+      return c;
+    });
     toast.success(`${pendingFiles.length} document${pendingFiles.length !== 1 ? 's' : ''} approved`);
 
     // Run all writes in the background
