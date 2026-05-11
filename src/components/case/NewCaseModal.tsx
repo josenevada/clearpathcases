@@ -145,24 +145,47 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setExcludedItems(new Set());
   };
 
-  // Load templates when entering step 2
+  // Load templates when entering step 2 — Supabase is the source of truth.
+  // We always fetch fresh from the firm's `firms.document_templates` column
+  // so a missing or stale localStorage cache cannot produce an empty checklist.
   useEffect(() => {
-    if (step === 2 && checklist.length === 0) {
+    if (step !== 2 || checklist.length !== 0) return;
+
+    let cancelled = false;
+    const loadTemplates = async () => {
       const named = getNamedTemplatesForChapter(info.chapterType);
-      setAvailableNamedTemplates(named);
-      let items = getDocTemplates().filter(t => t.active);
-      // Safety net: if the firm's stored templates yield no active items,
-      // fall back to ClearPath defaults so cases are never created empty.
-      if (items.length === 0) {
-        const defaults = buildDefaultTemplates();
-        saveDocTemplates(defaults);
-        items = defaults.filter(t => t.active);
+      if (!cancelled) setAvailableNamedTemplates(named);
+
+      let items: TemplateItem[] = [];
+
+      if (user?.firmId) {
+        const { data } = await supabase
+          .from('firms')
+          .select('document_templates')
+          .eq('id', user.firmId)
+          .maybeSingle();
+        const remote = (data as { document_templates?: TemplateItem[] | null } | null)?.document_templates;
+        if (Array.isArray(remote) && remote.length > 0) {
+          items = remote.filter(t => t.active);
+          // Refresh the local cache for any other readers (settings UI, etc.)
+          saveDocTemplates(remote);
+        }
       }
+
+      // Fall back to ClearPath defaults if the firm has no saved templates yet.
+      if (items.length === 0) {
+        items = buildDefaultTemplates().filter(t => t.active);
+      }
+
+      if (cancelled) return;
       setChecklist(items.map(templateToChecklistItem));
       setExcludedItems(new Set());
       setSelectedTemplateId('default');
-    }
-  }, [step, checklist.length, info.chapterType]);
+    };
+
+    loadTemplates();
+    return () => { cancelled = true; };
+  }, [step, checklist.length, info.chapterType, user?.firmId]);
 
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
