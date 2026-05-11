@@ -852,7 +852,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left p-3 text-muted-foreground font-body font-normal">Category</th>
-                <th className="text-center p-3 text-muted-foreground font-body font-normal">Approved</th>
+                <th className="text-center p-3 text-muted-foreground font-body font-normal">Documents</th>
                 <th className="text-center p-3 text-muted-foreground font-body font-normal">Pending</th>
                 <th className="text-right p-3 text-muted-foreground font-body font-normal">Status</th>
               </tr>
