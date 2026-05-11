@@ -63,6 +63,7 @@ import {
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
 import { supabase } from '@/integrations/supabase/client';
 import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
+import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { toast } from 'sonner';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
