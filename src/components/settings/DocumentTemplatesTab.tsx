@@ -23,6 +23,11 @@ const uid = () => Math.random().toString(36).substr(2, 9);
 
 type Section = 'default' | 'custom';
 
+const TEMPLATES_CONFIGURED_KEY = 'clearpath_templates_configured';
+const markTemplatesConfigured = () => {
+  try { localStorage.setItem(TEMPLATES_CONFIGURED_KEY, '1'); } catch { /* ignore */ }
+};
+
 const DocumentTemplatesTab = () => {
   const [section, setSection] = useState<Section>('default');
   const [templates, setTemplates] = useState<TemplateItem[]>(getDocTemplates());
@@ -31,17 +36,20 @@ const DocumentTemplatesTab = () => {
   const persistDefault = useCallback((items: TemplateItem[]) => {
     setTemplates(items);
     saveDocTemplates(items);
+    markTemplatesConfigured();
   }, []);
 
   const handleRestore = () => {
     resetDocTemplates();
     setTemplates(buildDefaultTemplates());
+    markTemplatesConfigured();
     toast.success('Templates restored to defaults.');
   };
 
   const persistNamed = (next: NamedTemplate[]) => {
     setNamedTemplates(next);
     saveNamedTemplates(next);
+    markTemplatesConfigured();
   };
 
   return (
