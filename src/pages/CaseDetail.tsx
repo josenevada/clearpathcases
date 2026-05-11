@@ -140,28 +140,6 @@ const CaseDetail = () => {
   const [addDocDesc, setAddDocDesc] = useState('');
   const [addDocRequired, setAddDocRequired] = useState(true);
 
-  const triggerParalegalValidation = async (fileId: string, storagePath: string, itemLabel: string) => {
-    try {
-      const signedUrl = await getCaseDocumentSignedUrl(storagePath);
-      if (!signedUrl) return;
-      const result = await validateDocument(signedUrl, getExpectedDocType(itemLabel), caseId || '');
-      const status = result?.validation_status || 'passed';
-      await supabase.from('files').update({ ai_validation_status: status } as any).eq('id', fileId);
-      setCaseData(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          checklist: prev.checklist.map(ci => ({
-            ...ci,
-            files: ci.files.map(f => f.id === fileId ? { ...f, validationStatus: status as any } : f),
-          })),
-        };
-      });
-    } catch (err) {
-      console.warn('Paralegal validation failed:', err);
-    }
-  };
-
   const loadCaseFromSupabase = async (id: string) => {
     const { data: caseRow, error: caseError } = await supabase
       .from('cases')
