@@ -34,7 +34,7 @@ const OnboardingChecklist = ({ firmProfileComplete, counselingComplete, hasTempl
     {
       label: 'Customize your document checklist template',
       done: hasTemplate,
-      action: () => navigate('/paralegal/settings/templates'),
+      action: () => navigate('/paralegal/settings/case/templates'),
       icon: FileText,
     },
     {
