@@ -13,6 +13,8 @@ import type { Case, ChecklistItem, UploadedFile } from '@/lib/store';
 import { toast } from 'sonner';
 import Logo from '@/components/Logo';
 import { sendCorrectionRequest } from '@/lib/notifications';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import DocumentViewer from '@/components/case/DocumentViewer';
 
 type StatusFilter = 'all' | 'pending' | 'correction-requested';
 
@@ -31,6 +33,21 @@ const DocumentReviewQueue = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [removedFileIds, setRemovedFileIds] = useState<Set<string>>(new Set());
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [previewDoc, setPreviewDoc] = useState<QueuedDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const openPreview = useCallback(async (q: QueuedDocument) => {
+    setPreviewDoc(q);
+    if (q.file.dataUrl) {
+      setPreviewUrl(q.file.dataUrl);
+    } else if (q.file.storagePath) {
+      setPreviewUrl(null);
+      const url = await getCaseDocumentSignedUrl(q.file.storagePath);
+      setPreviewUrl(url || null);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!user?.firmId) return;
@@ -374,18 +391,29 @@ const DocumentReviewQueue = () => {
                         >
                           <div className="flex items-start gap-4">
                             {/* Preview */}
-                            <div className="flex-shrink-0 w-20 h-20 rounded-lg border border-border/60 bg-secondary/30 flex items-center justify-center overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => openPreview(q)}
+                              className="flex-shrink-0 w-20 h-20 rounded-lg border border-border/60 bg-secondary/30 flex items-center justify-center overflow-hidden hover:border-primary/40 transition-colors cursor-pointer"
+                              aria-label={`Preview ${q.item.label}`}
+                            >
                               {isImage(q.file) && q.file.dataUrl ? (
                                 <img src={q.file.dataUrl} alt={q.file.name} className="w-full h-full object-cover" />
                               ) : (
                                 <FileText className="w-8 h-8 text-muted-foreground" />
                               )}
-                            </div>
+                            </button>
 
                             {/* Body */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-display font-semibold text-[16px] text-foreground truncate">{q.item.label}</h3>
+                                <button
+                                  type="button"
+                                  onClick={() => openPreview(q)}
+                                  className="font-display font-semibold text-[16px] text-foreground truncate hover:text-primary transition-colors text-left"
+                                >
+                                  {q.item.label}
+                                </button>
                                 {q.file.reviewStatus === 'correction-requested' && (
                                   <Badge className="border-warning/20 bg-warning/10 text-warning text-[10px]">
                                     Correction Requested
@@ -435,6 +463,25 @@ const DocumentReviewQueue = () => {
           </div>
         )}
       </main>
+
+      <Dialog open={!!previewDoc} onOpenChange={(open) => { if (!open) { setPreviewDoc(null); setPreviewUrl(null); } }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="font-display font-bold text-xl">
+            {previewDoc?.item.label}
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {previewDoc?.file.name}
+          </DialogDescription>
+          {previewDoc && previewUrl ? (
+            <DocumentViewer fileName={previewDoc.file.name} dataUrl={previewUrl} />
+          ) : previewDoc ? (
+            <div className="surface-card p-6 flex flex-col items-center gap-3">
+              <FileText className="w-16 h-16 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">No preview available</p>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
