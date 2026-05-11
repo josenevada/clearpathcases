@@ -813,7 +813,7 @@ const ClientWizard = () => {
       uploadedAt,
       reviewStatus: 'pending' as const,
       uploadedBy: 'client' as const,
-      validationStatus: 'validating' as const,
+      validationStatus: 'passed' as const,
     };
 
     // Update local React state
