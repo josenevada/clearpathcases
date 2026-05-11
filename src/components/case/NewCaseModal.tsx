@@ -56,6 +56,11 @@ interface TeamMember {
 const buildClientName = (first: string, last: string) =>
   [first, last].filter(Boolean).join(' ').trim();
 
+const normalizeClientDob = (dob: string) => {
+  const [month, day, year] = dob.split('/');
+  return month && day && year ? `${year}-${month}-${day}` : '';
+};
+
 const templateToChecklistItem = (t: TemplateItem): ChecklistItem => ({
   id: crypto.randomUUID(),
   category: t.category,
@@ -162,7 +167,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
   const clientName = buildClientName(info.firstName, info.lastName);
   const isDirty = !!(info.firstName || info.lastName || info.clientEmail);
 
-  const step1Valid = info.firstName && info.lastName && info.clientEmail && info.filingDeadline;
+  const step1Valid = info.firstName && info.lastName && info.clientEmail && normalizeClientDob(info.clientDob) && info.filingDeadline;
 
   const includedCount = checklist.length - excludedItems.size;
 
@@ -259,6 +264,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     setCreating(true);
     const displayName = clientName;
     const caseCode = generateCaseCode(displayName);
+    const normalizedClientDob = normalizeClientDob(info.clientDob);
 
     const includedChecklist = checklist.filter(item => !excludedItems.has(item.id));
 
@@ -276,7 +282,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     const updatedCase = updateCase(newCase.id, (c) => ({
       ...c,
       caseCode,
-      clientDob: info.clientDob || undefined,
+      clientDob: normalizedClientDob || undefined,
     }));
 
     try {
@@ -290,7 +296,7 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
         client_suffix: null,
         client_email: info.clientEmail,
         client_phone: info.clientPhone || null,
-        client_dob: info.clientDob || null,
+        client_dob: normalizedClientDob || null,
         chapter_type: info.chapterType,
         filing_deadline: info.filingDeadline!.toISOString().split('T')[0],
         assigned_paralegal: info.assignedParalegal,
