@@ -463,6 +463,25 @@ const DocumentReviewQueue = () => {
           </div>
         )}
       </main>
+
+      <Dialog open={!!previewDoc} onOpenChange={(open) => { if (!open) { setPreviewDoc(null); setPreviewUrl(null); } }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="font-display font-bold text-xl">
+            {previewDoc?.item.label}
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {previewDoc?.file.name}
+          </DialogDescription>
+          {previewDoc && previewUrl ? (
+            <DocumentViewer fileName={previewDoc.file.name} dataUrl={previewUrl} />
+          ) : previewDoc ? (
+            <div className="surface-card p-6 flex flex-col items-center gap-3">
+              <FileText className="w-16 h-16 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">No preview available</p>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
