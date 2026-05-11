@@ -534,8 +534,11 @@ const ClientWizard = () => {
           await supabase.from('files').update({
             review_status: 'approved',
             review_note: 'Auto-approved — passed AI validation',
-          }).eq('id', fileId);
+            ai_validation_status: result.validation_status,
+          } as any).eq('id', fileId);
           logActivity(caseIdForValidation, { eventType: 'file_approved', actorRole: 'system', actorName: 'ClearPath AI', description: `Auto-approved ${itemLabel} — passed AI validation`, itemId: fileId });
+        } else {
+          await supabase.from('files').update({ ai_validation_status: result.validation_status } as any).eq('id', fileId);
         }
 
         logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
