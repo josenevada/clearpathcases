@@ -9,7 +9,6 @@ export const PLANS = {
     features: [
       'Up to 8 active cases',
       'Full client intake wizard',
-      'AI document validation',
       'Automated SMS & email reminders',
       'Basic case management',
       'Document checklist customization',

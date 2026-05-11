@@ -20,7 +20,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
 import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { getPlanLimits } from '@/lib/plan-limits';
-import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
+
 
 import { supabase } from '@/integrations/supabase/client';
 import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
@@ -247,7 +247,7 @@ const ClientWizard = () => {
   const [ssnValue, setSsnValue] = useState('');
   const [ssnVisible, setSsnVisible] = useState(false);
   const [ssnError, setSsnError] = useState('');
-  const [validatingFiles, setValidatingFiles] = useState<Set<string>>(new Set());
+  
   
   const [pendingDuplicate, setPendingDuplicate] = useState<{ file: File; existingFileId: string } | null>(null);
   const [previewFile, setPreviewFile] = useState<{ name: string; dataUrl: string } | null>(null);
@@ -495,82 +495,6 @@ const ClientWizard = () => {
 
     loadCase();
   }, [resolvedCaseId, navigate, targetFixItemId]);
-
-  const triggerValidation = useCallback(async (fileId: string, dataUrl: string, itemLabel: string, caseIdForValidation: string) => {
-    const expectedDocType = getExpectedDocType(itemLabel);
-    setValidatingFiles(prev => new Set(prev).add(fileId));
-    try {
-      const result = await validateDocument(dataUrl, expectedDocType, caseIdForValidation);
-      if (result) {
-        const vr: FileValidationResult = {
-          isCorrectDocumentType: result.is_correct_document_type, confidenceScore: result.confidence_score,
-          extractedYear: result.extracted_year, extractedName: result.extracted_name,
-          extractedInstitution: result.extracted_institution, issues: result.issues,
-          suggestion: result.suggestion, validatorNotes: result.validator_notes,
-          validationStatus: result.validation_status, validatedAt: result.validated_at,
-        };
-        // Auto-approve if validation passed cleanly (no warnings, no failures, no issues)
-        const passedCleanly =
-          result.validation_status === 'passed' &&
-          (!result.issues || result.issues.length === 0);
-
-        setCaseData(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            checklist: prev.checklist.map(ci => ({
-              ...ci,
-              files: ci.files.map(fl => fl.id === fileId ? {
-                ...fl,
-                validationStatus: result.validation_status,
-                validationResult: vr,
-                ...(passedCleanly ? { reviewStatus: 'approved' as const, reviewNote: 'Auto-approved — passed AI validation' } : {}),
-              } : fl),
-            })),
-          };
-        });
-
-        // Always write ai_validation_status regardless of pass/fail
-        await supabase.from('files').update({
-          ai_validation_status: result.validation_status,
-        } as any).eq('id', fileId);
-
-        if (passedCleanly) {
-          await supabase.from('files').update({
-            review_status: 'approved',
-            review_note: 'Auto-approved — passed AI validation',
-          } as any).eq('id', fileId);
-          logActivity(caseIdForValidation, { eventType: 'file_approved', actorRole: 'system', actorName: 'ClearPath AI', description: `Auto-approved ${itemLabel} — passed AI validation`, itemId: fileId });
-        }
-
-        logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Document validation ${result.validation_status} for ${itemLabel} (${Math.round(result.confidence_score * 100)}% confidence)`, itemId: fileId });
-      } else {
-        // Validation service unavailable — fall back to 'passed' so file still appears in dashboard
-        await supabase.from('files').update({
-          ai_validation_status: 'passed',
-        } as any).eq('id', fileId);
-        logActivity(caseIdForValidation, { eventType: 'document_validated', actorRole: 'system', actorName: 'ClearPath AI', description: `Validation service unavailable for ${itemLabel}`, itemId: fileId });
-      }
-    } catch { console.warn('Document validation failed silently'); }
-    finally { setValidatingFiles(prev => { const next = new Set(prev); next.delete(fileId); return next; }); }
-  }, [logActivity]);
-
-  const handleValidationAction = useCallback((fileId: string, action: 'client-confirmed' | 'client-override', cRef: Case | null) => {
-    if (!cRef) return;
-    setCaseData(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        checklist: prev.checklist.map(ci => ({
-          ...ci,
-          files: ci.files.map(fl => fl.id === fileId ? { ...fl, validationStatus: action } : fl),
-        })),
-      };
-    });
-    if (action === 'client-override') {
-      logActivity(cRef.id, { eventType: 'document_validated', actorRole: 'client', actorName: cRef.clientName, description: `${cRef.clientName.split(' ')[0]} uploaded despite validation warning`, itemId: fileId });
-    }
-  }, [logActivity]);
 
   const jumpToItem = useCallback((itemId: string, cRef: Case | null) => {
     if (!cRef) return;
@@ -2352,20 +2276,6 @@ const ClientWizard = () => {
                     </button>
                     <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf" onChange={handleSingleFileUpload} />
                   </div>
-                  {/* Validation status indicator */}
-                  {currentItem.files.map(file => (
-                    <FileValidationIndicator
-                      key={`val-${file.id}`}
-                      file={file}
-                      isValidating={validatingFiles.has(file.id)}
-                      onAction={(action) => handleValidationAction(file.id, action, caseData)}
-                      onReplace={() => fileInputRef.current?.click()}
-                      onRemove={() => {
-                        handleFileDelete(file.id);
-                        setTimeout(() => fileInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-                      }}
-                    />
-                  ))}
                 </div>
               ) : (
                 <>
@@ -2707,83 +2617,6 @@ const WizardHeader = ({ progress, step, totalSteps, stepName, onMenuClick, firmD
     </div>
   </div>
 );
-
-// ─── File Validation Indicator ────────────────────────────────────────
-interface FileValidationIndicatorProps {
-  file: { id: string; validationStatus?: string; validationResult?: FileValidationResult };
-  isValidating: boolean;
-  onAction: (action: 'client-confirmed' | 'client-override') => void;
-  onReplace: () => void;
-  onRemove?: () => void;
-}
-
-const FileValidationIndicator = ({ file, isValidating, onAction, onReplace, onRemove }: FileValidationIndicatorProps) => {
-  const status = file.validationStatus;
-  const result = file.validationResult;
-
-  if (status === 'client-confirmed' || status === 'client-override' || status === 'pending' || !status) {
-    if (isValidating) {
-      return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-3 py-2">
-          <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
-          <span className="text-xs text-muted-foreground">Checking your document…</span>
-        </motion.div>
-      );
-    }
-    return null;
-  }
-
-  if (isValidating) {
-    return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-3 py-2">
-        <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
-        <span className="text-xs text-muted-foreground">Checking your document…</span>
-      </motion.div>
-    );
-  }
-
-  if (status === 'passed') {
-    return (
-      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-3 py-1.5">
-        <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-        <span className="text-xs text-success font-medium">Looks good</span>
-      </motion.div>
-    );
-  }
-
-  if (status === 'warning' && result) {
-    return (
-      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-warning leading-relaxed">This looks like it might not be quite right. {result.suggestion}</span>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => { onRemove?.(); }} className="text-xs text-primary hover:underline font-medium">Remove and try again</button>
-          <button onClick={() => onAction('client-confirmed')} className="text-xs text-muted-foreground hover:text-foreground">Keep it anyway</button>
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (status === 'failed' && result) {
-    return (
-      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-3 py-2 space-y-2">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-warning leading-relaxed">This looks like it might be the wrong file. {result.suggestion}</span>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => { onRemove?.(); }} className="text-xs text-primary hover:underline font-medium">Remove and try again</button>
-          <button onClick={() => onAction('client-override')} className="text-xs text-muted-foreground hover:text-foreground">Keep it anyway</button>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return null;
-};
-
 
 
 class WizardErrorBoundary extends React.Component<

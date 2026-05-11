@@ -265,13 +265,8 @@ const DigitalWalletStep = ({
       {/* Uploaded files list */}
       <AnimatePresence>
         {files.map(f => {
-          const vs = f.validationStatus;
-          const vr = f.validationResult;
-          const flagged = isFlagged(vs);
-          const validationIcon = vs === 'passed' ? <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-            : vs === 'validating' ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
-            : vs === 'warning' || vs === 'failed' ? <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-            : <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />;
+          const flagged = false;
+          const validationIcon = <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />;
 
           return (
             <motion.div
@@ -309,20 +304,6 @@ const DigitalWalletStep = ({
                   <X className={`text-destructive ${flagged ? 'w-4 h-4' : 'w-3.5 h-3.5 opacity-60'}`} />
                 </button>
               </div>
-              {vs === 'validating' && (
-                <p className="text-[11px] text-muted-foreground pl-3 py-1">Checking your document…</p>
-              )}
-              {(vs === 'warning' || vs === 'failed') && vr && (
-                <div className="pl-3 py-1.5 space-y-1.5">
-                  <p className="text-[11px] text-warning leading-relaxed">
-                    {vs === 'failed' ? 'This looks like it might be the wrong file.' : 'This looks like it might not be quite right.'} {vr.suggestion}
-                  </p>
-                  <div className="flex gap-3">
-                    <button onClick={() => onFileDelete(f.id)} className="text-[11px] text-primary hover:underline font-medium">Remove and try again</button>
-                    <button className="text-[11px] text-muted-foreground hover:text-foreground">Keep it anyway</button>
-                  </div>
-                </div>
-              )}
             </motion.div>
           );
         })}

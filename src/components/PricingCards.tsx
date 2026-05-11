@@ -27,7 +27,6 @@ const LANDING_PLANS: Record<string, PlanDefWithDiff> = {
     features: [
       'Up to 8 active cases',
       'Full client intake wizard',
-      'AI document validation',
       'Alex — AI document guide',
       'Automated SMS & email reminders',
       'Custom document checklists',
