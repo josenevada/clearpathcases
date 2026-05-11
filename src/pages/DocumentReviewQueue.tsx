@@ -33,6 +33,21 @@ const DocumentReviewQueue = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [removedFileIds, setRemovedFileIds] = useState<Set<string>>(new Set());
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [previewDoc, setPreviewDoc] = useState<QueuedDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const openPreview = useCallback(async (q: QueuedDocument) => {
+    setPreviewDoc(q);
+    if (q.file.dataUrl) {
+      setPreviewUrl(q.file.dataUrl);
+    } else if (q.file.storagePath) {
+      setPreviewUrl(null);
+      const url = await getCaseDocumentSignedUrl(q.file.storagePath);
+      setPreviewUrl(url || null);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!user?.firmId) return;
