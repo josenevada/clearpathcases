@@ -63,6 +63,7 @@ import {
 import { CORRECTION_REASON_OPTIONS, getChecklistItemStatus } from '@/lib/corrections';
 import { supabase } from '@/integrations/supabase/client';
 import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
+import { validateDocument, getExpectedDocType } from '@/lib/document-validation';
 import { toast } from 'sonner';
 import { useSubscription } from '@/lib/subscription';
 import { getPlanLimits } from '@/lib/plan-limits';
@@ -138,6 +139,28 @@ const CaseDetail = () => {
   const [addDocName, setAddDocName] = useState('');
   const [addDocDesc, setAddDocDesc] = useState('');
   const [addDocRequired, setAddDocRequired] = useState(true);
+
+  const triggerParalegalValidation = async (fileId: string, storagePath: string, itemLabel: string) => {
+    try {
+      const signedUrl = await getCaseDocumentSignedUrl(storagePath);
+      if (!signedUrl) return;
+      const result = await validateDocument(signedUrl, getExpectedDocType(itemLabel), caseId || '');
+      const status = result?.validation_status || 'passed';
+      await supabase.from('files').update({ ai_validation_status: status } as any).eq('id', fileId);
+      setCaseData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          checklist: prev.checklist.map(ci => ({
+            ...ci,
+            files: ci.files.map(f => f.id === fileId ? { ...f, validationStatus: status as any } : f),
+          })),
+        };
+      });
+    } catch (err) {
+      console.warn('Paralegal validation failed:', err);
+    }
+  };
 
   const loadCaseFromSupabase = async (id: string) => {
     const { data: caseRow, error: caseError } = await supabase
@@ -258,6 +281,16 @@ const CaseDetail = () => {
     };
 
     setCaseData(builtCase);
+
+    // Fire background validation for files missing ai_validation_status
+    const labelByItemId = new Map<string, string>((checklistRows || []).map((r: any) => [r.id, r.label]));
+    const unvalidatedFiles = filesWithUrls.filter((f: any) => !f.ai_validation_status);
+    unvalidatedFiles.forEach((f: any) => {
+      if (f.storage_path) {
+        const label = labelByItemId.get(f.checklist_item_id) || '';
+        void triggerParalegalValidation(f.id, f.storage_path, label);
+      }
+    });
   };
 
   useEffect(() => {

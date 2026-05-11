@@ -813,7 +813,7 @@ const ClientWizard = () => {
       uploadedAt,
       reviewStatus: 'pending' as const,
       uploadedBy: 'client' as const,
-      validationStatus: 'validating' as const,
+      validationStatus: 'passed' as const,
     };
 
     // Update local React state
@@ -879,10 +879,6 @@ const ClientWizard = () => {
       }
     })();
 
-    // Trigger AI validation in the background (use signed URL for validation)
-    if (displayUrl) {
-      triggerValidation(newFileId, displayUrl, currentItem.label, caseData.id);
-    }
 
     if (!currentItemHasOpenCorrection) {
       if (!isMultiUpload) {
