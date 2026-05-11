@@ -830,7 +830,6 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                     {CATEGORY_SHORT[item.category] || item.category}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    {file.validationStatus === 'passed' && <ShieldCheck className="w-3.5 h-3.5 text-success" />}
                     <Badge className={`${getStatusBadgeClass(file.reviewStatus)} text-[10px]`}>
                       {file.reviewStatus.replace('-', ' ')}
                     </Badge>
