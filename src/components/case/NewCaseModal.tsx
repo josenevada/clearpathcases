@@ -143,7 +143,12 @@ const NewCaseModal = ({ open, onOpenChange, onCreated }: NewCaseModalProps) => {
     if (step === 2 && checklist.length === 0) {
       const named = getNamedTemplatesForChapter(info.chapterType);
       setAvailableNamedTemplates(named);
-      const items = getDocTemplates().filter(t => t.active);
+      let items = getDocTemplates().filter(t => t.active);
+      // Safety net: if the firm's stored templates yield no active items,
+      // fall back to ClearPath defaults so cases are never created empty.
+      if (items.length === 0) {
+        items = buildDefaultTemplates().filter(t => t.active);
+      }
       setChecklist(items.map(templateToChecklistItem));
       setExcludedItems(new Set());
       setSelectedTemplateId('default');
