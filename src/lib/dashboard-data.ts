@@ -38,10 +38,7 @@ const mapChecklist = async (rows: any[], fileRows: any[]): Promise<ChecklistItem
       fileRows
         .filter((file: any) => file.checklist_item_id === row.id)
         .map(async (file: any) => {
-          let displayUrl = file.data_url || '';
-          if (file.storage_path && !displayUrl) {
-            displayUrl = await getCaseDocumentSignedUrl(file.storage_path);
-          }
+          const displayUrl = file.data_url || '';
           return {
             id: file.id,
             name: file.file_name,
