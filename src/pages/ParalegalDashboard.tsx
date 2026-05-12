@@ -107,8 +107,17 @@ const ParalegalDashboard = () => {
 
   useEffect(() => {
     void refreshDashboardData();
+
+    let lastFocusRefresh = Date.now();
+
     const handleFocus = () => {
-      void refreshDashboardData();
+      const now = Date.now();
+      // Only refresh on focus if it's been more than
+      // 60 seconds since the last refresh
+      if (now - lastFocusRefresh > 60000) {
+        lastFocusRefresh = now;
+        void refreshDashboardData();
+      }
     };
 
     window.addEventListener('focus', handleFocus);
