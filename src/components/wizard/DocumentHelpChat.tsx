@@ -165,7 +165,8 @@ const DocumentHelpChat = ({
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isW2Step = documentLabel === W2_LABEL;
-
+  const isPayStubStep = documentLabel === PAYSTUB_LABEL;
+  const docTypeRef = useRef<DocType>('w2');
   // Reset chat when document changes, seed with Alex intro
   useEffect(() => {
     setMessages([{ role: 'assistant', content: ALEX_INTRO }]);
