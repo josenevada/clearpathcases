@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { Stagehand } from 'npm:@browserbasehq/stagehand';
 import Browserbase from 'npm:@browserbasehq/sdk';
+import { chromium, type Download, type Page } from 'npm:playwright-core@1.47.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,38 +8,88 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const instructions: Record<string, string> = {
-  adp: `You are on the authenticated ADP dashboard.
-Follow these exact steps:
+const safeName = (name: string) =>
+  name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
 
-1. Navigate directly to https://my.adp.com/#/pay/statements
+// Deterministic Playwright script for ADP. Returns the downloaded PDFs.
+async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
+  const downloads: Download[] = [];
 
-2. Wait for the page to load and the pay statements list to appear.
+  await page.goto('https://my.adp.com/#/pay/statements', {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000,
+  });
 
-3. If a "Go Paperless" or "Paperless Settings" popup appears, close it by clicking the close button (hint: "Close dialog").
+  // Dismiss "Go Paperless" / similar popups if present.
+  for (const label of ['Close dialog', 'Close', 'Not now', 'Maybe later', 'No thanks']) {
+    try {
+      const btn = page.getByRole('button', { name: new RegExp(label, 'i') }).first();
+      if (await btn.isVisible({ timeout: 1500 })) {
+        await btn.click({ timeout: 1500 });
+      }
+    } catch (_) { /* no popup */ }
+  }
 
-4. Click on the most recent pay statement entry in the list (the first div with role="button" showing the most recent date).
+  // Wait for the statements list to render.
+  await page.waitForSelector('[role="button"]', { timeout: 20000 });
 
-5. Click the "View statement" button (sdf-button with hint "View statement").
+  for (let i = 0; i < maxStatements; i++) {
+    try {
+      const rows = page.locator('[role="button"]');
+      const count = await rows.count();
+      if (i >= count) break;
 
-6. Click "Download current statement" from the dropdown menu (sdf-menu-item with text "Download current statement Recommended").
+      await rows.nth(i).click({ timeout: 10000 });
 
-7. Go back to the pay statements list.
+      // "View statement" opens the statement viewer.
+      await page
+        .getByRole('button', { name: /view statement/i })
+        .first()
+        .click({ timeout: 10000 });
 
-8. Click on the second most recent pay statement.
+      // Trigger and capture the download.
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 20000 }),
+        page
+          .getByText(/download current statement/i)
+          .first()
+          .click({ timeout: 10000 }),
+      ]);
 
-9. Click "View statement" again.
+      downloads.push(download);
 
-10. Click "Download current statement" again.
+      // Back to the list for the next statement.
+      await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+      await page.waitForSelector('[role="button"]', { timeout: 15000 }).catch(() => {});
+    } catch (e) {
+      console.error(`paystub ${i} retrieval failed`, e);
+      break;
+    }
+  }
 
-Repeat for any additional statements within the last 2 months.`,
-  workday: 'Navigate to Pay section, then Pay History or Payslips. Download pay stubs from the last 2 months as PDFs.',
-  paychex: 'Navigate to Pay History and download pay stubs from the last 2 months as PDFs.',
-  gusto: 'Navigate to Documents or Pay Stubs section and download pay stubs from the last 2 months.',
-  paylocity: 'Navigate to Pay section then Pay History and download pay stubs from the last 2 months as PDFs.',
-};
+  return downloads;
+}
 
-const safeName = (name: string) => name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
+async function downloadToBuffer(download: Download): Promise<{ buffer: Uint8Array; suggested: string }> {
+  const stream = await download.createReadStream();
+  if (!stream) {
+    // Fallback to saveAs to a tmp path then read.
+    const tmp = await Deno.makeTempFile({ suffix: '.pdf' });
+    await download.saveAs(tmp);
+    const buf = await Deno.readFile(tmp);
+    await Deno.remove(tmp).catch(() => {});
+    return { buffer: buf, suggested: download.suggestedFilename() || 'paystub.pdf' };
+  }
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream as any) {
+    chunks.push(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
+  }
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) { out.set(c, offset); offset += c.length; }
+  return { buffer: out, suggested: download.suggestedFilename() || 'paystub.pdf' };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -56,110 +106,94 @@ serve(async (req) => {
       });
     }
 
-    const browserbaseApiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
-    const stagehand = new Stagehand({
-      env: 'BROWSERBASE',
-      apiKey: browserbaseApiKey,
-      browserbaseSessionId: sessionId,
-      modelName: 'claude-sonnet-4-20250514',
-      modelClientOptions: { apiKey: Deno.env.get('ANTHROPIC_API_KEY')! },
-    } as any);
+    const apiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
+    const bb = new Browserbase({ apiKey });
+    const session: any = await bb.sessions.retrieve(sessionId);
 
-    await stagehand.init();
+    const connectUrl =
+      (session as any).connectUrl ??
+      `wss://connect.browserbase.com?apiKey=${apiKey}&sessionId=${sessionId}`;
 
-    // Set up download interception via CDP before navigation
-    const downloadDir = '/tmp/adp-downloads';
+    const browser = await chromium.connectOverCDP(connectUrl);
+    const context = browser.contexts()[0] ?? (await browser.newContext());
+    const page = context.pages()[0] ?? (await context.newPage());
+
+    let downloads: Download[] = [];
     try {
-      await Deno.mkdir(downloadDir, { recursive: true });
-    } catch (_) {
-      // ignore
+      if (provider === 'adp') {
+        downloads = await runAdp(page, 4);
+      } else {
+        // Other providers: not implemented yet via raw Playwright.
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Provider "${provider}" not yet supported by deterministic script.`,
+          }),
+          { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+    } finally {
+      browser.disconnect();
     }
 
-    const client = await (stagehand.page as any).context().newCDPSession(stagehand.page);
-    await client.send('Browser.setDownloadBehavior', {
-      behavior: 'allow',
-      downloadPath: downloadDir,
-      eventsEnabled: true,
-    });
-
-    client.on('Browser.downloadProgress', (event: any) => {
-      if (event.state === 'completed') {
-        console.log('Download completed:', event.guid);
-      }
-    });
-
-    // Run the navigation instructions
-    await stagehand.page.act(instructions[provider] || instructions.adp);
-
-    // Wait for downloads to complete
-    await new Promise((r) => setTimeout(r, 5000));
-
-    // Read downloaded files from /tmp
-    const downloadedFiles: Array<{ buffer: Uint8Array; fileName: string }> = [];
-    try {
-      for await (const entry of Deno.readDir(downloadDir)) {
-        if (entry.isFile && entry.name.toLowerCase().endsWith('.pdf')) {
-          const buffer = await Deno.readFile(`${downloadDir}/${entry.name}`);
-          downloadedFiles.push({ buffer, fileName: entry.name });
-        }
-      }
-    } catch (e) {
-      console.error('reading downloads failed', e);
-    }
-
-    console.log('Downloaded files captured:', downloadedFiles.map((f) => f.fileName));
+    console.log('paystub downloads captured:', downloads.length);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const uploadedFiles: Array<{ fileName: string }> = [];
 
-    for (const file of downloadedFiles) {
-      const finalFileName = safeName(file.fileName);
-      const storagePath = `${caseId}/${checklistItemId}/${finalFileName}`;
+    for (const dl of downloads) {
+      try {
+        const { buffer, suggested } = await downloadToBuffer(dl);
+        const finalFileName = safeName(suggested.endsWith('.pdf') ? suggested : `${suggested}.pdf`);
+        const storagePath = `${caseId}/${checklistItemId}/${Date.now()}-${finalFileName}`;
 
-      const storageRes = await fetch(
-        `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
-        {
+        const storageRes = await fetch(
+          `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${serviceKey}`,
+              'Content-Type': 'application/pdf',
+              'x-upsert': 'true',
+            },
+            body: buffer,
+          },
+        );
+
+        if (!storageRes.ok) {
+          console.error('storage upload failed', await storageRes.text());
+          continue;
+        }
+
+        const insertRes = await fetch(`${supabaseUrl}/rest/v1/files`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${serviceKey}`,
-            'Content-Type': 'application/pdf',
-            'x-upsert': 'true',
+            apikey: serviceKey,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
           },
-          body: file.buffer,
-        },
-      );
+          body: JSON.stringify({
+            case_id: caseId,
+            checklist_item_id: checklistItemId,
+            file_name: finalFileName,
+            storage_path: storagePath,
+            uploaded_by: 'agent',
+            review_status: 'pending',
+            ai_validation_status: 'passed',
+          }),
+        });
 
-      if (!storageRes.ok) {
-        console.error('storage upload failed', await storageRes.text());
-        continue;
+        if (!insertRes.ok) {
+          console.error('files insert failed', await insertRes.text());
+          continue;
+        }
+
+        uploadedFiles.push({ fileName: finalFileName });
+      } catch (e) {
+        console.error('paystub upload error', e);
       }
-
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/files`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          apikey: serviceKey,
-          'Content-Type': 'application/json',
-          Prefer: 'return=representation',
-        },
-        body: JSON.stringify({
-          case_id: caseId,
-          checklist_item_id: checklistItemId,
-          file_name: finalFileName,
-          storage_path: storagePath,
-          uploaded_by: 'agent',
-          review_status: 'pending',
-          ai_validation_status: 'passed',
-        }),
-      });
-
-      if (!insertRes.ok) {
-        console.error('files insert failed', await insertRes.text());
-        continue;
-      }
-
-      uploadedFiles.push({ fileName: finalFileName });
     }
 
     if (uploadedFiles.length > 0) {
@@ -174,25 +208,9 @@ serve(async (req) => {
       });
     }
 
-    // Cleanup local downloads
     try {
-      await Deno.remove(downloadDir, { recursive: true });
-    } catch (_) {
-      // ignore
-    }
-
-    try {
-      await stagehand.close();
-    } catch (_) {
-      // ignore
-    }
-
-    try {
-      const bb = new Browserbase({ apiKey: browserbaseApiKey });
       await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
-    } catch (_) {
-      // ignore termination errors
-    }
+    } catch (_) { /* ignore */ }
 
     return new Response(
       JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
