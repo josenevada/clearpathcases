@@ -375,7 +375,7 @@ const DocumentHelpChat = ({
       role: 'assistant',
       kind: 'agent-auth',
       content: '',
-      payload: { provider, providerName, browserSessionUrl, sessionId },
+      payload: { provider, providerName, browserSessionUrl, providerUrl, sessionId },
     }));
 
     // Poll for auth completion
