@@ -100,9 +100,7 @@ const TypewriterMarkdown = ({
 
 const AuthIframe = ({ browserSessionUrl, providerUrl, providerName }: { browserSessionUrl: string; providerUrl?: string; providerName: string }) => {
   const [loaded, setLoaded] = useState(false);
-  const iframeSrc = providerUrl
-    ? `${browserSessionUrl}${browserSessionUrl.includes('?') ? '&' : '?'}startUrl=${encodeURIComponent(providerUrl)}`
-    : browserSessionUrl;
+  const iframeSrc = browserSessionUrl;
   return (
     <div className="relative w-full h-[360px]">
       {!loaded && (
