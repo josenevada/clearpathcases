@@ -11,22 +11,66 @@ const corsHeaders = {
 const safeName = (name: string) =>
   name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
 
+const ADP_PAPERLESS_BLOCKER_SELECTORS = [
+  'fuse-lazy-loader[slot="go-paperless"]',
+  '[data-e2e="prompt-modal"]',
+  '[data-e2e="paperless-prompt"]',
+  'paperless-view-wrapper',
+  'sdf-focus-pane#prompt-modal',
+  'sdf-focus-pane[data-e2e="prompt-modal"]',
+  '[role="dialog"]',
+  '.modal, .sdf-dialog, .sdf-modal',
+  '[class*="paperless" i]',
+];
+
+const ADP_STATEMENT_ROW_SELECTORS = [
+  '[data-e2e="statement-row" i]',
+  '[data-e2e*="statement-card" i]',
+  '[class*="statement-row" i]',
+  'a[href*="statements"]',
+  '[data-e2e="statement-pay-date" i]',
+];
+
+const adpPaperlessMessage =
+  'ADP is still showing the Paperless Settings popup over the pay statements. I tried to close it automatically, but ADP kept re-opening it.';
+
+async function neutralizeAdpPaperlessBlockers(page: Page, reason = 'pre-action') {
+  const removed = await page.evaluate((selectors) => {
+    const roots: Array<Document | ShadowRoot> = [document];
+    for (let i = 0; i < roots.length; i++) {
+      roots[i].querySelectorAll('*').forEach((el) => {
+        const shadowRoot = (el as HTMLElement & { shadowRoot?: ShadowRoot }).shadowRoot;
+        if (shadowRoot && !roots.includes(shadowRoot)) roots.push(shadowRoot);
+      });
+    }
+
+    let count = 0;
+    for (const root of roots) {
+      for (const selector of selectors) {
+        root.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+          el.style.setProperty('pointer-events', 'none', 'important');
+          el.style.setProperty('display', 'none', 'important');
+          el.style.setProperty('visibility', 'hidden', 'important');
+          el.setAttribute('aria-hidden', 'true');
+          el.remove();
+          count++;
+        });
+      }
+    }
+    return count;
+  }, ADP_PAPERLESS_BLOCKER_SELECTORS).catch(() => 0);
+
+  if (removed > 0) console.log(`paperless modal neutralized ${removed} blocker(s) (${reason})`);
+  return removed;
+}
+
 async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
-  const dialogSel = [
-    'fuse-lazy-loader[slot="go-paperless"]',
-    '[data-e2e="prompt-modal"]',
-    '[data-e2e="paperless-prompt"]',
-    'paperless-view-wrapper',
-    'sdf-focus-pane#prompt-modal',
-    'sdf-focus-pane[data-e2e="prompt-modal"]',
-    '[role="dialog"]',
-    '.modal, .sdf-dialog, .sdf-modal',
-    '[class*="paperless" i]',
-  ].join(', ');
+  const dialogSel = ADP_PAPERLESS_BLOCKER_SELECTORS.join(', ');
 
   const visible = async () => page.locator(dialogSel).first().isVisible({ timeout: 500 }).catch(() => false);
 
   for (let pass = 0; pass < 4; pass++) {
+    await neutralizeAdpPaperlessBlockers(page, `${reason}, pass ${pass + 1}`);
     if (!(await visible())) break;
     console.log(`paperless modal detected (${reason}, pass ${pass + 1}), attempting dismissal`);
 
@@ -76,26 +120,7 @@ async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
       return;
     }
 
-    const removed = await page.evaluate(() => {
-      const selectors = [
-        'fuse-lazy-loader[slot="go-paperless"]',
-        '[data-e2e="prompt-modal"]',
-        '[data-e2e="paperless-prompt"]',
-        'paperless-view-wrapper',
-        'sdf-focus-pane#prompt-modal',
-        'sdf-focus-pane[data-e2e="prompt-modal"]',
-      ];
-      let count = 0;
-      for (const selector of selectors) {
-        document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
-          el.style.pointerEvents = 'none';
-          el.style.display = 'none';
-          el.remove();
-          count++;
-        });
-      }
-      return count;
-    }).catch(() => 0);
+    const removed = await neutralizeAdpPaperlessBlockers(page, `${reason}, force-remove`);
 
     if (removed > 0) {
       console.log(`paperless modal force-removed ${removed} blocker(s)`);
@@ -103,6 +128,43 @@ async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
       return;
     }
   }
+}
+
+async function clickAdpStatementRow(page: Page, index: number) {
+  await neutralizeAdpPaperlessBlockers(page, `before DOM statement click ${index}`);
+  const result = await page.evaluate(({ selectors, index }) => {
+    const isVisible = (el: Element) => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const rows: HTMLElement[] = [];
+    const seen = new Set<Element>();
+
+    for (const selector of selectors) {
+      document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+        const candidate = (el.closest('button, a, [role="button"], [tabindex], [data-e2e*="statement" i], [class*="statement-row" i]') ?? el) as HTMLElement;
+        if (!seen.has(candidate) && isVisible(candidate)) {
+          seen.add(candidate);
+          rows.push(candidate);
+        }
+      });
+    }
+
+    const row = rows[index];
+    if (!row) return { clicked: false, count: rows.length };
+    row.scrollIntoView({ block: 'center', inline: 'center' });
+    row.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+    row.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
+    row.click();
+    row.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true }));
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    return { clicked: true, count: rows.length, text: row.innerText?.slice(0, 120) };
+  }, { selectors: ADP_STATEMENT_ROW_SELECTORS, index });
+
+  if (!result.clicked) throw new Error(`No ADP statement row found at index ${index}; found ${result.count}.`);
+  console.log(`clicked ADP statement row ${index}`, result);
+  await page.waitForTimeout(1000);
 }
 
 // Deterministic Playwright script for ADP. Returns the downloaded PDFs.
