@@ -508,7 +508,7 @@ const DocumentHelpChat = ({
     }
 
     if (msg.kind === 'agent-auth') {
-      const { providerName, browserSessionUrl, providerUrl } = msg.payload || {};
+      const { providerName, browserSessionUrl } = msg.payload || {};
       return (
         <div className="rounded-xl border border-border bg-background overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
@@ -516,7 +516,7 @@ const DocumentHelpChat = ({
             <span className="text-xs font-medium text-foreground">Secure connection to {providerName}</span>
           </div>
           {browserSessionUrl ? (
-            <AuthIframe browserSessionUrl={browserSessionUrl} providerUrl={providerUrl} providerName={providerName} />
+            <AuthIframe browserSessionUrl={browserSessionUrl} providerName={providerName} />
           ) : (
             <div className="h-[360px] flex items-center justify-center text-sm text-muted-foreground">
               Connecting…
