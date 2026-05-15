@@ -2,15 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Stagehand } from 'npm:@browserbasehq/stagehand';
 import Browserbase from 'npm:@browserbasehq/sdk';
 
-type BrowserbaseDownload = {
-  id: string;
-  sessionId: string;
-  filename: string;
-  mimeType?: string;
-  size?: number;
-  createdAt?: string;
-};
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -18,39 +9,37 @@ const corsHeaders = {
 };
 
 const instructions: Record<string, string> = {
-  adp: `You are on the ADP dashboard at my.adp.com. Click on "Pay" in the top navigation tabs. Find pay statements from the last 2 months. For each one, get the PDF download link.`,
+  adp: `You are on the authenticated ADP dashboard.
+Follow these exact steps:
+
+1. Navigate directly to https://my.adp.com/#/pay/statements
+
+2. Wait for the page to load and the pay statements list to appear.
+
+3. If a "Go Paperless" or "Paperless Settings" popup appears, close it by clicking the close button (hint: "Close dialog").
+
+4. Click on the most recent pay statement entry in the list (the first div with role="button" showing the most recent date).
+
+5. Click the "View statement" button (sdf-button with hint "View statement").
+
+6. Click "Download current statement" from the dropdown menu (sdf-menu-item with text "Download current statement Recommended").
+
+7. Go back to the pay statements list.
+
+8. Click on the second most recent pay statement.
+
+9. Click "View statement" again.
+
+10. Click "Download current statement" again.
+
+Repeat for any additional statements within the last 2 months.`,
   workday: 'Navigate to Pay section, then Pay History or Payslips. Download pay stubs from the last 2 months as PDFs.',
   paychex: 'Navigate to Pay History and download pay stubs from the last 2 months as PDFs.',
   gusto: 'Navigate to Documents or Pay Stubs section and download pay stubs from the last 2 months.',
   paylocity: 'Navigate to Pay section then Pay History and download pay stubs from the last 2 months as PDFs.',
 };
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 const safeName = (name: string) => name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
-
-async function listDownloads(sessionId: string, apiKey: string): Promise<BrowserbaseDownload[]> {
-  const res = await fetch(`https://api.browserbase.com/v1/downloads?sessionId=${sessionId}&limit=20`, {
-    headers: { 'X-BB-API-Key': apiKey },
-  });
-  if (!res.ok) {
-    console.error('Browserbase list downloads failed', res.status, await res.text());
-    return [];
-  }
-  const data = await res.json().catch(() => ({ downloads: [] }));
-  return (data.downloads || []) as BrowserbaseDownload[];
-}
-
-async function waitForDownloads(sessionId: string, apiKey: string, minCount = 1): Promise<BrowserbaseDownload[]> {
-  const end = Date.now() + 60000;
-  let downloads: BrowserbaseDownload[] = [];
-  while (Date.now() < end) {
-    downloads = await listDownloads(sessionId, apiKey);
-    if (downloads.length >= minCount) return downloads;
-    await wait(3000);
-  }
-  return downloads;
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -78,25 +67,54 @@ serve(async (req) => {
 
     await stagehand.init();
 
+    // Set up download interception via CDP before navigation
+    const downloadDir = '/tmp/adp-downloads';
     try {
-      const cdp = await stagehand.page.context().newCDPSession(stagehand.page);
-      await cdp.send('Browser.setDownloadBehavior', {
-        behavior: 'allow',
-        downloadPath: 'downloads',
-        eventsEnabled: true,
-      });
-    } catch (downloadBehaviorErr) {
-      console.error('setDownloadBehavior failed', downloadBehaviorErr);
+      await Deno.mkdir(downloadDir, { recursive: true });
+    } catch (_) {
+      // ignore
     }
 
+    const client = await (stagehand.page as any).context().newCDPSession(stagehand.page);
+    await client.send('Browser.setDownloadBehavior', {
+      behavior: 'allow',
+      downloadPath: downloadDir,
+      eventsEnabled: true,
+    });
+
+    client.on('Browser.downloadProgress', (event: any) => {
+      if (event.state === 'completed') {
+        console.log('Download completed:', event.guid);
+      }
+    });
+
+    // Run the navigation instructions
     await stagehand.page.act(instructions[provider] || instructions.adp);
+
+    // Wait for downloads to complete
+    await new Promise((r) => setTimeout(r, 5000));
+
+    // Read downloaded files from /tmp
+    const downloadedFiles: Array<{ buffer: Uint8Array; fileName: string }> = [];
+    try {
+      for await (const entry of Deno.readDir(downloadDir)) {
+        if (entry.isFile && entry.name.toLowerCase().endsWith('.pdf')) {
+          const buffer = await Deno.readFile(`${downloadDir}/${entry.name}`);
+          downloadedFiles.push({ buffer, fileName: entry.name });
+        }
+      }
+    } catch (e) {
+      console.error('reading downloads failed', e);
+    }
+
+    console.log('Downloaded files captured:', downloadedFiles.map((f) => f.fileName));
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const uploadedFiles: Array<{ fileName: string; date: string; employerName?: string }> = [];
+    const uploadedFiles: Array<{ fileName: string }> = [];
 
-    const uploadBuffer = async (buffer: ArrayBuffer, fileName: string, dateStr: string, employerName?: string) => {
-      const finalFileName = safeName(fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
+    for (const file of downloadedFiles) {
+      const finalFileName = safeName(file.fileName);
       const storagePath = `${caseId}/${checklistItemId}/${finalFileName}`;
 
       const storageRes = await fetch(
@@ -108,13 +126,13 @@ serve(async (req) => {
             'Content-Type': 'application/pdf',
             'x-upsert': 'true',
           },
-          body: buffer,
+          body: file.buffer,
         },
       );
 
       if (!storageRes.ok) {
         console.error('storage upload failed', await storageRes.text());
-        return false;
+        continue;
       }
 
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/files`, {
@@ -138,62 +156,10 @@ serve(async (req) => {
 
       if (!insertRes.ok) {
         console.error('files insert failed', await insertRes.text());
-        return false;
+        continue;
       }
 
-      uploadedFiles.push({ fileName: finalFileName, date: dateStr, employerName });
-      return true;
-    };
-
-    const downloads = await waitForDownloads(sessionId, browserbaseApiKey, 4);
-    console.log('Browserbase downloads found', downloads.map((d) => ({ id: d.id, filename: d.filename, mimeType: d.mimeType, size: d.size })));
-
-    for (const download of downloads.slice(0, 4)) {
-      try {
-        const dl = await fetch(`https://api.browserbase.com/v1/downloads/${download.id}`, {
-          headers: { 'X-BB-API-Key': browserbaseApiKey, Accept: 'application/octet-stream' },
-        });
-        if (!dl.ok) continue;
-        const buffer = await dl.arrayBuffer();
-        await uploadBuffer(buffer, download.filename || `PayStub-${uploadedFiles.length + 1}.pdf`, 'recent');
-      } catch (e) {
-        console.error('Browserbase download upload error', e);
-      }
-    }
-
-    if (uploadedFiles.length === 0) {
-      const result: any = await stagehand.page.extract({
-        instruction: 'Find pay stub document download links or PDF files for the 4 most recent pay stubs. Return one entry per pay stub with its pay period date (YYYY-MM-DD if possible), a direct downloadUrl to the PDF, and the employer name if visible.',
-        schema: {
-          type: 'object',
-          properties: {
-            documents: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  date: { type: 'string' },
-                  downloadUrl: { type: 'string' },
-                  employerName: { type: 'string' },
-                },
-                required: ['downloadUrl'],
-              },
-            },
-          },
-        },
-      } as any);
-
-      for (const doc of (result?.documents ?? []).slice(0, 4) as Array<{ date?: string; downloadUrl: string; employerName?: string }>) {
-        try {
-          const dl = await fetch(doc.downloadUrl);
-          if (!dl.ok) continue;
-          const buffer = await dl.arrayBuffer();
-          const dateStr = doc.date || 'unknown';
-          await uploadBuffer(buffer, `PayStub-${dateStr}.pdf`, dateStr, doc.employerName);
-        } catch (e) {
-          console.error('document download/upload error', e);
-        }
-      }
+      uploadedFiles.push({ fileName: finalFileName });
     }
 
     if (uploadedFiles.length > 0) {
@@ -208,15 +174,21 @@ serve(async (req) => {
       });
     }
 
+    // Cleanup local downloads
+    try {
+      await Deno.remove(downloadDir, { recursive: true });
+    } catch (_) {
+      // ignore
+    }
+
     try {
       await stagehand.close();
     } catch (_) {
       // ignore
     }
 
-    // Terminate the Browserbase session
     try {
-      const bb = new Browserbase({ apiKey: Deno.env.get('BROWSERBASE_API_KEY')! });
+      const bb = new Browserbase({ apiKey: browserbaseApiKey });
       await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
     } catch (_) {
       // ignore termination errors
