@@ -390,27 +390,20 @@ const DocumentHelpChat = ({
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
 
-          // Switch back to streaming status messages while retrieving
+          const docType = docTypeRef.current;
+          const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
+
+          // Immediately hide iframe and show success-detected status
           replaceLastAgentMessage(() => ({
             role: 'assistant',
             kind: 'agent-status',
             content: '',
-            payload: { provider, statusIdx: 1, retrieving: true },
+            payload: { provider, customMessage: `You're in! Now retrieving your ${docName}…`, retrieving: true },
           }));
 
-          let rIdx = 1;
-          statusIntervalRef.current = setInterval(() => {
-            rIdx += 1;
-            if (rIdx >= STATUS_MESSAGES[provider].length) {
-              if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
-              statusIntervalRef.current = null;
-              return;
-            }
-            replaceLastAgentMessage((m) => ({ ...m, payload: { ...(m.payload || {}), statusIdx: rIdx } }));
-          }, 1500);
-
           try {
-            const { data: rData, error: rError } = await supabase.functions.invoke('retrieve-w2', {
+            const fnName = docType === 'w2' ? 'retrieve-w2' : 'retrieve-paystubs';
+            const { data: rData, error: rError } = await supabase.functions.invoke(fnName, {
               body: { sessionId, provider, caseId, checklistItemId },
             });
             if (rError) throw rError;
@@ -423,7 +416,7 @@ const DocumentHelpChat = ({
               showAgentFailure(provider);
             }
           } catch (err) {
-            console.error('retrieve-w2 failed', err);
+            console.error('retrieval failed', err);
             cleanupAgent();
             showAgentFailure(provider);
           }
