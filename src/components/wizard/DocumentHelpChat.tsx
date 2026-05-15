@@ -98,8 +98,11 @@ const TypewriterMarkdown = ({
   );
 };
 
-const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: string; providerName: string }) => {
+const AuthIframe = ({ browserSessionUrl, providerUrl, providerName }: { browserSessionUrl: string; providerUrl?: string; providerName: string }) => {
   const [loaded, setLoaded] = useState(false);
+  const iframeSrc = providerUrl
+    ? `${browserSessionUrl}${browserSessionUrl.includes('?') ? '&' : '?'}startUrl=${encodeURIComponent(providerUrl)}`
+    : browserSessionUrl;
   return (
     <div className="relative w-full h-[360px]">
       {!loaded && (
@@ -108,7 +111,7 @@ const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: st
         </div>
       )}
       <iframe
-        src={browserSessionUrl}
+        src={iframeSrc}
         title={`${providerName} login`}
         className="w-full h-full bg-background border-0"
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
