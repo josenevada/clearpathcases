@@ -55,7 +55,7 @@ serve(async (req) => {
       currentUrl = page.url() || currentUrl;
       pageTitle = await page.title().catch(() => '');
       bodyText = await page.locator('body').innerText({ timeout: 2000 }).catch(() => '');
-      await browser.close();
+      browser.disconnect();
     } catch (cdpErr) {
       console.error('check-session-auth CDP read failed', cdpErr);
     }
