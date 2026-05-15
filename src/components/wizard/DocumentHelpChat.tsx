@@ -98,8 +98,11 @@ const TypewriterMarkdown = ({
   );
 };
 
-const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: string; providerName: string }) => {
+const AuthIframe = ({ browserSessionUrl, providerUrl, providerName }: { browserSessionUrl: string; providerUrl?: string; providerName: string }) => {
   const [loaded, setLoaded] = useState(false);
+  const iframeSrc = providerUrl
+    ? `${browserSessionUrl}${browserSessionUrl.includes('?') ? '&' : '?'}startUrl=${encodeURIComponent(providerUrl)}`
+    : browserSessionUrl;
   return (
     <div className="relative w-full h-[360px]">
       {!loaded && (
@@ -108,7 +111,7 @@ const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: st
         </div>
       )}
       <iframe
-        src={browserSessionUrl}
+        src={iframeSrc}
         title={`${providerName} login`}
         className="w-full h-full bg-background border-0"
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
@@ -349,6 +352,7 @@ const DocumentHelpChat = ({
     // Kick off browser session creation in parallel
     let sessionId = '';
     let browserSessionUrl: string | undefined;
+    let providerUrl: string | undefined;
     try {
       const { data, error } = await supabase.functions.invoke('create-browser-session', {
         body: { provider, caseId },
@@ -356,6 +360,7 @@ const DocumentHelpChat = ({
       if (error) throw error;
       sessionId = data?.sessionId;
       browserSessionUrl = data?.browserSessionUrl;
+      providerUrl = data?.providerUrl;
       if (!sessionId) throw new Error('No session id returned');
     } catch (err) {
       console.error('create-browser-session failed', err);
@@ -373,7 +378,7 @@ const DocumentHelpChat = ({
       role: 'assistant',
       kind: 'agent-auth',
       content: '',
-      payload: { provider, providerName, browserSessionUrl, sessionId },
+      payload: { provider, providerName, browserSessionUrl, providerUrl, sessionId },
     }));
 
     // Poll for auth completion
@@ -504,7 +509,7 @@ const DocumentHelpChat = ({
     }
 
     if (msg.kind === 'agent-auth') {
-      const { providerName, browserSessionUrl } = msg.payload || {};
+      const { providerName, browserSessionUrl, providerUrl } = msg.payload || {};
       return (
         <div className="rounded-xl border border-border bg-background overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
@@ -512,7 +517,7 @@ const DocumentHelpChat = ({
             <span className="text-xs font-medium text-foreground">Secure connection to {providerName}</span>
           </div>
           {browserSessionUrl ? (
-            <AuthIframe browserSessionUrl={browserSessionUrl} providerName={providerName} />
+            <AuthIframe browserSessionUrl={browserSessionUrl} providerUrl={providerUrl} providerName={providerName} />
           ) : (
             <div className="h-[360px] flex items-center justify-center text-sm text-muted-foreground">
               Connecting…
