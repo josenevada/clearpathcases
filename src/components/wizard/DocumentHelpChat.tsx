@@ -291,21 +291,19 @@ const DocumentHelpChat = ({
   // W-2 agent flow
   // ─────────────────────────────────────────────
 
-  const startAgentRetrievalIntro = () => {
+  const startAgentRetrievalIntro = (docType: DocType = 'w2') => {
+    docTypeRef.current = docType;
+    const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
+    const userChip = docType === 'w2' ? 'Get my W-2 automatically ✨' : 'Get my pay stubs automatically ✨';
+    const intro =
+      docType === 'w2'
+        ? 'I can retrieve your W-2 directly from your payroll portal — no downloading or scanning needed. Which payroll provider does your employer use?'
+        : 'I can retrieve your recent pay stubs directly from your payroll portal. Which provider does your employer use?';
     setMessages((prev) => [
       ...prev,
-      { role: 'user', content: 'Get my W-2 automatically ✨' },
-      {
-        role: 'assistant',
-        animate: true,
-        content:
-          "I can retrieve your W-2 directly from your payroll portal — no downloading or scanning needed. Which payroll provider does your employer use?",
-      },
-      {
-        role: 'assistant',
-        kind: 'provider-picker',
-        content: '',
-      },
+      { role: 'user', content: userChip },
+      { role: 'assistant', animate: true, content: intro },
+      { role: 'assistant', kind: 'provider-picker', content: '' },
     ]);
   };
 
