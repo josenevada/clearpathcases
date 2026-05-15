@@ -20,67 +20,70 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
     timeout: 30000,
   });
 
+  // Give ADP a beat to render the paperless interstitial before we try anything.
+  await page.waitForTimeout(2500);
+
   // Dismiss the ADP "Go Paperless" / "Paperless Settings" interstitial.
-  // Mirrors the agent's detect → identify → close → verify loop:
-  //   1. Detect: is a modal/overlay visible?
-  //   2. Identify: try labelled buttons ("Maybe Later", "Remind me later", "No thanks", etc.),
-  //                then icon-only close controls, then Escape.
-  //   3. Close: click whatever matches first.
-  //   4. Verify: re-check that the modal is gone before moving on.
-  // Run several passes in case the popup stacks (paperless tax + paperless pay).
-  const dialogSel = '[role="dialog"], .modal, .sdf-dialog, .sdf-modal, [class*="paperless" i]';
+  // ADP wraps it in custom elements: <sdf-focus-pane data-e2e="prompt-modal">
+  // and <paperless-view-wrapper data-e2e="paperless-prompt">, NOT [role="dialog"].
+  const dialogSel = [
+    '[data-e2e="prompt-modal"]',
+    '[data-e2e="paperless-prompt"]',
+    'paperless-view-wrapper',
+    'sdf-focus-pane',
+    '[role="dialog"]',
+    '.modal, .sdf-dialog, .sdf-modal',
+    '[class*="paperless" i]',
+  ].join(', ');
+
   const namedButtons = [
-    'Maybe Later',
-    'Remind me later',
-    'Remind Me Later',
-    'No thanks',
-    'No Thanks',
-    'Not now',
-    'Not Now',
-    'Cancel',
-    'Skip',
-    'Dismiss',
-    'Close dialog',
-    'Close',
+    'Maybe Later', 'Remind me later', 'Remind Me Later',
+    'No thanks', 'No Thanks', 'Not now', 'Not Now',
+    'Cancel', 'Skip', 'Dismiss', 'Close dialog', 'Close',
   ];
   const iconCloseSelectors = [
-    '#close-icon',
-    'button#close-icon',
+    '[data-e2e="prompt-modal"] [id*="close" i]',
+    '[data-e2e="prompt-modal"] [aria-label*="close" i]',
+    '[data-e2e="prompt-modal"] button:has(svg)',
+    '[data-e2e="paperless-prompt"] [aria-label*="close" i]',
+    'sdf-focus-pane [aria-label*="close" i]',
+    'sdf-focus-pane [id*="close" i]',
+    'sdf-focus-pane button:has(svg)',
+    'sdf-icon-button[aria-label*="close" i]',
+    '#close-icon, button#close-icon',
     'button[aria-label*="close" i]',
     'button[title*="close" i]',
     'button[data-testid*="close" i]',
-    '[role="dialog"] button:has(svg)',
-    '[role="dialog"] [class*="close" i]',
     '.modal-close, .close-button, .sdf-dialog-close, .sdf-icon-close',
   ];
 
-  for (let pass = 0; pass < 4; pass++) {
-    // 1. Detect
+  for (let pass = 0; pass < 5; pass++) {
     const dialog = page.locator(dialogSel).first();
-    const visible = await dialog.isVisible({ timeout: 400 }).catch(() => false);
+    const visible = await dialog.isVisible({ timeout: 600 }).catch(() => false);
     if (!visible) break;
     console.log(`paperless modal detected (pass ${pass + 1}), attempting to dismiss`);
 
     let dismissed = false;
 
-    // 2/3. Identify + close — labelled buttons first
+    // Labelled buttons SCOPED to the modal first.
     for (const label of namedButtons) {
       try {
-        const btn = page.getByRole('button', { name: new RegExp(`^\\s*${label}\\s*$`, 'i') }).first();
-        if (await btn.isVisible({ timeout: 400 })) {
-          await btn.click({ timeout: 1500 });
+        const scoped = page.locator(dialogSel).first()
+          .getByRole('button', { name: new RegExp(`^\\s*${label}\\s*$`, 'i') }).first();
+        if (await scoped.isVisible({ timeout: 300 })) {
+          await scoped.click({ timeout: 1500 });
           dismissed = true;
           break;
         }
       } catch (_) { /* try next */ }
     }
 
-    // Icon-only close controls
+    // Icon-only close controls.
     if (!dismissed) {
       for (const sel of iconCloseSelectors) {
         try {
           const el = page.locator(sel).first();
-          if (await el.isVisible({ timeout: 400 })) {
+          if (await el.isVisible({ timeout: 300 })) {
             await el.click({ timeout: 1500 });
             dismissed = true;
             break;
@@ -89,13 +92,11 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
       }
     }
 
-    // Escape as last resort
     if (!dismissed) {
       try { await page.keyboard.press('Escape'); } catch (_) { /* ignore */ }
     }
 
-    // 4. Verify
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(800);
     const stillThere = await dialog.isVisible({ timeout: 400 }).catch(() => false);
     if (!stillThere) {
       console.log('paperless modal dismissed');
@@ -103,12 +104,18 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
     }
   }
 
-  // Wait for the statements list to render.
-  await page.waitForSelector('[role="button"]', { timeout: 20000 });
+  // Wait for the actual statements list. Avoid generic [role="button"] —
+  // ADP renders dozens of those (nav widgets, modal buttons). Scope to statement rows.
+  const statementRowSel = [
+    '[data-e2e*="statement" i]',
+    '[class*="statement-row" i]',
+    'a[href*="statements"]',
+  ].join(', ');
+  await page.waitForSelector(statementRowSel, { timeout: 20000 }).catch(() => {});
 
   for (let i = 0; i < maxStatements; i++) {
     try {
-      const rows = page.locator('[role="button"]');
+      const rows = page.locator(statementRowSel);
       const count = await rows.count();
       if (i >= count) break;
 
@@ -133,7 +140,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
 
       // Back to the list for the next statement.
       await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-      await page.waitForSelector('[role="button"]', { timeout: 15000 }).catch(() => {});
+      await page.waitForSelector(statementRowSel, { timeout: 15000 }).catch(() => {});
     } catch (e) {
       console.error(`paystub ${i} retrieval failed`, e);
       break;
@@ -206,7 +213,8 @@ serve(async (req) => {
         );
       }
     } finally {
-      browser.disconnect();
+      // Playwright's CDP browser uses close(), not disconnect(), in this runtime.
+      try { await (browser as any).close?.(); } catch (_) { /* ignore */ }
     }
 
     console.log('paystub downloads captured:', downloads.length);

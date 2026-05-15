@@ -53,8 +53,9 @@ serve(async (req) => {
       const context = browser.contexts()[0] ?? (await browser.newContext());
       const page = context.pages()[0] ?? (await context.newPage());
       await page.goto(providerUrls[provider], { waitUntil: 'domcontentloaded', timeout: 20000 });
-      // Detach without closing the remote browser so the live session stays alive.
-      browser.disconnect();
+      // Detach without killing the remote Browserbase session.
+      // For CDP-connected browsers, close() only closes the local connection.
+      try { await (browser as any).close?.(); } catch (_) { /* ignore */ }
     } catch (navErr) {
       console.error('CDP navigation failed:', navErr);
     }
