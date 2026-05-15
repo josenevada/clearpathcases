@@ -413,12 +413,12 @@ const DocumentHelpChat = ({
               showAgentSuccess(provider, rData.files);
               onAgentFilesAdded?.();
             } else {
-              showAgentFailure(provider);
+              showAgentFailure(provider, rData?.error);
             }
           } catch (err) {
             console.error('retrieval failed', err);
             cleanupAgent();
-            showAgentFailure(provider);
+            showAgentFailure(provider, err instanceof Error ? err.message : undefined);
           }
         }
       } catch (err) {
