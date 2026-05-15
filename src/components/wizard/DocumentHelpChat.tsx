@@ -652,11 +652,20 @@ const DocumentHelpChat = ({
                 <div className="flex flex-wrap gap-2 pl-8">
                   {isW2Step && caseId && checklistItemId && (
                     <button
-                      onClick={startAgentRetrievalIntro}
+                      onClick={() => startAgentRetrievalIntro('w2')}
                       className="text-xs px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-medium"
                     >
                       <Sparkles className="w-3 h-3" />
                       Get my W-2 automatically
+                    </button>
+                  )}
+                  {isPayStubStep && caseId && checklistItemId && (
+                    <button
+                      onClick={() => startAgentRetrievalIntro('paystub')}
+                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-medium"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Get my pay stubs automatically
                     </button>
                   )}
                   {(language === 'es'
