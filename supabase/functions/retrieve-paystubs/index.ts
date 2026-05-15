@@ -13,6 +13,8 @@ const corsHeaders = {
 const safeName = (name: string) =>
   name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
 
+const POPUP_DISMISS_TEXT = /^(close|×|x|skip|not now|maybe later|no thanks|dismiss|cancel|continue|got it|ok)$/i;
+
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timer: number | undefined;
   const timeout = new Promise<never>((_, reject) => {
@@ -23,6 +25,73 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
+async function dismissBlockingPopups(page: Page, label = 'popup dismissal') {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let clicked = false;
+
+    for (const locator of [
+      page.getByRole('button', { name: POPUP_DISMISS_TEXT }).first(),
+      page.getByRole('link', { name: POPUP_DISMISS_TEXT }).first(),
+      page.locator('[aria-label*="close" i], [aria-label*="dismiss" i], button:has-text("Not now"), button:has-text("Maybe later"), button:has-text("Skip"), button:has-text("No thanks"), button:has-text("Close")').first(),
+    ]) {
+      try {
+        if (await locator.isVisible({ timeout: 700 })) {
+          await locator.click({ timeout: 1200, force: true });
+          clicked = true;
+          break;
+        }
+      } catch (_) { /* try next */ }
+    }
+
+    if (!clicked) {
+      clicked = await page.evaluate((patternSource) => {
+        const pattern = new RegExp(patternSource, 'i');
+        const seen = new Set<Node>();
+        const collect = (root: ParentNode): Element[] => {
+          const elements = Array.from(root.querySelectorAll('button, a, [role="button"], [aria-label]'));
+          for (const el of Array.from(root.querySelectorAll('*')) as Element[]) {
+            const shadow = (el as HTMLElement).shadowRoot;
+            if (shadow && !seen.has(shadow)) {
+              seen.add(shadow);
+              elements.push(...collect(shadow));
+            }
+          }
+          return elements;
+        };
+        const target = collect(document).find((el) => {
+          const text = `${el.textContent || ''} ${(el as HTMLElement).getAttribute('aria-label') || ''}`.trim();
+          const box = (el as HTMLElement).getBoundingClientRect?.();
+          return pattern.test(text) && !!box && box.width > 0 && box.height > 0;
+        }) as HTMLElement | undefined;
+        target?.click();
+        return Boolean(target);
+      }, POPUP_DISMISS_TEXT.source).catch(() => false);
+    }
+
+    if (!clicked) return;
+    console.log(`${label}: dismissed blocking overlay attempt ${attempt + 1}`);
+    await page.waitForTimeout(700);
+  }
+}
+
+async function clickPayStatementFallback(page: Page, index: number) {
+  const candidates = [
+    page.locator('text=/Pay Date|Check Date|Statement|Gross Pay|Net Pay/i').locator('xpath=ancestor::*[self::tr or @role="row" or contains(@class,"row")][1]').nth(index),
+    page.locator('tr, [role="row"], [class*="statement" i], [class*="pay" i]').filter({ hasText: /\$|gross|net|pay date|check date|statement/i }).nth(index),
+  ];
+
+  for (const row of candidates) {
+    try {
+      if (await row.isVisible({ timeout: 1500 })) {
+        await row.click({ timeout: 3000, force: true });
+        return true;
+      }
+    } catch (_) { /* try next */ }
+  }
+
+  return false;
+}
+
 // Stagehand-driven ADP retrieval. The LLM "sees" the page each step and
 // self-heals around popups (Paperless Settings, security prompts, etc.)
 // without us hard-coding selectors or shadow-DOM hacks.
@@ -30,11 +99,12 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
   const downloads: Download[] = [];
   page.setDefaultTimeout(15000);
 
-  await page.goto('https://my.adp.com/#/pay/statements', {
+  await page.goto('https://my.adp.com/#/pay/pay-statements', {
     waitUntil: 'domcontentloaded',
     timeout: 30000,
   });
   await page.waitForTimeout(2500);
+  await dismissBlockingPopups(page, 'initial ADP popup sweep');
 
   // Stagehand attaches act/observe/extract methods to the Playwright page.
   const sh = page as any;
@@ -46,6 +116,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
   ).catch((e: unknown) => console.log('initial popup dismissal note:', String(e)));
 
   await page.waitForTimeout(1000);
+  await dismissBlockingPopups(page, 'post-stagehand popup sweep');
 
   // Find the visible pay statements via Stagehand's observe (returns elements
   // ranked by the LLM's understanding of the page).
@@ -54,8 +125,9 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
     returnAction: false,
   }).catch(() => [] as Array<{ selector?: string; description?: string }>);
 
-  const total = Math.min(maxStatements, Array.isArray(statements) ? statements.length : maxStatements);
-  console.log(`stagehand observed ${Array.isArray(statements) ? statements.length : 0} statements; will fetch ${total}`);
+  const observedCount = Array.isArray(statements) ? statements.length : 0;
+  const total = observedCount > 0 ? Math.min(maxStatements, observedCount) : maxStatements;
+  console.log(`stagehand observed ${observedCount} statements; will fetch ${total}`);
 
   for (let i = 0; i < total; i++) {
     try {
@@ -63,10 +135,15 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
       await sh.act?.(
         "If any popup, modal, or 'Paperless Settings' overlay is on screen, close it. Otherwise do nothing.",
       ).catch(() => {});
+      await dismissBlockingPopups(page, `statement ${i + 1} popup sweep`);
 
       await sh.act?.(
         `Click the pay statement at position ${i + 1} (1 = most recent) in the pay statements list.`,
-      );
+      ).catch(async () => {
+        const clicked = await clickPayStatementFallback(page, i);
+        if (!clicked) throw new Error(`Could not click pay statement ${i + 1}`);
+      });
+      await dismissBlockingPopups(page, `statement ${i + 1} detail popup sweep`);
 
       await sh.act?.('Click the "View Statement" button to open the statement viewer.').catch(() => {});
 
