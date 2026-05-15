@@ -11,22 +11,76 @@ const corsHeaders = {
 const safeName = (name: string) =>
   name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
+}
+
+const ADP_PAPERLESS_BLOCKER_SELECTORS = [
+  'fuse-lazy-loader[slot="go-paperless"]',
+  '[data-e2e="prompt-modal"]',
+  '[data-e2e="paperless-prompt"]',
+  'paperless-view-wrapper',
+  'sdf-focus-pane#prompt-modal',
+  'sdf-focus-pane[data-e2e="prompt-modal"]',
+  '[role="dialog"]',
+  '.modal, .sdf-dialog, .sdf-modal',
+  '[class*="paperless" i]',
+];
+
+const ADP_STATEMENT_ROW_SELECTORS = [
+  '[data-e2e="statement-row" i]',
+  '[data-e2e*="statement-card" i]',
+  '[class*="statement-row" i]',
+  'a[href*="statements"]',
+  '[data-e2e="statement-pay-date" i]',
+];
+
+const adpPaperlessMessage =
+  'ADP is still showing the Paperless Settings popup over the pay statements. I tried to close it automatically, but ADP kept re-opening it.';
+
+async function neutralizeAdpPaperlessBlockers(page: Page, reason = 'pre-action') {
+  const removed = await page.evaluate((selectors) => {
+    const roots: Array<Document | ShadowRoot> = [document];
+    for (let i = 0; i < roots.length; i++) {
+      roots[i].querySelectorAll('*').forEach((el) => {
+        const shadowRoot = (el as HTMLElement & { shadowRoot?: ShadowRoot }).shadowRoot;
+        if (shadowRoot && !roots.includes(shadowRoot)) roots.push(shadowRoot);
+      });
+    }
+
+    let count = 0;
+    for (const root of roots) {
+      for (const selector of selectors) {
+        root.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+          el.style.setProperty('pointer-events', 'none', 'important');
+          el.style.setProperty('display', 'none', 'important');
+          el.style.setProperty('visibility', 'hidden', 'important');
+          el.setAttribute('aria-hidden', 'true');
+          el.remove();
+          count++;
+        });
+      }
+    }
+    return count;
+  }, ADP_PAPERLESS_BLOCKER_SELECTORS).catch(() => 0);
+
+  if (removed > 0) console.log(`paperless modal neutralized ${removed} blocker(s) (${reason})`);
+  return removed;
+}
+
 async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
-  const dialogSel = [
-    'fuse-lazy-loader[slot="go-paperless"]',
-    '[data-e2e="prompt-modal"]',
-    '[data-e2e="paperless-prompt"]',
-    'paperless-view-wrapper',
-    'sdf-focus-pane#prompt-modal',
-    'sdf-focus-pane[data-e2e="prompt-modal"]',
-    '[role="dialog"]',
-    '.modal, .sdf-dialog, .sdf-modal',
-    '[class*="paperless" i]',
-  ].join(', ');
+  const dialogSel = ADP_PAPERLESS_BLOCKER_SELECTORS.join(', ');
 
   const visible = async () => page.locator(dialogSel).first().isVisible({ timeout: 500 }).catch(() => false);
 
   for (let pass = 0; pass < 4; pass++) {
+    await neutralizeAdpPaperlessBlockers(page, `${reason}, pass ${pass + 1}`);
     if (!(await visible())) break;
     console.log(`paperless modal detected (${reason}, pass ${pass + 1}), attempting dismissal`);
 
@@ -76,26 +130,7 @@ async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
       return;
     }
 
-    const removed = await page.evaluate(() => {
-      const selectors = [
-        'fuse-lazy-loader[slot="go-paperless"]',
-        '[data-e2e="prompt-modal"]',
-        '[data-e2e="paperless-prompt"]',
-        'paperless-view-wrapper',
-        'sdf-focus-pane#prompt-modal',
-        'sdf-focus-pane[data-e2e="prompt-modal"]',
-      ];
-      let count = 0;
-      for (const selector of selectors) {
-        document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
-          el.style.pointerEvents = 'none';
-          el.style.display = 'none';
-          el.remove();
-          count++;
-        });
-      }
-      return count;
-    }).catch(() => 0);
+    const removed = await neutralizeAdpPaperlessBlockers(page, `${reason}, force-remove`);
 
     if (removed > 0) {
       console.log(`paperless modal force-removed ${removed} blocker(s)`);
@@ -105,9 +140,47 @@ async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
   }
 }
 
+async function clickAdpStatementRow(page: Page, index: number) {
+  await neutralizeAdpPaperlessBlockers(page, `before DOM statement click ${index}`);
+  const result = await page.evaluate(({ selectors, index }) => {
+    const isVisible = (el: Element) => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const rows: HTMLElement[] = [];
+    const seen = new Set<Element>();
+
+    for (const selector of selectors) {
+      document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+        const candidate = (el.closest('button, a, [role="button"], [tabindex], [data-e2e*="statement" i], [class*="statement-row" i]') ?? el) as HTMLElement;
+        if (!seen.has(candidate) && isVisible(candidate)) {
+          seen.add(candidate);
+          rows.push(candidate);
+        }
+      });
+    }
+
+    const row = rows[index];
+    if (!row) return { clicked: false, count: rows.length };
+    row.scrollIntoView({ block: 'center', inline: 'center' });
+    row.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+    row.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
+    row.click();
+    row.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true }));
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    return { clicked: true, count: rows.length, text: row.innerText?.slice(0, 120) };
+  }, { selectors: ADP_STATEMENT_ROW_SELECTORS, index });
+
+  if (!result.clicked) throw new Error(`No ADP statement row found at index ${index}; found ${result.count}.`);
+  console.log(`clicked ADP statement row ${index}`, result);
+  await page.waitForTimeout(1000);
+}
+
 // Deterministic Playwright script for ADP. Returns the downloaded PDFs.
 async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
   const downloads: Download[] = [];
+  page.setDefaultTimeout(8000);
 
   await page.goto('https://my.adp.com/#/pay/statements', {
     waitUntil: 'domcontentloaded',
@@ -123,27 +196,23 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
 
   // Wait for the actual statements list. Avoid generic [role="button"] —
   // ADP renders dozens of those (nav widgets, modal buttons). Scope to statement rows.
-  const statementRowSel = [
-    '[data-e2e*="statement" i]',
-    '[class*="statement-row" i]',
-    'a[href*="statements"]',
-  ].join(', ');
+  const statementRowSel = ADP_STATEMENT_ROW_SELECTORS.join(', ');
   await page.waitForSelector(statementRowSel, { timeout: 20000 }).catch(() => {});
 
   for (let i = 0; i < maxStatements; i++) {
     try {
+      await dismissAdpPaperlessModal(page, `before statement ${i}`);
       const rows = page.locator(statementRowSel);
       const count = await rows.count();
       if (i >= count) break;
 
-      await dismissAdpPaperlessModal(page, `before statement ${i}`);
-      await rows.nth(i).click({ timeout: 10000 });
+      await clickAdpStatementRow(page, i);
 
       // "View statement" opens the statement viewer.
       await page
         .getByRole('button', { name: /view statement/i })
         .first()
-        .click({ timeout: 10000 });
+        .click({ timeout: 8000, force: true });
 
       // Trigger and capture the download.
       const [download] = await Promise.all([
@@ -151,7 +220,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
         page
           .getByText(/download current statement/i)
           .first()
-          .click({ timeout: 10000 }),
+          .click({ timeout: 8000, force: true }),
       ]);
 
       downloads.push(download);
@@ -160,6 +229,8 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
       await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
       await page.waitForSelector(statementRowSel, { timeout: 15000 }).catch(() => {});
     } catch (e) {
+      const blockerVisible = await page.locator(ADP_PAPERLESS_BLOCKER_SELECTORS.join(', ')).first().isVisible({ timeout: 500 }).catch(() => false);
+      if (blockerVisible) throw new Error(adpPaperlessMessage);
       console.error(`paystub ${i} retrieval failed`, e);
       break;
     }
@@ -194,6 +265,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const startedAt = Date.now();
+  let releaseSession: (() => Promise<void>) | undefined;
+
   try {
     const { sessionId, provider, caseId, checklistItemId } = await req.json();
 
@@ -206,6 +280,9 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
     const bb = new Browserbase({ apiKey });
+    releaseSession = async () => {
+      try { await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any); } catch (_) { /* ignore */ }
+    };
     const session: any = await bb.sessions.retrieve(sessionId);
 
     const connectUrl =
@@ -217,6 +294,7 @@ serve(async (req) => {
     const page = context.pages()[0] ?? (await context.newPage());
 
     let downloads: Download[] = [];
+    let retrievalError: string | null = null;
     try {
       if (provider === 'adp') {
         downloads = await runAdp(page, 4);
@@ -230,12 +308,23 @@ serve(async (req) => {
           { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
+    } catch (e) {
+      retrievalError = String((e as Error).message ?? e);
+      console.error('paystub retrieval failed before upload', e);
     } finally {
       // Playwright's CDP browser uses close(), not disconnect(), in this runtime.
-      try { await (browser as any).close?.(); } catch (_) { /* ignore */ }
+      try { await withTimeout((browser as any).close?.() ?? Promise.resolve(), 1000, 'browser close'); } catch (_) { /* ignore */ }
     }
 
     console.log('paystub downloads captured:', downloads.length);
+
+    if (downloads.length === 0) {
+      await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
+      return new Response(
+        JSON.stringify({ success: false, error: retrievalError || 'No paystub downloads were captured.', elapsedMs: Date.now() - startedAt }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -307,18 +396,17 @@ serve(async (req) => {
       });
     }
 
-    try {
-      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
-    } catch (_) { /* ignore */ }
+    await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
 
     return new Response(
-      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
+      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles, elapsedMs: Date.now() - startedAt }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('retrieve-paystubs error', err);
+    if (releaseSession) await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
     return new Response(
-      JSON.stringify({ success: false, error: String((err as Error).message ?? err) }),
+      JSON.stringify({ success: false, error: String((err as Error).message ?? err), elapsedMs: Date.now() - startedAt }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
