@@ -37,7 +37,7 @@ serve(async (req) => {
       browserSettings: {
         solveCaptchas: true,
         blockAds: true,
-        viewport: { width: 1280, height: 800 },
+        viewport: { width: 400, height: 600 },
       },
       keepAlive: true,
       timeout: 1800,
