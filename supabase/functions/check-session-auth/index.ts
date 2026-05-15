@@ -9,11 +9,19 @@ const corsHeaders = {
 };
 
 const loginUrls: Record<string, string[]> = {
-  adp: ['my.adp.com/login', 'accounts.adp.com', 'online.adp.com/signin'],
+  adp: ['accounts.adp.com', 'online.adp.com/signin'],
   workday: ['wd5.myworkday.com/wday/authgwy', 'impl.workday.com/login', 'myworkday.com/login'],
   paychex: ['myapps.paychex.com/landing_pages/login', 'paychex.com/login'],
   gusto: ['app.gusto.com/login', 'gusto.com/login'],
   paylocity: ['access.paylocity.com'],
+};
+
+const dashboardHints: Record<string, string[]> = {
+  adp: ['#/dashboard', 'tax statements', 'pay statements', 'paystub', 'pay stub', 'dashboard'],
+  workday: ['home', 'pay', 'payslips', 'tax documents'],
+  paychex: ['dashboard', 'pay history', 'tax documents'],
+  gusto: ['dashboard', 'documents', 'pay stubs'],
+  paylocity: ['self service portal', 'pay', 'history'],
 };
 
 serve(async (req) => {
@@ -36,6 +44,7 @@ serve(async (req) => {
 
     let currentUrl: string = session?.currentUrl ?? session?.startUrl ?? '';
     let pageTitle = '';
+    let bodyText = '';
 
     try {
       const connectUrl = (session as any).connectUrl
@@ -45,6 +54,7 @@ serve(async (req) => {
       const page = context.pages()[0] ?? (await context.newPage());
       currentUrl = page.url() || currentUrl;
       pageTitle = await page.title().catch(() => '');
+      bodyText = await page.locator('body').innerText({ timeout: 2000 }).catch(() => '');
       await browser.close();
     } catch (cdpErr) {
       console.error('check-session-auth CDP read failed', cdpErr);
@@ -54,8 +64,10 @@ serve(async (req) => {
 
     const loginPaths = loginUrls[provider] || [];
     const isBlank = !currentUrl || currentUrl === 'about:blank';
-    const isOnLoginPage = isBlank || loginPaths.some((path) => currentUrl.includes(path));
-    const authenticated = !isOnLoginPage && currentUrl.includes(new URL(provider === 'adp' ? 'https://my.adp.com' : currentUrl).hostname.split('.').slice(-2).join('.'));
+    const textAndUrl = `${currentUrl} ${pageTitle} ${bodyText}`.toLowerCase();
+    const isOnLoginPage = isBlank || loginPaths.some((path) => currentUrl.includes(path)) || textAndUrl.includes('forgot your user id') || textAndUrl.includes('forgot your password');
+    const hasDashboardHint = (dashboardHints[provider] || []).some((hint) => textAndUrl.includes(hint));
+    const authenticated = !isOnLoginPage && hasDashboardHint;
 
     return new Response(
       JSON.stringify({ authenticated, currentUrl, pageTitle }),
