@@ -102,7 +102,7 @@ const AuthIframe = ({ browserSessionUrl, providerUrl, providerName }: { browserS
   const [loaded, setLoaded] = useState(false);
   const iframeSrc = browserSessionUrl;
   return (
-    <div className="relative w-full h-[360px]">
+    <div className="relative w-full h-[480px]">
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
           <p className="text-xs text-muted-foreground">Loading {providerName} portal…</p>
