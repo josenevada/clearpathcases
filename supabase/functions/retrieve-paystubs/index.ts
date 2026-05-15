@@ -20,35 +20,87 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
     timeout: 30000,
   });
 
-  // Dismiss "Go Paperless" / "Paperless Settings" / similar modals.
-  // ADP's modal close is an icon-only button with no accessible name,
-  // so we try a stack of strategies: named buttons, common close selectors,
-  // then Escape as a last resort. Run twice in case multiple modals stack.
-  const closeSelectors = [
+  // Dismiss the ADP "Go Paperless" / "Paperless Settings" interstitial.
+  // Mirrors the agent's detect → identify → close → verify loop:
+  //   1. Detect: is a modal/overlay visible?
+  //   2. Identify: try labelled buttons ("Maybe Later", "Remind me later", "No thanks", etc.),
+  //                then icon-only close controls, then Escape.
+  //   3. Close: click whatever matches first.
+  //   4. Verify: re-check that the modal is gone before moving on.
+  // Run several passes in case the popup stacks (paperless tax + paperless pay).
+  const dialogSel = '[role="dialog"], .modal, .sdf-dialog, .sdf-modal, [class*="paperless" i]';
+  const namedButtons = [
+    'Maybe Later',
+    'Remind me later',
+    'Remind Me Later',
+    'No thanks',
+    'No Thanks',
+    'Not now',
+    'Not Now',
+    'Cancel',
+    'Skip',
+    'Dismiss',
+    'Close dialog',
+    'Close',
+  ];
+  const iconCloseSelectors = [
+    '#close-icon',
+    'button#close-icon',
     'button[aria-label*="close" i]',
     'button[title*="close" i]',
     'button[data-testid*="close" i]',
     '[role="dialog"] button:has(svg)',
-    '.modal-close, .close-button, .sdf-dialog-close',
+    '[role="dialog"] [class*="close" i]',
+    '.modal-close, .close-button, .sdf-dialog-close, .sdf-icon-close',
   ];
-  for (let pass = 0; pass < 2; pass++) {
-    for (const label of ['Close dialog', 'Close', 'Not now', 'Maybe later', 'No thanks', 'Skip', 'Dismiss']) {
+
+  for (let pass = 0; pass < 4; pass++) {
+    // 1. Detect
+    const dialog = page.locator(dialogSel).first();
+    const visible = await dialog.isVisible({ timeout: 400 }).catch(() => false);
+    if (!visible) break;
+    console.log(`paperless modal detected (pass ${pass + 1}), attempting to dismiss`);
+
+    let dismissed = false;
+
+    // 2/3. Identify + close — labelled buttons first
+    for (const label of namedButtons) {
       try {
-        const btn = page.getByRole('button', { name: new RegExp(label, 'i') }).first();
-        if (await btn.isVisible({ timeout: 800 })) await btn.click({ timeout: 1500 });
-      } catch (_) { /* no popup */ }
+        const btn = page.getByRole('button', { name: new RegExp(`^\\s*${label}\\s*$`, 'i') }).first();
+        if (await btn.isVisible({ timeout: 400 })) {
+          await btn.click({ timeout: 1500 });
+          dismissed = true;
+          break;
+        }
+      } catch (_) { /* try next */ }
     }
-    for (const sel of closeSelectors) {
-      try {
-        const el = page.locator(sel).first();
-        if (await el.isVisible({ timeout: 600 })) await el.click({ timeout: 1500 });
-      } catch (_) { /* not present */ }
+
+    // Icon-only close controls
+    if (!dismissed) {
+      for (const sel of iconCloseSelectors) {
+        try {
+          const el = page.locator(sel).first();
+          if (await el.isVisible({ timeout: 400 })) {
+            await el.click({ timeout: 1500 });
+            dismissed = true;
+            break;
+          }
+        } catch (_) { /* try next */ }
+      }
     }
-    try { await page.keyboard.press('Escape'); } catch (_) { /* ignore */ }
-    await page.waitForTimeout(500);
-    // Stop if no dialog visible.
-    const dlg = page.locator('[role="dialog"], .modal, .sdf-dialog').first();
-    if (!(await dlg.isVisible({ timeout: 300 }).catch(() => false))) break;
+
+    // Escape as last resort
+    if (!dismissed) {
+      try { await page.keyboard.press('Escape'); } catch (_) { /* ignore */ }
+    }
+
+    // 4. Verify
+    await page.waitForTimeout(600);
+    const stillThere = await dialog.isVisible({ timeout: 400 }).catch(() => false);
+    if (!stillThere) {
+      console.log('paperless modal dismissed');
+      break;
+    }
   }
 
   // Wait for the statements list to render.
