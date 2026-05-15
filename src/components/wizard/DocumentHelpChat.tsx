@@ -491,13 +491,7 @@ const DocumentHelpChat = ({
             <span className="text-xs font-medium text-foreground">Secure connection to {providerName}</span>
           </div>
           {browserSessionUrl ? (
-            <iframe
-              src={browserSessionUrl}
-              title={`${providerName} login`}
-              className="w-full h-[360px] bg-background"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-              allow="clipboard-read; clipboard-write"
-            />
+            <AuthIframe browserSessionUrl={browserSessionUrl} providerName={providerName} />
           ) : (
             <div className="h-[360px] flex items-center justify-center text-sm text-muted-foreground">
               Connecting…
