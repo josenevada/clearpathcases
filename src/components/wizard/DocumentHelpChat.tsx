@@ -486,7 +486,7 @@ const DocumentHelpChat = ({
     if (msg.kind === 'agent-status') {
       const provider: ProviderId = msg.payload?.provider;
       const idx: number = msg.payload?.statusIdx ?? 0;
-      const text = STATUS_MESSAGES[provider]?.[idx] ?? 'Working…';
+      const text = msg.payload?.customMessage ?? STATUS_MESSAGES[provider]?.[idx] ?? 'Working…';
       return (
         <div className="flex items-center gap-2.5">
           <motion.span
