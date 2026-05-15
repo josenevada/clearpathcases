@@ -313,13 +313,13 @@ serve(async (req) => {
       console.error('paystub retrieval failed before upload', e);
     } finally {
       // Playwright's CDP browser uses close(), not disconnect(), in this runtime.
-      try { await (browser as any).close?.(); } catch (_) { /* ignore */ }
+      try { await withTimeout((browser as any).close?.() ?? Promise.resolve(), 1000, 'browser close'); } catch (_) { /* ignore */ }
     }
 
     console.log('paystub downloads captured:', downloads.length);
 
     if (downloads.length === 0) {
-      await releaseSession();
+      await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
       return new Response(
         JSON.stringify({ success: false, error: retrievalError || 'No paystub downloads were captured.', elapsedMs: Date.now() - startedAt }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -396,7 +396,7 @@ serve(async (req) => {
       });
     }
 
-    await releaseSession();
+    await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
 
     return new Response(
       JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles, elapsedMs: Date.now() - startedAt }),
@@ -404,7 +404,7 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error('retrieve-paystubs error', err);
-    await releaseSession?.();
+    if (releaseSession) await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
     return new Response(
       JSON.stringify({ success: false, error: String((err as Error).message ?? err), elapsedMs: Date.now() - startedAt }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
