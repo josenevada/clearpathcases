@@ -144,7 +144,7 @@ serve(async (req) => {
       return true;
     };
 
-    const downloads = await waitForDownloads(sessionId, browserbaseApiKey, 1);
+    const downloads = await waitForDownloads(sessionId, browserbaseApiKey, 4);
     console.log('Browserbase downloads found', downloads.map((d) => ({ id: d.id, filename: d.filename, mimeType: d.mimeType, size: d.size })));
 
     for (const download of downloads.slice(0, 4)) {
