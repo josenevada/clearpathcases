@@ -43,6 +43,27 @@ serve(async (req) => {
       userMetadata: { caseId, provider },
     });
 
+    // Navigate to provider URL before returning
+    // so the iframe shows the login page immediately
+    const navRes = await fetch(
+      `https://api.browserbase.com/v1/sessions/${session.id}/navigate`,
+      {
+        method: 'POST',
+        headers: {
+          'X-BB-API-Key': Deno.env.get('BROWSERBASE_API_KEY')!,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: providerUrls[provider],
+        }),
+      }
+    );
+    if (!navRes.ok) {
+      console.error('Navigation failed:', await navRes.text());
+    }
+    // Wait for page to start loading
+    await new Promise((r) => setTimeout(r, 2000));
+
     // liveUrls may need a separate call depending on SDK version
     let browserSessionUrl: string | undefined =
       (session as any).liveUrls?.browser ?? (session as any).debuggerFullscreenUrl;
