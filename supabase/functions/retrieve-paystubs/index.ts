@@ -255,6 +255,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const startedAt = Date.now();
+  let releaseSession: (() => Promise<void>) | undefined;
+
   try {
     const { sessionId, provider, caseId, checklistItemId } = await req.json();
 
@@ -267,6 +270,9 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
     const bb = new Browserbase({ apiKey });
+    releaseSession = async () => {
+      try { await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any); } catch (_) { /* ignore */ }
+    };
     const session: any = await bb.sessions.retrieve(sessionId);
 
     const connectUrl =
@@ -278,6 +284,7 @@ serve(async (req) => {
     const page = context.pages()[0] ?? (await context.newPage());
 
     let downloads: Download[] = [];
+    let retrievalError: string | null = null;
     try {
       if (provider === 'adp') {
         downloads = await runAdp(page, 4);
@@ -291,12 +298,23 @@ serve(async (req) => {
           { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
+    } catch (e) {
+      retrievalError = String((e as Error).message ?? e);
+      console.error('paystub retrieval failed before upload', e);
     } finally {
       // Playwright's CDP browser uses close(), not disconnect(), in this runtime.
       try { await (browser as any).close?.(); } catch (_) { /* ignore */ }
     }
 
     console.log('paystub downloads captured:', downloads.length);
+
+    if (downloads.length === 0) {
+      await releaseSession();
+      return new Response(
+        JSON.stringify({ success: false, error: retrievalError || 'No paystub downloads were captured.', elapsedMs: Date.now() - startedAt }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -368,18 +386,17 @@ serve(async (req) => {
       });
     }
 
-    try {
-      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
-    } catch (_) { /* ignore */ }
+    await releaseSession();
 
     return new Response(
-      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
+      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles, elapsedMs: Date.now() - startedAt }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('retrieve-paystubs error', err);
+    await releaseSession?.();
     return new Response(
-      JSON.stringify({ success: false, error: String((err as Error).message ?? err) }),
+      JSON.stringify({ success: false, error: String((err as Error).message ?? err), elapsedMs: Date.now() - startedAt }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
