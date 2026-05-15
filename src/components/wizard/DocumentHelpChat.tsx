@@ -436,12 +436,18 @@ const DocumentHelpChat = ({
 
   const showAgentSuccess = (
     provider: ProviderId,
-    files: Array<{ fileName: string; year: string; employerName?: string }>,
+    files: Array<{ fileName: string; year?: string; date?: string; employerName?: string }>,
   ) => {
-    const yearList = files.map((f) => f.year).join(' and ');
-    const employer = files.find((f) => f.employerName)?.employerName;
-    const employerSuffix = employer ? ` from ${employer}` : '';
-    const msg = `Got it! I found your W-2 for ${yearList}${employerSuffix}. It's been added to your documents.`;
+    const docType = docTypeRef.current;
+    let msg: string;
+    if (docType === 'w2') {
+      const yearList = files.map((f) => f.year).filter(Boolean).join(' and ');
+      const employer = files.find((f) => f.employerName)?.employerName;
+      const employerSuffix = employer ? ` from ${employer}` : '';
+      msg = `Got it! I found your W-2 for ${yearList}${employerSuffix}. It's been added to your documents.`;
+    } else {
+      msg = `Got it! I retrieved ${files.length} pay stub${files.length === 1 ? '' : 's'}. They've been added to your documents.`;
+    }
     replaceLastAgentMessage(() => ({
       role: 'assistant',
       kind: 'agent-success',
@@ -452,8 +458,10 @@ const DocumentHelpChat = ({
   };
 
   const showAgentFailure = (provider: ProviderId, reason?: string) => {
+    const docType = docTypeRef.current;
+    const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
     const intro = reason ? `${reason} ` : '';
-    const msg = `${intro}No worries — sometimes these portals are tricky. Here's a direct link to download your W-2 from ${PROVIDERS.find((p) => p.id === provider)?.name ?? provider} yourself:`;
+    const msg = `${intro}No worries — sometimes these portals are tricky. Here's a direct link to download your ${docName} from ${PROVIDERS.find((p) => p.id === provider)?.name ?? provider} yourself:`;
     replaceLastAgentMessage(() => ({
       role: 'assistant',
       kind: 'agent-failed',
