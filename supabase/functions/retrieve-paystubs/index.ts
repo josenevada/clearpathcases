@@ -213,7 +213,8 @@ serve(async (req) => {
         );
       }
     } finally {
-      browser.disconnect();
+      // Playwright's CDP browser uses close(), not disconnect(), in this runtime.
+      try { await (browser as any).close?.(); } catch (_) { /* ignore */ }
     }
 
     console.log('paystub downloads captured:', downloads.length);
