@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import Browserbase from 'npm:@browserbasehq/sdk';
+import { chromium } from 'npm:playwright-core@1.47.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,16 +30,35 @@ serve(async (req) => {
       });
     }
 
-    const bb = new Browserbase({ apiKey: Deno.env.get('BROWSERBASE_API_KEY')! });
+    const apiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
+    const bb = new Browserbase({ apiKey });
     const session: any = await bb.sessions.retrieve(sessionId);
 
-    const currentUrl: string = session?.currentUrl ?? session?.startUrl ?? '';
+    let currentUrl: string = session?.currentUrl ?? session?.startUrl ?? '';
+    let pageTitle = '';
+
+    try {
+      const connectUrl = (session as any).connectUrl
+        ?? `wss://connect.browserbase.com?apiKey=${apiKey}&sessionId=${sessionId}`;
+      const browser = await chromium.connectOverCDP(connectUrl);
+      const context = browser.contexts()[0] ?? (await browser.newContext());
+      const page = context.pages()[0] ?? (await context.newPage());
+      currentUrl = page.url() || currentUrl;
+      pageTitle = await page.title().catch(() => '');
+      await browser.close();
+    } catch (cdpErr) {
+      console.error('check-session-auth CDP read failed', cdpErr);
+    }
+
+    console.log('check-session-auth current page', { provider, currentUrl, pageTitle });
 
     const loginPaths = loginUrls[provider] || [];
-    const isOnLoginPage = !currentUrl || loginPaths.some((path) => currentUrl.includes(path));
+    const isBlank = !currentUrl || currentUrl === 'about:blank';
+    const isOnLoginPage = isBlank || loginPaths.some((path) => currentUrl.includes(path));
+    const authenticated = !isOnLoginPage && currentUrl.includes(new URL(provider === 'adp' ? 'https://my.adp.com' : currentUrl).hostname.split('.').slice(-2).join('.'));
 
     return new Response(
-      JSON.stringify({ authenticated: !isOnLoginPage, currentUrl }),
+      JSON.stringify({ authenticated, currentUrl, pageTitle }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
