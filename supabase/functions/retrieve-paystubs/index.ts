@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Stagehand } from 'npm:@browserbasehq/stagehand';
+import Browserbase from 'npm:@browserbasehq/sdk';
 
 type BrowserbaseDownload = {
   id: string;
@@ -17,7 +18,7 @@ const corsHeaders = {
 };
 
 const instructions: Record<string, string> = {
-  adp: 'You are already signed in on the ADP dashboard. Navigate to Pay, Pay Statements, or Pay History. Download the 4 most recent pay statements/pay stubs as PDFs. If there is a Tax Statements tile, do not use it; pay stubs are under Pay Statements or Pay History.',
+  adp: `You are on the ADP dashboard at my.adp.com. Click on "Pay" in the top navigation tabs. Find pay statements from the last 2 months. For each one, get the PDF download link.`,
   workday: 'Navigate to Pay section, then Pay History or Payslips. Download pay stubs from the last 2 months as PDFs.',
   paychex: 'Navigate to Pay History and download pay stubs from the last 2 months as PDFs.',
   gusto: 'Navigate to Documents or Pay Stubs section and download pay stubs from the last 2 months.',
@@ -70,7 +71,7 @@ serve(async (req) => {
     const stagehand = new Stagehand({
       env: 'BROWSERBASE',
       apiKey: browserbaseApiKey,
-      browserbaseSessionID: sessionId,
+      browserbaseSessionId: sessionId,
       modelName: 'claude-sonnet-4-20250514',
       modelClientOptions: { apiKey: Deno.env.get('ANTHROPIC_API_KEY')! },
     } as any);
@@ -211,6 +212,14 @@ serve(async (req) => {
       await stagehand.close();
     } catch (_) {
       // ignore
+    }
+
+    // Terminate the Browserbase session
+    try {
+      const bb = new Browserbase({ apiKey: Deno.env.get('BROWSERBASE_API_KEY')! });
+      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
+    } catch (_) {
+      // ignore termination errors
     }
 
     return new Response(
