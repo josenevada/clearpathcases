@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Stagehand } from 'npm:@browserbasehq/stagehand';
+import Browserbase from 'npm:@browserbasehq/sdk';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +9,7 @@ const corsHeaders = {
 };
 
 const instructions: Record<string, string> = {
-  adp: 'You are on the ADP dashboard at my.adp.com. Navigate to Tax Statements and download W-2 forms for the last 2 years. Look for a "Tax Statements" or "Year End Tax Statements" link in the navigation. Download each W-2 as a PDF.',
+  adp: `You are on the ADP dashboard at my.adp.com. Click on "Tax Statements" in the top navigation tabs (you can see Pay, Direct Deposit, Tax Statements). Once on the Tax Statements page, find W-2 forms for 2024 and 2023. Click each one to get a download link or PDF URL.`,
   workday: 'Navigate to Pay section, then Tax Documents, and locate W-2 forms for the last 2 years.',
   paychex: 'Navigate to Tax Documents and locate W-2 forms for the last 2 years.',
   gusto: 'Navigate to Documents then Tax Documents and locate W-2 forms.',
@@ -33,7 +34,7 @@ serve(async (req) => {
     const stagehand = new Stagehand({
       env: 'BROWSERBASE',
       apiKey: Deno.env.get('BROWSERBASE_API_KEY')!,
-      browserbaseSessionID: sessionId,
+      browserbaseSessionId: sessionId,
       modelName: 'claude-sonnet-4-20250514',
       modelClientOptions: { apiKey: Deno.env.get('ANTHROPIC_API_KEY')! },
     } as any);

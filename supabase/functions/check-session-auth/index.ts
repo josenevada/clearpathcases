@@ -8,20 +8,27 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const loginUrls: Record<string, string[]> = {
-  adp: ['accounts.adp.com', 'online.adp.com/signin'],
-  workday: ['wd5.myworkday.com/wday/authgwy', 'impl.workday.com/login', 'myworkday.com/login'],
-  paychex: ['myapps.paychex.com/landing_pages/login', 'paychex.com/login'],
-  gusto: ['app.gusto.com/login', 'gusto.com/login'],
-  paylocity: ['access.paylocity.com'],
-};
-
-const dashboardHints: Record<string, string[]> = {
-  adp: ['#/dashboard', 'tax statements', 'pay statements', 'paystub', 'pay stub', 'dashboard'],
-  workday: ['home', 'pay', 'payslips', 'tax documents'],
-  paychex: ['dashboard', 'pay history', 'tax documents'],
-  gusto: ['dashboard', 'documents', 'pay stubs'],
-  paylocity: ['self service portal', 'pay', 'history'],
+const authenticatedUrls: Record<string, string[]> = {
+  adp: [
+    'my.adp.com/#/dashboard',
+    'my.adp.com/dashboard',
+    'myadp.my.site.com',
+  ],
+  workday: [
+    'myworkday.com/d/',
+    'wd5.myworkday.com/d/',
+  ],
+  paychex: [
+    'myapps.paychex.com/home',
+    'paychex.com/dashboard',
+  ],
+  gusto: [
+    'app.gusto.com/dashboard',
+    'app.gusto.com/home',
+  ],
+  paylocity: [
+    'access.paylocity.com/Paylocity/Dashboard',
+  ],
 };
 
 serve(async (req) => {
@@ -62,15 +69,11 @@ serve(async (req) => {
 
     console.log('check-session-auth current page', { provider, currentUrl, pageTitle });
 
-    const loginPaths = loginUrls[provider] || [];
-    const isBlank = !currentUrl || currentUrl === 'about:blank';
-    const textAndUrl = `${currentUrl} ${pageTitle} ${bodyText}`.toLowerCase();
-    const isOnLoginPage = isBlank || loginPaths.some((path) => currentUrl.includes(path)) || textAndUrl.includes('forgot your user id') || textAndUrl.includes('forgot your password');
-    const hasDashboardHint = (dashboardHints[provider] || []).some((hint) => textAndUrl.includes(hint));
-    const authenticated = !isOnLoginPage && hasDashboardHint;
+    const authPaths = authenticatedUrls[provider] || [];
+    const isAuthenticated = authPaths.some((path) => currentUrl.includes(path));
 
     return new Response(
-      JSON.stringify({ authenticated, currentUrl, pageTitle }),
+      JSON.stringify({ authenticated: isAuthenticated, currentUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
