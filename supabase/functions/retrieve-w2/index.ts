@@ -142,6 +142,14 @@ serve(async (req) => {
       // ignore
     }
 
+    // Terminate the Browserbase session
+    try {
+      const bb = new Browserbase({ apiKey: Deno.env.get('BROWSERBASE_API_KEY')! });
+      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
+    } catch (_) {
+      // ignore termination errors
+    }
+
     return new Response(
       JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
