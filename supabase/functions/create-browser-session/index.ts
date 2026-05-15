@@ -43,6 +43,21 @@ serve(async (req) => {
       userMetadata: { caseId, provider },
     });
 
+    // Navigate to provider URL so the iframe shows the login page immediately
+    try {
+      const { chromium } = await import('npm:playwright-core');
+      const browser = await chromium.connectOverCDP((session as any).connectUrl);
+      const context = browser.contexts()[0];
+      const page = context.pages()[0] || (await context.newPage());
+      await page.goto(providerUrls[provider], {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000,
+      });
+      await browser.close();
+    } catch (navErr) {
+      console.error('initial navigation failed', navErr);
+    }
+
     // liveUrls may need a separate call depending on SDK version
     let browserSessionUrl: string | undefined =
       (session as any).liveUrls?.browser ?? (session as any).debuggerFullscreenUrl;
