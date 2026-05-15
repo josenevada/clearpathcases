@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const instructions: Record<string, string> = {
-  adp: 'Navigate to Pay & Tax section and find W-2 tax documents. Open the most recent 2 years of W-2 forms.',
+  adp: 'You are on the ADP dashboard at my.adp.com. Navigate to Tax Statements and download W-2 forms for the last 2 years. Look for a "Tax Statements" or "Year End Tax Statements" link in the navigation. Download each W-2 as a PDF.',
   workday: 'Navigate to Pay section, then Tax Documents, and locate W-2 forms for the last 2 years.',
   paychex: 'Navigate to Tax Documents and locate W-2 forms for the last 2 years.',
   gusto: 'Navigate to Documents then Tax Documents and locate W-2 forms.',
