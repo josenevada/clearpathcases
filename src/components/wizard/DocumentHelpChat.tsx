@@ -349,6 +349,7 @@ const DocumentHelpChat = ({
     // Kick off browser session creation in parallel
     let sessionId = '';
     let browserSessionUrl: string | undefined;
+    let providerUrl: string | undefined;
     try {
       const { data, error } = await supabase.functions.invoke('create-browser-session', {
         body: { provider, caseId },
@@ -356,6 +357,7 @@ const DocumentHelpChat = ({
       if (error) throw error;
       sessionId = data?.sessionId;
       browserSessionUrl = data?.browserSessionUrl;
+      providerUrl = data?.providerUrl;
       if (!sessionId) throw new Error('No session id returned');
     } catch (err) {
       console.error('create-browser-session failed', err);
