@@ -1,6 +1,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Stagehand } from 'npm:@browserbasehq/stagehand';
 
+type BrowserbaseDownload = {
+  id: string;
+  sessionId: string;
+  filename: string;
+  mimeType?: string;
+  size?: number;
+  createdAt?: string;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -8,12 +17,39 @@ const corsHeaders = {
 };
 
 const instructions: Record<string, string> = {
-  adp: 'You are on the ADP dashboard. Navigate to Pay statements and download pay stubs from the last 2 months. Look for "Pay" or "Pay Statements" in the navigation. Download each pay stub as PDF.',
+  adp: 'You are already signed in on the ADP dashboard. Navigate to Pay, Pay Statements, or Pay History. Download the 4 most recent pay statements/pay stubs as PDFs. If there is a Tax Statements tile, do not use it; pay stubs are under Pay Statements or Pay History.',
   workday: 'Navigate to Pay section, then Pay History or Payslips. Download pay stubs from the last 2 months as PDFs.',
   paychex: 'Navigate to Pay History and download pay stubs from the last 2 months as PDFs.',
   gusto: 'Navigate to Documents or Pay Stubs section and download pay stubs from the last 2 months.',
   paylocity: 'Navigate to Pay section then Pay History and download pay stubs from the last 2 months as PDFs.',
 };
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const safeName = (name: string) => name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
+
+async function listDownloads(sessionId: string, apiKey: string): Promise<BrowserbaseDownload[]> {
+  const res = await fetch(`https://api.browserbase.com/v1/downloads?sessionId=${sessionId}&limit=20`, {
+    headers: { 'X-BB-API-Key': apiKey },
+  });
+  if (!res.ok) {
+    console.error('Browserbase list downloads failed', res.status, await res.text());
+    return [];
+  }
+  const data = await res.json().catch(() => ({ downloads: [] }));
+  return (data.downloads || []) as BrowserbaseDownload[];
+}
+
+async function waitForDownloads(sessionId: string, apiKey: string, minCount = 1): Promise<BrowserbaseDownload[]> {
+  const end = Date.now() + 60000;
+  let downloads: BrowserbaseDownload[] = [];
+  while (Date.now() < end) {
+    downloads = await listDownloads(sessionId, apiKey);
+    if (downloads.length >= minCount) return downloads;
+    await wait(3000);
+  }
+  return downloads;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
