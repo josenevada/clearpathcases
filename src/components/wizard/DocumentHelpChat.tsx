@@ -18,8 +18,10 @@ interface ChatMessage {
 const TYPE_CHAR_MS = 14;
 
 const W2_LABEL = 'W-2s (Last 2 Years)';
+const PAYSTUB_LABEL = 'Pay Stubs (Last 2 Months)';
 
 type ProviderId = 'adp' | 'workday' | 'paychex' | 'gusto' | 'paylocity';
+type DocType = 'w2' | 'paystub';
 
 const PROVIDERS: Array<{ id: ProviderId; name: string }> = [
   { id: 'adp', name: 'ADP' },
