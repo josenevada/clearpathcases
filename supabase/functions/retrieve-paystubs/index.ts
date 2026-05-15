@@ -11,6 +11,100 @@ const corsHeaders = {
 const safeName = (name: string) =>
   name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
 
+async function dismissAdpPaperlessModal(page: Page, reason = 'pre-action') {
+  const dialogSel = [
+    'fuse-lazy-loader[slot="go-paperless"]',
+    '[data-e2e="prompt-modal"]',
+    '[data-e2e="paperless-prompt"]',
+    'paperless-view-wrapper',
+    'sdf-focus-pane#prompt-modal',
+    'sdf-focus-pane[data-e2e="prompt-modal"]',
+    '[role="dialog"]',
+    '.modal, .sdf-dialog, .sdf-modal',
+    '[class*="paperless" i]',
+  ].join(', ');
+
+  const visible = async () => page.locator(dialogSel).first().isVisible({ timeout: 500 }).catch(() => false);
+
+  for (let pass = 0; pass < 4; pass++) {
+    if (!(await visible())) break;
+    console.log(`paperless modal detected (${reason}, pass ${pass + 1}), attempting dismissal`);
+
+    const didClick = await page.evaluate(() => {
+      const roots: Array<Document | ShadowRoot> = [document];
+      for (let i = 0; i < roots.length; i++) {
+        roots[i].querySelectorAll('*').forEach((el) => {
+          const shadowRoot = (el as HTMLElement & { shadowRoot?: ShadowRoot }).shadowRoot;
+          if (shadowRoot && !roots.includes(shadowRoot)) roots.push(shadowRoot);
+        });
+      }
+
+      const labels = /close|dismiss|skip|maybe later|remind me later|not now|no thanks|cancel/i;
+      for (const root of roots) {
+        const candidates = Array.from(root.querySelectorAll<HTMLElement>(
+          'button, [role="button"], sdf-button, sdf-icon-button, [aria-label], [title], [id*="close" i], [class*="close" i]'
+        ));
+
+        for (const el of candidates) {
+          const text = [
+            el.innerText,
+            el.textContent,
+            el.getAttribute('aria-label'),
+            el.getAttribute('title'),
+            el.id,
+            el.className?.toString(),
+          ].filter(Boolean).join(' ');
+          if (!labels.test(text)) continue;
+
+          el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+          el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
+          el.click();
+          el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true }));
+          return true;
+        }
+      }
+      return false;
+    }).catch(() => false);
+
+    if (!didClick) {
+      await page.keyboard.press('Escape').catch(() => {});
+    }
+
+    await page.waitForTimeout(700);
+    if (!(await visible())) {
+      console.log('paperless modal dismissed');
+      return;
+    }
+
+    const removed = await page.evaluate(() => {
+      const selectors = [
+        'fuse-lazy-loader[slot="go-paperless"]',
+        '[data-e2e="prompt-modal"]',
+        '[data-e2e="paperless-prompt"]',
+        'paperless-view-wrapper',
+        'sdf-focus-pane#prompt-modal',
+        'sdf-focus-pane[data-e2e="prompt-modal"]',
+      ];
+      let count = 0;
+      for (const selector of selectors) {
+        document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+          el.style.pointerEvents = 'none';
+          el.style.display = 'none';
+          el.remove();
+          count++;
+        });
+      }
+      return count;
+    }).catch(() => 0);
+
+    if (removed > 0) {
+      console.log(`paperless modal force-removed ${removed} blocker(s)`);
+      await page.waitForTimeout(400);
+      return;
+    }
+  }
+}
+
 // Deterministic Playwright script for ADP. Returns the downloaded PDFs.
 async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
   const downloads: Download[] = [];
@@ -24,85 +118,8 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
   await page.waitForTimeout(2500);
 
   // Dismiss the ADP "Go Paperless" / "Paperless Settings" interstitial.
-  // ADP wraps it in custom elements: <sdf-focus-pane data-e2e="prompt-modal">
-  // and <paperless-view-wrapper data-e2e="paperless-prompt">, NOT [role="dialog"].
-  const dialogSel = [
-    '[data-e2e="prompt-modal"]',
-    '[data-e2e="paperless-prompt"]',
-    'paperless-view-wrapper',
-    'sdf-focus-pane',
-    '[role="dialog"]',
-    '.modal, .sdf-dialog, .sdf-modal',
-    '[class*="paperless" i]',
-  ].join(', ');
-
-  const namedButtons = [
-    'Maybe Later', 'Remind me later', 'Remind Me Later',
-    'No thanks', 'No Thanks', 'Not now', 'Not Now',
-    'Cancel', 'Skip', 'Dismiss', 'Close dialog', 'Close',
-  ];
-  const iconCloseSelectors = [
-    '[data-e2e="prompt-modal"] [id*="close" i]',
-    '[data-e2e="prompt-modal"] [aria-label*="close" i]',
-    '[data-e2e="prompt-modal"] button:has(svg)',
-    '[data-e2e="paperless-prompt"] [aria-label*="close" i]',
-    'sdf-focus-pane [aria-label*="close" i]',
-    'sdf-focus-pane [id*="close" i]',
-    'sdf-focus-pane button:has(svg)',
-    'sdf-icon-button[aria-label*="close" i]',
-    '#close-icon, button#close-icon',
-    'button[aria-label*="close" i]',
-    'button[title*="close" i]',
-    'button[data-testid*="close" i]',
-    '.modal-close, .close-button, .sdf-dialog-close, .sdf-icon-close',
-  ];
-
-  for (let pass = 0; pass < 5; pass++) {
-    const dialog = page.locator(dialogSel).first();
-    const visible = await dialog.isVisible({ timeout: 600 }).catch(() => false);
-    if (!visible) break;
-    console.log(`paperless modal detected (pass ${pass + 1}), attempting to dismiss`);
-
-    let dismissed = false;
-
-    // Labelled buttons SCOPED to the modal first.
-    for (const label of namedButtons) {
-      try {
-        const scoped = page.locator(dialogSel).first()
-          .getByRole('button', { name: new RegExp(`^\\s*${label}\\s*$`, 'i') }).first();
-        if (await scoped.isVisible({ timeout: 300 })) {
-          await scoped.click({ timeout: 1500 });
-          dismissed = true;
-          break;
-        }
-      } catch (_) { /* try next */ }
-    }
-
-    // Icon-only close controls.
-    if (!dismissed) {
-      for (const sel of iconCloseSelectors) {
-        try {
-          const el = page.locator(sel).first();
-          if (await el.isVisible({ timeout: 300 })) {
-            await el.click({ timeout: 1500 });
-            dismissed = true;
-            break;
-          }
-        } catch (_) { /* try next */ }
-      }
-    }
-
-    if (!dismissed) {
-      try { await page.keyboard.press('Escape'); } catch (_) { /* ignore */ }
-    }
-
-    await page.waitForTimeout(800);
-    const stillThere = await dialog.isVisible({ timeout: 400 }).catch(() => false);
-    if (!stillThere) {
-      console.log('paperless modal dismissed');
-      break;
-    }
-  }
+  // ADP wraps it in custom elements and sometimes re-renders it after the list appears.
+  await dismissAdpPaperlessModal(page, 'after navigation');
 
   // Wait for the actual statements list. Avoid generic [role="button"] —
   // ADP renders dozens of those (nav widgets, modal buttons). Scope to statement rows.
@@ -119,6 +136,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
       const count = await rows.count();
       if (i >= count) break;
 
+      await dismissAdpPaperlessModal(page, `before statement ${i}`);
       await rows.nth(i).click({ timeout: 10000 });
 
       // "View statement" opens the statement viewer.
