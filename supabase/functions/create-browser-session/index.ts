@@ -54,7 +54,7 @@ serve(async (req) => {
       const page = context.pages()[0] ?? (await context.newPage());
       await page.goto(providerUrls[provider], { waitUntil: 'domcontentloaded', timeout: 20000 });
       // Detach without closing the remote browser so the live session stays alive.
-      await browser.close();
+      browser.disconnect();
     } catch (navErr) {
       console.error('CDP navigation failed:', navErr);
     }
