@@ -115,7 +115,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
 
   for (let i = 0; i < maxStatements; i++) {
     try {
-      const rows = page.locator('[role="button"]');
+      const rows = page.locator(statementRowSel);
       const count = await rows.count();
       if (i >= count) break;
 
@@ -140,7 +140,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
 
       // Back to the list for the next statement.
       await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-      await page.waitForSelector('[role="button"]', { timeout: 15000 }).catch(() => {});
+      await page.waitForSelector(statementRowSel, { timeout: 15000 }).catch(() => {});
     } catch (e) {
       console.error(`paystub ${i} retrieval failed`, e);
       break;
