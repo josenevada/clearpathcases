@@ -18,8 +18,10 @@ interface ChatMessage {
 const TYPE_CHAR_MS = 14;
 
 const W2_LABEL = 'W-2s (Last 2 Years)';
+const PAYSTUB_LABEL = 'Pay Stubs (Last 2 Months)';
 
 type ProviderId = 'adp' | 'workday' | 'paychex' | 'gusto' | 'paylocity';
+type DocType = 'w2' | 'paystub';
 
 const PROVIDERS: Array<{ id: ProviderId; name: string }> = [
   { id: 'adp', name: 'ADP' },
@@ -98,18 +100,17 @@ const TypewriterMarkdown = ({
   );
 };
 
-const AuthIframe = ({ browserSessionUrl, providerUrl, providerName }: { browserSessionUrl: string; providerUrl?: string; providerName: string }) => {
+const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: string; providerName: string }) => {
   const [loaded, setLoaded] = useState(false);
-  const iframeSrc = browserSessionUrl;
   return (
-    <div className="relative w-full h-[480px]">
+    <div className="relative w-full h-[520px]">
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
           <p className="text-xs text-muted-foreground">Loading {providerName} portal…</p>
         </div>
       )}
       <iframe
-        src={iframeSrc}
+        src={browserSessionUrl}
         title={`${providerName} login`}
         className="w-full h-full bg-background border-0"
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
@@ -164,7 +165,8 @@ const DocumentHelpChat = ({
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isW2Step = documentLabel === W2_LABEL;
-
+  const isPayStubStep = documentLabel === PAYSTUB_LABEL;
+  const docTypeRef = useRef<DocType>('w2');
   // Reset chat when document changes, seed with Alex intro
   useEffect(() => {
     setMessages([{ role: 'assistant', content: ALEX_INTRO }]);
@@ -289,21 +291,19 @@ const DocumentHelpChat = ({
   // W-2 agent flow
   // ─────────────────────────────────────────────
 
-  const startAgentRetrievalIntro = () => {
+  const startAgentRetrievalIntro = (docType: DocType = 'w2') => {
+    docTypeRef.current = docType;
+    const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
+    const userChip = docType === 'w2' ? 'Get my W-2 automatically ✨' : 'Get my pay stubs automatically ✨';
+    const intro =
+      docType === 'w2'
+        ? 'I can retrieve your W-2 directly from your payroll portal — no downloading or scanning needed. Which payroll provider does your employer use?'
+        : 'I can retrieve your recent pay stubs directly from your payroll portal. Which provider does your employer use?';
     setMessages((prev) => [
       ...prev,
-      { role: 'user', content: 'Get my W-2 automatically ✨' },
-      {
-        role: 'assistant',
-        animate: true,
-        content:
-          "I can retrieve your W-2 directly from your payroll portal — no downloading or scanning needed. Which payroll provider does your employer use?",
-      },
-      {
-        role: 'assistant',
-        kind: 'provider-picker',
-        content: '',
-      },
+      { role: 'user', content: userChip },
+      { role: 'assistant', animate: true, content: intro },
+      { role: 'assistant', kind: 'provider-picker', content: '' },
     ]);
   };
 
@@ -390,27 +390,20 @@ const DocumentHelpChat = ({
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
 
-          // Switch back to streaming status messages while retrieving
+          const docType = docTypeRef.current;
+          const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
+
+          // Immediately hide iframe and show success-detected status
           replaceLastAgentMessage(() => ({
             role: 'assistant',
             kind: 'agent-status',
             content: '',
-            payload: { provider, statusIdx: 1, retrieving: true },
+            payload: { provider, customMessage: `You're in! Now retrieving your ${docName}…`, retrieving: true },
           }));
 
-          let rIdx = 1;
-          statusIntervalRef.current = setInterval(() => {
-            rIdx += 1;
-            if (rIdx >= STATUS_MESSAGES[provider].length) {
-              if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
-              statusIntervalRef.current = null;
-              return;
-            }
-            replaceLastAgentMessage((m) => ({ ...m, payload: { ...(m.payload || {}), statusIdx: rIdx } }));
-          }, 1500);
-
           try {
-            const { data: rData, error: rError } = await supabase.functions.invoke('retrieve-w2', {
+            const fnName = docType === 'w2' ? 'retrieve-w2' : 'retrieve-paystubs';
+            const { data: rData, error: rError } = await supabase.functions.invoke(fnName, {
               body: { sessionId, provider, caseId, checklistItemId },
             });
             if (rError) throw rError;
@@ -423,7 +416,7 @@ const DocumentHelpChat = ({
               showAgentFailure(provider);
             }
           } catch (err) {
-            console.error('retrieve-w2 failed', err);
+            console.error('retrieval failed', err);
             cleanupAgent();
             showAgentFailure(provider);
           }
@@ -443,12 +436,18 @@ const DocumentHelpChat = ({
 
   const showAgentSuccess = (
     provider: ProviderId,
-    files: Array<{ fileName: string; year: string; employerName?: string }>,
+    files: Array<{ fileName: string; year?: string; date?: string; employerName?: string }>,
   ) => {
-    const yearList = files.map((f) => f.year).join(' and ');
-    const employer = files.find((f) => f.employerName)?.employerName;
-    const employerSuffix = employer ? ` from ${employer}` : '';
-    const msg = `Got it! I found your W-2 for ${yearList}${employerSuffix}. It's been added to your documents.`;
+    const docType = docTypeRef.current;
+    let msg: string;
+    if (docType === 'w2') {
+      const yearList = files.map((f) => f.year).filter(Boolean).join(' and ');
+      const employer = files.find((f) => f.employerName)?.employerName;
+      const employerSuffix = employer ? ` from ${employer}` : '';
+      msg = `Got it! I found your W-2 for ${yearList}${employerSuffix}. It's been added to your documents.`;
+    } else {
+      msg = `Got it! I retrieved ${files.length} pay stub${files.length === 1 ? '' : 's'}. They've been added to your documents.`;
+    }
     replaceLastAgentMessage(() => ({
       role: 'assistant',
       kind: 'agent-success',
@@ -459,8 +458,10 @@ const DocumentHelpChat = ({
   };
 
   const showAgentFailure = (provider: ProviderId, reason?: string) => {
+    const docType = docTypeRef.current;
+    const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
     const intro = reason ? `${reason} ` : '';
-    const msg = `${intro}No worries — sometimes these portals are tricky. Here's a direct link to download your W-2 from ${PROVIDERS.find((p) => p.id === provider)?.name ?? provider} yourself:`;
+    const msg = `${intro}No worries — sometimes these portals are tricky. Here's a direct link to download your ${docName} from ${PROVIDERS.find((p) => p.id === provider)?.name ?? provider} yourself:`;
     replaceLastAgentMessage(() => ({
       role: 'assistant',
       kind: 'agent-failed',
@@ -493,7 +494,7 @@ const DocumentHelpChat = ({
     if (msg.kind === 'agent-status') {
       const provider: ProviderId = msg.payload?.provider;
       const idx: number = msg.payload?.statusIdx ?? 0;
-      const text = STATUS_MESSAGES[provider]?.[idx] ?? 'Working…';
+      const text = msg.payload?.customMessage ?? STATUS_MESSAGES[provider]?.[idx] ?? 'Working…';
       return (
         <div className="flex items-center gap-2.5">
           <motion.span
@@ -507,7 +508,7 @@ const DocumentHelpChat = ({
     }
 
     if (msg.kind === 'agent-auth') {
-      const { providerName, browserSessionUrl, providerUrl } = msg.payload || {};
+      const { providerName, browserSessionUrl } = msg.payload || {};
       return (
         <div className="rounded-xl border border-border bg-background overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
@@ -515,7 +516,7 @@ const DocumentHelpChat = ({
             <span className="text-xs font-medium text-foreground">Secure connection to {providerName}</span>
           </div>
           {browserSessionUrl ? (
-            <AuthIframe browserSessionUrl={browserSessionUrl} providerUrl={providerUrl} providerName={providerName} />
+            <AuthIframe browserSessionUrl={browserSessionUrl} providerName={providerName} />
           ) : (
             <div className="h-[360px] flex items-center justify-center text-sm text-muted-foreground">
               Connecting…
@@ -651,11 +652,20 @@ const DocumentHelpChat = ({
                 <div className="flex flex-wrap gap-2 pl-8">
                   {isW2Step && caseId && checklistItemId && (
                     <button
-                      onClick={startAgentRetrievalIntro}
+                      onClick={() => startAgentRetrievalIntro('w2')}
                       className="text-xs px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-medium"
                     >
                       <Sparkles className="w-3 h-3" />
                       Get my W-2 automatically
+                    </button>
+                  )}
+                  {isPayStubStep && caseId && checklistItemId && (
+                    <button
+                      onClick={() => startAgentRetrievalIntro('paystub')}
+                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-medium"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Get my pay stubs automatically
                     </button>
                   )}
                   {(language === 'es'

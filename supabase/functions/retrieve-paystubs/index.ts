@@ -8,11 +8,11 @@ const corsHeaders = {
 };
 
 const instructions: Record<string, string> = {
-  adp: 'You are on the ADP dashboard at my.adp.com. Navigate to Tax Statements and download W-2 forms for the last 2 years. Look for a "Tax Statements" or "Year End Tax Statements" link in the navigation. Download each W-2 as a PDF.',
-  workday: 'Navigate to Pay section, then Tax Documents, and locate W-2 forms for the last 2 years.',
-  paychex: 'Navigate to Tax Documents and locate W-2 forms for the last 2 years.',
-  gusto: 'Navigate to Documents then Tax Documents and locate W-2 forms.',
-  paylocity: 'Navigate to Pay then Tax Documents and locate W-2 forms for the last 2 years.',
+  adp: 'You are on the ADP dashboard. Navigate to Pay statements and download pay stubs from the last 2 months. Look for "Pay" or "Pay Statements" in the navigation. Download each pay stub as PDF.',
+  workday: 'Navigate to Pay section, then Pay History or Payslips. Download pay stubs from the last 2 months as PDFs.',
+  paychex: 'Navigate to Pay History and download pay stubs from the last 2 months as PDFs.',
+  gusto: 'Navigate to Documents or Pay Stubs section and download pay stubs from the last 2 months.',
+  paylocity: 'Navigate to Pay section then Pay History and download pay stubs from the last 2 months as PDFs.',
 };
 
 serve(async (req) => {
@@ -43,7 +43,7 @@ serve(async (req) => {
     await stagehand.page.act(instructions[provider] || instructions.adp);
 
     const result: any = await stagehand.page.extract({
-      instruction: 'Find W-2 document download links or PDF files. Return one entry per W-2 with its tax year, a direct downloadUrl to the PDF, and the employer name if visible.',
+      instruction: 'Find pay stub document download links or PDF files for the last 2 months. Return one entry per pay stub with its pay period date (YYYY-MM-DD if possible), a direct downloadUrl to the PDF, and the employer name if visible.',
       schema: {
         type: 'object',
         properties: {
@@ -52,11 +52,11 @@ serve(async (req) => {
             items: {
               type: 'object',
               properties: {
-                year: { type: 'string' },
+                date: { type: 'string' },
                 downloadUrl: { type: 'string' },
                 employerName: { type: 'string' },
               },
-              required: ['year', 'downloadUrl'],
+              required: ['downloadUrl'],
             },
           },
         },
@@ -65,15 +65,15 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const uploadedFiles: Array<{ fileName: string; year: string; employerName?: string }> = [];
+    const uploadedFiles: Array<{ fileName: string; date: string; employerName?: string }> = [];
 
-    for (const doc of (result?.documents ?? []) as Array<{ year: string; downloadUrl: string; employerName?: string }>) {
+    for (const doc of (result?.documents ?? []) as Array<{ date?: string; downloadUrl: string; employerName?: string }>) {
       try {
         const dl = await fetch(doc.downloadUrl);
         if (!dl.ok) continue;
         const buffer = await dl.arrayBuffer();
-        const safeEmployer = (doc.employerName || 'employer').replace(/[^a-z0-9]+/gi, '-').slice(0, 40);
-        const fileName = `W2-${doc.year}-${safeEmployer}.pdf`;
+        const dateStr = doc.date || 'unknown';
+        const fileName = `PayStub-${dateStr}.pdf`;
         const storagePath = `${caseId}/${checklistItemId}/${fileName}`;
 
         const storageRes = await fetch(
@@ -118,7 +118,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Mark checklist item completed
         await fetch(`${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`, {
           method: 'PATCH',
           headers: {
@@ -129,7 +128,7 @@ serve(async (req) => {
           body: JSON.stringify({ completed: true }),
         });
 
-        uploadedFiles.push({ fileName, year: doc.year, employerName: doc.employerName });
+        uploadedFiles.push({ fileName, date: dateStr, employerName: doc.employerName });
       } catch (e) {
         console.error('document download/upload error', e);
       }
@@ -146,7 +145,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
-    console.error('retrieve-w2 error', err);
+    console.error('retrieve-paystubs error', err);
     return new Response(
       JSON.stringify({ success: false, error: String((err as Error).message ?? err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
