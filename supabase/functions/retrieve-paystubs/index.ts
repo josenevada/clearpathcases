@@ -170,6 +170,7 @@ async function clickAdpStatementRow(page: Page, index: number) {
 // Deterministic Playwright script for ADP. Returns the downloaded PDFs.
 async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
   const downloads: Download[] = [];
+  page.setDefaultTimeout(8000);
 
   await page.goto('https://my.adp.com/#/pay/statements', {
     waitUntil: 'domcontentloaded',
@@ -185,27 +186,23 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
 
   // Wait for the actual statements list. Avoid generic [role="button"] —
   // ADP renders dozens of those (nav widgets, modal buttons). Scope to statement rows.
-  const statementRowSel = [
-    '[data-e2e*="statement" i]',
-    '[class*="statement-row" i]',
-    'a[href*="statements"]',
-  ].join(', ');
+  const statementRowSel = ADP_STATEMENT_ROW_SELECTORS.join(', ');
   await page.waitForSelector(statementRowSel, { timeout: 20000 }).catch(() => {});
 
   for (let i = 0; i < maxStatements; i++) {
     try {
+      await dismissAdpPaperlessModal(page, `before statement ${i}`);
       const rows = page.locator(statementRowSel);
       const count = await rows.count();
       if (i >= count) break;
 
-      await dismissAdpPaperlessModal(page, `before statement ${i}`);
-      await rows.nth(i).click({ timeout: 10000 });
+      await clickAdpStatementRow(page, i);
 
       // "View statement" opens the statement viewer.
       await page
         .getByRole('button', { name: /view statement/i })
         .first()
-        .click({ timeout: 10000 });
+        .click({ timeout: 8000, force: true });
 
       // Trigger and capture the download.
       const [download] = await Promise.all([
@@ -213,7 +210,7 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
         page
           .getByText(/download current statement/i)
           .first()
-          .click({ timeout: 10000 }),
+          .click({ timeout: 8000, force: true }),
       ]);
 
       downloads.push(download);
@@ -222,6 +219,8 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
       await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
       await page.waitForSelector(statementRowSel, { timeout: 15000 }).catch(() => {});
     } catch (e) {
+      const blockerVisible = await page.locator(ADP_PAPERLESS_BLOCKER_SELECTORS.join(', ')).first().isVisible({ timeout: 500 }).catch(() => false);
+      if (blockerVisible) throw new Error(adpPaperlessMessage);
       console.error(`paystub ${i} retrieval failed`, e);
       break;
     }
