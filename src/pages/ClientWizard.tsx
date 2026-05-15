@@ -2474,6 +2474,49 @@ const ClientWizard = () => {
           chapterType={caseData.chapterType}
           isOpen={alexChatOpen}
           onOpenChange={setAlexChatOpen}
+          caseId={caseData.id}
+          checklistItemId={currentItem.id}
+          onAgentFilesAdded={async () => {
+            try {
+              const { data: fileRows } = await supabase
+                .from('files')
+                .select('*')
+                .eq('case_id', caseData.id)
+                .eq('checklist_item_id', currentItem.id);
+
+              const itemFiles = await Promise.all((fileRows || []).map(async (f) => {
+                let displayUrl = f.data_url || '';
+                if (f.storage_path && (!f.data_url || f.data_url === '')) {
+                  displayUrl = await getCaseDocumentSignedUrl(f.storage_path);
+                }
+                return {
+                  id: f.id,
+                  name: f.file_name,
+                  dataUrl: displayUrl,
+                  uploadedAt: f.uploaded_at || new Date().toISOString(),
+                  reviewStatus: (f.review_status || 'pending') as any,
+                  reviewNote: f.review_note || undefined,
+                  uploadedBy: (f.uploaded_by || 'client') as any,
+                };
+              }));
+
+              setCaseData(prev => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  checklist: prev.checklist.map(ci =>
+                    ci.id === currentItem.id
+                      ? { ...ci, files: itemFiles, completed: itemFiles.length > 0 ? true : ci.completed }
+                      : ci
+                  ),
+                };
+              });
+
+              toast.success('W-2 added to your documents');
+            } catch (err) {
+              console.error('Refresh after agent retrieval failed', err);
+            }
+          }}
         />
       )}
       {/* Persistent hidden file inputs for mobile */}
