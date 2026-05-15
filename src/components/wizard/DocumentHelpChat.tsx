@@ -100,18 +100,17 @@ const TypewriterMarkdown = ({
   );
 };
 
-const AuthIframe = ({ browserSessionUrl, providerUrl, providerName }: { browserSessionUrl: string; providerUrl?: string; providerName: string }) => {
+const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: string; providerName: string }) => {
   const [loaded, setLoaded] = useState(false);
-  const iframeSrc = browserSessionUrl;
   return (
-    <div className="relative w-full h-[480px]">
+    <div className="relative w-full h-[520px]">
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
           <p className="text-xs text-muted-foreground">Loading {providerName} portal…</p>
         </div>
       )}
       <iframe
-        src={iframeSrc}
+        src={browserSessionUrl}
         title={`${providerName} login`}
         className="w-full h-full bg-background border-0"
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
