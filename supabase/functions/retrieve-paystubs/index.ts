@@ -20,14 +20,35 @@ async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
     timeout: 30000,
   });
 
-  // Dismiss "Go Paperless" / similar popups if present.
-  for (const label of ['Close dialog', 'Close', 'Not now', 'Maybe later', 'No thanks']) {
-    try {
-      const btn = page.getByRole('button', { name: new RegExp(label, 'i') }).first();
-      if (await btn.isVisible({ timeout: 1500 })) {
-        await btn.click({ timeout: 1500 });
-      }
-    } catch (_) { /* no popup */ }
+  // Dismiss "Go Paperless" / "Paperless Settings" / similar modals.
+  // ADP's modal close is an icon-only button with no accessible name,
+  // so we try a stack of strategies: named buttons, common close selectors,
+  // then Escape as a last resort. Run twice in case multiple modals stack.
+  const closeSelectors = [
+    'button[aria-label*="close" i]',
+    'button[title*="close" i]',
+    'button[data-testid*="close" i]',
+    '[role="dialog"] button:has(svg)',
+    '.modal-close, .close-button, .sdf-dialog-close',
+  ];
+  for (let pass = 0; pass < 2; pass++) {
+    for (const label of ['Close dialog', 'Close', 'Not now', 'Maybe later', 'No thanks', 'Skip', 'Dismiss']) {
+      try {
+        const btn = page.getByRole('button', { name: new RegExp(label, 'i') }).first();
+        if (await btn.isVisible({ timeout: 800 })) await btn.click({ timeout: 1500 });
+      } catch (_) { /* no popup */ }
+    }
+    for (const sel of closeSelectors) {
+      try {
+        const el = page.locator(sel).first();
+        if (await el.isVisible({ timeout: 600 })) await el.click({ timeout: 1500 });
+      } catch (_) { /* not present */ }
+    }
+    try { await page.keyboard.press('Escape'); } catch (_) { /* ignore */ }
+    await page.waitForTimeout(500);
+    // Stop if no dialog visible.
+    const dlg = page.locator('[role="dialog"], .modal, .sdf-dialog').first();
+    if (!(await dlg.isVisible({ timeout: 300 }).catch(() => false))) break;
   }
 
   // Wait for the statements list to render.
