@@ -98,6 +98,27 @@ const TypewriterMarkdown = ({
   );
 };
 
+const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: string; providerName: string }) => {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative w-full h-[360px]">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
+          <p className="text-xs text-muted-foreground">Loading {providerName} portal…</p>
+        </div>
+      )}
+      <iframe
+        src={browserSessionUrl}
+        title={`${providerName} login`}
+        className="w-full h-full bg-background border-0"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        allow="clipboard-read; clipboard-write"
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+};
+
 interface DocumentHelpChatProps {
   documentLabel: string;
   category: string;
@@ -491,13 +512,7 @@ const DocumentHelpChat = ({
             <span className="text-xs font-medium text-foreground">Secure connection to {providerName}</span>
           </div>
           {browserSessionUrl ? (
-            <iframe
-              src={browserSessionUrl}
-              title={`${providerName} login`}
-              className="w-full h-[360px] bg-background"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-              allow="clipboard-read; clipboard-write"
-            />
+            <AuthIframe browserSessionUrl={browserSessionUrl} providerName={providerName} />
           ) : (
             <div className="h-[360px] flex items-center justify-center text-sm text-muted-foreground">
               Connecting…
