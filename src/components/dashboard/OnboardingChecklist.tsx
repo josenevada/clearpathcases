@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, X, Building2, BookOpen, Plus, Send, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OnboardingChecklistProps {
   firmProfileComplete: boolean;
@@ -34,7 +35,25 @@ const OnboardingChecklist = ({ firmProfileComplete, counselingComplete, hasTempl
     {
       label: 'Set up your document checklist template',
       done: hasTemplate,
-      action: () => {
+      action: async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('firm_id')
+              .eq('id', user.id)
+              .maybeSingle();
+            if (userData?.firm_id) {
+              await supabase
+                .from('firms')
+                .update({ templates_configured: true } as any)
+                .eq('id', userData.firm_id);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to persist templates_configured flag:', err);
+        }
         try { localStorage.setItem('clearpath_templates_configured', '1'); } catch {}
         navigate('/paralegal/settings/case/templates');
       },
