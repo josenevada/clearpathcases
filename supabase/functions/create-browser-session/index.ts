@@ -73,10 +73,14 @@ serve(async (req) => {
       }
     }
 
+    const connectUrl = (session as any).connectUrl
+      ?? `wss://connect.browserbase.com?apiKey=${Deno.env.get('BROWSERBASE_API_KEY')}&sessionId=${session.id}`;
+
     return new Response(
       JSON.stringify({
         sessionId: session.id,
         browserSessionUrl,
+        connectUrl,
         providerUrl: providerUrls[provider],
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
