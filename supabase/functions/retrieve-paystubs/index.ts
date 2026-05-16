@@ -1,8 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import Browserbase from 'npm:@browserbasehq/sdk';
 import { Stagehand } from 'npm:@browserbasehq/stagehand@1.14.0';
-import { z } from 'npm:zod';
-import type { Download, Page } from 'npm:playwright-core@1.47.2';
+import Browserbase from 'npm:@browserbasehq/sdk';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,189 +8,11 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const safeName = (name: string) =>
-  name.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80);
-
-const POPUP_DISMISS_TEXT = /^(close|×|x|skip|not now|maybe later|no thanks|dismiss|cancel|continue|got it|ok)$/i;
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: number | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer !== undefined) clearTimeout(timer);
-  });
-}
-
-async function dismissBlockingPopups(page: Page, label = 'popup dismissal') {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    let clicked = false;
-
-    for (const locator of [
-      page.getByRole('button', { name: POPUP_DISMISS_TEXT }).first(),
-      page.getByRole('link', { name: POPUP_DISMISS_TEXT }).first(),
-      page.locator('[aria-label*="close" i], [aria-label*="dismiss" i], button:has-text("Not now"), button:has-text("Maybe later"), button:has-text("Skip"), button:has-text("No thanks"), button:has-text("Close")').first(),
-    ]) {
-      try {
-        if (await locator.isVisible({ timeout: 700 })) {
-          await locator.click({ timeout: 1200, force: true });
-          clicked = true;
-          break;
-        }
-      } catch (_) { /* try next */ }
-    }
-
-    if (!clicked) {
-      clicked = await page.evaluate((patternSource) => {
-        const pattern = new RegExp(patternSource, 'i');
-        const seen = new Set<Node>();
-        const collect = (root: ParentNode): Element[] => {
-          const elements = Array.from(root.querySelectorAll('button, a, [role="button"], [aria-label]'));
-          for (const el of Array.from(root.querySelectorAll('*')) as Element[]) {
-            const shadow = (el as HTMLElement).shadowRoot;
-            if (shadow && !seen.has(shadow)) {
-              seen.add(shadow);
-              elements.push(...collect(shadow));
-            }
-          }
-          return elements;
-        };
-        const target = collect(document).find((el) => {
-          const text = `${el.textContent || ''} ${(el as HTMLElement).getAttribute('aria-label') || ''}`.trim();
-          const box = (el as HTMLElement).getBoundingClientRect?.();
-          return pattern.test(text) && !!box && box.width > 0 && box.height > 0;
-        }) as HTMLElement | undefined;
-        target?.click();
-        return Boolean(target);
-      }, POPUP_DISMISS_TEXT.source).catch(() => false);
-    }
-
-    if (!clicked) return;
-    console.log(`${label}: dismissed blocking overlay attempt ${attempt + 1}`);
-    await page.waitForTimeout(700);
-  }
-}
-
-async function clickPayStatementFallback(page: Page, index: number) {
-  const candidates = [
-    page.locator('text=/Pay Date|Check Date|Statement|Gross Pay|Net Pay/i').locator('xpath=ancestor::*[self::tr or @role="row" or contains(@class,"row")][1]').nth(index),
-    page.locator('tr, [role="row"], [class*="statement" i], [class*="pay" i]').filter({ hasText: /\$|gross|net|pay date|check date|statement/i }).nth(index),
-  ];
-
-  for (const row of candidates) {
-    try {
-      if (await row.isVisible({ timeout: 1500 })) {
-        await row.click({ timeout: 3000, force: true });
-        return true;
-      }
-    } catch (_) { /* try next */ }
-  }
-
-  return false;
-}
-
-// Stagehand-driven ADP retrieval. The LLM "sees" the page each step and
-// self-heals around popups (Paperless Settings, security prompts, etc.)
-// without us hard-coding selectors or shadow-DOM hacks.
-async function runAdp(page: Page, maxStatements = 4): Promise<Download[]> {
-  const downloads: Download[] = [];
-  page.setDefaultTimeout(15000);
-
-  await page.goto('https://my.adp.com/#/pay/pay-statements', {
-    waitUntil: 'domcontentloaded',
-    timeout: 30000,
-  });
-  await page.waitForTimeout(2500);
-  await dismissBlockingPopups(page, 'initial ADP popup sweep');
-
-  // Stagehand attaches act/observe/extract methods to the Playwright page.
-  const sh = page as any;
-
-  // Self-healing popup dismissal — the LLM looks at the screenshot and clicks
-  // the right close/dismiss/skip button, even inside ADP's shadow DOM modals.
-  await sh.act?.(
-    "If a 'Paperless Settings', 'Go Paperless', or any other modal/popup is covering the pay statements list, close or dismiss it (click Close, X, Skip, Maybe later, or Not now). If no popup is visible, do nothing.",
-  ).catch((e: unknown) => console.log('initial popup dismissal note:', String(e)));
-
-  await page.waitForTimeout(1000);
-  await dismissBlockingPopups(page, 'post-stagehand popup sweep');
-
-  // Find the visible pay statements via Stagehand's observe (returns elements
-  // ranked by the LLM's understanding of the page).
-  const statements = await sh.observe?.({
-    instruction: 'Find each pay statement row in the pay statements list, ordered most recent first.',
-    returnAction: false,
-  }).catch(() => [] as Array<{ selector?: string; description?: string }>);
-
-  const observedCount = Array.isArray(statements) ? statements.length : 0;
-  const total = observedCount > 0 ? Math.min(maxStatements, observedCount) : maxStatements;
-  console.log(`stagehand observed ${observedCount} statements; will fetch ${total}`);
-
-  for (let i = 0; i < total; i++) {
-    try {
-      // Re-dismiss any popup that may have re-appeared between iterations.
-      await sh.act?.(
-        "If any popup, modal, or 'Paperless Settings' overlay is on screen, close it. Otherwise do nothing.",
-      ).catch(() => {});
-      await dismissBlockingPopups(page, `statement ${i + 1} popup sweep`);
-
-      await sh.act?.(
-        `Click the pay statement at position ${i + 1} (1 = most recent) in the pay statements list.`,
-      ).catch(async () => {
-        const clicked = await clickPayStatementFallback(page, i);
-        if (!clicked) throw new Error(`Could not click pay statement ${i + 1}`);
-      });
-      await dismissBlockingPopups(page, `statement ${i + 1} detail popup sweep`);
-
-      await sh.act?.('Click the "View Statement" button to open the statement viewer.').catch(() => {});
-
-      const [download] = await Promise.all([
-        page.waitForEvent('download', { timeout: 25000 }),
-        sh.act?.('Click the "Download Current Statement" link or button to download the PDF.'),
-      ]);
-
-      downloads.push(download);
-
-      // Back to the list.
-      await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-      await page.waitForTimeout(1500);
-    } catch (e) {
-      console.error(`paystub ${i} retrieval failed`, e);
-      break;
-    }
-  }
-
-  return downloads;
-}
-
-async function downloadToBuffer(download: Download): Promise<{ buffer: Uint8Array; suggested: string }> {
-  const stream = await download.createReadStream();
-  if (!stream) {
-    const tmp = await Deno.makeTempFile({ suffix: '.pdf' });
-    await download.saveAs(tmp);
-    const buf = await Deno.readFile(tmp);
-    await Deno.remove(tmp).catch(() => {});
-    return { buffer: buf, suggested: download.suggestedFilename() || 'paystub.pdf' };
-  }
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of stream as any) {
-    chunks.push(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
-  }
-  const total = chunks.reduce((n, c) => n + c.length, 0);
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const c of chunks) { out.set(c, offset); offset += c.length; }
-  return { buffer: out, suggested: download.suggestedFilename() || 'paystub.pdf' };
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const startedAt = Date.now();
-  let releaseSession: (() => Promise<void>) | undefined;
   let stagehand: Stagehand | undefined;
 
   try {
@@ -207,76 +27,120 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
     const projectId = Deno.env.get('BROWSERBASE_PROJECT_ID')!;
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
 
-    if (!anthropicKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Stagehand requires ANTHROPIC_API_KEY (or OPENAI_API_KEY).' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const bb = new Browserbase({ apiKey });
-    releaseSession = async () => {
-      try { await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any); } catch (_) { /* ignore */ }
-    };
-
-    // Attach Stagehand to the existing Browserbase session created by
-    // create-browser-session (so the user's manual login is preserved).
     stagehand = new Stagehand({
       env: 'BROWSERBASE',
       apiKey,
       projectId,
       browserbaseSessionID: sessionId,
-      modelName: 'claude-3-5-sonnet-latest',
+      modelName: 'claude-sonnet-4-20250514',
       modelClientOptions: { apiKey: anthropicKey },
       verbose: 1,
       enableCaching: false,
-    });
+    } as any);
 
     await stagehand.init();
-    const page = stagehand.page as unknown as Page;
+    const page: any = stagehand.page;
 
-    let downloads: Download[] = [];
-    let retrievalError: string | null = null;
-    try {
-      if (provider === 'adp') {
-        downloads = await withTimeout(runAdp(page, 4), 120_000, 'ADP retrieval');
-      } else {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Provider "${provider}" not yet supported by the Stagehand agent.`,
-          }),
-          { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
+    // CDP session to intercept downloads as base64
+    const cdpSession = await page.context().newCDPSession(page);
+    await cdpSession.send('Browser.setDownloadBehavior', {
+      behavior: 'base64',
+      eventsEnabled: true,
+    });
+
+    const downloadedFiles: Array<{ data: string; fileName: string }> = [];
+
+    cdpSession.on('Browser.downloadProgress', (event: any) => {
+      if (event.state === 'completed' && event.base64Data) {
+        downloadedFiles.push({
+          data: event.base64Data,
+          fileName: `PayStub-${Date.now()}.pdf`,
+        });
       }
-    } catch (e) {
-      retrievalError = String((e as Error).message ?? e);
-      console.error('paystub retrieval failed before upload', e);
-    } finally {
-      try { await withTimeout(stagehand.close(), 1500, 'stagehand close'); } catch (_) { /* ignore */ }
-    }
+    });
 
-    console.log('paystub downloads captured:', downloads.length);
+    // Navigate directly to pay statements
+    await page.goto('https://my.adp.com/#/pay/statements', { waitUntil: 'networkidle' });
 
-    if (downloads.length === 0) {
-      await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
-      return new Response(
-        JSON.stringify({ success: false, error: retrievalError || 'No paystub downloads were captured.', elapsedMs: Date.now() - startedAt }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    // Handle "Go Paperless" popup if it appears
+    try {
+      await page.act(
+        'If a "Go Paperless" or "Paperless Settings" popup appears, close it by clicking the close button.'
       );
+    } catch (_) { /* no popup */ }
+
+    await page.waitForTimeout(2000);
+
+    // Extract pay statement entries
+    const statements = await page.extract({
+      instruction:
+        'List all pay statement entries visible in the left panel list. Return each one with its display date text and its position index (0 = first/most recent).',
+      schema: {
+        type: 'object',
+        properties: {
+          statements: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                date: { type: 'string' },
+                index: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    } as any).catch((e: unknown) => {
+      console.error('extract statements failed', e);
+      return null;
+    });
+
+    const recentStatements = (statements?.statements || []).slice(0, 5);
+    console.log(`found ${recentStatements.length} statements to download`);
+
+    for (const stmt of recentStatements) {
+      try {
+        await page.act(
+          `Click on the pay statement entry for ${stmt.date} in the list on the left side.`
+        );
+        await page.waitForTimeout(1000);
+
+        await page.act(
+          'Click the "View statement" button (sdf-button with hint "View statement").'
+        );
+        await page.waitForTimeout(500);
+
+        await page.act(
+          'Click "Download current statement Recommended" from the dropdown menu.'
+        );
+        await page.waitForTimeout(3000);
+
+        if (downloadedFiles.length > 0) {
+          const last = downloadedFiles[downloadedFiles.length - 1];
+          last.fileName = `PayStub-${String(stmt.date).replace(/[^a-z0-9]/gi, '-')}.pdf`;
+        }
+      } catch (err) {
+        console.error(`Failed to download ${stmt.date}:`, err);
+        continue;
+      }
     }
 
+    // Upload to Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const uploadedFiles: Array<{ fileName: string }> = [];
 
-    for (const dl of downloads) {
+    for (const file of downloadedFiles) {
       try {
-        const { buffer, suggested } = await downloadToBuffer(dl);
-        const finalFileName = safeName(suggested.endsWith('.pdf') ? suggested : `${suggested}.pdf`);
-        const storagePath = `${caseId}/${checklistItemId}/${Date.now()}-${finalFileName}`;
+        const binaryStr = atob(file.data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+
+        const storagePath = `${caseId}/${checklistItemId}/${Date.now()}-${file.fileName}`;
 
         const storageRes = await fetch(
           `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
@@ -287,12 +151,12 @@ serve(async (req) => {
               'Content-Type': 'application/pdf',
               'x-upsert': 'true',
             },
-            body: buffer,
-          },
+            body: bytes,
+          }
         );
 
         if (!storageRes.ok) {
-          console.error('storage upload failed', await storageRes.text());
+          console.error('Upload failed:', await storageRes.text());
           continue;
         }
 
@@ -307,7 +171,7 @@ serve(async (req) => {
           body: JSON.stringify({
             case_id: caseId,
             checklist_item_id: checklistItemId,
-            file_name: finalFileName,
+            file_name: file.fileName,
             storage_path: storagePath,
             uploaded_by: 'agent',
             review_status: 'pending',
@@ -315,42 +179,48 @@ serve(async (req) => {
           }),
         });
 
-        if (!insertRes.ok) {
+        if (insertRes.ok) {
+          uploadedFiles.push({ fileName: file.fileName });
+        } else {
           console.error('files insert failed', await insertRes.text());
-          continue;
         }
-
-        uploadedFiles.push({ fileName: finalFileName });
-      } catch (e) {
-        console.error('paystub upload error', e);
+      } catch (err) {
+        console.error('File upload error:', err);
       }
     }
 
     if (uploadedFiles.length > 0) {
-      await fetch(`${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          apikey: serviceKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ completed: true }),
-      });
+      await fetch(
+        `${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ completed: true }),
+        }
+      );
     }
 
-    await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
+    try { await stagehand.close(); } catch (_) {}
+
+    try {
+      const bb = new Browserbase({ apiKey });
+      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
+    } catch (_) {}
 
     return new Response(
-      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles, elapsedMs: Date.now() - startedAt }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error('retrieve-paystubs error', err);
-    if (stagehand) { try { await stagehand.close(); } catch (_) { /* ignore */ } }
-    if (releaseSession) await withTimeout(releaseSession(), 1000, 'session release').catch(() => {});
+    if (stagehand) { try { await stagehand.close(); } catch (_) {} }
     return new Response(
-      JSON.stringify({ success: false, error: String((err as Error).message ?? err), elapsedMs: Date.now() - startedAt }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ success: false, error: String((err as Error).message ?? err) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
