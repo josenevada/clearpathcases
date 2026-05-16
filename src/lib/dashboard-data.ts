@@ -7,6 +7,7 @@ export interface DashboardOnboardingState {
   brandingComplete: boolean;
   counselingComplete: boolean;
   hasSentLink: boolean;
+  hasTemplate: boolean;
 }
 
 interface DashboardDataResult {
