@@ -406,7 +406,7 @@ const DocumentHelpChat = ({
           try {
             const fnName = docType === 'w2' ? 'retrieve-w2' : 'retrieve-paystubs';
             const { data: rData, error: rError } = await supabase.functions.invoke(fnName, {
-              body: { sessionId, provider, caseId, checklistItemId },
+              body: { sessionId, connectUrl, provider, caseId, checklistItemId },
             });
             if (rError) throw rError;
 
