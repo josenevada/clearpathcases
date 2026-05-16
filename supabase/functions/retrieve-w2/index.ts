@@ -1,19 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { Stagehand } from 'npm:@browserbasehq/stagehand';
 import Browserbase from 'npm:@browserbasehq/sdk';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-const instructions: Record<string, string> = {
-  adp: `You are on the ADP dashboard at my.adp.com. Click on "Tax Statements" in the top navigation tabs (you can see Pay, Direct Deposit, Tax Statements). Once on the Tax Statements page, find W-2 forms for 2024 and 2023. Click each one to get a download link or PDF URL.`,
-  workday: 'Navigate to Pay section, then Tax Documents, and locate W-2 forms for the last 2 years.',
-  paychex: 'Navigate to Tax Documents and locate W-2 forms for the last 2 years.',
-  gusto: 'Navigate to Documents then Tax Documents and locate W-2 forms.',
-  paylocity: 'Navigate to Pay then Tax Documents and locate W-2 forms for the last 2 years.',
 };
 
 serve(async (req) => {
@@ -25,56 +17,124 @@ serve(async (req) => {
     const { sessionId, provider, caseId, checklistItemId } = await req.json();
 
     if (!sessionId || !provider || !caseId || !checklistItemId) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const stagehand = new Stagehand({
-      env: 'BROWSERBASE',
+    const skyvernApiKey = Deno.env.get('SKYVERN_API_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const bb = new Browserbase({
       apiKey: Deno.env.get('BROWSERBASE_API_KEY')!,
-      browserbaseSessionId: sessionId,
-      modelName: 'claude-sonnet-4-20250514',
-      modelClientOptions: { apiKey: Deno.env.get('ANTHROPIC_API_KEY')! },
-    } as any);
+    });
+    const session: any = await bb.sessions.retrieve(sessionId);
+    const currentUrl = session?.currentUrl || 'https://my.adp.com';
 
-    await stagehand.init();
-
-    await stagehand.page.act(instructions[provider] || instructions.adp);
-
-    const result: any = await stagehand.page.extract({
-      instruction: 'Find W-2 document download links or PDF files. Return one entry per W-2 with its tax year, a direct downloadUrl to the PDF, and the employer name if visible.',
-      schema: {
-        type: 'object',
-        properties: {
-          documents: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                year: { type: 'string' },
-                downloadUrl: { type: 'string' },
-                employerName: { type: 'string' },
+    const taskRes = await fetch('https://api.skyvern.com/api/v1/tasks', {
+      method: 'POST',
+      headers: {
+        'x-api-key': skyvernApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: currentUrl,
+        goal: `Download W-2 tax forms for the last 2 years as PDF files. The user is already logged in. Navigate to the tax statements or W-2 section and download each W-2 PDF. Handle any popups that appear.`,
+        browser_session_id: sessionId,
+        webhook_callback_url:
+          `${supabaseUrl}/functions/v1/skyvern-webhook?caseId=${caseId}&checklistItemId=${checklistItemId}&type=w2`,
+        extracted_information_schema: {
+          type: 'object',
+          properties: {
+            downloaded_files: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  file_name: { type: 'string' },
+                  year: { type: 'string' },
+                },
               },
-              required: ['year', 'downloadUrl'],
             },
           },
         },
-      },
-    } as any);
+      }),
+    });
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const uploadedFiles: Array<{ fileName: string; year: string; employerName?: string }> = [];
+    if (!taskRes.ok) {
+      const err = await taskRes.text();
+      console.error('Skyvern task creation failed:', err);
+      return new Response(
+        JSON.stringify({ success: false, error: err }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    for (const doc of (result?.documents ?? []) as Array<{ year: string; downloadUrl: string; employerName?: string }>) {
+    const task = await taskRes.json();
+    console.log('Skyvern task created:', task.task_id);
+
+    let attempts = 0;
+    const maxAttempts = 36;
+    let taskResult: any = null;
+
+    while (attempts < maxAttempts) {
+      await new Promise((r) => setTimeout(r, 5000));
+      attempts++;
+
+      const statusRes = await fetch(
+        `https://api.skyvern.com/api/v1/tasks/${task.task_id}`,
+        { headers: { 'x-api-key': skyvernApiKey } }
+      );
+
+      if (!statusRes.ok) continue;
+
+      const status = await statusRes.json();
+      console.log(`Task status (${attempts}):`, status.status);
+
+      if (status.status === 'completed') {
+        taskResult = status;
+        break;
+      }
+
+      if (status.status === 'failed' || status.status === 'terminated') {
+        console.error('Task failed:', status);
+        break;
+      }
+    }
+
+    if (!taskResult) {
       try {
-        const dl = await fetch(doc.downloadUrl);
-        if (!dl.ok) continue;
-        const buffer = await dl.arrayBuffer();
-        const safeEmployer = (doc.employerName || 'employer').replace(/[^a-z0-9]+/gi, '-').slice(0, 40);
-        const fileName = `W2-${doc.year}-${safeEmployer}.pdf`;
+        await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
+      } catch (_) {}
+
+      return new Response(
+        JSON.stringify({ success: false, error: 'Task timed out or failed' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const artifactsRes = await fetch(
+      `https://api.skyvern.com/api/v1/tasks/${task.task_id}/artifacts`,
+      { headers: { 'x-api-key': skyvernApiKey } }
+    );
+
+    const artifacts = artifactsRes.ok ? await artifactsRes.json() : [];
+
+    const uploadedFiles: Array<{ fileName: string }> = [];
+
+    for (const artifact of artifacts) {
+      if (!artifact.uri || !artifact.artifact_type?.includes('download')) {
+        continue;
+      }
+
+      try {
+        const fileRes = await fetch(artifact.uri);
+        if (!fileRes.ok) continue;
+        const buffer = await fileRes.arrayBuffer();
+
+        const fileName = artifact.file_name || `W2-${Date.now()}.pdf`;
         const storagePath = `${caseId}/${checklistItemId}/${fileName}`;
 
         const storageRes = await fetch(
@@ -87,15 +147,15 @@ serve(async (req) => {
               'x-upsert': 'true',
             },
             body: buffer,
-          },
+          }
         );
 
         if (!storageRes.ok) {
-          console.error('storage upload failed', await storageRes.text());
+          console.error('Storage upload failed:', await storageRes.text());
           continue;
         }
 
-        const insertRes = await fetch(`${supabaseUrl}/rest/v1/files`, {
+        await fetch(`${supabaseUrl}/rest/v1/files`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${serviceKey}`,
@@ -114,13 +174,16 @@ serve(async (req) => {
           }),
         });
 
-        if (!insertRes.ok) {
-          console.error('files insert failed', await insertRes.text());
-          continue;
-        }
+        uploadedFiles.push({ fileName });
+      } catch (err) {
+        console.error('Artifact upload error:', err);
+      }
+    }
 
-        // Mark checklist item completed
-        await fetch(`${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`, {
+    if (uploadedFiles.length > 0) {
+      await fetch(
+        `${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`,
+        {
           method: 'PATCH',
           headers: {
             Authorization: `Bearer ${serviceKey}`,
@@ -128,37 +191,26 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ completed: true }),
-        });
-
-        uploadedFiles.push({ fileName, year: doc.year, employerName: doc.employerName });
-      } catch (e) {
-        console.error('document download/upload error', e);
-      }
+        }
+      );
     }
 
     try {
-      await stagehand.close();
-    } catch (_) {
-      // ignore
-    }
-
-    // Terminate the Browserbase session
-    try {
-      const bb = new Browserbase({ apiKey: Deno.env.get('BROWSERBASE_API_KEY')! });
       await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
-    } catch (_) {
-      // ignore termination errors
-    }
+    } catch (_) {}
 
     return new Response(
-      JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({
+        success: uploadedFiles.length > 0,
+        files: uploadedFiles,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error('retrieve-w2 error', err);
     return new Response(
       JSON.stringify({ success: false, error: String((err as Error).message ?? err) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
