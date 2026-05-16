@@ -50,6 +50,7 @@ const ParalegalDashboard = () => {
     brandingComplete: false,
     counselingComplete: false,
     hasSentLink: false,
+    hasTemplate: false,
   });
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
@@ -278,7 +279,7 @@ const ParalegalDashboard = () => {
           <OnboardingChecklist
             firmProfileComplete={onboardingState.firmProfileComplete}
             counselingComplete={onboardingState.counselingComplete}
-            hasTemplate={getNamedTemplates().length > 0 || localStorage.getItem('clearpath_templates_configured') === '1'}
+            hasTemplate={onboardingState.hasTemplate || getNamedTemplates().length > 0}
             hasCases={cases.length > 0}
             hasSentLink={onboardingState.hasSentLink}
             onNewCase={handleNewCase}
