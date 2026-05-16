@@ -70,6 +70,30 @@ const getFileUrl = async (file: UploadedFile): Promise<string> => {
   return '';
 };
 
+const SignedUrlViewer = ({ storagePath, fileName }: { storagePath: string; fileName: string }) => {
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (storagePath) {
+      getCaseDocumentSignedUrl(storagePath).then(u => {
+        if (!cancelled) setUrl(u);
+      });
+    }
+    return () => { cancelled = true; };
+  }, [storagePath]);
+
+  if (!url) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return <DocumentViewer fileName={fileName} dataUrl={url} />;
+};
+
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const { plan } = useSubscription();
   const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
