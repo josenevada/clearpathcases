@@ -1,0 +1,1 @@
+ALTER TABLE public.firms ADD COLUMN IF NOT EXISTS templates_configured boolean NOT NULL DEFAULT false;
