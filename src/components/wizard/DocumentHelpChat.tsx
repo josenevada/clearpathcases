@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, Loader2, ExternalLink, Sparkles, Lock } from 'lucide-react';
+import { Send, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 
@@ -9,43 +9,10 @@ type ChatRole = 'user' | 'assistant';
 interface ChatMessage {
   role: ChatRole;
   content: string;
-  animate?: boolean; // typewriter on first render
-  // Agent UI extensions (only used when kind is set)
-  kind?: 'text' | 'provider-picker' | 'agent-status' | 'agent-auth' | 'agent-success' | 'agent-failed';
-  payload?: any;
+  animate?: boolean;
 }
 
 const TYPE_CHAR_MS = 14;
-
-const W2_LABEL = 'W-2s (Last 2 Years)';
-const PAYSTUB_LABEL = 'Pay Stubs (Last 2 Months)';
-
-type ProviderId = 'adp' | 'workday' | 'paychex' | 'gusto' | 'paylocity';
-type DocType = 'w2' | 'paystub';
-
-const PROVIDERS: Array<{ id: ProviderId; name: string }> = [
-  { id: 'adp', name: 'ADP' },
-  { id: 'workday', name: 'Workday' },
-  { id: 'paychex', name: 'Paychex' },
-  { id: 'gusto', name: 'Gusto' },
-  { id: 'paylocity', name: 'Paylocity' },
-];
-
-const STATUS_MESSAGES: Record<ProviderId, string[]> = {
-  adp: ['Opening ADP portal…', 'Navigating to your documents…', 'Looking for your W-2s…'],
-  workday: ['Opening Workday…', 'Navigating to pay & tax documents…', 'Looking for your W-2s…'],
-  paychex: ['Opening Paychex Flex…', 'Navigating to tax documents…', 'Looking for your W-2s…'],
-  gusto: ['Opening Gusto…', 'Navigating to documents…', 'Looking for your W-2s…'],
-  paylocity: ['Opening Paylocity…', 'Navigating to tax documents…', 'Looking for your W-2s…'],
-};
-
-const DEEP_LINKS: Record<ProviderId, { label: string; url: string; instruction: string }> = {
-  adp: { label: 'Open ADP Portal', url: 'https://my.adp.com', instruction: 'Log in → Pay & Tax → W-2' },
-  workday: { label: 'Open Workday', url: 'https://www.myworkday.com', instruction: 'Click your name → Pay → Tax Documents' },
-  paychex: { label: 'Open Paychex Flex', url: 'https://myapps.paychex.com', instruction: 'Pay → Tax Documents → W-2' },
-  gusto: { label: 'Open Gusto', url: 'https://app.gusto.com', instruction: 'Documents → Tax Documents → W-2' },
-  paylocity: { label: 'Open Paylocity', url: 'https://access.paylocity.com', instruction: 'Pay → Tax Documents → W-2' },
-};
 
 const TypewriterMarkdown = ({
   text,
@@ -100,27 +67,6 @@ const TypewriterMarkdown = ({
   );
 };
 
-const AuthIframe = ({ browserSessionUrl, providerName }: { browserSessionUrl: string; providerName: string }) => {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <div className="relative w-full h-[520px]">
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
-          <p className="text-xs text-muted-foreground">Loading {providerName} portal…</p>
-        </div>
-      )}
-      <iframe
-        src={browserSessionUrl}
-        title={`${providerName} login`}
-        className="w-full h-full bg-background border-0"
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-        allow="clipboard-read; clipboard-write"
-        onLoad={() => setLoaded(true)}
-      />
-    </div>
-  );
-};
-
 interface DocumentHelpChatProps {
   documentLabel: string;
   category: string;
@@ -130,7 +76,6 @@ interface DocumentHelpChatProps {
   language?: 'en' | 'es';
   caseId?: string;
   checklistItemId?: string;
-  onAgentFilesAdded?: () => void;
 }
 
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
@@ -143,9 +88,6 @@ const DocumentHelpChat = ({
   isOpen,
   onOpenChange,
   language = 'en',
-  caseId,
-  checklistItemId,
-  onAgentFilesAdded,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -158,21 +100,10 @@ const DocumentHelpChat = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Agent flow refs (kept out of render state where possible)
-  const agentActiveRef = useRef(false);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const isW2Step = documentLabel === W2_LABEL;
-  const isPayStubStep = documentLabel === PAYSTUB_LABEL;
-  const docTypeRef = useRef<DocType>('w2');
-  // Reset chat when document changes, seed with Alex intro
   useEffect(() => {
     setMessages([{ role: 'assistant', content: ALEX_INTRO }]);
     setInput('');
     setLoading(false);
-    cleanupAgent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
 
@@ -188,34 +119,6 @@ const DocumentHelpChat = ({
     }
   }, [open]);
 
-  useEffect(() => {
-    return () => cleanupAgent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const cleanupAgent = () => {
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
-    pollIntervalRef.current = null;
-    timeoutRef.current = null;
-    statusIntervalRef.current = null;
-    agentActiveRef.current = false;
-  };
-
-  const replaceLastAgentMessage = (updater: (m: ChatMessage) => ChatMessage) => {
-    setMessages((prev) => {
-      for (let i = prev.length - 1; i >= 0; i--) {
-        if (prev[i].kind && prev[i].kind !== 'text') {
-          const next = [...prev];
-          next[i] = updater(prev[i]);
-          return next;
-        }
-      }
-      return prev;
-    });
-  };
-
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -229,7 +132,6 @@ const DocumentHelpChat = ({
     try {
       const apiMessages = updatedMessages
         .filter((m, i) => !(i === 0 && m.role === 'assistant' && m.content === ALEX_INTRO))
-        .filter((m) => !m.kind || m.kind === 'text')
         .map((m) => ({ role: m.role, content: m.content }));
 
       const { data, error } = await supabase.functions.invoke('document-agent-help', {
@@ -270,7 +172,6 @@ const DocumentHelpChat = ({
 
     const apiMessages = updatedMessages
       .filter((m, i) => !(i === 0 && m.role === 'assistant' && m.content === ALEX_INTRO))
-      .filter((m) => !m.kind || m.kind === 'text')
       .map((m) => ({ role: m.role, content: m.content }));
 
     supabase.functions
@@ -285,277 +186,6 @@ const DocumentHelpChat = ({
         setMessages((prev) => [...prev, { role: 'assistant', content: "I'm having trouble right now.", animate: true }]);
       })
       .finally(() => setLoading(false));
-  };
-
-  // ─────────────────────────────────────────────
-  // W-2 agent flow
-  // ─────────────────────────────────────────────
-
-  const startAgentRetrievalIntro = (docType: DocType = 'w2') => {
-    docTypeRef.current = docType;
-    const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
-    const userChip = docType === 'w2' ? 'Get my W-2 automatically ✨' : 'Get my pay stubs automatically ✨';
-    const intro =
-      docType === 'w2'
-        ? 'I can retrieve your W-2 directly from your payroll portal — no downloading or scanning needed. Which payroll provider does your employer use?'
-        : 'I can retrieve your recent pay stubs directly from your payroll portal. Which provider does your employer use?';
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: userChip },
-      { role: 'assistant', animate: true, content: intro },
-      { role: 'assistant', kind: 'provider-picker', content: '' },
-    ]);
-  };
-
-  const handleProviderPick = async (provider: ProviderId) => {
-    if (!caseId || !checklistItemId) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: "I can't start the agent right now — please refresh and try again.", animate: true },
-      ]);
-      return;
-    }
-
-    cleanupAgent();
-    agentActiveRef.current = true;
-
-    // Mark provider picker as resolved by appending the user choice
-    setMessages((prev) => {
-      const next = prev.filter((m) => m.kind !== 'provider-picker');
-      return [
-        ...next,
-        { role: 'user', content: PROVIDERS.find((p) => p.id === provider)?.name ?? provider },
-        {
-          role: 'assistant',
-          kind: 'agent-status',
-          content: '',
-          payload: { provider, statusIdx: 0 },
-        },
-      ];
-    });
-
-    // Stream status messages in the same bubble
-    let idx = 0;
-    statusIntervalRef.current = setInterval(() => {
-      if (!agentActiveRef.current) return;
-      idx += 1;
-      if (idx >= STATUS_MESSAGES[provider].length) {
-        if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
-        statusIntervalRef.current = null;
-        return;
-      }
-      replaceLastAgentMessage((m) => ({ ...m, payload: { ...(m.payload || {}), statusIdx: idx } }));
-    }, 1500);
-
-    // Kick off browser session creation in parallel
-    let sessionId = '';
-    let browserSessionUrl: string | undefined;
-    let providerUrl: string | undefined;
-    let connectUrl: string | undefined;
-    try {
-      const { data, error } = await supabase.functions.invoke('create-browser-session', {
-        body: { provider, caseId },
-      });
-      if (error) throw error;
-      sessionId = data?.sessionId;
-      browserSessionUrl = data?.browserSessionUrl;
-      providerUrl = data?.providerUrl;
-      connectUrl = data?.connectUrl;
-      if (!sessionId) throw new Error('No session id returned');
-    } catch (err) {
-      console.error('create-browser-session failed', err);
-      cleanupAgent();
-      showAgentFailure(provider, 'Could not open the payroll portal.');
-      return;
-    }
-
-    // Show auth iframe
-    if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
-    statusIntervalRef.current = null;
-
-    const providerName = PROVIDERS.find((p) => p.id === provider)?.name ?? provider;
-    replaceLastAgentMessage(() => ({
-      role: 'assistant',
-      kind: 'agent-auth',
-      content: '',
-      payload: { provider, providerName, browserSessionUrl, providerUrl, sessionId },
-    }));
-
-    // Poll for auth completion
-    pollIntervalRef.current = setInterval(async () => {
-      if (!agentActiveRef.current) return;
-      try {
-        const { data } = await supabase.functions.invoke('check-session-auth', {
-          body: { sessionId, provider },
-        });
-        if (data?.authenticated) {
-          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-
-          const docType = docTypeRef.current;
-          const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
-
-          // Immediately hide iframe and show success-detected status
-          replaceLastAgentMessage(() => ({
-            role: 'assistant',
-            kind: 'agent-status',
-            content: '',
-            payload: { provider, customMessage: `You're in! Now retrieving your ${docName}…`, retrieving: true },
-          }));
-
-          try {
-            const fnName = docType === 'w2' ? 'retrieve-w2' : 'retrieve-paystubs';
-            const { data: rData, error: rError } = await supabase.functions.invoke(fnName, {
-              body: { sessionId, connectUrl, provider, caseId, checklistItemId },
-            });
-            if (rError) throw rError;
-
-            cleanupAgent();
-            if (rData?.success && Array.isArray(rData.files) && rData.files.length > 0) {
-              showAgentSuccess(provider, rData.files);
-              onAgentFilesAdded?.();
-            } else {
-              showAgentFailure(provider, rData?.error);
-            }
-          } catch (err) {
-            console.error('retrieval failed', err);
-            cleanupAgent();
-            showAgentFailure(provider, err instanceof Error ? err.message : undefined);
-          }
-        }
-      } catch (err) {
-        console.error('check-session-auth failed', err);
-      }
-    }, 5000);
-
-    // Hard timeout 5 minutes
-    timeoutRef.current = setTimeout(() => {
-      if (!agentActiveRef.current) return;
-      cleanupAgent();
-      showAgentFailure(provider, 'Timed out waiting for sign-in.');
-    }, 300000);
-  };
-
-  const showAgentSuccess = (
-    provider: ProviderId,
-    files: Array<{ fileName: string; year?: string; date?: string; employerName?: string }>,
-  ) => {
-    const docType = docTypeRef.current;
-    let msg: string;
-    if (docType === 'w2') {
-      const yearList = files.map((f) => f.year).filter(Boolean).join(' and ');
-      const employer = files.find((f) => f.employerName)?.employerName;
-      const employerSuffix = employer ? ` from ${employer}` : '';
-      msg = `Got it! I found your W-2 for ${yearList}${employerSuffix}. It's been added to your documents.`;
-    } else {
-      msg = `Got it! I retrieved ${files.length} pay stub${files.length === 1 ? '' : 's'}. They've been added to your documents.`;
-    }
-    replaceLastAgentMessage(() => ({
-      role: 'assistant',
-      kind: 'agent-success',
-      content: msg,
-      payload: { provider, files },
-      animate: true,
-    }));
-  };
-
-  const showAgentFailure = (provider: ProviderId, reason?: string) => {
-    const docType = docTypeRef.current;
-    const docName = docType === 'w2' ? 'W-2' : 'pay stubs';
-    const intro = reason ? `${reason} ` : '';
-    const msg = `${intro}No worries — sometimes these portals are tricky. Here's a direct link to download your ${docName} from ${PROVIDERS.find((p) => p.id === provider)?.name ?? provider} yourself:`;
-    replaceLastAgentMessage(() => ({
-      role: 'assistant',
-      kind: 'agent-failed',
-      content: msg,
-      payload: { provider },
-      animate: true,
-    }));
-  };
-
-  // Render helpers for agent-specific messages
-  const renderAgentMessage = (msg: ChatMessage) => {
-    if (msg.kind === 'provider-picker') {
-      return (
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            {PROVIDERS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => handleProviderPick(p.id)}
-                className="text-xs px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (msg.kind === 'agent-status') {
-      const provider: ProviderId = msg.payload?.provider;
-      const idx: number = msg.payload?.statusIdx ?? 0;
-      const text = msg.payload?.customMessage ?? STATUS_MESSAGES[provider]?.[idx] ?? 'Working…';
-      return (
-        <div className="flex items-center gap-2.5">
-          <motion.span
-            className="w-2 h-2 rounded-full bg-primary"
-            animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1, 0.85] }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <span className="text-sm text-foreground">{text}</span>
-        </div>
-      );
-    }
-
-    if (msg.kind === 'agent-auth') {
-      const { providerName, browserSessionUrl } = msg.payload || {};
-      return (
-        <div className="rounded-xl border border-border bg-background overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
-            <Lock className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-medium text-foreground">Secure connection to {providerName}</span>
-          </div>
-          {browserSessionUrl ? (
-            <AuthIframe browserSessionUrl={browserSessionUrl} providerName={providerName} />
-          ) : (
-            <div className="h-[360px] flex items-center justify-center text-sm text-muted-foreground">
-              Connecting…
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground px-4 py-2 text-center">ClearPath never sees your password</p>
-        </div>
-      );
-    }
-
-    if (msg.kind === 'agent-failed') {
-      const provider: ProviderId = msg.payload?.provider;
-      const link = DEEP_LINKS[provider];
-      return (
-        <div className="space-y-2">
-          <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0">
-            <ReactMarkdown>{msg.content}</ReactMarkdown>
-          </div>
-          {link && (
-            <div className="space-y-1.5 pt-1">
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                {link.label}
-              </a>
-              <p className="text-xs text-muted-foreground">{link.instruction}</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return null;
   };
 
   return (
@@ -603,73 +233,50 @@ const DocumentHelpChat = ({
 
             {/* Messages area */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px]">
-              {messages.map((msg, i) => {
-                const isAgentKind = msg.kind && msg.kind !== 'text';
-                return (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {msg.role === 'assistant' && (
-                      <div className="w-6 h-6 rounded-full bg-primary/80 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
-                        <span className="text-primary-foreground text-[10px] font-bold">A</span>
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-muted text-foreground rounded-bl-md'
-                      } ${isAgentKind ? 'w-[85%]' : ''}`}
-                    >
-                      {msg.role === 'assistant' ? (
-                        isAgentKind ? (
-                          renderAgentMessage(msg)
-                        ) : msg.animate ? (
-                          <TypewriterMarkdown
-                            text={msg.content}
-                            onTick={() => {
-                              if (scrollRef.current) {
-                                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-                              }
-                            }}
-                            onDone={() => {
-                              setMessages((prev) =>
-                                prev.map((m, idx) => (idx === i ? { ...m, animate: false } : m)),
-                              );
-                            }}
-                          />
-                        ) : (
-                          <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
-                          </div>
-                        )
-                      ) : (
-                        msg.content
-                      )}
+              {messages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="w-6 h-6 rounded-full bg-primary/80 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
+                      <span className="text-primary-foreground text-[10px] font-bold">A</span>
                     </div>
+                  )}
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        : 'bg-muted text-foreground rounded-bl-md'
+                    }`}
+                  >
+                    {msg.role === 'assistant' ? (
+                      msg.animate ? (
+                        <TypewriterMarkdown
+                          text={msg.content}
+                          onTick={() => {
+                            if (scrollRef.current) {
+                              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                            }
+                          }}
+                          onDone={() => {
+                            setMessages((prev) =>
+                              prev.map((m, idx) => (idx === i ? { ...m, animate: false } : m)),
+                            );
+                          }}
+                        />
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )
+                    ) : (
+                      msg.content
+                    )}
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
               {/* Quick suggestions after intro message */}
               {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && (
                 <div className="flex flex-wrap gap-2 pl-8">
-                  {isW2Step && caseId && checklistItemId && (
-                    <button
-                      onClick={() => startAgentRetrievalIntro('w2')}
-                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-medium"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Get my W-2 automatically
-                    </button>
-                  )}
-                  {isPayStubStep && caseId && checklistItemId && (
-                    <button
-                      onClick={() => startAgentRetrievalIntro('paystub')}
-                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-medium"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Get my pay stubs automatically
-                    </button>
-                  )}
                   {(language === 'es'
                     ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
                     : ['Where do I find this?', 'What does this look like?', 'Can I use a screenshot?']
