@@ -65,107 +65,117 @@ serve(async (req) => {
 
     await new Promise((r) => setTimeout(r, 3000));
 
-    const downloadsRes = await fetch(
-      `https://api.browserbase.com/v1/sessions/${sessionId}/downloads`,
-      { headers: { 'X-BB-API-Key': bbApiKey } }
-    );
-
     const uploadedFiles: Array<{ fileName: string }> = [];
 
-    if (downloadsRes.ok) {
-      const contentType = downloadsRes.headers.get('content-type') || '';
+    const uploadPdf = async (buffer: ArrayBuffer, fileName: string, contentType = 'application/pdf') => {
+      const storagePath = `${caseId}/${checklistItemId}/${fileName}`;
+      const storageRes = await fetch(
+        `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            'Content-Type': contentType,
+            'x-upsert': 'true',
+          },
+          body: buffer,
+        }
+      );
+      if (!storageRes.ok) {
+        console.error('Storage upload failed:', fileName, await storageRes.text());
+        return;
+      }
+      await fetch(`${supabaseUrl}/rest/v1/files`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+          case_id: caseId,
+          checklist_item_id: checklistItemId,
+          file_name: fileName,
+          storage_path: storagePath,
+          uploaded_by: 'agent',
+          review_status: 'pending',
+          ai_validation_status: 'passed',
+        }),
+      });
+      uploadedFiles.push({ fileName });
+      console.log('Uploaded:', fileName, buffer.byteLength, 'bytes');
+    };
 
-      if (contentType.includes('zip') || contentType.includes('octet-stream')) {
-        const zipBuffer = await downloadsRes.arrayBuffer();
-        const fileName = `W2-${Date.now()}.zip`;
-        const storagePath = `${caseId}/${checklistItemId}/${fileName}`;
+    try {
+      const downloadsRes = await fetch(
+        `https://api.browserbase.com/v1/sessions/${sessionId}/downloads`,
+        { headers: { 'X-BB-API-Key': bbApiKey } }
+      );
+      const ct = downloadsRes.headers.get('content-type') || '';
+      console.log('BB downloads:', downloadsRes.status, 'content-type:', ct);
 
-        const storageRes = await fetch(
-          `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${serviceKey}`,
-              'Content-Type': 'application/zip',
-              'x-upsert': 'true',
-            },
-            body: zipBuffer,
+      if (downloadsRes.ok) {
+        const buf = await downloadsRes.arrayBuffer();
+        console.log('BB downloads bytes:', buf.byteLength);
+        if (buf.byteLength > 100) {
+          if (ct.includes('zip') || ct.includes('octet-stream')) {
+            await uploadPdf(buf, `W2-${Date.now()}.zip`, 'application/zip');
+          } else if (ct.includes('json')) {
+            const files = JSON.parse(new TextDecoder().decode(buf));
+            console.log('BB downloads JSON:', JSON.stringify(files).slice(0, 500));
+            for (const file of (files || [])) {
+              try {
+                const fr = await fetch(file.url || file.uri || file.downloadUrl);
+                if (!fr.ok) continue;
+                await uploadPdf(await fr.arrayBuffer(), file.name || file.fileName || `W2-${Date.now()}.pdf`);
+              } catch (e) {
+                console.error('BB file fetch err:', e);
+              }
+            }
+          } else {
+            await uploadPdf(buf, `W2-${Date.now()}.bin`, ct || 'application/octet-stream');
           }
-        );
-
-        if (storageRes.ok) {
-          await fetch(`${supabaseUrl}/rest/v1/files`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${serviceKey}`,
-              apikey: serviceKey,
-              'Content-Type': 'application/json',
-              Prefer: 'return=representation',
-            },
-            body: JSON.stringify({
-              case_id: caseId,
-              checklist_item_id: checklistItemId,
-              file_name: fileName,
-              storage_path: storagePath,
-              uploaded_by: 'agent',
-              review_status: 'pending',
-              ai_validation_status: 'passed',
-            }),
-          });
-          uploadedFiles.push({ fileName });
         }
       } else {
-        const files = await downloadsRes.json().catch(() => []);
-        for (const file of (files || [])) {
-          try {
-            const fileRes = await fetch(file.url || file.uri || file.downloadUrl);
-            if (!fileRes.ok) continue;
-            const buffer = await fileRes.arrayBuffer();
-            const fileName = file.name || file.fileName || `W2-${Date.now()}.pdf`;
-            const storagePath = `${caseId}/${checklistItemId}/${fileName}`;
-
-            const storageRes = await fetch(
-              `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
-              {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${serviceKey}`,
-                  'Content-Type': 'application/pdf',
-                  'x-upsert': 'true',
-                },
-                body: buffer,
-              }
-            );
-
-            if (storageRes.ok) {
-              await fetch(`${supabaseUrl}/rest/v1/files`, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${serviceKey}`,
-                  apikey: serviceKey,
-                  'Content-Type': 'application/json',
-                  Prefer: 'return=representation',
-                },
-                body: JSON.stringify({
-                  case_id: caseId,
-                  checklist_item_id: checklistItemId,
-                  file_name: fileName,
-                  storage_path: storagePath,
-                  uploaded_by: 'agent',
-                  review_status: 'pending',
-                  ai_validation_status: 'passed',
-                }),
-              });
-              uploadedFiles.push({ fileName });
-            }
-          } catch (e) {
-            console.error('File upload error:', e);
-          }
-        }
+        console.error('BB downloads failed:', await downloadsRes.text());
       }
-    } else {
-      console.error('Downloads fetch failed:', await downloadsRes.text());
+    } catch (e) {
+      console.error('BB downloads error:', e);
     }
+
+    if (uploadedFiles.length === 0) {
+      try {
+        const aRes = await fetch(
+          `https://api.skyvern.com/api/v1/tasks/${taskId}/artifacts`,
+          { headers: { 'x-api-key': skyvernApiKey } }
+        );
+        console.log('Skyvern artifacts status:', aRes.status);
+        if (aRes.ok) {
+          const artifacts = await aRes.json();
+          console.log('Skyvern artifacts count:', Array.isArray(artifacts) ? artifacts.length : 'n/a',
+            'sample:', JSON.stringify(artifacts).slice(0, 800));
+          for (const art of (artifacts || [])) {
+            const type = String(art.artifact_type || '');
+            const uri = art.uri || art.signed_url || art.url;
+            if (!uri) continue;
+            if (!type.toLowerCase().includes('download') && !String(uri).toLowerCase().includes('.pdf')) continue;
+            try {
+              const fr = await fetch(uri);
+              if (!fr.ok) continue;
+              await uploadPdf(await fr.arrayBuffer(), art.file_name || `W2-${Date.now()}.pdf`);
+            } catch (e) {
+              console.error('Skyvern artifact fetch err:', e);
+            }
+          }
+        } else {
+          console.error('Skyvern artifacts failed:', await aRes.text());
+        }
+      } catch (e) {
+        console.error('Skyvern artifacts error:', e);
+      }
+    }
+
 
     if (uploadedFiles.length > 0) {
       await fetch(
