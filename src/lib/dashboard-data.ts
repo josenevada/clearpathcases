@@ -7,6 +7,7 @@ export interface DashboardOnboardingState {
   brandingComplete: boolean;
   counselingComplete: boolean;
   hasSentLink: boolean;
+  hasTemplate: boolean;
 }
 
 interface DashboardDataResult {
@@ -30,6 +31,7 @@ const emptyOnboardingState: DashboardOnboardingState = {
   brandingComplete: false,
   counselingComplete: false,
   hasSentLink: false,
+  hasTemplate: false,
 };
 
 const mapChecklist = async (rows: any[], fileRows: any[]): Promise<ChecklistItem[]> =>
@@ -138,7 +140,7 @@ export const fetchDashboardData = async (firmId: string): Promise<DashboardDataR
       : Promise.resolve({ data: [], error: null }),
     supabase
       .from('firms')
-      .select('name, primary_contact_name, primary_contact_email, phone, default_paralegal, default_attorney, branding_attorney_name, branding_bar_number, counseling_provider_link')
+      .select('name, primary_contact_name, primary_contact_email, phone, default_paralegal, default_attorney, branding_attorney_name, branding_bar_number, counseling_provider_link, templates_configured, document_templates')
       .eq('id', firmId)
       .maybeSingle(),
   ]);
@@ -165,6 +167,10 @@ export const fetchDashboardData = async (firmId: string): Promise<DashboardDataR
           brandingComplete: Boolean(firmResult.data.branding_attorney_name && firmResult.data.branding_bar_number),
           counselingComplete: Boolean(firmResult.data.counseling_provider_link),
           hasSentLink: (activityResult.data || []).length > 0,
+          hasTemplate: Boolean(
+            (firmResult.data as any).templates_configured === true ||
+            (Array.isArray((firmResult.data as any).document_templates) && (firmResult.data as any).document_templates.length > 0)
+          ),
         }
       : emptyOnboardingState,
   };

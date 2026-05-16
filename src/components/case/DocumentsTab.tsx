@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, CheckCircle, X, Shield, ShieldCheck, ExternalLink, Trash2, CheckSquare, Lock } from 'lucide-react';
+import { Search, Download, FileText, Image, FileCheck, AlertTriangle, Check, CheckCircle, X, Shield, ShieldCheck, ExternalLink, Trash2, CheckSquare, Lock, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +68,30 @@ const getFileUrl = async (file: UploadedFile): Promise<string> => {
     return await getCaseDocumentSignedUrl(file.storagePath);
   }
   return '';
+};
+
+const SignedUrlViewer = ({ storagePath, fileName }: { storagePath: string; fileName: string }) => {
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (storagePath) {
+      getCaseDocumentSignedUrl(storagePath).then(u => {
+        if (!cancelled) setUrl(u);
+      });
+    }
+    return () => { cancelled = true; };
+  }, [storagePath]);
+
+  if (!url) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return <DocumentViewer fileName={fileName} dataUrl={url} />;
 };
 
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
@@ -927,21 +951,21 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                       variant="ghost"
                       size="icon"
                       title="Open in new tab"
-                      onClick={() => {
-                        if (selectedFile.file.dataUrl) {
-                          const w = window.open('');
-                          if (w) {
-                            w.document.title = selectedFile.file.name;
-                            if (isImageFile(selectedFile.file.name)) {
-                              w.document.body.innerHTML = `<img src="${selectedFile.file.dataUrl}" style="max-width:100%;margin:auto;display:block" />`;
-                            } else {
-                              const embed = w.document.createElement('embed');
-                              embed.src = selectedFile.file.dataUrl;
-                              embed.type = 'application/pdf';
-                              embed.style.cssText = 'width:100%;height:100vh';
-                              w.document.body.style.margin = '0';
-                              w.document.body.appendChild(embed);
-                            }
+                      onClick={async () => {
+                        const url = await getFileUrl(selectedFile.file);
+                        if (!url) return;
+                        const w = window.open('');
+                        if (w) {
+                          w.document.title = selectedFile.file.name;
+                          if (isImageFile(selectedFile.file.name)) {
+                            w.document.body.innerHTML = `<img src="${url}" style="max-width:100%;margin:auto;display:block" />`;
+                          } else {
+                            const embed = w.document.createElement('embed');
+                            embed.src = url;
+                            embed.type = 'application/pdf';
+                            embed.style.cssText = 'width:100%;height:100vh';
+                            w.document.body.style.margin = '0';
+                            w.document.body.appendChild(embed);
                           }
                         }
                       }}
@@ -953,9 +977,10 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                       size="icon"
                       title="Download"
                        onClick={async () => {
-                         if (!selectedFile.file.dataUrl) return;
+                         const url = await getFileUrl(selectedFile.file);
+                         if (!url) return;
                          try {
-                           const response = await fetch(selectedFile.file.dataUrl);
+                           const response = await fetch(url);
                            const blob = await response.blob();
                            const blobUrl = URL.createObjectURL(blob);
                            const a = document.createElement('a');
@@ -966,7 +991,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                            document.body.removeChild(a);
                            URL.revokeObjectURL(blobUrl);
                          } catch {
-                           window.open(selectedFile.file.dataUrl, '_blank');
+                           window.open(url, '_blank');
                          }
                        }}
                     >
@@ -990,6 +1015,11 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                 {/* Document viewer */}
                 {selectedFile.file.dataUrl ? (
                   <DocumentViewer fileName={selectedFile.file.name} dataUrl={selectedFile.file.dataUrl} />
+                ) : selectedFile.file.storagePath ? (
+                  <SignedUrlViewer
+                    storagePath={selectedFile.file.storagePath}
+                    fileName={selectedFile.file.name}
+                  />
                 ) : (
                   <div className="surface-card p-6 flex flex-col items-center gap-3">
                     <FileText className="w-16 h-16 text-muted-foreground/30" />
