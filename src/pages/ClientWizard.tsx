@@ -2093,6 +2093,7 @@ const ClientWizard = () => {
                       })();
                     }}
                     onManualUploadClick={() => {}}
+                    onContinue={() => checkMilestoneAndAdvance(caseData)}
                     manualUploadContent={
                       multiConfig ? (
                         <MultiUploadZone
@@ -2476,6 +2477,24 @@ const ClientWizard = () => {
           onOpenChange={setAlexChatOpen}
           caseId={caseData.id}
           checklistItemId={currentItem.id}
+          bankExtraUpload={
+            isBankStatements && multiConfig ? (
+              <MultiUploadZone
+                files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
+                config={multiConfig}
+                onFileAdd={(file: File) => {
+                  const existing = currentItem.files.find(f => f.name === file.name);
+                  if (existing) {
+                    setPendingDuplicate({ file, existingFileId: existing.id });
+                  } else {
+                    handleFileAdd(file);
+                  }
+                }}
+                onFileDelete={handleFileDelete}
+                onFilePreview={(f) => setPreviewFile({ name: f.name, dataUrl: f.dataUrl })}
+              />
+            ) : undefined
+          }
         />
       )}
       {/* Persistent hidden file inputs for mobile */}

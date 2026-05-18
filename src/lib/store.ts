@@ -888,7 +888,7 @@ export const buildDefaultChecklist = (): ChecklistItem[] => [
   item('Income & Employment', 'Employer Name', 'Tell us where you work so we can include it on your paperwork.', 'This goes directly on your bankruptcy petition. If you\'re not working right now, just let us know — that\'s totally fine.', false),
 
   // Step 2: Bank & Financial Accounts
-  item('Bank & Financial Accounts', 'Checking/Savings Statements (Last 6 Months)', 'Upload bank statements for all your checking and savings accounts.', 'The trustee looks at these to understand your day-to-day finances. Six months is the standard — it\'s the same for everyone.'),
+  item('Bank & Financial Accounts', 'Checking/Savings Statements (Last 6 Months)', 'Connect your bank with Plaid for automatic retrieval, or upload PDF statements manually. Include ALL bank accounts — checking, savings, credit unions, and online banks like Chime or Cash App.', 'The trustee looks at these to understand your day-to-day finances. Six months is the standard — it\'s the same for everyone.'),
   item('Bank & Financial Accounts', 'Digital Wallet Statements', 'Used Venmo, PayPal, or Cash App in the last 12 months? We need to include those too.', 'Digital wallets count as financial accounts under bankruptcy law. The trustee needs to see all money movement — even Venmo. Missing these could cause problems with your case.'),
   item('Bank & Financial Accounts', 'Investment/Retirement Statements', 'Upload statements for any investment or retirement accounts.', 'Good news — retirement accounts are usually protected. We just need to document them so your attorney can make sure they\'re covered.', false),
 

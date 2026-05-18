@@ -11,7 +11,7 @@ interface ChatMessage {
   content?: string;
   animate?: boolean;
   // Rich content variants
-  kind?: 'text' | 'provider-picker' | 'provider-steps' | 'not-sure' | 'example' | 'tax-sources';
+  kind?: 'text' | 'provider-picker' | 'provider-steps' | 'not-sure' | 'example' | 'tax-sources' | 'multi-bank';
   payload?: any;
 }
 
@@ -80,6 +80,7 @@ interface DocumentHelpChatProps {
   caseId?: string;
   checklistItemId?: string;
   onAgentFilesAdded?: () => void;
+  bankExtraUpload?: React.ReactNode;
 }
 
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
@@ -243,6 +244,7 @@ const DocumentHelpChat = ({
   isOpen,
   onOpenChange,
   language = 'en',
+  bankExtraUpload,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -258,6 +260,7 @@ const DocumentHelpChat = ({
   const isW2 = documentLabel === 'W-2s (Last 2 Years)';
   const isPaystubs = documentLabel === 'Pay Stubs (Last 2 Months)';
   const isTaxReturns = /tax return/i.test(documentLabel);
+  const isBankStatements = /checking\/savings statements|bank statements/i.test(documentLabel);
   const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
@@ -325,6 +328,20 @@ const DocumentHelpChat = ({
     const resp = map[p.name];
     if (!resp) return;
     pushMessages({ role: 'assistant', kind: 'provider-steps', payload: resp });
+  };
+
+  const handleMultiBank = () => {
+    pushMessages(
+      { role: 'user', content: 'I have accounts at multiple banks' },
+      {
+        role: 'assistant',
+        kind: 'text',
+        animate: true,
+        content:
+          "No problem — connect your main bank with Plaid first, then you can upload PDF statements from your other banks manually below. Most attorneys need statements from every account you have, including savings accounts, credit unions, and online banks like Chime or Cash App.",
+      },
+      { role: 'assistant', kind: 'multi-bank' },
+    );
   };
 
   const sendMessage = async () => {
@@ -485,6 +502,19 @@ const DocumentHelpChat = ({
     if (msg.kind === 'provider-steps') return renderProviderSteps(msg.payload as ProviderResponse);
     if (msg.kind === 'not-sure') return renderNotSure();
     if (msg.kind === 'tax-sources') return renderTaxSources();
+    if (msg.kind === 'multi-bank') {
+      return (
+        <div className="space-y-2">
+          {bankExtraUpload ? (
+            bankExtraUpload
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Use the upload area on this step to add statements from your other banks.
+            </p>
+          )}
+        </div>
+      );
+    }
     // text
     if (msg.animate) {
       return (
@@ -593,6 +623,14 @@ const DocumentHelpChat = ({
                       className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
                     >
                       {language === 'es' ? '¿Cómo se ve?' : 'What should this look like?'}
+                    </button>
+                  )}
+                  {isBankStatements && (
+                    <button
+                      onClick={handleMultiBank}
+                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
+                    >
+                      I have accounts at multiple banks
                     </button>
                   )}
                   {quickQuestions.map((q) => (
