@@ -366,7 +366,7 @@ const DocumentHelpChat = ({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="w-full max-w-lg bg-background rounded-t-2xl flex flex-col"
-            style={{ maxHeight: '85vh' }}
+            style={{ maxHeight: agentStatus === 'waiting_for_login' ? '95vh' : '85vh', height: agentStatus === 'waiting_for_login' ? '95vh' : undefined }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle bar + header */}
@@ -487,10 +487,33 @@ const DocumentHelpChat = ({
                 </div>
               )}
 
-              {/* Auth iframe — inline placeholder, real UI is fullscreen overlay below */}
-              {agentStatus === 'waiting_for_login' && liveUrl && (
-                <div className="mx-2 rounded-xl border border-border bg-card px-3 py-3 text-xs text-muted-foreground text-center">
-                  Login window opened — finish signing in, then click "I've logged in".
+              {/* Auth iframe — inline inside chat panel */}
+              {liveUrl && agentStatus === 'waiting_for_login' && (
+                <div className="rounded-xl border border-border overflow-hidden my-2 w-full">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted border-b border-border">
+                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground truncate">
+                      Secure connection to {selectedProvider?.toUpperCase()} — log in below
+                    </span>
+                  </div>
+                  <iframe
+                    src={liveUrl}
+                    className="w-full border-0"
+                    style={{ height: '520px' }}
+                    title="Payroll portal login"
+                    allow="clipboard-read; clipboard-write"
+                  />
+                  <p className="text-xs text-muted-foreground px-3 py-1.5 text-center border-t border-border">
+                    ClearPath never sees your password
+                  </p>
+                  <div className="px-3 py-2 border-t border-border">
+                    <button
+                      onClick={handleLoginComplete}
+                      className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      I've logged in — continue ✓
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -561,47 +584,6 @@ const DocumentHelpChat = ({
         </motion.div>
       )}
 
-      {/* Fullscreen login overlay — gives the iframe enough room to interact */}
-      {agentStatus === 'waiting_for_login' && liveUrl && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm flex flex-col"
-        >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">
-                Secure connection to {selectedProvider?.toUpperCase()} — log in below
-              </span>
-            </div>
-            <span className="text-xs text-muted-foreground hidden sm:inline">
-              ClearPath never sees your password
-            </span>
-          </div>
-          <div className="flex-1 min-h-0 bg-background">
-            <iframe
-              src={liveUrl}
-              title="Provider login"
-              className="w-full h-full bg-background"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-              allow="clipboard-read; clipboard-write"
-            />
-          </div>
-          <div className="px-4 py-3 border-t border-border bg-card flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground sm:hidden text-center">
-              ClearPath never sees your password
-            </p>
-            <button
-              onClick={handleLoginComplete}
-              className="w-full sm:w-auto sm:ml-auto px-6 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              I've logged in — continue ✓
-            </button>
-          </div>
-        </motion.div>
-      )}
     </AnimatePresence>
 
   );
