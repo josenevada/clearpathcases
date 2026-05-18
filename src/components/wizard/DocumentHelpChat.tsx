@@ -366,7 +366,7 @@ const DocumentHelpChat = ({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="w-full max-w-lg bg-background rounded-t-2xl flex flex-col"
-            style={{ maxHeight: '85vh' }}
+            style={{ maxHeight: agentStatus === 'waiting_for_login' ? '95vh' : '85vh', height: agentStatus === 'waiting_for_login' ? '95vh' : undefined }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle bar + header */}
