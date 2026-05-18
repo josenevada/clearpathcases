@@ -11,7 +11,7 @@ interface ChatMessage {
   content?: string;
   animate?: boolean;
   // Rich content variants
-  kind?: 'text' | 'provider-picker' | 'provider-steps' | 'not-sure' | 'example' | 'tax-sources';
+  kind?: 'text' | 'provider-picker' | 'provider-steps' | 'not-sure' | 'example' | 'tax-sources' | 'multi-bank';
   payload?: any;
 }
 
