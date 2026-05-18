@@ -14,6 +14,7 @@ interface PlaidBankConnectProps {
   onSuccess: (result: PlaidResult) => void;
   onManualUploadClick: () => void;
   manualUploadContent: React.ReactNode;
+  onContinue?: () => void;
 }
 
 export interface PlaidResult {
