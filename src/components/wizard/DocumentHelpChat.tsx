@@ -99,14 +99,6 @@ const PROVIDER_URLS: Record<string, string> = {
   paylocity: 'https://access.paylocity.com',
 };
 
-const STEEL_KEY = (import.meta as any).env?.VITE_STEEL_API_KEY || '';
-const releaseSteelSession = (sessionId: string) => {
-  if (!sessionId || !STEEL_KEY) return;
-  fetch(`https://api.steel.dev/v1/sessions/${sessionId}/release`, {
-    method: 'POST',
-    headers: { 'Steel-Api-Key': STEEL_KEY },
-  }).catch(() => {});
-};
 
 const DocumentHelpChat = ({
   documentLabel,
