@@ -502,6 +502,19 @@ const DocumentHelpChat = ({
     if (msg.kind === 'provider-steps') return renderProviderSteps(msg.payload as ProviderResponse);
     if (msg.kind === 'not-sure') return renderNotSure();
     if (msg.kind === 'tax-sources') return renderTaxSources();
+    if (msg.kind === 'multi-bank') {
+      return (
+        <div className="space-y-2">
+          {bankExtraUpload ? (
+            bankExtraUpload
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Use the upload area on this step to add statements from your other banks.
+            </p>
+          )}
+        </div>
+      );
+    }
     // text
     if (msg.animate) {
       return (
