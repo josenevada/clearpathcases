@@ -625,6 +625,14 @@ const DocumentHelpChat = ({
                       {language === 'es' ? '¿Cómo se ve?' : 'What should this look like?'}
                     </button>
                   )}
+                  {isBankStatements && (
+                    <button
+                      onClick={handleMultiBank}
+                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
+                    >
+                      I have accounts at multiple banks
+                    </button>
+                  )}
                   {quickQuestions.map((q) => (
                     <button
                       key={q}
