@@ -123,8 +123,8 @@ const DocumentHelpChat = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
-  const [browserSessionUrl, setBrowserSessionUrl] = useState<string | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const agentStatusRef = useRef<AgentStatus>('idle');
 
@@ -141,7 +141,7 @@ const DocumentHelpChat = ({
     setInput('');
     setLoading(false);
     setAgentStatus('idle');
-    setBrowserSessionUrl(null);
+    setLiveUrl(null);
     setSelectedProvider(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
@@ -150,7 +150,7 @@ const DocumentHelpChat = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading, agentStatus, browserSessionUrl]);
+  }, [messages, loading, agentStatus, liveUrl]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -158,17 +158,25 @@ const DocumentHelpChat = ({
     }
   }, [open]);
 
-  // Cleanup Steel session on unmount
+  // Cleanup: stop Browser Use task on unmount
   useEffect(() => {
     return () => {
-      if (activeSessionId) releaseSteelSession(activeSessionId);
+      if (taskId) {
+        supabase.functions
+          .invoke('check-agent-status', { body: { taskId, action: 'stop' } })
+          .catch(() => {});
+      }
     };
-  }, [activeSessionId]);
+  }, [taskId]);
 
   const handleClose = () => {
-    if (activeSessionId) releaseSteelSession(activeSessionId);
-    setActiveSessionId(null);
-    setBrowserSessionUrl(null);
+    if (taskId) {
+      supabase.functions
+        .invoke('check-agent-status', { body: { taskId, action: 'stop' } })
+        .catch(() => {});
+    }
+    setTaskId(null);
+    setLiveUrl(null);
     setAgentStatus('idle');
     setSelectedProvider(null);
     setOpen(false);
@@ -176,37 +184,49 @@ const DocumentHelpChat = ({
 
   const handleAgentRetrieval = async (provider: string) => {
     setSelectedProvider(provider);
-    setAgentStatus('creating_session');
+    setAgentStatus('starting');
+
+    const documentType = isW2 ? 'w2' : 'paystubs';
 
     try {
-      const sessionRes = await supabase.functions.invoke('create-browser-session', {
-        body: { provider, caseId },
+      const startRes = await supabase.functions.invoke('start-agent-retrieval', {
+        body: { provider, documentType },
       });
-      if (sessionRes.error) throw sessionRes.error;
+      if (startRes.error) throw startRes.error;
 
-      const { sessionId, browserSessionUrl: sessionUrl } = sessionRes.data || {};
-      if (!sessionId) throw new Error('No session id returned');
+      const { taskId: newTaskId, liveUrl: newLiveUrl } = startRes.data || {};
+      if (!newTaskId) throw new Error('No task id returned');
 
-      setActiveSessionId(sessionId);
-      setBrowserSessionUrl(sessionUrl);
-      setAgentStatus('auth_required');
+      setTaskId(newTaskId);
+      setLiveUrl(newLiveUrl);
+      setAgentStatus('waiting_for_login');
 
       const pollInterval = setInterval(async () => {
         try {
-          const authRes = await supabase.functions.invoke('check-session-auth', {
-            body: { sessionId, provider },
+          const statusRes = await supabase.functions.invoke('check-agent-status', {
+            body: { taskId: newTaskId, action: 'status' },
           });
-          if (authRes.data?.authenticated) {
-            clearInterval(pollInterval);
-            setBrowserSessionUrl(null);
-            setAgentStatus('retrieving');
 
-            const functionName = isW2 ? 'retrieve-w2' : 'retrieve-paystubs';
-            const retrieveRes = await supabase.functions.invoke(functionName, {
-              body: { sessionId, provider, caseId, checklistItemId },
+          const { status, liveUrl: updatedLiveUrl } = statusRes.data || {};
+          if (updatedLiveUrl && agentStatusRef.current === 'waiting_for_login') {
+            setLiveUrl(updatedLiveUrl);
+          }
+
+          if (status === 'running' && agentStatusRef.current === 'waiting_for_login') {
+            setAgentStatus('running');
+            setLiveUrl(null);
+          }
+
+          if (status === 'stopped') {
+            clearInterval(pollInterval);
+            setAgentStatus('running');
+            setLiveUrl(null);
+
+            const filesRes = await supabase.functions.invoke('get-agent-files', {
+              body: { taskId: newTaskId, caseId, checklistItemId, documentType },
             });
 
-            if (retrieveRes.data?.success) {
+            if (filesRes.data?.success) {
               setAgentStatus('success');
               onAgentFilesAdded?.();
             } else {
@@ -214,13 +234,16 @@ const DocumentHelpChat = ({
             }
           }
         } catch (_) {}
-      }, 5000);
+      }, 4000);
 
       setTimeout(() => {
         clearInterval(pollInterval);
-        if (agentStatusRef.current !== 'success' && agentStatusRef.current !== 'retrieving') {
+        if (agentStatusRef.current !== 'success' && agentStatusRef.current !== 'running') {
           setAgentStatus('failed');
-          setBrowserSessionUrl(null);
+          setLiveUrl(null);
+          supabase.functions
+            .invoke('check-agent-status', { body: { taskId: newTaskId, action: 'stop' } })
+            .catch(() => {});
         }
       }, 300000);
     } catch (err) {
@@ -228,6 +251,18 @@ const DocumentHelpChat = ({
       setAgentStatus('failed');
     }
   };
+
+  const handleLoginComplete = async () => {
+    if (!taskId) return;
+    setAgentStatus('running');
+    setLiveUrl(null);
+    try {
+      await supabase.functions.invoke('check-agent-status', {
+        body: { taskId, action: 'resume' },
+      });
+    } catch (_) {}
+  };
+
 
   const triggerAgentFlow = () => {
     const prompt = isW2
