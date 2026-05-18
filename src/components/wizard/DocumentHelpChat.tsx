@@ -330,6 +330,20 @@ const DocumentHelpChat = ({
     pushMessages({ role: 'assistant', kind: 'provider-steps', payload: resp });
   };
 
+  const handleMultiBank = () => {
+    pushMessages(
+      { role: 'user', content: 'I have accounts at multiple banks' },
+      {
+        role: 'assistant',
+        kind: 'text',
+        animate: true,
+        content:
+          "No problem — connect your main bank with Plaid first, then you can upload PDF statements from your other banks manually below. Most attorneys need statements from every account you have, including savings accounts, credit unions, and online banks like Chime or Cash App.",
+      },
+      { role: 'assistant', kind: 'multi-bank' },
+    );
+  };
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
