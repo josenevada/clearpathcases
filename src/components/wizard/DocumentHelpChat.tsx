@@ -487,10 +487,33 @@ const DocumentHelpChat = ({
                 </div>
               )}
 
-              {/* Auth iframe — inline placeholder, real UI is fullscreen overlay below */}
-              {agentStatus === 'waiting_for_login' && liveUrl && (
-                <div className="mx-2 rounded-xl border border-border bg-card px-3 py-3 text-xs text-muted-foreground text-center">
-                  Login window opened — finish signing in, then click "I've logged in".
+              {/* Auth iframe — inline inside chat panel */}
+              {liveUrl && agentStatus === 'waiting_for_login' && (
+                <div className="rounded-xl border border-border overflow-hidden my-2 w-full">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted border-b border-border">
+                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground truncate">
+                      Secure connection to {selectedProvider?.toUpperCase()} — log in below
+                    </span>
+                  </div>
+                  <iframe
+                    src={liveUrl}
+                    className="w-full border-0"
+                    style={{ height: '520px' }}
+                    title="Payroll portal login"
+                    allow="clipboard-read; clipboard-write"
+                  />
+                  <p className="text-xs text-muted-foreground px-3 py-1.5 text-center border-t border-border">
+                    ClearPath never sees your password
+                  </p>
+                  <div className="px-3 py-2 border-t border-border">
+                    <button
+                      onClick={handleLoginComplete}
+                      className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      I've logged in — continue ✓
+                    </button>
+                  </div>
                 </div>
               )}
 
