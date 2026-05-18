@@ -212,10 +212,9 @@ const DocumentHelpChat = ({
             setLiveUrl(updatedLiveUrl);
           }
 
-          if (status === 'running' && agentStatusRef.current === 'waiting_for_login') {
-            setAgentStatus('running');
-            setLiveUrl(null);
-          }
+          // While the user is still completing login, ignore session
+          // status changes — the user controls the transition via the
+          // "I've logged in" button which dispatches the follow-up task.
 
           if (status === 'stopped') {
             clearInterval(pollInterval);
@@ -256,9 +255,10 @@ const DocumentHelpChat = ({
     if (!taskId) return;
     setAgentStatus('running');
     setLiveUrl(null);
+    const documentType = isW2 ? 'w2' : 'paystubs';
     try {
       await supabase.functions.invoke('check-agent-status', {
-        body: { taskId, action: 'resume' },
+        body: { taskId, action: 'resume', documentType },
       });
     } catch (_) {}
   };
