@@ -475,29 +475,29 @@ const DocumentHelpChat = ({
                 </div>
               )}
 
-              {/* Creating / retrieving status */}
-              {(agentStatus === 'creating_session' || agentStatus === 'retrieving') && (
+              {/* Starting / running status */}
+              {(agentStatus === 'starting' || agentStatus === 'running') && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 pl-8">
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span>
-                    {agentStatus === 'creating_session'
+                    {agentStatus === 'starting'
                       ? 'Opening secure portal…'
                       : 'Retrieving your documents…'}
                   </span>
                 </div>
               )}
 
-              {/* Auth iframe */}
-              {agentStatus === 'auth_required' && browserSessionUrl && (
+              {/* Auth iframe — client logs in */}
+              {agentStatus === 'waiting_for_login' && liveUrl && (
                 <div className="mx-2 rounded-xl border border-border overflow-hidden bg-card">
                   <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
                     <ShieldCheck className="w-4 h-4 text-primary" />
                     <span className="text-xs font-medium text-foreground">
-                      Secure connection to {selectedProvider?.toUpperCase()}
+                      Secure connection to {selectedProvider?.toUpperCase()} — log in below
                     </span>
                   </div>
                   <iframe
-                    src={browserSessionUrl}
+                    src={liveUrl}
                     title="Provider login"
                     className="w-full h-[420px] bg-background"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
@@ -506,8 +506,17 @@ const DocumentHelpChat = ({
                   <p className="text-xs text-muted-foreground px-3 py-2 text-center border-t border-border">
                     ClearPath never sees your password
                   </p>
+                  <div className="px-3 py-2 border-t border-border">
+                    <button
+                      onClick={handleLoginComplete}
+                      className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      I've logged in — continue ✓
+                    </button>
+                  </div>
                 </div>
               )}
+
 
               {/* Success */}
               {agentStatus === 'success' && (
