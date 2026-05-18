@@ -2093,6 +2093,7 @@ const ClientWizard = () => {
                       })();
                     }}
                     onManualUploadClick={() => {}}
+                    onContinue={() => checkMilestoneAndAdvance(caseData)}
                     manualUploadContent={
                       multiConfig ? (
                         <MultiUploadZone
