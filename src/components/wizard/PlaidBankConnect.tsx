@@ -204,6 +204,41 @@ const PlaidBankConnect = ({
             Disconnect Bank
           </button>
         </div>
+
+        {/* Follow-up: any other banks? */}
+        <div className="mt-4 p-4 rounded-xl bg-muted border border-border">
+          <p className="text-sm font-medium mb-1 text-foreground">
+            Got your statements from {result.institutionName}.
+          </p>
+          <p className="text-sm text-muted-foreground mb-3">
+            Do you have accounts at any other banks or credit unions? Add those statements below.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowExtraUpload(true)}
+              className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              + Add another bank
+            </button>
+            {onContinue && (
+              <button
+                onClick={() => onContinue()}
+                className="flex-1 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
+              >
+                That's all my accounts
+              </button>
+            )}
+          </div>
+        </div>
+
+        {showExtraUpload && (
+          <div className="mt-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              Upload 6 months of statements from your other bank account as PDF files.
+            </p>
+            {manualUploadContent}
+          </div>
+        )}
       </motion.div>
     );
   }
