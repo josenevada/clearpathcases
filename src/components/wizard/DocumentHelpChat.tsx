@@ -1,23 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, Loader2, ShieldCheck } from 'lucide-react';
+import { Send, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 
 type ChatRole = 'user' | 'assistant';
-type AgentStatus =
-  | 'idle'
-  | 'choose_provider'
-  | 'starting'
-  | 'waiting_for_login'
-  | 'running'
-  | 'success'
-  | 'failed';
 
 interface ChatMessage {
   role: ChatRole;
-  content: string;
+  content?: string;
   animate?: boolean;
+  // Rich content variants
+  kind?: 'text' | 'provider-picker' | 'provider-steps' | 'not-sure' | 'example' | 'tax-sources';
+  payload?: any;
 }
 
 const TYPE_CHAR_MS = 14;
@@ -90,15 +85,156 @@ interface DocumentHelpChatProps {
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
 const ALEX_INTRO_ES = "Hola — ¿qué puedo ayudarte a encontrar? Puedo decirte dónde conseguir este documento, cómo debería verse, o cualquier otra cosa con la que estés atorado.";
 
-const PROVIDERS = ['ADP', 'Workday', 'Paychex', 'Gusto', 'Paylocity'];
-const PROVIDER_URLS: Record<string, string> = {
-  adp: 'https://my.adp.com',
-  workday: 'https://www.myworkday.com',
-  paychex: 'https://myapps.paychex.com',
-  gusto: 'https://app.gusto.com',
-  paylocity: 'https://access.paylocity.com',
+type Provider = { name: string; url: string | null; hint: string };
+
+const payrollProviders: Provider[] = [
+  { name: 'ADP', url: 'https://my.adp.com/#/pay/statements', hint: 'Most common — used by large employers' },
+  { name: 'Workday', url: 'https://www.myworkday.com', hint: 'Common at mid-to-large companies' },
+  { name: 'Paychex', url: 'https://myapps.paychex.com', hint: 'Common at small businesses' },
+  { name: 'Gusto', url: 'https://app.gusto.com/payroll_history', hint: 'Common at startups and small businesses' },
+  { name: 'Paylocity', url: 'https://access.paylocity.com', hint: 'Common at mid-sized companies' },
+  { name: "I'm not sure", url: null, hint: "I'll help you figure it out" },
+];
+
+type ProviderResponse = {
+  message: string;
+  steps: string[];
+  url: string;
+  buttonLabel: string;
 };
 
+const paystubProviderResponses: Record<string, ProviderResponse> = {
+  ADP: {
+    message: "Here's how to get your pay stubs from ADP:",
+    steps: [
+      'Log into your ADP account',
+      'Click Pay in the top navigation',
+      'Select Pay Statements',
+      'Download each stub from the last 2 months as PDF',
+    ],
+    url: 'https://my.adp.com/#/pay/statements',
+    buttonLabel: 'Open ADP Pay Statements →',
+  },
+  Workday: {
+    message: "Here's how to get your pay stubs from Workday:",
+    steps: [
+      'Log into your Workday account',
+      'Click your name in the top right',
+      'Select Pay → Payslips',
+      'Download each payslip from the last 2 months',
+    ],
+    url: 'https://www.myworkday.com',
+    buttonLabel: 'Open Workday →',
+  },
+  Paychex: {
+    message: "Here's how to get your pay stubs from Paychex:",
+    steps: [
+      'Log into Paychex Flex',
+      'Click Pay in the left menu',
+      'Select Pay History',
+      'Download each stub from the last 2 months as PDF',
+    ],
+    url: 'https://myapps.paychex.com',
+    buttonLabel: 'Open Paychex Flex →',
+  },
+  Gusto: {
+    message: "Here's how to get your pay stubs from Gusto:",
+    steps: [
+      'Log into your Gusto account',
+      'Click Documents in the left menu',
+      'Select Pay Stubs',
+      'Download each stub from the last 2 months',
+    ],
+    url: 'https://app.gusto.com/payroll_history',
+    buttonLabel: 'Open Gusto →',
+  },
+  Paylocity: {
+    message: "Here's how to get your pay stubs from Paylocity:",
+    steps: [
+      'Log into your Paylocity account',
+      'Click Pay in the top menu',
+      'Select Pay History',
+      'Download each stub from the last 2 months as PDF',
+    ],
+    url: 'https://access.paylocity.com',
+    buttonLabel: 'Open Paylocity →',
+  },
+};
+
+const w2ProviderResponses: Record<string, ProviderResponse> = {
+  ADP: {
+    message: "Here's how to get your W-2 from ADP:",
+    steps: [
+      'Log into your ADP account',
+      'Click Pay in the top navigation',
+      'Select Tax Statements',
+      'Download your W-2 for 2024 and 2023',
+    ],
+    url: 'https://my.adp.com/#/pay/tax-statements',
+    buttonLabel: 'Open ADP Tax Statements →',
+  },
+  Workday: {
+    message: "Here's how to get your W-2 from Workday:",
+    steps: [
+      'Log into your Workday account',
+      'Click Pay → Tax Documents',
+      'Find your W-2 for 2024 and 2023',
+      'Download each as a PDF',
+    ],
+    url: 'https://www.myworkday.com',
+    buttonLabel: 'Open Workday →',
+  },
+  Paychex: {
+    message: "Here's how to get your W-2 from Paychex:",
+    steps: [
+      'Log into Paychex Flex',
+      'Click Pay → Tax Documents',
+      'Download your W-2 for 2024 and 2023',
+    ],
+    url: 'https://myapps.paychex.com',
+    buttonLabel: 'Open Paychex Flex →',
+  },
+  Gusto: {
+    message: "Here's how to get your W-2 from Gusto:",
+    steps: [
+      'Log into your Gusto account',
+      'Click Documents → Tax Documents',
+      'Download your W-2 for 2024 and 2023',
+    ],
+    url: 'https://app.gusto.com/tax_documents',
+    buttonLabel: 'Open Gusto Tax Documents →',
+  },
+  Paylocity: {
+    message: "Here's how to get your W-2 from Paylocity:",
+    steps: [
+      'Log into your Paylocity account',
+      'Click Pay → Tax Documents',
+      'Download your W-2 for 2024 and 2023',
+    ],
+    url: 'https://access.paylocity.com',
+    buttonLabel: 'Open Paylocity →',
+  },
+};
+
+const taxReturnSources = [
+  { name: 'TurboTax', url: 'https://myturbotax.intuit.com' },
+  { name: 'H&R Block', url: 'https://www.hrblock.com/tax-center' },
+  { name: 'TaxAct', url: 'https://www.taxact.com/myaccount' },
+  { name: 'IRS Free Transcript', url: 'https://www.irs.gov/individuals/get-transcript' },
+];
+
+const paystubExample = `A pay stub is a document from your employer showing your earnings for one pay period. It shows:
+
+- Your name and employer name at the top
+- Pay period dates (e.g. April 1–15, 2026)
+- Gross pay, taxes withheld, and net pay
+- Usually has 'Earnings Statement' or 'Pay Statement' in the header
+
+Make sure to upload one for each pay period in the last 2 months. If you're paid every 2 weeks, that's 4-5 stubs.`;
+
+const w2Example = `A W-2 is a tax form your employer sends you every January showing your total earnings and taxes for the prior year. It's one page, says 'W-2 Wage and Tax Statement' at the top, and has boxes labeled 1 through 20.
+
+You need your W-2 for 2024 and 2023. If you changed jobs, upload a W-2 from each employer.`;
 
 const DocumentHelpChat = ({
   documentLabel,
@@ -107,9 +243,6 @@ const DocumentHelpChat = ({
   isOpen,
   onOpenChange,
   language = 'en',
-  caseId,
-  checklistItemId,
-  onAgentFilesAdded,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -122,28 +255,15 @@ const DocumentHelpChat = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
-  const [liveUrl, setLiveUrl] = useState<string | null>(null);
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [iframeReady, setIframeReady] = useState(false);
-  const agentStatusRef = useRef<AgentStatus>('idle');
-
-  useEffect(() => {
-    agentStatusRef.current = agentStatus;
-  }, [agentStatus]);
-
   const isW2 = documentLabel === 'W-2s (Last 2 Years)';
   const isPaystubs = documentLabel === 'Pay Stubs (Last 2 Months)';
-  const agentSupported = isW2 || isPaystubs;
+  const isTaxReturns = /tax return/i.test(documentLabel);
+  const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
-    setMessages([{ role: 'assistant', content: ALEX_INTRO }]);
+    setMessages([{ role: 'assistant', content: ALEX_INTRO, kind: 'text' }]);
     setInput('');
     setLoading(false);
-    setAgentStatus('idle');
-    setLiveUrl(null);
-    setSelectedProvider(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
 
@@ -151,7 +271,7 @@ const DocumentHelpChat = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading, agentStatus, liveUrl]);
+  }, [messages, loading]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -159,126 +279,52 @@ const DocumentHelpChat = ({
     }
   }, [open]);
 
-  // Cleanup: stop Browser Use task on unmount
-  useEffect(() => {
-    return () => {
-      if (taskId) {
-        supabase.functions
-          .invoke('check-agent-status', { body: { taskId, action: 'stop' } })
-          .catch(() => {});
-      }
-    };
-  }, [taskId]);
-
   const handleClose = () => {
-    if (taskId) {
-      supabase.functions
-        .invoke('check-agent-status', { body: { taskId, action: 'stop' } })
-        .catch(() => {});
-    }
-    setTaskId(null);
-    setLiveUrl(null);
-    setAgentStatus('idle');
-    setSelectedProvider(null);
     setOpen(false);
   };
 
-  const handleAgentRetrieval = async (provider: string) => {
-    setSelectedProvider(provider);
-    setAgentStatus('starting');
-    setIframeReady(false);
+  const pushMessages = (...m: ChatMessage[]) => setMessages((prev) => [...prev, ...m]);
 
-    const documentType = isW2 ? 'w2' : 'paystubs';
-
-    try {
-      const startRes = await supabase.functions.invoke('start-agent-retrieval', {
-        body: { provider, documentType },
-      });
-      if (startRes.error) throw startRes.error;
-
-      const { taskId: newTaskId, liveUrl: newLiveUrl } = startRes.data || {};
-      if (!newTaskId) throw new Error('No task id returned');
-
-      setTaskId(newTaskId);
-      setLiveUrl(newLiveUrl);
-      setAgentStatus('waiting_for_login');
-
-      const pollInterval = setInterval(async () => {
-        try {
-          const statusRes = await supabase.functions.invoke('check-agent-status', {
-            body: { taskId: newTaskId, action: 'status' },
-          });
-
-          const { status, liveUrl: updatedLiveUrl } = statusRes.data || {};
-          if (updatedLiveUrl && agentStatusRef.current === 'waiting_for_login') {
-            setLiveUrl(updatedLiveUrl);
-          }
-
-          // While the user is still completing login, ignore session
-          // status changes — the user controls the transition via the
-          // "I've logged in" button which dispatches the follow-up task.
-
-          if (status === 'stopped') {
-            clearInterval(pollInterval);
-            setAgentStatus('running');
-            setLiveUrl(null);
-
-            const filesRes = await supabase.functions.invoke('get-agent-files', {
-              body: { taskId: newTaskId, caseId, checklistItemId, documentType },
-            });
-
-            if (filesRes.data?.success) {
-              setAgentStatus('success');
-              onAgentFilesAdded?.();
-            } else {
-              setAgentStatus('failed');
-            }
-          }
-        } catch (_) {}
-      }, 4000);
-
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (agentStatusRef.current !== 'success' && agentStatusRef.current !== 'running') {
-          setAgentStatus('failed');
-          setLiveUrl(null);
-          supabase.functions
-            .invoke('check-agent-status', { body: { taskId: newTaskId, action: 'stop' } })
-            .catch(() => {});
-        }
-      }, 300000);
-    } catch (err) {
-      console.error('Agent retrieval error:', err);
-      setAgentStatus('failed');
+  const handleWhereDoIGetThis = () => {
+    if (hasPayrollFlow) {
+      pushMessages(
+        { role: 'user', content: 'Where do I get this?' },
+        {
+          role: 'assistant',
+          kind: 'text',
+          animate: true,
+          content: isW2
+            ? "Your W-2 comes from your employer's payroll portal. Which one does your company use? I'll take you straight there."
+            : "Pay stubs come from your employer's payroll portal. Which one does your company use? I'll take you straight there.",
+        },
+        { role: 'assistant', kind: 'provider-picker' },
+      );
+    } else if (isTaxReturns) {
+      pushMessages(
+        { role: 'user', content: 'Where do I get this?' },
+        { role: 'assistant', kind: 'tax-sources', animate: true },
+      );
     }
   };
 
-  const handleLoginComplete = async () => {
-    if (!taskId) return;
-    setAgentStatus('running');
-    setLiveUrl(null);
-    const documentType = isW2 ? 'w2' : 'paystubs';
-    try {
-      await supabase.functions.invoke('check-agent-status', {
-        body: { taskId, action: 'resume', documentType },
-      });
-    } catch (_) {}
+  const handleWhatShouldThisLookLike = () => {
+    const text = isW2 ? w2Example : paystubExample;
+    pushMessages(
+      { role: 'user', content: 'What should this look like?' },
+      { role: 'assistant', kind: 'text', content: text, animate: true },
+    );
   };
 
-
-  const triggerAgentFlow = () => {
-    const prompt = isW2
-      ? 'Get my W-2 automatically ✨'
-      : 'Get my pay stubs automatically ✨';
-    const assistantReply = isW2
-      ? "I can pull your W-2 directly from your payroll portal. Which provider does your employer use?"
-      : "I can pull your pay stubs directly from your payroll portal. Which provider does your employer use?";
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: prompt },
-      { role: 'assistant', content: assistantReply, animate: true },
-    ]);
-    setAgentStatus('choose_provider');
+  const handleProviderSelect = (p: Provider) => {
+    pushMessages({ role: 'user', content: p.name });
+    if (p.url === null) {
+      pushMessages({ role: 'assistant', kind: 'not-sure', animate: true });
+      return;
+    }
+    const map = isW2 ? w2ProviderResponses : paystubProviderResponses;
+    const resp = map[p.name];
+    if (!resp) return;
+    pushMessages({ role: 'assistant', kind: 'provider-steps', payload: resp });
   };
 
   const sendMessage = async () => {
@@ -293,8 +339,9 @@ const DocumentHelpChat = ({
 
     try {
       const apiMessages = updatedMessages
+        .filter((m) => m.kind === undefined || m.kind === 'text')
         .filter((m, i) => !(i === 0 && m.role === 'assistant' && m.content === ALEX_INTRO))
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((m) => ({ role: m.role, content: m.content || '' }));
 
       const { data, error } = await supabase.functions.invoke('document-agent-help', {
         body: {
@@ -307,13 +354,15 @@ const DocumentHelpChat = ({
 
       if (error) throw error;
       const aiResponse = data?.response || "I'm having trouble right now. Please try again.";
-      setMessages((prev) => [...prev, { role: 'assistant', content: aiResponse, animate: true }]);
+      pushMessages({ role: 'assistant', content: aiResponse, kind: 'text', animate: true });
     } catch (err) {
       console.error('Chat error:', err);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: "I'm having trouble right now. Please follow the written steps above or contact your attorney's office.", animate: true },
-      ]);
+      pushMessages({
+        role: 'assistant',
+        kind: 'text',
+        animate: true,
+        content: "I'm having trouble right now. Please follow the written steps above or contact your attorney's office.",
+      });
     } finally {
       setLoading(false);
     }
@@ -333,8 +382,9 @@ const DocumentHelpChat = ({
     setLoading(true);
 
     const apiMessages = updatedMessages
+      .filter((m) => m.kind === undefined || m.kind === 'text')
       .filter((m, i) => !(i === 0 && m.role === 'assistant' && m.content === ALEX_INTRO))
-      .map((m) => ({ role: m.role, content: m.content }));
+      .map((m) => ({ role: m.role, content: m.content || '' }));
 
     supabase.functions
       .invoke('document-agent-help', {
@@ -342,13 +392,125 @@ const DocumentHelpChat = ({
       })
       .then(({ data, error }) => {
         const aiResponse = error ? "I'm having trouble right now." : data?.response || "I'm having trouble right now.";
-        setMessages((prev) => [...prev, { role: 'assistant', content: aiResponse, animate: true }]);
+        pushMessages({ role: 'assistant', content: aiResponse, kind: 'text', animate: true });
       })
       .catch(() => {
-        setMessages((prev) => [...prev, { role: 'assistant', content: "I'm having trouble right now.", animate: true }]);
+        pushMessages({ role: 'assistant', content: "I'm having trouble right now.", kind: 'text', animate: true });
       })
       .finally(() => setLoading(false));
   };
+
+  const renderProviderPicker = () => (
+    <div className="flex flex-col gap-2 mt-2 w-full">
+      {payrollProviders.map((p) => (
+        <button
+          key={p.name}
+          onClick={() => handleProviderSelect(p)}
+          className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-sm bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-left"
+        >
+          <span className="font-medium">{p.name}</span>
+          <span className="text-xs text-muted-foreground ml-2">{p.hint}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderProviderSteps = (response: ProviderResponse) => (
+    <div className="space-y-3">
+      <p className="text-sm">{response.message}</p>
+      <ol className="space-y-1">
+        {response.steps.map((step, i) => (
+          <li key={i} className="flex gap-2 text-sm">
+            <span className="text-primary font-medium flex-shrink-0">{i + 1}.</span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <a
+        href={response.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors mt-1"
+      >
+        {response.buttonLabel}
+      </a>
+      <p className="text-xs text-muted-foreground text-center">
+        Opens in a new tab — come back here to upload once you've downloaded your {isW2 ? 'W-2s' : 'stubs'}
+      </p>
+    </div>
+  );
+
+  const renderNotSure = () => (
+    <div className="space-y-3">
+      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0">
+        <p>No problem — check your email for a welcome message from your payroll provider when you first started your job. It'll say ADP, Workday, Paychex, Gusto, Paylocity, or something else.</p>
+        <p className="mt-2">You can also ask your HR department or manager — they'll know right away.</p>
+        <p className="mt-2">Or check your last paper pay stub if you have one — the company name is usually printed at the top.</p>
+      </div>
+      {renderProviderPicker()}
+    </div>
+  );
+
+  const renderTaxSources = () => (
+    <div className="space-y-3">
+      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0">
+        <p>Your tax returns come from wherever you filed:</p>
+        <ul className="mt-1">
+          <li><strong>TurboTax</strong> — Tax Home → Download/Print Return</li>
+          <li><strong>H&amp;R Block</strong> — Account → Tax History</li>
+          <li><strong>TaxAct</strong> — Prior Year Returns</li>
+          <li><strong>Filed with an accountant</strong> — contact them directly for a copy</li>
+          <li><strong>IRS.gov</strong> — free transcript at irs.gov/individuals/get-transcript</li>
+        </ul>
+      </div>
+      <div className="flex flex-col gap-2">
+        {taxReturnSources.map((s) => (
+          <a
+            key={s.name}
+            href={s.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-sm bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+          >
+            <span className="font-medium">{s.name}</span>
+            <span className="text-xs text-muted-foreground">Open →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderAssistantBody = (msg: ChatMessage, i: number) => {
+    if (msg.kind === 'provider-picker') return renderProviderPicker();
+    if (msg.kind === 'provider-steps') return renderProviderSteps(msg.payload as ProviderResponse);
+    if (msg.kind === 'not-sure') return renderNotSure();
+    if (msg.kind === 'tax-sources') return renderTaxSources();
+    // text
+    if (msg.animate) {
+      return (
+        <TypewriterMarkdown
+          text={msg.content || ''}
+          onTick={() => {
+            if (scrollRef.current) {
+              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
+          }}
+          onDone={() => {
+            setMessages((prev) => prev.map((m, idx) => (idx === i ? { ...m, animate: false } : m)));
+          }}
+        />
+      );
+    }
+    return (
+      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
+        <ReactMarkdown>{msg.content || ''}</ReactMarkdown>
+      </div>
+    );
+  };
+
+  const quickQuestions = language === 'es'
+    ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
+    : ['What does this look like?', 'Can I use a screenshot?'];
 
   return (
     <AnimatePresence>
@@ -368,7 +530,7 @@ const DocumentHelpChat = ({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="w-full max-w-lg bg-background rounded-t-2xl flex flex-col"
-            style={{ maxHeight: agentStatus === 'waiting_for_login' ? '95vh' : '85vh', height: agentStatus === 'waiting_for_login' ? '95vh' : undefined }}
+            style={{ maxHeight: '85vh' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle bar + header */}
@@ -409,48 +571,31 @@ const DocumentHelpChat = ({
                         : 'bg-muted text-foreground rounded-bl-md'
                     }`}
                   >
-                    {msg.role === 'assistant' ? (
-                      msg.animate ? (
-                        <TypewriterMarkdown
-                          text={msg.content}
-                          onTick={() => {
-                            if (scrollRef.current) {
-                              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-                            }
-                          }}
-                          onDone={() => {
-                            setMessages((prev) =>
-                              prev.map((m, idx) => (idx === i ? { ...m, animate: false } : m)),
-                            );
-                          }}
-                        />
-                      ) : (
-                        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:mt-1 [&_ol]:mt-1">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        </div>
-                      )
-                    ) : (
-                      msg.content
-                    )}
+                    {msg.role === 'assistant' ? renderAssistantBody(msg, i) : msg.content}
                   </div>
                 </div>
               ))}
 
               {/* Quick suggestions after intro message */}
-              {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && agentStatus === 'idle' && (
+              {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && (
                 <div className="flex flex-wrap gap-2 pl-8">
-                  {agentSupported && (
+                  {(hasPayrollFlow || isTaxReturns) && (
                     <button
-                      onClick={triggerAgentFlow}
+                      onClick={handleWhereDoIGetThis}
                       className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
                     >
-                      {isW2 ? 'Get my W-2 automatically ✨' : 'Get my pay stubs automatically ✨'}
+                      {language === 'es' ? '¿Dónde encuentro esto?' : 'Where do I get this?'}
                     </button>
                   )}
-                  {(language === 'es'
-                    ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
-                    : ['Where do I find this?', 'What does this look like?', 'Can I use a screenshot?']
-                  ).map((q) => (
+                  {hasPayrollFlow && (
+                    <button
+                      onClick={handleWhatShouldThisLookLike}
+                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
+                    >
+                      {language === 'es' ? '¿Cómo se ve?' : 'What should this look like?'}
+                    </button>
+                  )}
+                  {quickQuestions.map((q) => (
                     <button
                       key={q}
                       onClick={() => handleQuickQuestion(q)}
@@ -459,99 +604,6 @@ const DocumentHelpChat = ({
                       {q}
                     </button>
                   ))}
-                </div>
-              )}
-
-              {/* Provider chooser */}
-              {agentStatus === 'choose_provider' && (
-                <div className="flex flex-wrap gap-2 pl-8">
-                  {PROVIDERS.map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => handleAgentRetrieval(p.toLowerCase())}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Starting / running status */}
-              {(agentStatus === 'starting' || agentStatus === 'running') && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 pl-8">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span>
-                    {agentStatus === 'starting'
-                      ? 'Opening secure portal…'
-                      : 'Retrieving your documents…'}
-                  </span>
-                </div>
-              )}
-
-              {/* Auth iframe — inline inside chat panel */}
-              {liveUrl && agentStatus === 'waiting_for_login' && (
-                <div className="rounded-xl border border-border overflow-hidden my-2 w-full">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted border-b border-border">
-                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate">
-                      Secure connection to {selectedProvider?.toUpperCase()} — log in below
-                    </span>
-                  </div>
-                  <div className="relative w-full overflow-hidden" style={{ height: '560px' }}>
-                    {!iframeReady && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted gap-3 z-10">
-                        <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                        <p className="text-xs text-muted-foreground">
-                          Opening {selectedProvider?.toUpperCase()} portal...
-                        </p>
-                      </div>
-                    )}
-                    <iframe
-                      src={liveUrl}
-                      className={`w-full h-full border-0 transition-opacity duration-300 ${iframeReady ? 'opacity-100' : 'opacity-0'}`}
-                      style={{ minWidth: '100%', transform: 'none' }}
-                      title="Payroll portal login"
-                      allow="clipboard-read; clipboard-write"
-                      onLoad={() => setIframeReady(true)}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground px-3 py-1.5 text-center border-t border-border">
-                    ClearPath never sees your password
-                  </p>
-                  <div className="px-3 py-2 border-t border-border">
-                    <button
-                      onClick={handleLoginComplete}
-                      className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      I've logged in — continue ✓
-                    </button>
-                  </div>
-                </div>
-              )}
-
-
-              {/* Success */}
-              {agentStatus === 'success' && (
-                <p className="text-sm text-primary py-2 pl-8">
-                  ✓ Documents retrieved and added to your file.
-                </p>
-              )}
-
-              {/* Failure fallback */}
-              {agentStatus === 'failed' && selectedProvider && (
-                <div className="space-y-2 py-2 pl-8">
-                  <p className="text-sm text-muted-foreground">
-                    No worries — here's a direct link to download from {selectedProvider.toUpperCase()} yourself:
-                  </p>
-                  <a
-                    href={PROVIDER_URLS[selectedProvider]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                  >
-                    Open {selectedProvider.toUpperCase()} →
-                  </a>
                 </div>
               )}
 
@@ -596,9 +648,7 @@ const DocumentHelpChat = ({
           </motion.div>
         </motion.div>
       )}
-
     </AnimatePresence>
-
   );
 };
 
