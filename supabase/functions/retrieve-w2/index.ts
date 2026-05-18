@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import Browserbase from 'npm:@browserbasehq/sdk';
+import { Stagehand } from 'npm:@browserbasehq/stagehand';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,66 +8,65 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+const STEEL_API_KEY = Deno.env.get('STEEL_API_KEY')!;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const { sessionId, connectUrl, provider, caseId, checklistItemId } = await req.json();
-
-  const bbApiKey = Deno.env.get('BROWSERBASE_API_KEY')!;
-  const skyvernApiKey = Deno.env.get('SKYVERN_API_KEY')!;
+  const { sessionId, provider, caseId, checklistItemId } = await req.json();
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const bb = new Browserbase({ apiKey: bbApiKey });
+  const cdpUrl = `wss://connect.steel.dev?apiKey=${STEEL_API_KEY}&sessionId=${sessionId}`;
+
+  const releaseSession = async () => {
+    try {
+      await fetch(`https://api.steel.dev/v1/sessions/${sessionId}/release`, {
+        method: 'POST',
+        headers: { 'Steel-Api-Key': STEEL_API_KEY },
+      });
+    } catch (_) {}
+  };
 
   try {
-    const taskRes = await fetch('https://api.skyvern.com/api/v1/tasks', {
-      method: 'POST',
-      headers: { 'x-api-key': skyvernApiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: 'https://my.adp.com/#/pay/statements',
-        goal: `The user is already logged into their payroll portal. Download W-2 tax forms for the last 2 years as PDF files. Navigate to the Tax Statements section. Find W-2 forms for 2024 and 2023 and download each one as a PDF. Handle any popups by closing them.`,
-        cdp_address: connectUrl,
-        engine: 'skyvern-2.0',
-      }),
+    const stagehand = new Stagehand({
+      env: 'LOCAL',
+      localBrowserLaunchOptions: { cdpUrl },
+      modelName: 'claude-sonnet-4-20250514',
+      modelClientOptions: { apiKey: Deno.env.get('ANTHROPIC_API_KEY')! },
+    } as any);
+
+    await stagehand.init();
+
+    await stagehand.page.goto('https://my.adp.com/#/pay/tax-statements', {
+      waitUntil: 'domcontentloaded',
     });
+    await stagehand.page.waitForTimeout(3000);
 
-    if (!taskRes.ok) {
-      const err = await taskRes.text();
-      console.error('Skyvern task failed:', err);
-      throw new Error(`Skyvern error: ${err}`);
-    }
+    try {
+      await stagehand.page.act('If a popup appears, close it.');
+      await stagehand.page.waitForTimeout(1000);
+    } catch (_) {}
 
-    const task = await taskRes.json();
-    const taskId = task.task_id || task.run_id;
-    console.log('Skyvern task created:', taskId);
-
-    let taskResult: any = null;
-    for (let i = 0; i < 36; i++) {
-      await new Promise((r) => setTimeout(r, 5000));
-      const statusRes = await fetch(
-        `https://api.skyvern.com/api/v1/tasks/${taskId}`,
-        { headers: { 'x-api-key': skyvernApiKey } }
-      );
-      if (!statusRes.ok) continue;
-      const status = await statusRes.json();
-      console.log(`Status (${i + 1}):`, status.status);
-      if (status.status === 'completed') {
-        taskResult = status;
-        break;
-      }
-      if (status.status === 'failed' || status.status === 'terminated') {
-        console.error('Task failed:', status);
+    for (let i = 0; i < 2; i++) {
+      try {
+        const label = i === 0 ? 'most recent' : 'second most recent';
+        await stagehand.page.act(`Click the ${label} W-2 tax form entry in the list.`);
+        await stagehand.page.waitForTimeout(1500);
+        await stagehand.page.act('Download this W-2 document as a PDF.');
+        await stagehand.page.waitForTimeout(4000);
+      } catch (_) {
         break;
       }
     }
 
+    try { await stagehand.close(); } catch (_) {}
     await new Promise((r) => setTimeout(r, 3000));
 
     const uploadedFiles: Array<{ fileName: string }> = [];
 
-    const uploadPdf = async (buffer: ArrayBuffer, fileName: string, contentType = 'application/pdf') => {
+    const uploadBuffer = async (buffer: ArrayBuffer, fileName: string, contentType: string) => {
       const storagePath = `${caseId}/${checklistItemId}/${fileName}`;
       const storageRes = await fetch(
         `${supabaseUrl}/storage/v1/object/case-documents/${storagePath}`,
@@ -79,11 +78,11 @@ serve(async (req) => {
             'x-upsert': 'true',
           },
           body: buffer,
-        }
+        },
       );
       if (!storageRes.ok) {
         console.error('Storage upload failed:', fileName, await storageRes.text());
-        return;
+        return false;
       }
       await fetch(`${supabaseUrl}/rest/v1/files`, {
         method: 'POST',
@@ -105,110 +104,73 @@ serve(async (req) => {
       });
       uploadedFiles.push({ fileName });
       console.log('Uploaded:', fileName, buffer.byteLength, 'bytes');
+      return true;
     };
 
-    try {
-      const downloadsRes = await fetch(
-        `https://api.browserbase.com/v1/sessions/${sessionId}/downloads`,
-        { headers: { 'X-BB-API-Key': bbApiKey } }
-      );
-      const ct = downloadsRes.headers.get('content-type') || '';
-      console.log('BB downloads:', downloadsRes.status, 'content-type:', ct);
+    const filesRes = await fetch(
+      `https://api.steel.dev/v1/sessions/${sessionId}/files`,
+      { headers: { 'Steel-Api-Key': STEEL_API_KEY } },
+    );
 
-      if (downloadsRes.ok) {
-        const buf = await downloadsRes.arrayBuffer();
-        console.log('BB downloads bytes:', buf.byteLength);
-        if (buf.byteLength > 100) {
-          if (ct.includes('zip') || ct.includes('octet-stream')) {
-            await uploadPdf(buf, `W2-${Date.now()}.zip`, 'application/zip');
-          } else if (ct.includes('json')) {
-            const files = JSON.parse(new TextDecoder().decode(buf));
-            console.log('BB downloads JSON:', JSON.stringify(files).slice(0, 500));
-            for (const file of (files || [])) {
-              try {
-                const fr = await fetch(file.url || file.uri || file.downloadUrl);
-                if (!fr.ok) continue;
-                await uploadPdf(await fr.arrayBuffer(), file.name || file.fileName || `W2-${Date.now()}.pdf`);
-              } catch (e) {
-                console.error('BB file fetch err:', e);
-              }
-            }
-          } else {
-            await uploadPdf(buf, `W2-${Date.now()}.bin`, ct || 'application/octet-stream');
-          }
+    if (filesRes.ok) {
+      const filesList = await filesRes.json();
+      const pdfFiles = (filesList.data || []).filter(
+        (f: any) => f.path?.endsWith('.pdf') || f.name?.endsWith('.pdf'),
+      );
+
+      for (const file of pdfFiles) {
+        try {
+          const fr = await fetch(
+            `https://api.steel.dev/v1/sessions/${sessionId}/files/download?path=${encodeURIComponent(file.path)}`,
+            { headers: { 'Steel-Api-Key': STEEL_API_KEY } },
+          );
+          if (!fr.ok) continue;
+          const buffer = await fr.arrayBuffer();
+          const fileName = file.name || file.path?.split('/').pop() || `W2-${Date.now()}.pdf`;
+          await uploadBuffer(buffer, fileName, 'application/pdf');
+        } catch (e) {
+          console.error('File upload error:', e);
         }
-      } else {
-        console.error('BB downloads failed:', await downloadsRes.text());
       }
-    } catch (e) {
-      console.error('BB downloads error:', e);
     }
 
     if (uploadedFiles.length === 0) {
-      try {
-        const aRes = await fetch(
-          `https://api.skyvern.com/api/v1/tasks/${taskId}/artifacts`,
-          { headers: { 'x-api-key': skyvernApiKey } }
-        );
-        console.log('Skyvern artifacts status:', aRes.status);
-        if (aRes.ok) {
-          const artifacts = await aRes.json();
-          console.log('Skyvern artifacts count:', Array.isArray(artifacts) ? artifacts.length : 'n/a',
-            'sample:', JSON.stringify(artifacts).slice(0, 800));
-          for (const art of (artifacts || [])) {
-            const type = String(art.artifact_type || '');
-            const uri = art.uri || art.signed_url || art.url;
-            if (!uri) continue;
-            if (!type.toLowerCase().includes('download') && !String(uri).toLowerCase().includes('.pdf')) continue;
-            try {
-              const fr = await fetch(uri);
-              if (!fr.ok) continue;
-              await uploadPdf(await fr.arrayBuffer(), art.file_name || `W2-${Date.now()}.pdf`);
-            } catch (e) {
-              console.error('Skyvern artifact fetch err:', e);
-            }
-          }
-        } else {
-          console.error('Skyvern artifacts failed:', await aRes.text());
+      const zipRes = await fetch(
+        `https://api.steel.dev/v1/sessions/${sessionId}/files/download-archive`,
+        { headers: { 'Steel-Api-Key': STEEL_API_KEY } },
+      );
+      if (zipRes.ok) {
+        const buffer = await zipRes.arrayBuffer();
+        if (buffer.byteLength > 100) {
+          await uploadBuffer(buffer, `W2-${Date.now()}.zip`, 'application/zip');
         }
-      } catch (e) {
-        console.error('Skyvern artifacts error:', e);
       }
     }
 
-
     if (uploadedFiles.length > 0) {
-      await fetch(
-        `${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            apikey: serviceKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ completed: true }),
-        }
-      );
+      await fetch(`${supabaseUrl}/rest/v1/checklist_items?id=eq.${checklistItemId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: true }),
+      });
     }
 
-    try {
-      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
-    } catch (_) {}
+    await releaseSession();
 
     return new Response(
       JSON.stringify({ success: uploadedFiles.length > 0, files: uploadedFiles }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('retrieve-w2 error:', err);
-    try {
-      await bb.sessions.update(sessionId, { status: 'REQUEST_RELEASE' } as any);
-    } catch (_) {}
-
+    await releaseSession();
     return new Response(
       JSON.stringify({ success: false, error: String((err as Error).message ?? err) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });
