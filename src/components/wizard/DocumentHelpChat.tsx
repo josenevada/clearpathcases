@@ -244,6 +244,7 @@ const DocumentHelpChat = ({
   isOpen,
   onOpenChange,
   language = 'en',
+  bankExtraUpload,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -259,6 +260,7 @@ const DocumentHelpChat = ({
   const isW2 = documentLabel === 'W-2s (Last 2 Years)';
   const isPaystubs = documentLabel === 'Pay Stubs (Last 2 Months)';
   const isTaxReturns = /tax return/i.test(documentLabel);
+  const isBankStatements = /checking\/savings statements|bank statements/i.test(documentLabel);
   const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
