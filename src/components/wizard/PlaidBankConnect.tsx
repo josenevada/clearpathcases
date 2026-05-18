@@ -33,12 +33,14 @@ const PlaidBankConnect = ({
   onSuccess,
   onManualUploadClick,
   manualUploadContent,
+  onContinue,
 }: PlaidBankConnectProps) => {
   const [state, setState] = useState<PlaidState>('idle');
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [result, setResult] = useState<PlaidResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [showExtraUpload, setShowExtraUpload] = useState(false);
   const [isOAuthRedirect] = useState(() =>
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).has('oauth_state_id')
