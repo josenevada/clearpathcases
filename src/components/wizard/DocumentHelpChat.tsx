@@ -126,6 +126,7 @@ const DocumentHelpChat = ({
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
   const agentStatusRef = useRef<AgentStatus>('idle');
 
   useEffect(() => {
@@ -185,6 +186,7 @@ const DocumentHelpChat = ({
   const handleAgentRetrieval = async (provider: string) => {
     setSelectedProvider(provider);
     setAgentStatus('starting');
+    setIframeReady(false);
 
     const documentType = isW2 ? 'w2' : 'paystubs';
 
@@ -496,13 +498,24 @@ const DocumentHelpChat = ({
                       Secure connection to {selectedProvider?.toUpperCase()} — log in below
                     </span>
                   </div>
-                  <iframe
-                    src={liveUrl}
-                    className="w-full border-0"
-                    style={{ height: '520px' }}
-                    title="Payroll portal login"
-                    allow="clipboard-read; clipboard-write"
-                  />
+                  <div className="relative w-full overflow-hidden" style={{ height: '560px' }}>
+                    {!iframeReady && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted gap-3 z-10">
+                        <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        <p className="text-xs text-muted-foreground">
+                          Opening {selectedProvider?.toUpperCase()} portal...
+                        </p>
+                      </div>
+                    )}
+                    <iframe
+                      src={liveUrl}
+                      className={`w-full h-full border-0 transition-opacity duration-300 ${iframeReady ? 'opacity-100' : 'opacity-0'}`}
+                      style={{ minWidth: '100%', transform: 'none' }}
+                      title="Payroll portal login"
+                      allow="clipboard-read; clipboard-write"
+                      onLoad={() => setIframeReady(true)}
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground px-3 py-1.5 text-center border-t border-border">
                     ClearPath never sees your password
                   </p>
