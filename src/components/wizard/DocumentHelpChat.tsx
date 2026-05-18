@@ -80,6 +80,7 @@ interface DocumentHelpChatProps {
   caseId?: string;
   checklistItemId?: string;
   onAgentFilesAdded?: () => void;
+  bankExtraUpload?: React.ReactNode;
 }
 
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
