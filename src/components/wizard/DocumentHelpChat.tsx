@@ -186,6 +186,7 @@ const DocumentHelpChat = ({
   const handleAgentRetrieval = async (provider: string) => {
     setSelectedProvider(provider);
     setAgentStatus('starting');
+    setIframeReady(false);
 
     const documentType = isW2 ? 'w2' : 'paystubs';
 
