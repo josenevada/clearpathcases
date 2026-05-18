@@ -126,6 +126,7 @@ const DocumentHelpChat = ({
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
   const agentStatusRef = useRef<AgentStatus>('idle');
 
   useEffect(() => {
