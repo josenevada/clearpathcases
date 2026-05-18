@@ -1,10 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, Loader2 } from 'lucide-react';
+import { Send, X, Loader2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 
 type ChatRole = 'user' | 'assistant';
+type AgentStatus =
+  | 'idle'
+  | 'choose_provider'
+  | 'creating_session'
+  | 'auth_required'
+  | 'retrieving'
+  | 'success'
+  | 'failed';
 
 interface ChatMessage {
   role: ChatRole;
@@ -76,10 +84,29 @@ interface DocumentHelpChatProps {
   language?: 'en' | 'es';
   caseId?: string;
   checklistItemId?: string;
+  onAgentFilesAdded?: () => void;
 }
 
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
 const ALEX_INTRO_ES = "Hola — ¿qué puedo ayudarte a encontrar? Puedo decirte dónde conseguir este documento, cómo debería verse, o cualquier otra cosa con la que estés atorado.";
+
+const PROVIDERS = ['ADP', 'Workday', 'Paychex', 'Gusto', 'Paylocity'];
+const PROVIDER_URLS: Record<string, string> = {
+  adp: 'https://my.adp.com',
+  workday: 'https://www.myworkday.com',
+  paychex: 'https://myapps.paychex.com',
+  gusto: 'https://app.gusto.com',
+  paylocity: 'https://access.paylocity.com',
+};
+
+const STEEL_KEY = (import.meta as any).env?.VITE_STEEL_API_KEY || '';
+const releaseSteelSession = (sessionId: string) => {
+  if (!sessionId || !STEEL_KEY) return;
+  fetch(`https://api.steel.dev/v1/sessions/${sessionId}/release`, {
+    method: 'POST',
+    headers: { 'Steel-Api-Key': STEEL_KEY },
+  }).catch(() => {});
+};
 
 const DocumentHelpChat = ({
   documentLabel,
@@ -88,6 +115,9 @@ const DocumentHelpChat = ({
   isOpen,
   onOpenChange,
   language = 'en',
+  caseId,
+  checklistItemId,
+  onAgentFilesAdded,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -100,10 +130,27 @@ const DocumentHelpChat = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
+  const [browserSessionUrl, setBrowserSessionUrl] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const agentStatusRef = useRef<AgentStatus>('idle');
+
+  useEffect(() => {
+    agentStatusRef.current = agentStatus;
+  }, [agentStatus]);
+
+  const isW2 = documentLabel === 'W-2s (Last 2 Years)';
+  const isPaystubs = documentLabel === 'Pay Stubs (Last 2 Months)';
+  const agentSupported = isW2 || isPaystubs;
+
   useEffect(() => {
     setMessages([{ role: 'assistant', content: ALEX_INTRO }]);
     setInput('');
     setLoading(false);
+    setAgentStatus('idle');
+    setBrowserSessionUrl(null);
+    setSelectedProvider(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
 
@@ -111,13 +158,99 @@ const DocumentHelpChat = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [messages, loading, agentStatus, browserSessionUrl]);
 
   useEffect(() => {
     if (open && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [open]);
+
+  // Cleanup Steel session on unmount
+  useEffect(() => {
+    return () => {
+      if (activeSessionId) releaseSteelSession(activeSessionId);
+    };
+  }, [activeSessionId]);
+
+  const handleClose = () => {
+    if (activeSessionId) releaseSteelSession(activeSessionId);
+    setActiveSessionId(null);
+    setBrowserSessionUrl(null);
+    setAgentStatus('idle');
+    setSelectedProvider(null);
+    setOpen(false);
+  };
+
+  const handleAgentRetrieval = async (provider: string) => {
+    setSelectedProvider(provider);
+    setAgentStatus('creating_session');
+
+    try {
+      const sessionRes = await supabase.functions.invoke('create-browser-session', {
+        body: { provider, caseId },
+      });
+      if (sessionRes.error) throw sessionRes.error;
+
+      const { sessionId, browserSessionUrl: sessionUrl } = sessionRes.data || {};
+      if (!sessionId) throw new Error('No session id returned');
+
+      setActiveSessionId(sessionId);
+      setBrowserSessionUrl(sessionUrl);
+      setAgentStatus('auth_required');
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const authRes = await supabase.functions.invoke('check-session-auth', {
+            body: { sessionId, provider },
+          });
+          if (authRes.data?.authenticated) {
+            clearInterval(pollInterval);
+            setBrowserSessionUrl(null);
+            setAgentStatus('retrieving');
+
+            const functionName = isW2 ? 'retrieve-w2' : 'retrieve-paystubs';
+            const retrieveRes = await supabase.functions.invoke(functionName, {
+              body: { sessionId, provider, caseId, checklistItemId },
+            });
+
+            if (retrieveRes.data?.success) {
+              setAgentStatus('success');
+              onAgentFilesAdded?.();
+            } else {
+              setAgentStatus('failed');
+            }
+          }
+        } catch (_) {}
+      }, 5000);
+
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (agentStatusRef.current !== 'success' && agentStatusRef.current !== 'retrieving') {
+          setAgentStatus('failed');
+          setBrowserSessionUrl(null);
+        }
+      }, 300000);
+    } catch (err) {
+      console.error('Agent retrieval error:', err);
+      setAgentStatus('failed');
+    }
+  };
+
+  const triggerAgentFlow = () => {
+    const prompt = isW2
+      ? 'Get my W-2 automatically ✨'
+      : 'Get my pay stubs automatically ✨';
+    const assistantReply = isW2
+      ? "I can pull your W-2 directly from your payroll portal. Which provider does your employer use?"
+      : "I can pull your pay stubs directly from your payroll portal. Which provider does your employer use?";
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: prompt },
+      { role: 'assistant', content: assistantReply, animate: true },
+    ]);
+    setAgentStatus('choose_provider');
+  };
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -197,7 +330,7 @@ const DocumentHelpChat = ({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[80] bg-black/40 flex items-end justify-center"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
+            if (e.target === e.currentTarget) handleClose();
           }}
         >
           <motion.div
@@ -223,7 +356,7 @@ const DocumentHelpChat = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={handleClose}
                   className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
                 >
                   <X className="w-4 h-4 text-muted-foreground" />
@@ -275,8 +408,16 @@ const DocumentHelpChat = ({
               ))}
 
               {/* Quick suggestions after intro message */}
-              {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && (
+              {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && agentStatus === 'idle' && (
                 <div className="flex flex-wrap gap-2 pl-8">
+                  {agentSupported && (
+                    <button
+                      onClick={triggerAgentFlow}
+                      className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
+                    >
+                      {isW2 ? 'Get my W-2 automatically ✨' : 'Get my pay stubs automatically ✨'}
+                    </button>
+                  )}
                   {(language === 'es'
                     ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
                     : ['Where do I find this?', 'What does this look like?', 'Can I use a screenshot?']
@@ -289,6 +430,79 @@ const DocumentHelpChat = ({
                       {q}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {/* Provider chooser */}
+              {agentStatus === 'choose_provider' && (
+                <div className="flex flex-wrap gap-2 pl-8">
+                  {PROVIDERS.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => handleAgentRetrieval(p.toLowerCase())}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Creating / retrieving status */}
+              {(agentStatus === 'creating_session' || agentStatus === 'retrieving') && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 pl-8">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span>
+                    {agentStatus === 'creating_session'
+                      ? 'Opening secure portal…'
+                      : 'Retrieving your documents…'}
+                  </span>
+                </div>
+              )}
+
+              {/* Auth iframe */}
+              {agentStatus === 'auth_required' && browserSessionUrl && (
+                <div className="mx-2 rounded-xl border border-border overflow-hidden bg-card">
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-medium text-foreground">
+                      Secure connection to {selectedProvider?.toUpperCase()}
+                    </span>
+                  </div>
+                  <iframe
+                    src={browserSessionUrl}
+                    title="Provider login"
+                    className="w-full h-[420px] bg-background"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                    allow="clipboard-read; clipboard-write"
+                  />
+                  <p className="text-xs text-muted-foreground px-3 py-2 text-center border-t border-border">
+                    ClearPath never sees your password
+                  </p>
+                </div>
+              )}
+
+              {/* Success */}
+              {agentStatus === 'success' && (
+                <p className="text-sm text-primary py-2 pl-8">
+                  ✓ Documents retrieved and added to your file.
+                </p>
+              )}
+
+              {/* Failure fallback */}
+              {agentStatus === 'failed' && selectedProvider && (
+                <div className="space-y-2 py-2 pl-8">
+                  <p className="text-sm text-muted-foreground">
+                    No worries — here's a direct link to download from {selectedProvider.toUpperCase()} yourself:
+                  </p>
+                  <a
+                    href={PROVIDER_URLS[selectedProvider]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    Open {selectedProvider.toUpperCase()} →
+                  </a>
                 </div>
               )}
 
