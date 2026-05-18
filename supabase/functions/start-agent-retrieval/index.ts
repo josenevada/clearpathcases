@@ -26,6 +26,12 @@ serve(async (req) => {
         task:
           'Navigate to https://my.adp.com/ and load the login page. Do not enter any credentials. Once the login page is fully visible, end the task and report "ready for login".',
         keepAlive: true,
+        browser_config: {
+          viewport: {
+            width: 390,
+            height: 844,
+          },
+        },
       }),
     });
 
