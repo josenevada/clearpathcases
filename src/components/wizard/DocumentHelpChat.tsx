@@ -8,9 +8,9 @@ type ChatRole = 'user' | 'assistant';
 type AgentStatus =
   | 'idle'
   | 'choose_provider'
-  | 'creating_session'
-  | 'auth_required'
-  | 'retrieving'
+  | 'starting'
+  | 'waiting_for_login'
+  | 'running'
   | 'success'
   | 'failed';
 
@@ -99,14 +99,6 @@ const PROVIDER_URLS: Record<string, string> = {
   paylocity: 'https://access.paylocity.com',
 };
 
-const STEEL_KEY = (import.meta as any).env?.VITE_STEEL_API_KEY || '';
-const releaseSteelSession = (sessionId: string) => {
-  if (!sessionId || !STEEL_KEY) return;
-  fetch(`https://api.steel.dev/v1/sessions/${sessionId}/release`, {
-    method: 'POST',
-    headers: { 'Steel-Api-Key': STEEL_KEY },
-  }).catch(() => {});
-};
 
 const DocumentHelpChat = ({
   documentLabel,
@@ -131,8 +123,8 @@ const DocumentHelpChat = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
-  const [browserSessionUrl, setBrowserSessionUrl] = useState<string | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const agentStatusRef = useRef<AgentStatus>('idle');
 
@@ -149,7 +141,7 @@ const DocumentHelpChat = ({
     setInput('');
     setLoading(false);
     setAgentStatus('idle');
-    setBrowserSessionUrl(null);
+    setLiveUrl(null);
     setSelectedProvider(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
@@ -158,7 +150,7 @@ const DocumentHelpChat = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading, agentStatus, browserSessionUrl]);
+  }, [messages, loading, agentStatus, liveUrl]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -166,17 +158,25 @@ const DocumentHelpChat = ({
     }
   }, [open]);
 
-  // Cleanup Steel session on unmount
+  // Cleanup: stop Browser Use task on unmount
   useEffect(() => {
     return () => {
-      if (activeSessionId) releaseSteelSession(activeSessionId);
+      if (taskId) {
+        supabase.functions
+          .invoke('check-agent-status', { body: { taskId, action: 'stop' } })
+          .catch(() => {});
+      }
     };
-  }, [activeSessionId]);
+  }, [taskId]);
 
   const handleClose = () => {
-    if (activeSessionId) releaseSteelSession(activeSessionId);
-    setActiveSessionId(null);
-    setBrowserSessionUrl(null);
+    if (taskId) {
+      supabase.functions
+        .invoke('check-agent-status', { body: { taskId, action: 'stop' } })
+        .catch(() => {});
+    }
+    setTaskId(null);
+    setLiveUrl(null);
     setAgentStatus('idle');
     setSelectedProvider(null);
     setOpen(false);
@@ -184,37 +184,49 @@ const DocumentHelpChat = ({
 
   const handleAgentRetrieval = async (provider: string) => {
     setSelectedProvider(provider);
-    setAgentStatus('creating_session');
+    setAgentStatus('starting');
+
+    const documentType = isW2 ? 'w2' : 'paystubs';
 
     try {
-      const sessionRes = await supabase.functions.invoke('create-browser-session', {
-        body: { provider, caseId },
+      const startRes = await supabase.functions.invoke('start-agent-retrieval', {
+        body: { provider, documentType },
       });
-      if (sessionRes.error) throw sessionRes.error;
+      if (startRes.error) throw startRes.error;
 
-      const { sessionId, browserSessionUrl: sessionUrl } = sessionRes.data || {};
-      if (!sessionId) throw new Error('No session id returned');
+      const { taskId: newTaskId, liveUrl: newLiveUrl } = startRes.data || {};
+      if (!newTaskId) throw new Error('No task id returned');
 
-      setActiveSessionId(sessionId);
-      setBrowserSessionUrl(sessionUrl);
-      setAgentStatus('auth_required');
+      setTaskId(newTaskId);
+      setLiveUrl(newLiveUrl);
+      setAgentStatus('waiting_for_login');
 
       const pollInterval = setInterval(async () => {
         try {
-          const authRes = await supabase.functions.invoke('check-session-auth', {
-            body: { sessionId, provider },
+          const statusRes = await supabase.functions.invoke('check-agent-status', {
+            body: { taskId: newTaskId, action: 'status' },
           });
-          if (authRes.data?.authenticated) {
-            clearInterval(pollInterval);
-            setBrowserSessionUrl(null);
-            setAgentStatus('retrieving');
 
-            const functionName = isW2 ? 'retrieve-w2' : 'retrieve-paystubs';
-            const retrieveRes = await supabase.functions.invoke(functionName, {
-              body: { sessionId, provider, caseId, checklistItemId },
+          const { status, liveUrl: updatedLiveUrl } = statusRes.data || {};
+          if (updatedLiveUrl && agentStatusRef.current === 'waiting_for_login') {
+            setLiveUrl(updatedLiveUrl);
+          }
+
+          if (status === 'running' && agentStatusRef.current === 'waiting_for_login') {
+            setAgentStatus('running');
+            setLiveUrl(null);
+          }
+
+          if (status === 'stopped') {
+            clearInterval(pollInterval);
+            setAgentStatus('running');
+            setLiveUrl(null);
+
+            const filesRes = await supabase.functions.invoke('get-agent-files', {
+              body: { taskId: newTaskId, caseId, checklistItemId, documentType },
             });
 
-            if (retrieveRes.data?.success) {
+            if (filesRes.data?.success) {
               setAgentStatus('success');
               onAgentFilesAdded?.();
             } else {
@@ -222,13 +234,16 @@ const DocumentHelpChat = ({
             }
           }
         } catch (_) {}
-      }, 5000);
+      }, 4000);
 
       setTimeout(() => {
         clearInterval(pollInterval);
-        if (agentStatusRef.current !== 'success' && agentStatusRef.current !== 'retrieving') {
+        if (agentStatusRef.current !== 'success' && agentStatusRef.current !== 'running') {
           setAgentStatus('failed');
-          setBrowserSessionUrl(null);
+          setLiveUrl(null);
+          supabase.functions
+            .invoke('check-agent-status', { body: { taskId: newTaskId, action: 'stop' } })
+            .catch(() => {});
         }
       }, 300000);
     } catch (err) {
@@ -236,6 +251,18 @@ const DocumentHelpChat = ({
       setAgentStatus('failed');
     }
   };
+
+  const handleLoginComplete = async () => {
+    if (!taskId) return;
+    setAgentStatus('running');
+    setLiveUrl(null);
+    try {
+      await supabase.functions.invoke('check-agent-status', {
+        body: { taskId, action: 'resume' },
+      });
+    } catch (_) {}
+  };
+
 
   const triggerAgentFlow = () => {
     const prompt = isW2
@@ -448,29 +475,29 @@ const DocumentHelpChat = ({
                 </div>
               )}
 
-              {/* Creating / retrieving status */}
-              {(agentStatus === 'creating_session' || agentStatus === 'retrieving') && (
+              {/* Starting / running status */}
+              {(agentStatus === 'starting' || agentStatus === 'running') && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 pl-8">
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span>
-                    {agentStatus === 'creating_session'
+                    {agentStatus === 'starting'
                       ? 'Opening secure portal…'
                       : 'Retrieving your documents…'}
                   </span>
                 </div>
               )}
 
-              {/* Auth iframe */}
-              {agentStatus === 'auth_required' && browserSessionUrl && (
+              {/* Auth iframe — client logs in */}
+              {agentStatus === 'waiting_for_login' && liveUrl && (
                 <div className="mx-2 rounded-xl border border-border overflow-hidden bg-card">
                   <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
                     <ShieldCheck className="w-4 h-4 text-primary" />
                     <span className="text-xs font-medium text-foreground">
-                      Secure connection to {selectedProvider?.toUpperCase()}
+                      Secure connection to {selectedProvider?.toUpperCase()} — log in below
                     </span>
                   </div>
                   <iframe
-                    src={browserSessionUrl}
+                    src={liveUrl}
                     title="Provider login"
                     className="w-full h-[420px] bg-background"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
@@ -479,8 +506,17 @@ const DocumentHelpChat = ({
                   <p className="text-xs text-muted-foreground px-3 py-2 text-center border-t border-border">
                     ClearPath never sees your password
                   </p>
+                  <div className="px-3 py-2 border-t border-border">
+                    <button
+                      onClick={handleLoginComplete}
+                      className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      I've logged in — continue ✓
+                    </button>
+                  </div>
                 </div>
               )}
+
 
               {/* Success */}
               {agentStatus === 'success' && (
