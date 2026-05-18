@@ -487,33 +487,10 @@ const DocumentHelpChat = ({
                 </div>
               )}
 
-              {/* Auth iframe — client logs in */}
+              {/* Auth iframe — inline placeholder, real UI is fullscreen overlay below */}
               {agentStatus === 'waiting_for_login' && liveUrl && (
-                <div className="mx-2 rounded-xl border border-border overflow-hidden bg-card">
-                  <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
-                    <ShieldCheck className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-medium text-foreground">
-                      Secure connection to {selectedProvider?.toUpperCase()} — log in below
-                    </span>
-                  </div>
-                  <iframe
-                    src={liveUrl}
-                    title="Provider login"
-                    className="w-full h-[420px] bg-background"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                    allow="clipboard-read; clipboard-write"
-                  />
-                  <p className="text-xs text-muted-foreground px-3 py-2 text-center border-t border-border">
-                    ClearPath never sees your password
-                  </p>
-                  <div className="px-3 py-2 border-t border-border">
-                    <button
-                      onClick={handleLoginComplete}
-                      className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      I've logged in — continue ✓
-                    </button>
-                  </div>
+                <div className="mx-2 rounded-xl border border-border bg-card px-3 py-3 text-xs text-muted-foreground text-center">
+                  Login window opened — finish signing in, then click "I've logged in".
                 </div>
               )}
 
