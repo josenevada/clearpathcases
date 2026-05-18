@@ -8,9 +8,9 @@ type ChatRole = 'user' | 'assistant';
 type AgentStatus =
   | 'idle'
   | 'choose_provider'
-  | 'creating_session'
-  | 'auth_required'
-  | 'retrieving'
+  | 'starting'
+  | 'waiting_for_login'
+  | 'running'
   | 'success'
   | 'failed';
 
