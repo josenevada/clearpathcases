@@ -134,6 +134,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Firm ownership check
+    const { data: callerRow } = await supabase.from("users").select("firm_id, role").eq("id", userData.user.id).single();
+    if (callerRow?.role !== "super_admin" && callerRow?.firm_id !== caseData.firm_id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Fetch client info
     const { data: clientInfo } = await supabase
       .from("client_info")
