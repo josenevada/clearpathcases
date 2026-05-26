@@ -717,6 +717,16 @@ serve(async (req) => {
       .eq("id", case_id)
       .single();
 
+    if (!caseData) {
+      return new Response(JSON.stringify({ error: "Case not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // Firm ownership check
+    const { data: callerRow } = await supabase.from("users").select("firm_id, role").eq("id", userData.user.id).single();
+    if (callerRow?.role !== "super_admin" && callerRow?.firm_id !== caseData.firm_id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+
     // Fetch firm branding for attorney section
     const { data: firmData } = await supabase
       .from("firms")
