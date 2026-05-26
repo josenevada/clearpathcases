@@ -957,14 +957,17 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
                         const w = window.open('');
                         if (w) {
                           w.document.title = selectedFile.file.name;
+                          w.document.body.style.margin = '0';
                           if (isImageFile(selectedFile.file.name)) {
-                            w.document.body.innerHTML = `<img src="${url}" style="max-width:100%;margin:auto;display:block" />`;
+                            const img = w.document.createElement('img');
+                            img.src = url;
+                            img.style.cssText = 'max-width:100%;margin:auto;display:block';
+                            w.document.body.appendChild(img);
                           } else {
                             const embed = w.document.createElement('embed');
                             embed.src = url;
                             embed.type = 'application/pdf';
                             embed.style.cssText = 'width:100%;height:100vh';
-                            w.document.body.style.margin = '0';
                             w.document.body.appendChild(embed);
                           }
                         }
