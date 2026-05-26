@@ -298,6 +298,12 @@ serve(async (req) => {
       });
     }
 
+    // Firm ownership check
+    const { data: callerRow } = await supabase.from('users').select('firm_id, role').eq('id', userData.user.id).single();
+    if (callerRow?.role !== 'super_admin' && callerRow?.firm_id !== caseData.firm_id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Determine client state from district or extracted data
     const { data: extractedData } = await supabase
       .from('case_extracted_data')

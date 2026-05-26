@@ -38,6 +38,12 @@ Deno.serve(async (req) => {
       .from('cases').select('*').eq('id', case_id).single();
     if (caseErr || !caseData) return json({ error: 'Case not found' }, 404);
 
+    // Firm ownership check
+    const { data: callerRow } = await supabase.from('users').select('firm_id, role').eq('id', userId).single();
+    if (callerRow?.role !== 'super_admin' && callerRow?.firm_id !== caseData.firm_id) {
+      return json({ error: 'Forbidden' }, 403);
+    }
+
     // Fetch client info
     const { data: clientInfo } = await supabase
       .from('client_info').select('*').eq('case_id', case_id).maybeSingle();

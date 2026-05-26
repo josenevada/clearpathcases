@@ -250,6 +250,16 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Firm ownership check
+    const { data: caseOwner } = await supabase.from("cases").select("firm_id").eq("id", case_id).single();
+    if (!caseOwner) {
+      return new Response(JSON.stringify({ error: "Case not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { data: callerRow } = await supabase.from("users").select("firm_id, role").eq("id", userData.user.id).single();
+    if (callerRow?.role !== "super_admin" && callerRow?.firm_id !== caseOwner.firm_id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Create extraction run record
     const { data: run, error: runError } = await supabase
       .from("form_extraction_runs")
