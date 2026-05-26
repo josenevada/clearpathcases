@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const body = await req.json();
     const { userId, firmName, fullName, email, planName } = body;
@@ -23,6 +24,21 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Missing required fields: userId, firmName, fullName, email" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Require authenticated caller and verify they ARE the user being provisioned.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+    const { data: callerData, error: callerErr } = await authClient.auth.getUser();
+    if (callerErr || !callerData?.user || callerData.user.id !== userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Use service role client to bypass RLS
