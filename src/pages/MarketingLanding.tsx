@@ -149,7 +149,7 @@ const StatsBar = () => {
   const reduced = usePrefersReducedMotion();
   const stats = [
     { value: 0, prefix: '', suffix: '', label: 'Emails chasing documents', displayOverride: 'Zero' },
-    { value: 0, prefix: '', suffix: '', label: 'Average client intake completion time', displayOverride: '15 min' },
+    { value: 0, prefix: '', suffix: '', label: 'Of bank statements retrieved automatically via Plaid', displayOverride: '6 Months' },
     { value: 0, prefix: '', suffix: '', label: 'Clients can upload on their schedule', displayOverride: '24/7' },
     { value: 0, prefix: '', suffix: '', label: 'To create a case and send the intake link', displayOverride: '60 sec' },
   ];
