@@ -155,6 +155,7 @@ export interface ClientSession {
   caseId: string;
   verified: boolean;
   verifiedAt: string;
+  portalToken?: string;
 }
 
 export const getClientSession = (caseCode: string): ClientSession | null => {
@@ -163,12 +164,13 @@ export const getClientSession = (caseCode: string): ClientSession | null => {
   return JSON.parse(raw);
 };
 
-export const setClientSession = (caseCode: string, caseId: string) => {
+export const setClientSession = (caseCode: string, caseId: string, portalToken?: string) => {
   const session: ClientSession = {
     caseCode,
     caseId,
     verified: true,
     verifiedAt: new Date().toISOString(),
+    portalToken,
   };
   sessionStorage.setItem(`${CLIENT_SESSION_PREFIX}${caseCode}`, JSON.stringify(session));
 };

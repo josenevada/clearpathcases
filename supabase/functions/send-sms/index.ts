@@ -9,6 +9,7 @@
 //      Cooldown reads activity_log for sms_sent (canonical) plus legacy event
 //      types (reminder_sent, notification_sent) so historical data still counts.
 // On success the function logs an activity_log row with event_type = 'sms_sent'.
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +36,25 @@ const normalizePhone = (phone: string) => {
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   if (phone.trim().startsWith('+') && digits.length >= 10) return `+${digits}`;
   return null;
+};
+
+const authorizeRequest = async (req: Request, supabaseUrl: string, serviceKey: string, caseId: string) => {
+  const authHeader = req.headers.get('Authorization');
+  if (authHeader === `Bearer ${serviceKey}`) return true;
+  if (!authHeader?.startsWith('Bearer ')) return false;
+
+  const authClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+  if (claimsError || !claimsData?.claims?.sub) return false;
+
+  const admin = createClient(supabaseUrl, serviceKey);
+  const [{ data: caller }, { data: caseRow }] = await Promise.all([
+    admin.from('users').select('firm_id, role').eq('id', claimsData.claims.sub).maybeSingle(),
+    admin.from('cases').select('firm_id').eq('id', caseId).maybeSingle(),
+  ]);
+  return !!caller && !!caseRow && (caller.role === 'super_admin' || caller.firm_id === caseRow.firm_id);
 };
 
 Deno.serve(async (req) => {
@@ -70,6 +90,10 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!supabaseUrl || !serviceKey) {
     return json({ error: 'Missing server config' }, 500);
+  }
+
+  if (!(await authorizeRequest(req, supabaseUrl, serviceKey, payload.caseId))) {
+    return json({ error: 'Unauthorized' }, 401);
   }
 
   // ── Gate 1: Quiet hours (8 AM – 8 PM MST) ──
