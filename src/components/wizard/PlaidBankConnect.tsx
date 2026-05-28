@@ -133,8 +133,9 @@ const PlaidBankConnect = ({
 
     try {
       const res = await supabase.functions.invoke('plaid-create-link-token', {
-        body: { case_id: caseId, client_name: clientName },
+        body: { case_id: caseId, client_name: clientName, portal_token: getPortalToken() },
       });
+
 
       console.log('plaid-create-link-token response:', res);
 
@@ -158,8 +159,9 @@ const PlaidBankConnect = ({
     setState('disconnecting');
     try {
       await supabase.functions.invoke('plaid-disconnect', {
-        body: { case_id: caseId, client_name: clientName },
+        body: { case_id: caseId, client_name: clientName, portal_token: getPortalToken() },
       });
+
       setState('idle');
       setResult(null);
       setLinkToken(null);
