@@ -23,7 +23,7 @@ import { getPlanLimits } from '@/lib/plan-limits';
 
 
 import { supabase } from '@/integrations/supabase/client';
-import { getCaseDocumentSignedUrl } from '@/lib/case-documents';
+import { getClientSession } from '@/lib/auth';
 import { toast } from 'sonner';
 
 const EMPLOYER_LABEL = 'Employer Name';
@@ -159,15 +159,15 @@ const ALLOWED_TYPES = [
 // ─── Upload with retry helper ─────────────────────────────────────────
 const uploadWithRetry = async (
   storagePath: string,
+  uploadToken: string,
   file: Blob,
-  contentType: string,
   maxRetries: number = 2
 ): Promise<{ error: any }> => {
   let lastError: any = null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const { error } = await supabase.storage
       .from('case-documents')
-      .upload(storagePath, file, { contentType, upsert: false });
+      .uploadToSignedUrl(storagePath, uploadToken, file);
 
     if (!error) return { error: null };
     lastError = error;
@@ -269,6 +269,18 @@ const ClientWizard = () => {
   const [firmDisplayName, setFirmDisplayName] = useState<string | null>(null);
   const targetFixItemId = searchParams.get('fix');
 
+  const getPortalToken = useCallback(() => {
+    if (!caseCode) return null;
+    const session = getClientSession(caseCode);
+    return session?.caseId === resolvedCaseId ? session.portalToken || null : null;
+  }, [caseCode, resolvedCaseId]);
+
+  const invokeClientPortal = useCallback((action: string, body: Record<string, unknown> = {}) => (
+    supabase.functions.invoke('client-portal', {
+      body: { action, caseId: resolvedCaseId, portalToken: getPortalToken(), ...body },
+    })
+  ), [getPortalToken, resolvedCaseId]);
+
   // Helper: update caseData in React state only (no localStorage)
   const updateCaseLocal = useCallback((updater: (c: Case) => Case): Case | null => {
     let result: Case | null = null;
@@ -284,18 +296,11 @@ const ClientWizard = () => {
   // Helper: log activity to Supabase only
   const logActivity = useCallback(async (caseIdVal: string, entry: { eventType: string; actorRole: string; actorName: string; description: string; itemId?: string }) => {
     try {
-      await supabase.from('activity_log').insert({
-        case_id: caseIdVal,
-        event_type: entry.eventType,
-        actor_role: entry.actorRole,
-        actor_name: entry.actorName,
-        description: entry.description,
-        item_id: entry.itemId || null,
-      });
+      await invokeClientPortal('log-activity', { entry });
     } catch (err) {
       console.error('Failed to log activity:', err);
     }
-  }, []);
+  }, [invokeClientPortal]);
 
   useEffect(() => {
     if (!resolvedCaseId) return;
@@ -305,18 +310,22 @@ const ClientWizard = () => {
       setLoadError(null);
 
       try {
-        // Fetch case + caseId-only dependencies in parallel
-        const [caseResult, checklistResult, fileResult, activityResult] = await Promise.all([
-          supabase.from('cases').select('*').eq('id', resolvedCaseId).maybeSingle(),
-          supabase.from('checklist_items').select('*').eq('case_id', resolvedCaseId).order('sort_order', { ascending: true }),
-          supabase.from('files').select('*').eq('case_id', resolvedCaseId),
-          supabase.from('activity_log').select('id,event_type,description,created_at,actor_role,actor_name,item_id').eq('case_id', resolvedCaseId).order('created_at', { ascending: true }),
-        ]);
+        if (!caseCode || !getPortalToken()) {
+          navigate(`/client/${caseCode || ''}`, { replace: true });
+          return;
+        }
 
-        const caseRow = caseResult.data;
-        const checklistRows = checklistResult.data;
-        const fileRows = fileResult.data;
-        const activityRows = activityResult.data;
+        const { data: portalData, error: portalError } = await invokeClientPortal('load');
+        if (portalError || !portalData?.caseRow) {
+          setLoadError('Case not found. The link may be incorrect or expired.');
+          setIsLoading(false);
+          return;
+        }
+
+        const caseRow = portalData.caseRow;
+        const checklistRows = portalData.checklistRows;
+        const fileRows = portalData.fileRows;
+        const activityRows = portalData.activityRows;
 
         if (!caseRow) {
           setLoadError('Case not found. The link may be incorrect or expired.');
@@ -332,14 +341,9 @@ const ClientWizard = () => {
           return;
         }
 
-        // Load firm's credit counseling settings (needs firm_id from case)
-        if (caseRow.firm_id) {
-          const { data: firmData } = await supabase
-            .from('firms')
-            .select('name, plan_name, counseling_provider_name, counseling_provider_link, counseling_attorney_code')
-            .eq('id', caseRow.firm_id)
-            .maybeSingle();
-
+        // Load firm's credit counseling settings returned by the verified portal endpoint
+        if (portalData.firmData) {
+          const firmData = portalData.firmData;
           if (firmData) {
             setCounselingProviderLink(firmData.counseling_provider_link || null);
             setCounselingProviderName(firmData.counseling_provider_name || null);
@@ -349,13 +353,9 @@ const ClientWizard = () => {
           setFirmPlan(firmData?.plan_name || 'starter');
         }
 
-        // Generate signed URLs for files that have storage_path
-        const filesWithUrls = await Promise.all((fileRows || []).map(async (f) => {
-          let displayUrl = f.data_url || '';
-          if (f.storage_path && (!f.data_url || f.data_url === '')) {
-            displayUrl = await getCaseDocumentSignedUrl(f.storage_path);
-          }
-          return { ...f, displayUrl };
+        const filesWithUrls = (fileRows || []).map((f: any) => ({
+          ...f,
+          displayUrl: f.display_url || f.data_url || '',
         }));
 
         // Build checklist items from Supabase data
@@ -492,7 +492,7 @@ const ClientWizard = () => {
         // Sync wizard_step to Supabase if it drifted
         if (c.wizardStep !== resumeCatIdx) {
           c.wizardStep = resumeCatIdx;
-          supabase.from('cases').update({ wizard_step: resumeCatIdx }).eq('id', c.id).then(() => {});
+          invokeClientPortal('update-case', { updates: { wizard_step: resumeCatIdx } }).then(() => {});
         }
       } catch (err) {
         console.error('Failed to load case from database:', err);
@@ -502,7 +502,7 @@ const ClientWizard = () => {
     };
 
     loadCase();
-  }, [resolvedCaseId, navigate, targetFixItemId]);
+  }, [resolvedCaseId, navigate, targetFixItemId, caseCode, getPortalToken, invokeClientPortal]);
 
   const jumpToItem = useCallback((itemId: string, cRef: Case | null) => {
     if (!cRef) return;
@@ -707,10 +707,15 @@ const ClientWizard = () => {
     // Use the original filename the client uploaded
     const cleanFileName = processedFile.name;
 
-    // Upload to Supabase Storage with a unique path (with retry + progress)
-    const uniqueId = crypto.randomUUID().slice(0, 6);
-    const ext = (processedFile.name.split('.').pop() || 'pdf').toLowerCase();
-    const storagePath = `${caseData.id}/${currentItem.id}/${cleanFileName.replace(`.${ext}`, '')}-${uniqueId}.${ext}`;
+    const { data: uploadData, error: uploadPrepError } = await invokeClientPortal('create-signed-upload', {
+      checklistItemId: currentItem.id,
+      fileName: cleanFileName,
+    });
+    if (uploadPrepError || !uploadData?.path || !uploadData?.token) {
+      toast.error('Upload failed. Please try again.');
+      return;
+    }
+    const storagePath = uploadData.path as string;
 
     setUploadProgress(10);
     const progressTimer = setInterval(() => {
@@ -719,8 +724,8 @@ const ClientWizard = () => {
 
     const { error: storageError } = await uploadWithRetry(
       storagePath,
-      processedFile,
-      processedFile.type || 'application/octet-stream'
+      uploadData.token as string,
+      processedFile
     );
 
     clearInterval(progressTimer);
@@ -735,13 +740,10 @@ const ClientWizard = () => {
     setUploadProgress(100);
     setTimeout(() => setUploadProgress(null), 600);
 
-    // Get a short-lived signed URL for immediate display
-    const displayUrl = await getCaseDocumentSignedUrl(storagePath);
-
     const newFile = {
       id: newFileId,
       name: cleanFileName,
-      dataUrl: displayUrl,
+      dataUrl: '',
       uploadedAt,
       reviewStatus: 'pending' as const,
       uploadedBy: 'client' as const,
@@ -778,27 +780,20 @@ const ClientWizard = () => {
     (async () => {
       try {
         if (replaceFileId) {
-          // Delete old file from storage and DB
-          const { data: oldFile } = await supabase.from('files').select('storage_path').eq('id', replaceFileId).maybeSingle();
-          if (oldFile?.storage_path) {
-            await supabase.storage.from('case-documents').remove([oldFile.storage_path]);
-          }
-          await supabase.from('files').delete().eq('id', replaceFileId);
+          await invokeClientPortal('delete-file', { fileId: replaceFileId, checklistItemId: currentItem.id });
         }
-        await supabase.from('files').insert({
+        await invokeClientPortal('create-file', { file: {
           id: newFileId,
-          case_id: caseData.id,
           checklist_item_id: currentItem.id,
           file_name: cleanFileName,
           storage_path: storagePath,
-          data_url: '',
           uploaded_at: uploadedAt,
           review_status: 'pending',
           uploaded_by: 'client',
           ai_validation_status: 'passed',
-        } as any);
-        await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
-        await supabase.from('cases').update({ last_client_activity: uploadedAt }).eq('id', caseData.id);
+        } });
+        await invokeClientPortal('update-item', { itemId: currentItem.id, updates: { completed: true } });
+        await invokeClientPortal('update-case', { updates: { last_client_activity: uploadedAt } });
         await logActivity(caseData.id, {
           eventType: 'file_upload',
           actorRole: 'client',
@@ -849,16 +844,7 @@ const ClientWizard = () => {
     // Sync deletion to Supabase
     (async () => {
       try {
-        const { data: fileRecord } = await supabase.from('files').select('storage_path').eq('id', fileId).maybeSingle();
-        if (fileRecord?.storage_path) {
-          await supabase.storage.from('case-documents').remove([fileRecord.storage_path]);
-        }
-        await supabase.from('files').delete().eq('id', fileId);
-        // Check if any files remain
-        const { data: remaining } = await supabase.from('files').select('id').eq('checklist_item_id', currentItem.id);
-        if (!remaining || remaining.length === 0) {
-          await supabase.from('checklist_items').update({ completed: false }).eq('id', currentItem.id);
-        }
+        await invokeClientPortal('delete-file', { fileId, checklistItemId: currentItem.id });
       } catch (err) {
         console.error('Failed to sync file deletion:', err);
       }
@@ -915,12 +901,12 @@ const ClientWizard = () => {
     // Sync to Supabase
     (async () => {
       try {
-        await supabase.from('checklist_items').update({
+        await invokeClientPortal('update-item', { itemId: currentItem.id, updates: {
           completed: true,
           resubmitted_at: timestamp,
           correction_status: 'resolved',
-        }).eq('id', currentItem.id);
-        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+        } });
+        await invokeClientPortal('update-case', { updates: { last_client_activity: timestamp } });
       } catch (err) { console.error('Failed to sync resubmission:', err); }
     })();
 
@@ -993,13 +979,9 @@ const ClientWizard = () => {
     // Sync to Supabase
     (async () => {
       try {
-        await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
-        await supabase.from('checkpoints').insert({
-          case_id: caseData.id,
-          checkpoint_type: currentItem.label,
-          confirmed_by: caseData.clientName,
-        });
-        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+        await invokeClientPortal('update-item', { itemId: currentItem.id, updates: { completed: true } });
+        await invokeClientPortal('insert-checkpoint', { checkpointType: currentItem.label, confirmedBy: caseData.clientName });
+        await invokeClientPortal('update-case', { updates: { last_client_activity: timestamp } });
       } catch (err) { console.error('Failed to sync checkpoint:', err); }
     })();
   };
@@ -1046,14 +1028,13 @@ const ClientWizard = () => {
     if (!caseData) return;
     setCaseCompleted(true);
     try {
-      await supabase.from('cases').update({ ready_to_file: true }).eq('id', caseData.id);
-      await supabase.from('activity_log').insert({
-        case_id: caseData.id,
-        event_type: 'case_ready',
-        actor_role: 'client',
-        actor_name: caseData.clientName,
+      await invokeClientPortal('update-case', { updates: { ready_to_file: true } });
+      await invokeClientPortal('log-activity', { entry: {
+        eventType: 'case_ready',
+        actorRole: 'client',
+        actorName: caseData.clientName,
         description: `${caseData.clientName} completed all wizard steps — case ready for attorney review`,
-      });
+      } });
     } catch (err) {
       console.error('Failed to mark case complete:', err);
     }
@@ -1083,7 +1064,7 @@ const ClientWizard = () => {
     setCaseData(prev => prev ? { ...prev, wizardStep: nextCategory } : prev);
 
     // Persist wizard step to Supabase
-    supabase.from('cases').update({ wizard_step: nextCategory }).eq('id', caseData.id).then(() => {});
+    invokeClientPortal('update-case', { updates: { wizard_step: nextCategory } }).then(() => {});
 
   };
 
@@ -1157,13 +1138,13 @@ const ClientWizard = () => {
     // Sync to Supabase
     (async () => {
       try {
-        await supabase.from('checklist_items').update({
+        await invokeClientPortal('update-item', { itemId: currentItem.id, updates: {
           not_applicable: true,
           not_applicable_reason: reason,
           not_applicable_marked_by: 'client',
           not_applicable_at: timestamp,
-        }).eq('id', currentItem.id);
-        await supabase.from('cases').update({ last_client_activity: timestamp }).eq('id', caseData.id);
+        } });
+        await invokeClientPortal('update-case', { updates: { last_client_activity: timestamp } });
       } catch (err) { console.error('Failed to sync N/A:', err); }
     })();
   };
@@ -1225,11 +1206,11 @@ const ClientWizard = () => {
       // Sync to Supabase
       (async () => {
         try {
-          await supabase.from('checklist_items').update({
+          await invokeClientPortal('update-item', { itemId: currentItem.id, updates: {
             completed: true,
             text_value: textEntry,
-          }).eq('id', currentItem.id);
-          await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+          } });
+          await invokeClientPortal('update-case', { updates: { last_client_activity: new Date().toISOString() } });
         } catch (err) { console.error('Failed to sync employer:', err); }
       })();
       return;
@@ -1266,11 +1247,11 @@ const ClientWizard = () => {
     // Sync to Supabase
     (async () => {
       try {
-        await supabase.from('checklist_items').update({
+        await invokeClientPortal('update-item', { itemId: currentItem.id, updates: {
           completed: true,
           text_value: textEntry,
-        }).eq('id', currentItem.id);
-        await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+        } });
+        await invokeClientPortal('update-case', { updates: { last_client_activity: new Date().toISOString() } });
       } catch (err) { console.error('Failed to sync employer:', err); }
     })();
   };
@@ -1334,27 +1315,16 @@ const ClientWizard = () => {
     // Store encrypted SSN in Supabase client_info
     (async () => {
       try {
-        const { data: existing } = await supabase
-          .from('client_info')
-          .select('id')
-          .eq('case_id', caseData.id)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase.from('client_info').update({ ssn_encrypted: formatted }).eq('case_id', caseData.id);
-        } else {
-          await supabase.from('client_info').insert({
-            case_id: caseData.id,
-            ssn_encrypted: formatted,
-            full_legal_name: caseData.clientName,
-            email: caseData.clientEmail,
-            phone: caseData.clientPhone || '',
-          });
-        }
-        await supabase.from('checklist_items').update({
+        await invokeClientPortal('upsert-client-info-ssn', {
+          ssn: formatted,
+          fullLegalName: caseData.clientName,
+          email: caseData.clientEmail,
+          phone: caseData.clientPhone || '',
+        });
+        await invokeClientPortal('update-item', { itemId: currentItem.id, updates: {
           completed: true,
           text_value: textEntry,
-        }).eq('id', currentItem.id);
+        } });
       } catch (err) {
         console.error('Failed to sync SSN:', err);
       }
@@ -2064,22 +2034,18 @@ const ClientWizard = () => {
                       // Persist Plaid files to DB as auto-approved
                       (async () => {
                         try {
-                          await supabase.from('files').insert(
-                            plaidFiles.map(pf => ({
-                              id: pf.id,
-                              case_id: caseData.id,
-                              checklist_item_id: currentItem.id,
-                              file_name: pf.name,
-                              storage_path: null,
-                              data_url: '',
-                              uploaded_at: pf.uploadedAt,
-                              review_status: 'approved',
-                              review_note: 'Auto-approved — sourced directly from financial institution via Plaid',
-                              uploaded_by: 'plaid',
-                            }))
-                          );
-                          await supabase.from('checklist_items').update({ completed: true }).eq('id', currentItem.id);
-                          await supabase.from('cases').update({ last_client_activity: new Date().toISOString() }).eq('id', caseData.id);
+                          await Promise.all(plaidFiles.map(pf => invokeClientPortal('create-file', { file: {
+                            id: pf.id,
+                            checklist_item_id: currentItem.id,
+                            file_name: pf.name,
+                            storage_path: null,
+                            uploaded_at: pf.uploadedAt,
+                            review_status: 'approved',
+                            review_note: 'Auto-approved — sourced directly from financial institution via Plaid',
+                            uploaded_by: 'plaid',
+                          } })));
+                          await invokeClientPortal('update-item', { itemId: currentItem.id, updates: { completed: true } });
+                          await invokeClientPortal('update-case', { updates: { last_client_activity: new Date().toISOString() } });
                           await logActivity(caseData.id, {
                             eventType: 'file_approved',
                             actorRole: 'system',

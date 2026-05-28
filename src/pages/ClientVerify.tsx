@@ -62,29 +62,13 @@ const ClientVerify = () => {
     const checkCase = async () => {
       console.log('[ClientVerify] Looking up caseCode:', caseCode);
 
-      // Try primary case_code first
-      const { data: primaryMatch } = await supabase
-        .from('cases')
-        .select('id')
-        .eq('case_code', caseCode)
-        .neq('status', 'closed')
-        .maybeSingle();
+      const { data } = await supabase.functions.invoke('client-portal', {
+        body: { action: 'lookup', caseCode },
+      });
 
-      if (primaryMatch) {
-        setCaseId(primaryMatch.id);
-        setIsSpouseLink(false);
-      } else {
-        // Fall back to spouse_case_code
-        const { data: spouseMatch } = await supabase
-          .from('cases')
-          .select('id')
-          .eq('spouse_case_code', caseCode)
-          .neq('status', 'closed')
-          .maybeSingle();
-        if (spouseMatch) {
-          setCaseId(spouseMatch.id);
-          setIsSpouseLink(true);
-        }
+      if (data?.caseId) {
+        setCaseId(data.caseId);
+        setIsSpouseLink(data.isSpouseLink === true);
       }
       setLoading(false);
     };
@@ -113,31 +97,13 @@ const ClientVerify = () => {
     setDobError(null);
     setError('');
 
-    // Look up the row by either code; spouse_dob lives on client_info, client_dob on cases
-    const { data: caseRow } = await supabase
-      .from('cases')
-      .select('id, client_dob')
-      .or(`case_code.eq.${caseCode},spouse_case_code.eq.${caseCode}`)
-      .maybeSingle();
+    const { data, error: verifyError } = await supabase.functions.invoke('client-portal', {
+      body: { action: 'verify', caseCode, dob },
+    });
 
-    if (!caseRow) {
-      setError('Case not found. Please check your link.');
-      return;
-    }
-
-    let expectedDob: string | null = caseRow.client_dob;
-    if (isSpouseLink) {
-      const { data: info } = await supabase
-        .from('client_info')
-        .select('spouse_dob')
-        .eq('case_id', caseRow.id)
-        .maybeSingle();
-      expectedDob = info?.spouse_dob ?? null;
-    }
-
-    if (expectedDob === dob) {
-      setClientSession(caseCode, caseRow.id);
-      navigate(`/client-portal/${caseCode}/${caseRow.id}${buildPortalQuery(isSpouseLink)}`, { replace: true });
+    if (!verifyError && data?.caseId && data?.portalToken) {
+      setClientSession(caseCode, data.caseId, data.portalToken);
+      navigate(`/client-portal/${caseCode}/${data.caseId}${buildPortalQuery(data.isSpouseLink === true)}`, { replace: true });
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
