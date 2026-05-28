@@ -1,5 +1,8 @@
 project_id = "gurufoykncixameklolt"
 
+[functions.client-portal]
+verify_jwt = false
+
 [functions.case-correction-notify]
 verify_jwt = false
 
