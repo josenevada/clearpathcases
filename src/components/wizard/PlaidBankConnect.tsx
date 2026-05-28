@@ -5,6 +5,8 @@ import { Zap, Lock, Shield, CheckCircle2, Loader2, UploadCloud, AlertTriangle, X
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { getClientSession } from '@/lib/auth';
+
 
 interface PlaidBankConnectProps {
   caseId: string;
@@ -46,6 +48,12 @@ const PlaidBankConnect = ({
     new URLSearchParams(window.location.search).has('oauth_state_id')
   );
 
+  const getPortalToken = useCallback(() => {
+    if (!caseCode) return null;
+    const s = getClientSession(caseCode);
+    return s?.caseId === caseId ? s.portalToken || null : null;
+  }, [caseCode, caseId]);
+
   const handlePlaidSuccess = useCallback(async (publicToken: string) => {
     setState('exchanging');
     try {
@@ -55,8 +63,10 @@ const PlaidBankConnect = ({
           case_id: caseId,
           client_name: clientName,
           checklist_item_id: checklistItemId,
+          portal_token: getPortalToken(),
         },
       });
+
 
       if (res.error || !res.data?.success) {
         throw new Error(res.error?.message || res.data?.error || 'Exchange failed');
@@ -78,7 +88,7 @@ const PlaidBankConnect = ({
       setErrorMsg("We couldn't connect to your bank automatically. Please upload your statements manually using the option below.");
       setShowManual(true);
     }
-  }, [caseId, clientName, checklistItemId, onSuccess]);
+  }, [caseId, clientName, checklistItemId, onSuccess, getPortalToken]);
 
   const handlePlaidExit = useCallback(() => {
     if (state === 'link-open') {
