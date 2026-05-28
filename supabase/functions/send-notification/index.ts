@@ -445,6 +445,40 @@ Deno.serve(async (req) => {
     return json({ error: 'Missing required fields: type, clientEmail, clientName, caseId' }, 400);
   }
 
+  // Authorize: allow service-role server-to-server, or authenticated staff
+  // from the same firm as the target case.
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const authHeader = req.headers.get('Authorization');
+  let authorized = false;
+  if (authHeader === `Bearer ${serviceKey}`) {
+    authorized = true;
+  } else if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+      const authClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+      const uid = claimsData?.claims?.sub;
+      if (uid) {
+        const admin = createClient(supabaseUrl, serviceKey);
+        const [{ data: caller }, { data: caseRow }] = await Promise.all([
+          admin.from('users').select('firm_id, role').eq('id', uid).maybeSingle(),
+          admin.from('cases').select('firm_id').eq('id', payload.caseId).maybeSingle(),
+        ]);
+        authorized = !!caller && !!caseRow && (caller.role === 'super_admin' || caller.firm_id === caseRow.firm_id);
+      }
+    } catch (e) {
+      console.error('send-notification auth check failed:', e);
+    }
+  }
+  if (!authorized) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+
+
   // Firm welcome only needs email
   if (payload.type === 'firm_welcome') {
     const email = await sendEmail(payload);
