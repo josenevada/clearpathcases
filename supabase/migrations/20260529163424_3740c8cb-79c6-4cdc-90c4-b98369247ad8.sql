@@ -1,0 +1,1 @@
+DELETE FROM public.files WHERE case_id='440e0bca-c669-4e2f-949d-dfc372a5225e' AND uploaded_by='plaid' AND storage_path IS NULL;
