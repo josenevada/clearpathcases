@@ -1991,70 +1991,43 @@ const ClientWizard = () => {
                     caseCode={caseCode || caseData.caseCode}
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
-                    onSuccess={(plaidResult) => {
-                      const plaidFiles: Array<{ id: string; name: string; uploadedAt: string }> = [];
-                      for (const acct of plaidResult.accounts) {
-                        for (let m = 0; m < 6; m++) {
-                          const d = new Date();
-                          d.setMonth(d.getMonth() - m);
-                          const monthName = d.toLocaleString('default', { month: 'long' });
-                          const year = d.getFullYear();
-                          plaidFiles.push({
-                            id: crypto.randomUUID(),
-                            name: `${plaidResult.institutionName}-${acct.type}-${monthName}-${year}.pdf`,
-                            uploadedAt: new Date().toISOString(),
-                          });
-                        }
-                      }
-
-                      setCaseData(prev => {
-                        if (!prev) return prev;
-                        return {
-                          ...prev,
-                          lastClientActivity: new Date().toISOString(),
-                          checklist: prev.checklist.map(ci => {
-                            if (ci.id !== currentItem.id) return ci;
-                            const newFiles = [...ci.files];
-                            for (const pf of plaidFiles) {
-                              newFiles.push({
-                                id: pf.id,
-                                name: pf.name,
-                                dataUrl: '',
-                                uploadedAt: pf.uploadedAt,
-                                reviewStatus: 'approved',
-                                reviewNote: 'Auto-approved — sourced directly from financial institution via Plaid',
-                                uploadedBy: 'plaid',
-                              });
-                            }
-                            return { ...ci, files: newFiles, completed: true };
-                          }),
-                        };
-                      });
-
-                      // Persist Plaid files to DB as auto-approved
+                    onSuccess={(_plaidResult) => {
+                      // The plaid-exchange-token edge function already:
+                      //  - inserts file rows for each retrieved statement
+                      //  - marks the checklist item complete
+                      //  - updates last_client_activity
+                      //  - logs activity
+                      // Refresh local state from the server so the real files appear
+                      // (avoid creating duplicate placeholder rows).
                       (async () => {
                         try {
-                          await Promise.all(plaidFiles.map(pf => invokeClientPortal('create-file', { file: {
-                            id: pf.id,
-                            checklist_item_id: currentItem.id,
-                            file_name: pf.name,
-                            storage_path: null,
-                            uploaded_at: pf.uploadedAt,
-                            review_status: 'approved',
-                            review_note: 'Auto-approved — sourced directly from financial institution via Plaid',
-                            uploaded_by: 'plaid',
-                          } })));
-                          await invokeClientPortal('update-item', { itemId: currentItem.id, updates: { completed: true } });
-                          await invokeClientPortal('update-case', { updates: { last_client_activity: new Date().toISOString() } });
-                          await logActivity(caseData.id, {
-                            eventType: 'file_approved',
-                            actorRole: 'system',
-                            actorName: 'ClearPath',
-                            description: `Auto-approved ${plaidFiles.length} bank statement${plaidFiles.length !== 1 ? 's' : ''} from ${plaidResult.institutionName} via Plaid`,
-                            itemId: currentItem.id,
+                          const { data: portalData } = await invokeClientPortal('load');
+                          const fileRows = portalData?.fileRows || [];
+                          const itemFiles = fileRows
+                            .filter((f: any) => f.checklist_item_id === currentItem.id)
+                            .map((f: any) => ({
+                              id: f.id,
+                              name: f.file_name,
+                              dataUrl: f.display_url || f.data_url || '',
+                              uploadedAt: f.uploaded_at,
+                              reviewStatus: f.review_status || 'pending',
+                              reviewNote: f.review_note,
+                              uploadedBy: f.uploaded_by || 'plaid',
+                            }));
+                          setCaseData(prev => {
+                            if (!prev) return prev;
+                            return {
+                              ...prev,
+                              lastClientActivity: new Date().toISOString(),
+                              checklist: prev.checklist.map(ci =>
+                                ci.id === currentItem.id
+                                  ? { ...ci, files: itemFiles, completed: true }
+                                  : ci
+                              ),
+                            };
                           });
                         } catch (err) {
-                          console.error('Failed to persist Plaid files:', err);
+                          console.error('Failed to refresh after Plaid connect:', err);
                         }
                       })();
                     }}
