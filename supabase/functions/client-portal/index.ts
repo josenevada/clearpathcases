@@ -101,13 +101,18 @@ serve(async (req) => {
       if (!caseCode || !dob) return json({ error: 'caseCode and dob required' }, 400);
 
       const { data: c } = await sb.from('cases')
-        .select('id, case_code, spouse_case_code, client_dob, spouse_dob')
+        .select('id, case_code, spouse_case_code, client_dob')
         .or(`case_code.eq.${caseCode},spouse_case_code.eq.${caseCode}`)
         .maybeSingle();
       if (!c) return json({ error: 'not found' }, 404);
 
       const isSpouseLink = c.spouse_case_code === caseCode;
-      const expectedDob = isSpouseLink ? c.spouse_dob : c.client_dob;
+      let expectedDob: string | null = c.client_dob;
+      if (isSpouseLink) {
+        const { data: ci } = await sb.from('client_info')
+          .select('spouse_dob').eq('case_id', c.id).maybeSingle();
+        expectedDob = ci?.spouse_dob || null;
+      }
       if (!expectedDob || expectedDob !== dob) return json({ error: 'dob mismatch' }, 401);
 
       const portalToken = await issueToken(c.id);
