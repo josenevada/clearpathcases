@@ -78,7 +78,7 @@ serve(async (req) => {
       client_name: 'ClearPath',
       products: ['statements'],
       statements: {
-        start_date: sixMonthsAgo.toISOString().split('T')[0],
+        start_date: startDate.toISOString().split('T')[0],
         end_date: today.toISOString().split('T')[0],
       },
       country_codes: ['US'],
