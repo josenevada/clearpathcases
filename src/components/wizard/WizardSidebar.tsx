@@ -98,7 +98,9 @@ const WizardSidebar = ({ checklist, currentCategoryIdx, currentItemIdx, onNaviga
                   >
                     {catItems.map((item, itemIdx) => {
                       const isActive = catIdx === currentCategoryIdx && itemIdx === currentItemIdx;
-                      const label = item.label.length > 30 ? item.label.slice(0, 30) + '…' : item.label;
+                      const fullLabel = formatItemDisplayLabel(item);
+                      const label = fullLabel.length > 30 ? fullLabel.slice(0, 30) + '…' : fullLabel;
+
 
                       return (
                         <button
