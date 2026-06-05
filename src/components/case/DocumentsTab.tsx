@@ -97,6 +97,7 @@ const SignedUrlViewer = ({ storagePath, fileName }: { storagePath: string; fileN
 
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const { plan } = useSubscription();
+  const { user } = useAuth();
   const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
