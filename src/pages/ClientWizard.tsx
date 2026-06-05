@@ -2057,7 +2057,7 @@ const ClientWizard = () => {
                       <p className="text-[13px] text-muted-foreground text-center py-2">Bank auto-connection is available on Professional and Firm plans.</p>
                       {multiConfig && (
                         <MultiUploadZone
-                          files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
+                          files={currentItem.files}
                           config={multiConfig}
                           onFileAdd={(file: File) => {
                             const existing = currentItem.files.find(f => f.name === file.name);
