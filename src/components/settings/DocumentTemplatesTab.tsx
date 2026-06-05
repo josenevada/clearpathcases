@@ -495,13 +495,90 @@ const ChecklistEditor = ({ items, onChange }: {
   );
 };
 
+const QUANTITY_PRESETS = [
+  'Last 1 month',
+  'Last 2 months',
+  'Last 3 months',
+  'Last 6 months',
+  'Last 12 months',
+  'All available',
+];
+
+const QuantityAndClientFields = ({
+  quantityInstruction,
+  clientDescription,
+  defaultDescription,
+  onChange,
+}: {
+  quantityInstruction: string;
+  clientDescription: string;
+  defaultDescription: string;
+  onChange: (patch: { quantityInstruction?: string; clientDescription?: string }) => void;
+}) => {
+  const isPreset = QUANTITY_PRESETS.includes(quantityInstruction) || quantityInstruction === '';
+  const [mode, setMode] = useState<'preset' | 'custom'>(isPreset ? 'preset' : 'custom');
+
+  return (
+    <>
+      <div>
+        <Label className="text-muted-foreground text-sm">Quantity Instruction</Label>
+        <div className="flex gap-2 mt-1">
+          <select
+            value={mode === 'custom' ? 'custom' : quantityInstruction}
+            onChange={e => {
+              if (e.target.value === 'custom') {
+                setMode('custom');
+              } else {
+                setMode('preset');
+                onChange({ quantityInstruction: e.target.value });
+              }
+            }}
+            className="text-xs px-2 py-1.5 rounded-lg border border-border bg-input text-foreground"
+          >
+            <option value="">— None —</option>
+            {QUANTITY_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+            <option value="custom">Custom...</option>
+          </select>
+          {mode === 'custom' && (
+            <Input
+              value={quantityInstruction}
+              onChange={e => onChange({ quantityInstruction: e.target.value })}
+              placeholder="e.g. last 3 months"
+              className="flex-1 text-xs h-8 bg-input border-border rounded-lg"
+            />
+          )}
+        </div>
+      </div>
+      <div>
+        <Label className="text-muted-foreground text-sm">
+          Client Instructions <span className="text-xs text-muted-foreground/70">(optional — overrides default copy)</span>
+        </Label>
+        <Textarea
+          value={clientDescription}
+          onChange={e => onChange({ clientDescription: e.target.value })}
+          placeholder={`Default: "${defaultDescription || 'No default set'}"`}
+          className="mt-1 bg-input border-border rounded-[10px] min-h-[60px] text-xs"
+          rows={2}
+        />
+      </div>
+    </>
+  );
+};
+
 const AddItemForm = ({ category, order, onSave, onCancel }: {
   category: string;
   order: number;
   onSave: (item: TemplateItem) => void;
   onCancel: () => void;
 }) => {
-  const [form, setForm] = useState({ label: '', description: '', whyWeNeedThis: '', required: false });
+  const [form, setForm] = useState({
+    label: '',
+    description: '',
+    whyWeNeedThis: '',
+    required: false,
+    quantityInstruction: '',
+    clientDescription: '',
+  });
 
   return (
     <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3">
@@ -517,6 +594,12 @@ const AddItemForm = ({ category, order, onSave, onCancel }: {
         <Label className="text-muted-foreground text-sm">Why We Need This</Label>
         <Textarea value={form.whyWeNeedThis} onChange={e => setForm({ ...form, whyWeNeedThis: e.target.value })} className="mt-1 bg-input border-border rounded-[10px] min-h-[60px]" />
       </div>
+      <QuantityAndClientFields
+        quantityInstruction={form.quantityInstruction}
+        clientDescription={form.clientDescription}
+        defaultDescription={form.description}
+        onChange={patch => setForm({ ...form, ...patch })}
+      />
       <div className="flex items-center gap-2">
         <Switch checked={form.required} onCheckedChange={v => setForm({ ...form, required: v })} />
         <span className="text-sm text-muted-foreground">Required</span>
@@ -533,6 +616,9 @@ const AddItemForm = ({ category, order, onSave, onCancel }: {
           active: true,
           isCustom: true,
           order,
+          quantityInstruction: form.quantityInstruction.trim() || undefined,
+          clientDescription: form.clientDescription.trim() || undefined,
+          firmRequired: form.required,
         })}>Save Item</Button>
       </div>
     </motion.div>
@@ -549,6 +635,8 @@ const EditItemForm = ({ item, onSave, onCancel }: {
     description: item.description,
     whyWeNeedThis: item.whyWeNeedThis,
     required: item.required,
+    quantityInstruction: item.quantityInstruction || '',
+    clientDescription: item.clientDescription || '',
   });
 
   return (
@@ -565,6 +653,12 @@ const EditItemForm = ({ item, onSave, onCancel }: {
         <Label className="text-muted-foreground text-sm">Why We Need This</Label>
         <Textarea value={form.whyWeNeedThis} onChange={e => setForm({ ...form, whyWeNeedThis: e.target.value })} className="mt-1 bg-input border-border rounded-[10px] min-h-[60px]" />
       </div>
+      <QuantityAndClientFields
+        quantityInstruction={form.quantityInstruction}
+        clientDescription={form.clientDescription}
+        defaultDescription={form.description}
+        onChange={patch => setForm({ ...form, ...patch })}
+      />
       <div className="flex items-center gap-2">
         <Switch checked={form.required} onCheckedChange={v => setForm({ ...form, required: v })} />
         <span className="text-sm text-muted-foreground">Required</span>
@@ -577,6 +671,9 @@ const EditItemForm = ({ item, onSave, onCancel }: {
           description: form.description.trim(),
           whyWeNeedThis: form.whyWeNeedThis.trim(),
           required: form.required,
+          quantityInstruction: form.quantityInstruction.trim() || undefined,
+          clientDescription: form.clientDescription.trim() || undefined,
+          firmRequired: form.required,
         })}>Save</Button>
       </div>
     </motion.div>

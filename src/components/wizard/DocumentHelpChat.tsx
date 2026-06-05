@@ -81,6 +81,7 @@ interface DocumentHelpChatProps {
   checklistItemId?: string;
   onAgentFilesAdded?: () => void;
   bankExtraUpload?: React.ReactNode;
+  quantityInstruction?: string;
 }
 
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
@@ -245,6 +246,7 @@ const DocumentHelpChat = ({
   onOpenChange,
   language = 'en',
   bankExtraUpload,
+  quantityInstruction,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -352,6 +354,22 @@ const DocumentHelpChat = ({
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInput('');
+
+    // Short-circuit: quantity questions
+    const lower = text.toLowerCase();
+    if (
+      quantityInstruction &&
+      (lower.includes('how many') || lower.includes('how much') || lower.includes('months'))
+    ) {
+      pushMessages({
+        role: 'assistant',
+        kind: 'text',
+        animate: true,
+        content: `Your attorney needs ${quantityInstruction} for this document. When in doubt upload more rather than less.`,
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
