@@ -135,7 +135,7 @@ const PlaidBankConnect = ({
 
     try {
       const res = await supabase.functions.invoke('plaid-create-link-token', {
-        body: { case_id: caseId, client_name: clientName, portal_token: getPortalToken() },
+        body: { case_id: caseId, client_name: clientName, portal_token: getPortalToken(), statement_months: statementMonths },
       });
 
 
