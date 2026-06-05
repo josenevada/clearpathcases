@@ -45,9 +45,8 @@ interface AppCardConfig {
   borderColor: string;
   accentColor: string;
   steps: StepDef[];
-  actionButton?: { label: string; url: string };
   mobileNote?: string;
-  smsBody: string;
+  deepLink: { label: string; url: string };
 }
 
 const APP_CARDS: AppCardConfig[] = [
@@ -58,7 +57,7 @@ const APP_CARDS: AppCardConfig[] = [
     accentColor: '#008CFF',
     steps: VENMO_STEPS,
     mobileNote: "You'll need to do this from the Venmo mobile app",
-    smsBody: "ClearPath: To get your Venmo statement — Open Venmo app → Profile photo → Statements → Last 12 months → Download PDF → Upload at yourclearpath.app",
+    deepLink: { label: 'Open Venmo Statements →', url: 'https://venmo.com/account/settings/statements' },
   },
   {
     name: 'PayPal',
@@ -66,8 +65,7 @@ const APP_CARDS: AppCardConfig[] = [
     borderColor: '#003087',
     accentColor: '#003087',
     steps: PAYPAL_STEPS,
-    actionButton: { label: 'Open PayPal Statements →', url: 'https://www.paypal.com/reports/downloads' },
-    smsBody: "ClearPath: To get your PayPal statements — Go to paypal.com/reports/downloads → Monthly Statements → Download last 12 months → Upload at yourclearpath.app",
+    deepLink: { label: 'Open PayPal Statements →', url: 'https://www.paypal.com/reports/dlog' },
   },
   {
     name: 'Cash App',
@@ -76,7 +74,7 @@ const APP_CARDS: AppCardConfig[] = [
     accentColor: '#00D632',
     steps: CASHAPP_STEPS,
     mobileNote: "You'll need to do this from the Cash App mobile app",
-    smsBody: "ClearPath: To get your Cash App history — Open Cash App → Activity (clock icon) → … menu → Export CSV → Upload at yourclearpath.app",
+    deepLink: { label: 'Open Cash App Activity →', url: 'https://cash.app/account/activity' },
   },
 ];
 
