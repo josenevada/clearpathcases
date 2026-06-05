@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown, ExternalLink, Upload, User, CircleUserRound, FileText, Calendar,
   Download, Globe, LayoutDashboard, Smartphone, Clock, MoreHorizontal, UploadCloud,
-  CheckCircle2, X, AlertTriangle, Loader2, Camera,
+  CheckCircle2, X, AlertTriangle, Camera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedSteps, { type StepDef } from './AnimatedSteps';
-import { sendSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
@@ -46,9 +45,8 @@ interface AppCardConfig {
   borderColor: string;
   accentColor: string;
   steps: StepDef[];
-  actionButton?: { label: string; url: string };
   mobileNote?: string;
-  smsBody: string;
+  deepLink: { label: string; url: string };
 }
 
 const APP_CARDS: AppCardConfig[] = [
@@ -59,7 +57,7 @@ const APP_CARDS: AppCardConfig[] = [
     accentColor: '#008CFF',
     steps: VENMO_STEPS,
     mobileNote: "You'll need to do this from the Venmo mobile app",
-    smsBody: "ClearPath: To get your Venmo statement — Open Venmo app → Profile photo → Statements → Last 12 months → Download PDF → Upload at yourclearpath.app",
+    deepLink: { label: 'Open Venmo Statements →', url: 'https://venmo.com/account/settings/statements' },
   },
   {
     name: 'PayPal',
@@ -67,8 +65,7 @@ const APP_CARDS: AppCardConfig[] = [
     borderColor: '#003087',
     accentColor: '#003087',
     steps: PAYPAL_STEPS,
-    actionButton: { label: 'Open PayPal Statements →', url: 'https://www.paypal.com/reports/downloads' },
-    smsBody: "ClearPath: To get your PayPal statements — Go to paypal.com/reports/downloads → Monthly Statements → Download last 12 months → Upload at yourclearpath.app",
+    deepLink: { label: 'Open PayPal Statements →', url: 'https://www.paypal.com/reports/dlog' },
   },
   {
     name: 'Cash App',
@@ -77,7 +74,7 @@ const APP_CARDS: AppCardConfig[] = [
     accentColor: '#00D632',
     steps: CASHAPP_STEPS,
     mobileNote: "You'll need to do this from the Cash App mobile app",
-    smsBody: "ClearPath: To get your Cash App history — Open Cash App → Activity (clock icon) → … menu → Export CSV → Upload at yourclearpath.app",
+    deepLink: { label: 'Open Cash App Activity →', url: 'https://cash.app/account/activity' },
   },
 ];
 
@@ -101,7 +98,6 @@ const DigitalWalletStep = ({
 }: DigitalWalletStepProps) => {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [getDocOpen, setGetDocOpen] = useState(false);
-  const [sendingSms, setSendingSms] = useState<string | null>(null);
   const [naChecked, setNaChecked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -115,29 +111,6 @@ const DigitalWalletStep = ({
       next.has(name) ? next.delete(name) : next.add(name);
       return next;
     });
-  };
-
-  const handleSendSms = async (app: AppCardConfig) => {
-    if (!clientPhone) {
-      toast.error('No phone number on file. Please contact your attorney\'s office to add one.');
-      return;
-    }
-    setSendingSms(app.name);
-    try {
-      const { checkSmsGate } = await import('@/lib/sms');
-      const gate = await checkSmsGate(caseId);
-      if (!gate.allowed) {
-        toast.error(gate.reason || 'Cannot send SMS right now. Please try again later.');
-        return;
-      }
-      await sendSms({ to: clientPhone, body: app.smsBody, caseId, clientName });
-      toast.success('Instructions sent to your phone!');
-    } catch (err) {
-      console.error('SMS error:', err);
-      toast.error('Could not send SMS. Please try again.');
-    } finally {
-      setSendingSms(null);
-    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,30 +199,14 @@ const DigitalWalletStep = ({
                               </p>
                             )}
 
-                            {app.actionButton && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => window.open(app.actionButton!.url, '_blank', 'noopener,noreferrer')}
-                              >
-                                {app.actionButton.label}
-                              </Button>
-                            )}
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full border-primary/30 text-primary hover:bg-primary/5"
-                              disabled={sendingSms === app.name}
-                              onClick={() => handleSendSms(app)}
+                            <a
+                              href={app.deepLink.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors mt-3"
                             >
-                              {sendingSms === app.name ? (
-                                <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Sending…</>
-                              ) : (
-                                '📱 Text me these steps'
-                              )}
-                            </Button>
+                              {app.deepLink.label}
+                            </a>
                           </div>
                         </motion.div>
                       )}
