@@ -199,30 +199,14 @@ const DigitalWalletStep = ({
                               </p>
                             )}
 
-                            {app.actionButton && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => window.open(app.actionButton!.url, '_blank', 'noopener,noreferrer')}
-                              >
-                                {app.actionButton.label}
-                              </Button>
-                            )}
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full border-primary/30 text-primary hover:bg-primary/5"
-                              disabled={sendingSms === app.name}
-                              onClick={() => handleSendSms(app)}
+                            <a
+                              href={app.deepLink.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors mt-3"
                             >
-                              {sendingSms === app.name ? (
-                                <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Sending…</>
-                              ) : (
-                                '📱 Text me these steps'
-                              )}
-                            </Button>
+                              {app.deepLink.label}
+                            </a>
                           </div>
                         </motion.div>
                       )}
