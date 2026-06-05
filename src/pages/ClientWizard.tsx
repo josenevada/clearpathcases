@@ -1773,14 +1773,24 @@ const ClientWizard = () => {
           ) : currentItem ? (
             <motion.div key={currentItem.id} {...pageTransition} className="max-w-md lg:max-w-xl mx-auto w-full">
               <header className="mb-6">
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2 leading-tight">
-                  {currentItem.label}
-                </h2>
-                {WARM_SUBTITLES[currentItem.label] && (
-                  <p className="text-primary/80 text-sm font-body leading-relaxed">
-                    {WARM_SUBTITLES[currentItem.label]}
-                  </p>
-                )}
+                {(() => {
+                  const displayLabel = currentItem.quantityInstruction
+                    ? `${currentItem.label.replace(/\s*\([^)]*\)\s*$/, '').trim()} (${currentItem.quantityInstruction})`
+                    : currentItem.label;
+                  const itemDescription = currentItem.clientDescription?.trim() || WARM_SUBTITLES[currentItem.label] || '';
+                  return (
+                    <>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2 leading-tight">
+                        {displayLabel}
+                      </h2>
+                      {itemDescription && (
+                        <p className="text-primary/80 text-sm font-body leading-relaxed">
+                          {itemDescription}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
                 {(() => {
                   const sectionItems = caseData.checklist.filter(i => i.category === currentItem.category);
                   const sectionDone = sectionItems.filter(isItemEffectivelyComplete).length;
