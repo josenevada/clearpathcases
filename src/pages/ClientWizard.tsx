@@ -18,7 +18,7 @@ import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, parseMonthsFromInstruction, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, parseMonthsFromInstruction, formatItemDisplayLabel, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { getPlanLimits } from '@/lib/plan-limits';
 
 
