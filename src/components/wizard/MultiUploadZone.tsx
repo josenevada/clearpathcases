@@ -81,8 +81,16 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
                     <span className="text-[10px] font-bold text-muted-foreground">PDF</span>
                   </button>
                 ) : null}
-                <span className="flex-1 text-sm text-foreground truncate font-body">{f.name}</span>
+                <span className="flex-1 text-sm text-foreground truncate font-body flex items-center gap-1.5">
+                  <span className="truncate">{f.name}</span>
+                  {f.uploadedBy === 'plaid' && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium flex-shrink-0">
+                      Plaid
+                    </span>
+                  )}
+                </span>
                 {validationIcon}
+                {f.uploadedBy !== 'plaid' && (
                 <button
                   onClick={() => onFileDelete(f.id)}
                   className={`rounded-full transition-colors flex-shrink-0 ${
@@ -94,6 +102,7 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
                 >
                   <X className={`text-destructive ${flagged ? 'w-4 h-4' : 'w-3.5 h-3.5 opacity-60'}`} />
                 </button>
+                )}
               </div>
             </motion.div>
           );
