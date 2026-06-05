@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import DocumentViewer from '@/components/case/DocumentViewer';
 import { useSubscription } from '@/lib/subscription';
+import { useAuth } from '@/lib/auth';
 import { getPlanLimits } from '@/lib/plan-limits';
 import { sendCorrectionRequest } from '@/lib/notifications';
 
@@ -96,6 +97,7 @@ const SignedUrlViewer = ({ storagePath, fileName }: { storagePath: string; fileN
 
 const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
   const { plan } = useSubscription();
+  const { user } = useAuth();
   const bulkActionsEnabled = getPlanLimits(plan).bulkActions;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -586,7 +588,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           case_id: caseData.id,
           event_type: 'file_approved',
           actor_role: 'attorney',
-          actor_name: caseData.assignedAttorney,
+          actor_name: user?.fullName || caseData.assignedAttorney || 'Staff',
           description: `Attorney approved ${entry.item.label}`,
           item_id: entry.item.id,
         }),
