@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown, ExternalLink, Upload, User, CircleUserRound, FileText, Calendar,
   Download, Globe, LayoutDashboard, Smartphone, Clock, MoreHorizontal, UploadCloud,
-  CheckCircle2, X, AlertTriangle, Loader2, Camera,
+  CheckCircle2, X, AlertTriangle, Camera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedSteps, { type StepDef } from './AnimatedSteps';
-import { sendSms } from '@/lib/sms';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
