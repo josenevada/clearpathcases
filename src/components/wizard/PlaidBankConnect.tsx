@@ -17,6 +17,7 @@ interface PlaidBankConnectProps {
   onManualUploadClick: () => void;
   manualUploadContent: React.ReactNode;
   onContinue?: () => void;
+  statementMonths?: number;
 }
 
 export interface PlaidResult {
