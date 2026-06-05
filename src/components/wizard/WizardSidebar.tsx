@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, CheckCircle2, Circle, AlertCircle, MinusCircle, X, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CATEGORIES, isItemEffectivelyComplete, type ChecklistItem } from '@/lib/store';
+import { CATEGORIES, isItemEffectivelyComplete, formatItemDisplayLabel, type ChecklistItem } from '@/lib/store';
 
 interface WizardSidebarProps {
   checklist: ChecklistItem[];
@@ -98,7 +98,9 @@ const WizardSidebar = ({ checklist, currentCategoryIdx, currentItemIdx, onNaviga
                   >
                     {catItems.map((item, itemIdx) => {
                       const isActive = catIdx === currentCategoryIdx && itemIdx === currentItemIdx;
-                      const label = item.label.length > 30 ? item.label.slice(0, 30) + '…' : item.label;
+                      const fullLabel = formatItemDisplayLabel(item);
+                      const label = fullLabel.length > 30 ? fullLabel.slice(0, 30) + '…' : fullLabel;
+
 
                       return (
                         <button

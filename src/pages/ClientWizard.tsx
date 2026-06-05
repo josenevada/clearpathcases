@@ -18,7 +18,7 @@ import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, parseMonthsFromInstruction, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, parseMonthsFromInstruction, formatItemDisplayLabel, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { getPlanLimits } from '@/lib/plan-limits';
 
 
@@ -1774,9 +1774,8 @@ const ClientWizard = () => {
             <motion.div key={currentItem.id} {...pageTransition} className="max-w-md lg:max-w-xl mx-auto w-full">
               <header className="mb-6">
                 {(() => {
-                  const displayLabel = currentItem.quantityInstruction
-                    ? `${currentItem.label.replace(/\s*\([^)]*\)\s*$/, '').trim()} (${currentItem.quantityInstruction})`
-                    : currentItem.label;
+                  const displayLabel = formatItemDisplayLabel(currentItem);
+
                   const itemDescription = currentItem.clientDescription?.trim() || WARM_SUBTITLES[currentItem.label] || '';
                   return (
                     <>

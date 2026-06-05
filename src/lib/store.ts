@@ -204,6 +204,16 @@ export const parseMonthsFromInstruction = (instruction?: string): number => {
   return 6;
 };
 
+export const formatItemDisplayLabel = (item: { label: string; quantityInstruction?: string }): string => {
+  if (!item.quantityInstruction) return item.label;
+  const base = item.label.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const qty = item.quantityInstruction;
+  const formatted = qty.charAt(0).toUpperCase() + qty.slice(1);
+  return `${base} (${formatted})`;
+};
+
+
+
 export interface NamedTemplate {
   id: string;
   name: string;
