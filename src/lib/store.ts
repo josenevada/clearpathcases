@@ -390,6 +390,8 @@ export const buildChecklistFromTemplates = (): ChecklistItem[] => {
       correctionRequest: undefined,
       resubmittedAt: undefined,
       completed: false,
+      quantityInstruction: t.quantityInstruction,
+      clientDescription: t.clientDescription,
     }));
 };
 
