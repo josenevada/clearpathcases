@@ -246,6 +246,7 @@ const DocumentHelpChat = ({
   onOpenChange,
   language = 'en',
   bankExtraUpload,
+  quantityInstruction,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
