@@ -82,6 +82,8 @@ export interface ChecklistItem {
   notApplicableMarkedBy?: string;
   notApplicableAt?: string;
   isCustom?: boolean;
+  quantityInstruction?: string;
+  clientDescription?: string;
 }
 
 export interface ActivityLogEntry {
