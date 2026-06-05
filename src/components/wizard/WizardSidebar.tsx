@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, CheckCircle2, Circle, AlertCircle, MinusCircle, X, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CATEGORIES, isItemEffectivelyComplete, type ChecklistItem } from '@/lib/store';
+import { CATEGORIES, isItemEffectivelyComplete, formatItemDisplayLabel, type ChecklistItem } from '@/lib/store';
 
 interface WizardSidebarProps {
   checklist: ChecklistItem[];
