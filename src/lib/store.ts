@@ -535,6 +535,8 @@ export const buildCustomChecklist = (answers: IntakeAnswers, chapterType: Chapte
         correctionRequest: undefined,
         resubmittedAt: undefined,
         completed: false,
+        quantityInstruction: t.quantityInstruction,
+        clientDescription: t.clientDescription,
       };
     });
 
