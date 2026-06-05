@@ -188,7 +188,19 @@ export interface TemplateItem {
   active: boolean;
   isCustom: boolean;
   order: number;
+  quantityInstruction?: string;
+  clientDescription?: string;
+  firmRequired?: boolean;
 }
+
+export const parseMonthsFromInstruction = (instruction?: string): number => {
+  if (!instruction) return 6;
+  const match = instruction.match(/(\d+)\s*month/i);
+  if (match) return Math.min(Math.max(parseInt(match[1], 10), 1), 24);
+  if (instruction.includes('3')) return 3;
+  if (instruction.includes('12')) return 12;
+  return 6;
+};
 
 export interface NamedTemplate {
   id: string;
