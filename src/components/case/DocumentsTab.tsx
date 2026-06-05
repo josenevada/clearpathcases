@@ -588,7 +588,7 @@ const DocumentsTab = ({ caseData, viewRole, onRefresh }: DocumentsTabProps) => {
           case_id: caseData.id,
           event_type: 'file_approved',
           actor_role: 'attorney',
-          actor_name: caseData.assignedAttorney,
+          actor_name: user?.fullName || caseData.assignedAttorney || 'Staff',
           description: `Attorney approved ${entry.item.label}`,
           item_id: entry.item.id,
         }),
