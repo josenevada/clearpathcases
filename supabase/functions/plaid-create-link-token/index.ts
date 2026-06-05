@@ -32,7 +32,7 @@ serve(async (req) => {
 
   try {
     console.log('plaid-create-link-token invoked, redirect_uri will be: https://yourclearpath.app');
-    const { case_id, client_name, portal_token } = await req.json();
+    const { case_id, client_name, portal_token, statement_months = 6 } = await req.json();
 
     if (!case_id) {
       return new Response(JSON.stringify({ error: 'case_id is required' }), {
