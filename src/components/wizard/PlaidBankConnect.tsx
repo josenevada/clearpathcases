@@ -37,6 +37,7 @@ const PlaidBankConnect = ({
   onManualUploadClick,
   manualUploadContent,
   onContinue,
+  statementMonths,
 }: PlaidBankConnectProps) => {
   const [state, setState] = useState<PlaidState>('idle');
   const [linkToken, setLinkToken] = useState<string | null>(null);
