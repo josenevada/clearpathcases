@@ -67,8 +67,9 @@ serve(async (req) => {
         : 'https://sandbox.plaid.com';
 
     const today = new Date();
-    const sixMonthsAgo = new Date(today);
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const months = Math.min(Math.max(Number(statement_months) || 6, 1), 24);
+    const startDate = new Date(today);
+    startDate.setMonth(startDate.getMonth() - months);
 
     const plaidRequestBody = {
       client_id: PLAID_CLIENT_ID,
