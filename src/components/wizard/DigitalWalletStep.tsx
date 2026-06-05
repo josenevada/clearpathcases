@@ -57,7 +57,7 @@ const APP_CARDS: AppCardConfig[] = [
     accentColor: '#008CFF',
     steps: VENMO_STEPS,
     mobileNote: "You'll need to do this from the Venmo mobile app",
-    deepLink: { label: 'Open Venmo Statements →', url: 'https://venmo.com/account/settings/statements' },
+    deepLink: { label: 'Open Venmo →', url: 'https://account.venmo.com/sign-in' },
   },
   {
     name: 'PayPal',
