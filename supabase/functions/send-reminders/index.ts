@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   }
 
   // Fetch all non-ready cases
-  const casesRes = await fetch(`${supabaseUrl}/rest/v1/cases?ready_to_file=eq.false&select=*`, {
+  const casesRes = await fetch(`${supabaseUrl}/rest/v1/cases?ready_to_file=eq.false&status=eq.active&select=id,client_name,client_email,client_phone,case_code,created_at,last_client_activity,filing_deadline,firm_id`, {
     headers: {
       apikey: serviceKey,
       Authorization: `Bearer ${serviceKey}`,
