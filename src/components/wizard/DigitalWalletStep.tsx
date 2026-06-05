@@ -98,7 +98,6 @@ const DigitalWalletStep = ({
 }: DigitalWalletStepProps) => {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [getDocOpen, setGetDocOpen] = useState(false);
-  const [sendingSms, setSendingSms] = useState<string | null>(null);
   const [naChecked, setNaChecked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -112,29 +111,6 @@ const DigitalWalletStep = ({
       next.has(name) ? next.delete(name) : next.add(name);
       return next;
     });
-  };
-
-  const handleSendSms = async (app: AppCardConfig) => {
-    if (!clientPhone) {
-      toast.error('No phone number on file. Please contact your attorney\'s office to add one.');
-      return;
-    }
-    setSendingSms(app.name);
-    try {
-      const { checkSmsGate } = await import('@/lib/sms');
-      const gate = await checkSmsGate(caseId);
-      if (!gate.allowed) {
-        toast.error(gate.reason || 'Cannot send SMS right now. Please try again later.');
-        return;
-      }
-      await sendSms({ to: clientPhone, body: app.smsBody, caseId, clientName });
-      toast.success('Instructions sent to your phone!');
-    } catch (err) {
-      console.error('SMS error:', err);
-      toast.error('Could not send SMS. Please try again.');
-    } finally {
-      setSendingSms(null);
-    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
