@@ -1774,9 +1774,8 @@ const ClientWizard = () => {
             <motion.div key={currentItem.id} {...pageTransition} className="max-w-md lg:max-w-xl mx-auto w-full">
               <header className="mb-6">
                 {(() => {
-                  const displayLabel = currentItem.quantityInstruction
-                    ? `${currentItem.label.replace(/\s*\([^)]*\)\s*$/, '').trim()} (${currentItem.quantityInstruction})`
-                    : currentItem.label;
+                  const displayLabel = formatItemDisplayLabel(currentItem);
+
                   const itemDescription = currentItem.clientDescription?.trim() || WARM_SUBTITLES[currentItem.label] || '';
                   return (
                     <>
