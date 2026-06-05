@@ -2423,6 +2423,7 @@ const ClientWizard = () => {
           documentLabel={currentItem.label}
           category={currentItem.category}
           chapterType={caseData.chapterType}
+          quantityInstruction={currentItem.quantityInstruction}
           isOpen={alexChatOpen}
           onOpenChange={setAlexChatOpen}
           caseId={caseData.id}
