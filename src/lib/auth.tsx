@@ -113,10 +113,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        setLoading(true);
+      (event, nextSession) => {
+        // Only flip the global loading flag on events that actually change
+        // identity. TOKEN_REFRESHED / USER_UPDATED fire frequently (tab focus,
+        // refetches) and would otherwise unmount protected routes and cause
+        // a blank flash when navigating between cases.
+        const identityChange =
+          event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION';
+        if (identityChange) setLoading(true);
         setTimeout(() => {
-          void hydrateSession(nextSession);
+          if (identityChange) {
+            void hydrateSession(nextSession);
+          } else {
+            setSession(nextSession);
+          }
         }, 0);
       }
     );
