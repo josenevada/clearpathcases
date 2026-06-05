@@ -2419,7 +2419,7 @@ const ClientWizard = () => {
           bankExtraUpload={
             isBankStatements && multiConfig ? (
               <MultiUploadZone
-                files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
+                files={currentItem.files}
                 config={multiConfig}
                 onFileAdd={(file: File) => {
                   const existing = currentItem.files.find(f => f.name === file.name);
