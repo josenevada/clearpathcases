@@ -32,7 +32,7 @@ serve(async (req) => {
 
   try {
     console.log('plaid-create-link-token invoked, redirect_uri will be: https://yourclearpath.app');
-    const { case_id, client_name, portal_token, statement_months = 6 } = await req.json();
+    const { case_id, client_name, portal_token } = await req.json();
 
     if (!case_id) {
       return new Response(JSON.stringify({ error: 'case_id is required' }), {
@@ -67,9 +67,8 @@ serve(async (req) => {
         : 'https://sandbox.plaid.com';
 
     const today = new Date();
-    const months = Math.min(Math.max(Number(statement_months) || 6, 1), 24);
-    const startDate = new Date(today);
-    startDate.setMonth(startDate.getMonth() - months);
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 6);
 
     const plaidRequestBody = {
       client_id: PLAID_CLIENT_ID,
