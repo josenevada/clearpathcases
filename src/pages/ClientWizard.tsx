@@ -2506,6 +2506,8 @@ const ClientWizard = () => {
           isOpen={alexChatOpen}
           onOpenChange={setAlexChatOpen}
           caseId={caseData.id}
+          proactiveMessage={categoryCompleteMessage}
+          onProactiveMessageShown={() => setCategoryCompleteMessage(null)}
           checklistItemId={currentItem.id}
           bankExtraUpload={
             isBankStatements && multiConfig ? (
