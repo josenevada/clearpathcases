@@ -2000,7 +2000,6 @@ const ClientWizard = () => {
                     caseCode={caseCode || caseData.caseCode}
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
-                    statementMonths={6}
                     onSuccess={(_plaidResult) => {
                       // The plaid-exchange-token edge function already:
                       //  - inserts file rows for each retrieved statement
