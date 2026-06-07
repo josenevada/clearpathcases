@@ -275,7 +275,8 @@ const PlaidBankConnect = ({
     );
   }
 
-  // ─── IDLE / ERROR STATE — show both options ────────────────
+  // ─── IDLE / CONNECTED / ERROR STATE — show both options ────────────────
+  const isConnected = plaidFiles.length > 0;
   return (
     <div className="space-y-4">
       {/* Option 1: Connect automatically */}
@@ -284,64 +285,111 @@ const PlaidBankConnect = ({
           <Zap className="w-5 h-5 text-primary" />
           <h3 className="font-display text-lg font-bold text-foreground">Get your statements automatically</h3>
         </div>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          Connect your bank account and we'll retrieve the last 6 months of statements in seconds. No downloading required.
-        </p>
 
-        {/* Trust signals */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="w-3.5 h-3.5 text-primary" /> Encrypted
-          </span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Shield className="w-3.5 h-3.5 text-primary" /> Read only
-          </span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> No login stored
-          </span>
-        </div>
+        {isConnected ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-success">
+              <CheckCircle className="w-4 h-4" />
+              <span className="font-medium">Connected — statements retrieved automatically</span>
+            </div>
 
-        {state === 'error' && errorMsg && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
-            <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-warning leading-relaxed">{errorMsg}</p>
+            <div className="space-y-2">
+              {plaidFiles.map(file => (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/50 border border-border"
+                >
+                  <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm text-foreground truncate flex-1">{file.name}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium flex-shrink-0">
+                    Plaid
+                  </span>
+                  <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleDisconnect}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              Disconnect and remove statements
+            </button>
           </div>
-        )}
+        ) : (
+          <>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Connect your bank account and we'll retrieve the last 6 months of statements in seconds. No downloading required.
+            </p>
 
-        <Button
-          onClick={handleConnectClick}
-          size="lg"
-          className="w-full"
-          disabled={state === 'loading-token' || state === 'link-open'}
-        >
-          {state === 'loading-token' ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting…
-            </>
-          ) : (
-            <>
-              <Zap className="w-4 h-4 mr-2" /> Connect Bank Account
-            </>
-          )}
-        </Button>
+            {/* Trust signals */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Lock className="w-3.5 h-3.5 text-primary" /> Encrypted
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Shield className="w-3.5 h-3.5 text-primary" /> Read only
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> No login stored
+              </span>
+            </div>
+
+            {state === 'error' && errorMsg && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-warning leading-relaxed">{errorMsg}</p>
+              </div>
+            )}
+
+            <Button
+              onClick={handleConnectClick}
+              size="lg"
+              className="w-full"
+              disabled={state === 'loading-token' || state === 'link-open'}
+            >
+              {state === 'loading-token' ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting…
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" /> Connect Bank Account
+                </>
+              )}
+            </Button>
+          </>
+        )}
       </div>
 
-      {/* Option 2: Upload manually */}
+      {/* Option 2: Upload manually (or "add another bank" when connected) */}
       <div className="rounded-xl border border-border p-5 space-y-3 relative">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UploadCloud className="w-5 h-5 text-muted-foreground" />
-            <h3 className="font-display text-lg font-bold text-foreground">Upload statements manually</h3>
-          </div>
-          <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
-            Traditional method
-          </Badge>
+          {isConnected ? (
+            <div>
+              <p className="font-medium text-sm text-foreground">Add statements from other banks</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Have accounts at other banks or credit unions? Upload those statements here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <UploadCloud className="w-5 h-5 text-muted-foreground" />
+                <h3 className="font-display text-lg font-bold text-foreground">Upload statements manually</h3>
+              </div>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
+                Traditional method
+              </Badge>
+            </>
+          )}
         </div>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          Download your statements from your bank's website and upload them here.
-        </p>
+        {!isConnected && (
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Download your statements from your bank's website and upload them here.
+          </p>
+        )}
 
-        {(showManual || state === 'error') ? (
+        {(showManual || state === 'error' || isConnected) ? (
           <div className="pt-2">
             {manualUploadContent}
           </div>
@@ -358,5 +406,6 @@ const PlaidBankConnect = ({
     </div>
   );
 };
+
 
 export default PlaidBankConnect;
