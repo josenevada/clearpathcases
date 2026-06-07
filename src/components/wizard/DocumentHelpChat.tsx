@@ -82,7 +82,46 @@ interface DocumentHelpChatProps {
   onAgentFilesAdded?: () => void;
   bankExtraUpload?: React.ReactNode;
   quantityInstruction?: string;
+  proactiveMessage?: string | null;
+  onProactiveMessageShown?: () => void;
 }
+
+const getStepIntro = (label: string, lang: 'en' | 'es'): string => {
+  const l = label.toLowerCase();
+  if (/pay stub/i.test(l)) return lang === 'es'
+    ? 'Hola — estos vienen del portal de nómina de tu empleador. Si usas ADP, Workday o Paychex puedo llevarte directamente allí.'
+    : "Hey — these come from your employer's payroll portal. If you use ADP, Workday, or Paychex I can take you straight there.";
+  if (/w-?2/i.test(l)) return lang === 'es'
+    ? 'Hola — tu W-2 viene del mismo lugar que tus talones de pago, solo en una sección diferente. Puedo ayudarte a encontrarlo.'
+    : 'Hey — your W-2 comes from the same place as your pay stubs, just a different section. I can help you find it.';
+  if (/tax return/i.test(l)) return lang === 'es'
+    ? 'Hola — la mayoría de las personas presentaron con TurboTax o H&R Block. Puedo llevarte directamente a tu cuenta.'
+    : 'Hey — most people filed with TurboTax or H&R Block. I can take you straight to your account.';
+  if (/checking|savings|bank statement/i.test(l)) return lang === 'es'
+    ? 'Hola — puedes conectar tu banco automáticamente — sin descargas ni escaneos. O sube los PDFs manualmente.'
+    : 'Hey — you can connect your bank automatically — no downloading or scanning needed. Or upload PDFs manually.';
+  if (/government.issued|driver|passport|\bid\b/i.test(l)) return lang === 'es'
+    ? 'Hola — una foto clara con buena iluminación funciona bien. Coloca tu identificación plana y asegúrate de que las 4 esquinas sean visibles.'
+    : 'Hey — a clear photo in good lighting works fine. Lay your ID flat and make sure all four corners are visible.';
+  if (/social security/i.test(l)) return lang === 'es'
+    ? 'Hola — necesitamos ver el frente de tu tarjeta del Seguro Social. Si no la tienes, una carta del Seguro Social que muestre tu número también funciona.'
+    : "Hey — we need to see the front of your Social Security card. If you don't have it, a Social Security letter showing your number works too.";
+  if (/employer name/i.test(l)) return lang === 'es'
+    ? 'Hola — solo escribe el nombre de tu empleador actual. Si tienes más de un trabajo, incluye todos.'
+    : "Hey — just type your current employer's name. If you have more than one job, include all of them.";
+  if (/digital wallet|venmo|paypal|cash app/i.test(l)) return lang === 'es'
+    ? 'Hola — si has usado Venmo, PayPal o Cash App, el tribunal necesita ver esa actividad también. Expande la app que usas abajo.'
+    : "Hey — if you've used Venmo, PayPal, or Cash App, the court needs to see that activity too. Expand the app you use below.";
+  if (/mortgage/i.test(l)) return lang === 'es'
+    ? 'Hola — esto es el estado de cuenta mensual de tu hipoteca — no la escritura. Búscalo en el correo o en el portal en línea de tu prestamista.'
+    : "Hey — this is your monthly mortgage statement — not the deed. Find it in the mail or your lender's online portal.";
+  if (/vehicle|car|auto/i.test(l)) return lang === 'es'
+    ? 'Hola — necesitamos el título del vehículo o el registro más reciente para cualquier vehículo que poseas.'
+    : 'Hey — we need the vehicle title or most recent registration for any vehicle you own.';
+  return lang === 'es'
+    ? 'Hola — ¿qué puedo ayudarte a encontrar? Puedo decirte dónde conseguir este documento o cómo debería verse.'
+    : 'Hey — what can I help you find? I can tell you where to get this document or what it should look like.';
+};
 
 const ALEX_INTRO_EN = "Hey — what can I help you find? I can tell you where to get this document, what it should look like, or anything else you're stuck on.";
 const ALEX_INTRO_ES = "Hola — ¿qué puedo ayudarte a encontrar? Puedo decirte dónde conseguir este documento, cómo debería verse, o cualquier otra cosa con la que estés atorado.";
@@ -247,6 +286,8 @@ const DocumentHelpChat = ({
   language = 'en',
   bankExtraUpload,
   quantityInstruction,
+  proactiveMessage,
+  onProactiveMessageShown,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -266,11 +307,18 @@ const DocumentHelpChat = ({
   const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
-    setMessages([{ role: 'assistant', content: ALEX_INTRO, kind: 'text' }]);
+    setMessages([{ role: 'assistant', content: getStepIntro(documentLabel, language), kind: 'text' }]);
     setInput('');
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
+
+  useEffect(() => {
+    if (!proactiveMessage) return;
+    setMessages(prev => [...prev, { role: 'assistant', content: proactiveMessage, kind: 'text', animate: true }]);
+    onProactiveMessageShown?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proactiveMessage]);
 
   useEffect(() => {
     if (scrollRef.current) {

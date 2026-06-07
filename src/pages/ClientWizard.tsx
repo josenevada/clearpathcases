@@ -262,6 +262,11 @@ const ClientWizard = () => {
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alexChatOpen, setAlexChatOpen] = useState(false);
+  const [stuckTimer, setStuckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [completedCategories, setCompletedCategories] = useState<Set<string>>(new Set());
+  const [categoryCompleteMessage, setCategoryCompleteMessage] = useState<string | null>(null);
+  const [hasShown80Nudge, setHasShown80Nudge] = useState(false);
+  const [wizardStartTime] = useState(() => Date.now());
   const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
   const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
   const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
@@ -442,6 +447,8 @@ const ClientWizard = () => {
         setCaseData(c);
         setLanguage(((caseRow as any).client_language === 'es' ? 'es' : 'en'));
         setIsLoading(false);
+        setHasShown80Nudge(false);
+        setCompletedCategories(new Set());
         lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
 
         if (targetFixItemId) {
@@ -547,6 +554,76 @@ const ClientWizard = () => {
     setShowNaFlow(false);
     setNaClientReason(null);
   }, [currentCategoryIdx, currentItemIdx, caseData]);
+
+  // ─── Stuck detection: open Alex after 90s with no upload ──────────────
+  useEffect(() => {
+    if (!caseData) return;
+    const catItems = caseData.checklist.filter(i => i.category === CATEGORIES[currentCategoryIdx]);
+    const item = catItems[currentItemIdx];
+    if (!item) return;
+    if (item.files.length > 0) return;
+    if (item.completed) return;
+
+    const timer = setTimeout(() => {
+      // Don't fire in the first 30s of the wizard
+      if (Date.now() - wizardStartTime < 30000) return;
+      setAlexChatOpen(true);
+    }, 90000);
+
+    setStuckTimer(timer);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCategoryIdx, currentItemIdx, caseData?.id]);
+
+  // ─── Category completion + 80% nudge ──────────────────────────────────
+  useEffect(() => {
+    if (!caseData) return;
+
+    // Per-category completion
+    CATEGORIES.forEach(cat => {
+      if (completedCategories.has(cat)) return;
+      const catItems = caseData.checklist.filter(i => i.category === cat && !i.notApplicable);
+      if (catItems.length === 0) return;
+      const allDone = catItems.every(i => i.completed || !i.required);
+      if (!allDone) return;
+
+      setCompletedCategories(prev => new Set([...prev, cat]));
+
+      const remaining = CATEGORIES.filter(c => {
+        if (c === cat) return false;
+        const items = caseData.checklist.filter(i => i.category === c && !i.notApplicable);
+        return items.some(i => !i.completed && i.required);
+      });
+
+      setTimeout(() => {
+        setAlexChatOpen(true);
+        setCategoryCompleteMessage(
+          remaining.length === 0
+            ? `${cat} is done ✓ You're almost there — just a few more items left!`
+            : `${cat} is done ✓ ${remaining.length} section${remaining.length > 1 ? 's' : ''} to go — you're making great progress.`
+        );
+      }, 800);
+    });
+
+    // 80% overall nudge (fires once)
+    const allRequired = caseData.checklist.filter(i => i.required && !i.notApplicable);
+    const completed = allRequired.filter(i => i.completed);
+    if (allRequired.length === 0) return;
+    const pct = completed.length / allRequired.length;
+    const remainingCount = allRequired.length - completed.length;
+    if (pct >= 0.8 && pct < 1.0 && !hasShown80Nudge && remainingCount > 0) {
+      setHasShown80Nudge(true);
+      setTimeout(() => {
+        setAlexChatOpen(true);
+        setCategoryCompleteMessage(
+          `You're almost there — just ${remainingCount} document${remainingCount > 1 ? 's' : ''} left. Most people finish in under 5 minutes from here.`
+        );
+      }, 800);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseData?.checklist]);
+
+
 
 
   if (isLoading || !caseData) {
@@ -656,6 +733,7 @@ const ClientWizard = () => {
   const handleFileAdd = async (file: File, replaceFileId?: string, explicitLabel?: string | null) => {
     if (!currentItem) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    if (stuckTimer) { clearTimeout(stuckTimer); setStuckTimer(null); }
     setPendingDuplicate(null);
 
     // Multi-upload items: skip auto-label step
@@ -2428,6 +2506,8 @@ const ClientWizard = () => {
           isOpen={alexChatOpen}
           onOpenChange={setAlexChatOpen}
           caseId={caseData.id}
+          proactiveMessage={categoryCompleteMessage}
+          onProactiveMessageShown={() => setCategoryCompleteMessage(null)}
           checklistItemId={currentItem.id}
           bankExtraUpload={
             isBankStatements && multiConfig ? (
