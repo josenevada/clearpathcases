@@ -447,6 +447,8 @@ const ClientWizard = () => {
         setCaseData(c);
         setLanguage(((caseRow as any).client_language === 'es' ? 'es' : 'en'));
         setIsLoading(false);
+        setHasShown80Nudge(false);
+        setCompletedCategories(new Set());
         lastMilestoneRef.current = Math.floor(calculateProgress(c) / 25) * 25;
 
         if (targetFixItemId) {
