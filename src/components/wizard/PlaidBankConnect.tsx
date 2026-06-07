@@ -42,6 +42,7 @@ const PlaidBankConnect = ({
   onManualUploadClick,
   manualUploadContent,
   onContinue,
+  plaidFiles = [],
 }: PlaidBankConnectProps) => {
   const [state, setState] = useState<PlaidState>('idle');
   const [linkToken, setLinkToken] = useState<string | null>(null);
