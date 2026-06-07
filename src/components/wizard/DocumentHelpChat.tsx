@@ -286,6 +286,8 @@ const DocumentHelpChat = ({
   language = 'en',
   bankExtraUpload,
   quantityInstruction,
+  proactiveMessage,
+  onProactiveMessageShown,
 }: DocumentHelpChatProps) => {
   const ALEX_INTRO = language === 'es' ? ALEX_INTRO_ES : ALEX_INTRO_EN;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -305,11 +307,18 @@ const DocumentHelpChat = ({
   const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
-    setMessages([{ role: 'assistant', content: ALEX_INTRO, kind: 'text' }]);
+    setMessages([{ role: 'assistant', content: getStepIntro(documentLabel, language), kind: 'text' }]);
     setInput('');
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentLabel, language]);
+
+  useEffect(() => {
+    if (!proactiveMessage) return;
+    setMessages(prev => [...prev, { role: 'assistant', content: proactiveMessage, kind: 'text', animate: true }]);
+    onProactiveMessageShown?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proactiveMessage]);
 
   useEffect(() => {
     if (scrollRef.current) {
