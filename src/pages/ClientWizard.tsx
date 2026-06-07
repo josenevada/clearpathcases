@@ -2042,10 +2042,11 @@ const ClientWizard = () => {
                     }}
                     onManualUploadClick={() => {}}
                     onContinue={() => checkMilestoneAndAdvance(caseData)}
+                    plaidFiles={currentItem.files.filter(f => f.uploadedBy === 'plaid')}
                     manualUploadContent={
                       multiConfig ? (
                         <MultiUploadZone
-                          files={currentItem.files}
+                          files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
                           config={multiConfig}
                           onFileAdd={(file: File) => {
                             const existing = currentItem.files.find(f => f.name === file.name);
@@ -2082,14 +2083,16 @@ const ClientWizard = () => {
                       )}
                     </div>
                   )}
-                  <div className="flex flex-col items-center gap-2 mt-2">
-                    <button
-                      onClick={() => setShowNaFlow(true)}
-                      className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
-                    >
-                      I don't have this document
-                    </button>
-                  </div>
+                  {currentItem.files.filter(f => f.uploadedBy === 'plaid').length === 0 && (
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <button
+                        onClick={() => setShowNaFlow(true)}
+                        className="text-sm text-muted-foreground/70 hover:text-primary transition-colors"
+                      >
+                        I don't have this document
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : isDigitalWallet && !currentItemHasOpenCorrection ? (
                 <DigitalWalletStep
