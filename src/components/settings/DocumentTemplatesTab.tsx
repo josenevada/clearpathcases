@@ -517,9 +517,8 @@ const QUANTITY_PRESETS = [
 
 const stripParenthetical = (label: string) => label.replace(/\s*\(.*?\)\s*$/, '').trim();
 const buildLabel = (base: string, qty: string) => {
-  const b = base.trim();
-  if (!qty) return b;
-  return `${b} (${qty.charAt(0).toUpperCase() + qty.slice(1)})`;
+  if (!qty) return base;
+  return `${base} (${qty.charAt(0).toUpperCase() + qty.slice(1)})`;
 };
 
 const isBankStatementsItem = (item: TemplateItem) =>
