@@ -397,16 +397,27 @@ const ChecklistEditor = ({ items, onChange }: {
                   <div className="px-4 pb-4 space-y-2">
                     {catItems.map(item => (
                       editingId === item.id ? (
-                        <EditItemForm
-                          key={item.id}
-                          item={item}
-                          onSave={(updated) => {
-                            onChange(items.map(t => t.id === updated.id ? updated : t));
-                            setEditingId(null);
-                            toast.success('Item updated.');
-                          }}
-                          onCancel={() => setEditingId(null)}
-                        />
+                        isBankStatementsItem(item) ? (
+                          <div key={item.id} className="px-4 py-3 rounded-lg bg-muted/50 border border-border mt-2">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Lock className="w-4 h-4 flex-shrink-0" />
+                              <span>
+                                Bank statements are retrieved automatically via Plaid (6 months). This step cannot be customized.
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <EditItemForm
+                            key={item.id}
+                            item={item}
+                            onSave={(updated) => {
+                              onChange(items.map(t => t.id === updated.id ? updated : t));
+                              setEditingId(null);
+                              toast.success('Item updated.');
+                            }}
+                            onCancel={() => setEditingId(null)}
+                          />
+                        )
                       ) : (
                         <div
                           key={item.id}
@@ -510,6 +521,11 @@ const buildLabel = (base: string, qty: string) => {
   if (!qty) return b;
   return `${b} (${qty.charAt(0).toUpperCase() + qty.slice(1)})`;
 };
+
+const isBankStatementsItem = (item: TemplateItem) =>
+  item.label.toLowerCase().includes('checking') ||
+  item.label.toLowerCase().includes('savings') ||
+  item.label.toLowerCase().includes('bank statement');
 
 const QuantityField = ({
   quantityInstruction,
