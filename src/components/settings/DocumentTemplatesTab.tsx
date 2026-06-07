@@ -504,64 +504,53 @@ const QUANTITY_PRESETS = [
   'All available',
 ];
 
-const QuantityAndClientFields = ({
+const stripParenthetical = (label: string) => label.replace(/\s*\(.*?\)\s*$/, '').trim();
+const buildLabel = (base: string, qty: string) => {
+  const b = base.trim();
+  if (!qty) return b;
+  return `${b} (${qty.charAt(0).toUpperCase() + qty.slice(1)})`;
+};
+
+const QuantityField = ({
   quantityInstruction,
-  clientDescription,
-  defaultDescription,
   onChange,
 }: {
   quantityInstruction: string;
-  clientDescription: string;
-  defaultDescription: string;
-  onChange: (patch: { quantityInstruction?: string; clientDescription?: string }) => void;
+  onChange: (patch: { quantityInstruction?: string }) => void;
 }) => {
   const isPreset = QUANTITY_PRESETS.includes(quantityInstruction) || quantityInstruction === '';
   const [mode, setMode] = useState<'preset' | 'custom'>(isPreset ? 'preset' : 'custom');
 
   return (
-    <>
-      <div>
-        <Label className="text-muted-foreground text-sm">Quantity Instruction</Label>
-        <div className="flex gap-2 mt-1">
-          <select
-            value={mode === 'custom' ? 'custom' : quantityInstruction}
-            onChange={e => {
-              if (e.target.value === 'custom') {
-                setMode('custom');
-              } else {
-                setMode('preset');
-                onChange({ quantityInstruction: e.target.value });
-              }
-            }}
-            className="text-xs px-2 py-1.5 rounded-lg border border-border bg-input text-foreground"
-          >
-            <option value="">— None —</option>
-            {QUANTITY_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
-            <option value="custom">Custom...</option>
-          </select>
-          {mode === 'custom' && (
-            <Input
-              value={quantityInstruction}
-              onChange={e => onChange({ quantityInstruction: e.target.value })}
-              placeholder="e.g. last 3 months"
-              className="flex-1 text-xs h-8 bg-input border-border rounded-lg"
-            />
-          )}
-        </div>
+    <div>
+      <Label className="text-muted-foreground text-sm">Quantity Instruction</Label>
+      <div className="flex gap-2 mt-1">
+        <select
+          value={mode === 'custom' ? 'custom' : quantityInstruction}
+          onChange={e => {
+            if (e.target.value === 'custom') {
+              setMode('custom');
+            } else {
+              setMode('preset');
+              onChange({ quantityInstruction: e.target.value });
+            }
+          }}
+          className="text-xs px-2 py-1.5 rounded-lg border border-border bg-input text-foreground"
+        >
+          <option value="">No quantity restriction</option>
+          {QUANTITY_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+          <option value="custom">Custom...</option>
+        </select>
+        {mode === 'custom' && (
+          <Input
+            value={quantityInstruction}
+            onChange={e => onChange({ quantityInstruction: e.target.value })}
+            placeholder="e.g. last 3 months"
+            className="flex-1 text-xs h-8 bg-input border-border rounded-lg"
+          />
+        )}
       </div>
-      <div>
-        <Label className="text-muted-foreground text-sm">
-          Client Instructions <span className="text-xs text-muted-foreground/70">(optional — overrides default copy)</span>
-        </Label>
-        <Textarea
-          value={clientDescription}
-          onChange={e => onChange({ clientDescription: e.target.value })}
-          placeholder={`Default: "${defaultDescription || 'No default set'}"`}
-          className="mt-1 bg-input border-border rounded-[10px] min-h-[60px] text-xs"
-          rows={2}
-        />
-      </div>
-    </>
+    </div>
   );
 };
 
@@ -573,47 +562,89 @@ const AddItemForm = ({ category, order, onSave, onCancel }: {
 }) => {
   const [form, setForm] = useState({
     label: '',
-    description: '',
     whyWeNeedThis: '',
     required: false,
+    active: true,
     quantityInstruction: '',
     clientDescription: '',
   });
 
+  const baseLabel = stripParenthetical(form.label);
+  const updateQty = (qty: string) => {
+    setForm(f => ({
+      ...f,
+      quantityInstruction: qty,
+      label: buildLabel(stripParenthetical(f.label), qty),
+    }));
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3">
-      <div>
-        <Label className="text-muted-foreground text-sm">Document Name *</Label>
-        <Input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} className="mt-1 bg-input border-border rounded-[10px]" />
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-foreground">Document Name *</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={baseLabel}
+            onChange={e => setForm({ ...form, label: buildLabel(e.target.value, form.quantityInstruction) })}
+            className="flex-1 text-sm px-3 py-2 rounded-lg border border-border bg-muted text-foreground"
+          />
+          {form.quantityInstruction && (
+            <span className="text-sm text-muted-foreground px-3 py-2 rounded-lg border border-border bg-muted/50 whitespace-nowrap">
+              ({form.quantityInstruction.charAt(0).toUpperCase() + form.quantityInstruction.slice(1)})
+            </span>
+          )}
+        </div>
+        {form.quantityInstruction && (
+          <p className="text-xs text-muted-foreground">
+            The parenthetical updates automatically from your Quantity Instruction setting.
+          </p>
+        )}
       </div>
       <div>
-        <Label className="text-muted-foreground text-sm">Plain English Description</Label>
-        <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="mt-1 bg-input border-border rounded-[10px] min-h-[60px]" />
+        <label className="text-sm font-medium text-foreground">
+          Client Instructions
+          <span className="ml-1 text-xs text-muted-foreground">— shown to client in the portal</span>
+        </label>
+        <textarea
+          value={form.clientDescription}
+          onChange={e => setForm({ ...form, clientDescription: e.target.value })}
+          placeholder="What should the client see for this document?"
+          className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-muted text-foreground resize-none mt-1"
+          rows={3}
+        />
       </div>
       <div>
-        <Label className="text-muted-foreground text-sm">Why We Need This</Label>
+        <label className="text-sm font-medium text-foreground">
+          Why We Need This
+          <span className="ml-1 text-xs text-muted-foreground">— shown to client in the portal</span>
+        </label>
         <Textarea value={form.whyWeNeedThis} onChange={e => setForm({ ...form, whyWeNeedThis: e.target.value })} className="mt-1 bg-input border-border rounded-[10px] min-h-[60px]" />
       </div>
-      <QuantityAndClientFields
+      <QuantityField
         quantityInstruction={form.quantityInstruction}
-        clientDescription={form.clientDescription}
-        defaultDescription={form.description}
-        onChange={patch => setForm({ ...form, ...patch })}
+        onChange={patch => updateQty(patch.quantityInstruction ?? '')}
       />
-      <div className="flex items-center gap-2">
-        <Switch checked={form.required} onCheckedChange={v => setForm({ ...form, required: v })} />
-        <span className="text-sm text-muted-foreground">Required</span>
+      <div className="flex items-center gap-6 mt-4">
+        <div className="flex items-center gap-2">
+          <Switch checked={form.active} onCheckedChange={v => setForm({ ...form, active: v })} />
+          <span className="text-sm text-foreground">Active</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch checked={form.required} onCheckedChange={v => setForm({ ...form, required: v })} />
+          <span className="text-sm text-foreground">Required</span>
+        </div>
       </div>
-      <div className="flex gap-2 justify-end">
+      <div className="flex justify-end gap-2 mt-4 sticky bottom-0 bg-card py-3 border-t border-border sm:relative sm:bottom-auto sm:bg-transparent sm:border-0 sm:py-0">
         <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" disabled={!form.label.trim()} onClick={() => onSave({
+        <Button size="sm" disabled={!baseLabel} onClick={() => onSave({
           id: uid(),
           category,
           label: form.label.trim(),
-          description: form.description.trim(),
+          description: form.clientDescription.trim(),
           whyWeNeedThis: form.whyWeNeedThis.trim(),
           required: form.required,
-          active: true,
+          active: form.active,
           isCustom: true,
           order,
           quantityInstruction: form.quantityInstruction.trim() || undefined,
@@ -635,42 +666,90 @@ const EditItemForm = ({ item, onSave, onCancel }: {
     description: item.description,
     whyWeNeedThis: item.whyWeNeedThis,
     required: item.required,
+    active: item.active,
     quantityInstruction: item.quantityInstruction || '',
-    clientDescription: item.clientDescription || '',
+    clientDescription: item.clientDescription || item.description || '',
   });
+
+  const baseLabel = stripParenthetical(form.label);
+  const updateQty = (qty: string) => {
+    setForm(f => ({
+      ...f,
+      quantityInstruction: qty,
+      label: buildLabel(stripParenthetical(f.label), qty),
+    }));
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3">
-      <div>
-        <Label className="text-muted-foreground text-sm">Document Name *</Label>
-        <Input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} className="mt-1 bg-input border-border rounded-[10px]" />
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-foreground">Document Name</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={baseLabel}
+            onChange={e => setForm({ ...form, label: buildLabel(e.target.value, form.quantityInstruction) })}
+            className="flex-1 text-sm px-3 py-2 rounded-lg border border-border bg-muted text-foreground"
+          />
+          {form.quantityInstruction && (
+            <span className="text-sm text-muted-foreground px-3 py-2 rounded-lg border border-border bg-muted/50 whitespace-nowrap">
+              ({form.quantityInstruction.charAt(0).toUpperCase() + form.quantityInstruction.slice(1)})
+            </span>
+          )}
+        </div>
+        {form.quantityInstruction && (
+          <p className="text-xs text-muted-foreground">
+            The parenthetical updates automatically from your Quantity Instruction setting.
+          </p>
+        )}
       </div>
       <div>
-        <Label className="text-muted-foreground text-sm">Plain English Description</Label>
-        <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="mt-1 bg-input border-border rounded-[10px] min-h-[60px]" />
+        <label className="text-sm font-medium text-foreground">
+          Client Instructions
+          <span className="ml-1 text-xs text-muted-foreground">— shown to client in the portal</span>
+        </label>
+        <textarea
+          value={form.clientDescription}
+          onChange={e => setForm({
+            ...form,
+            clientDescription: e.target.value,
+            description: e.target.value,
+          })}
+          placeholder="What should the client see for this document?"
+          className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-muted text-foreground resize-none mt-1"
+          rows={3}
+        />
       </div>
       <div>
-        <Label className="text-muted-foreground text-sm">Why We Need This</Label>
+        <label className="text-sm font-medium text-foreground">
+          Why We Need This
+          <span className="ml-1 text-xs text-muted-foreground">— shown to client in the portal</span>
+        </label>
         <Textarea value={form.whyWeNeedThis} onChange={e => setForm({ ...form, whyWeNeedThis: e.target.value })} className="mt-1 bg-input border-border rounded-[10px] min-h-[60px]" />
       </div>
-      <QuantityAndClientFields
+      <QuantityField
         quantityInstruction={form.quantityInstruction}
-        clientDescription={form.clientDescription}
-        defaultDescription={form.description}
-        onChange={patch => setForm({ ...form, ...patch })}
+        onChange={patch => updateQty(patch.quantityInstruction ?? '')}
       />
-      <div className="flex items-center gap-2">
-        <Switch checked={form.required} onCheckedChange={v => setForm({ ...form, required: v })} />
-        <span className="text-sm text-muted-foreground">Required</span>
+      <div className="flex items-center gap-6 mt-4">
+        <div className="flex items-center gap-2">
+          <Switch checked={form.active} onCheckedChange={v => setForm({ ...form, active: v })} />
+          <span className="text-sm text-foreground">Active</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch checked={form.required} onCheckedChange={v => setForm({ ...form, required: v })} />
+          <span className="text-sm text-foreground">Required</span>
+        </div>
       </div>
-      <div className="flex gap-2 justify-end">
+      <div className="flex justify-end gap-2 mt-4 sticky bottom-0 bg-card py-3 border-t border-border sm:relative sm:bottom-auto sm:bg-transparent sm:border-0 sm:py-0">
         <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" disabled={!form.label.trim()} onClick={() => onSave({
+        <Button size="sm" disabled={!baseLabel} onClick={() => onSave({
           ...item,
           label: form.label.trim(),
-          description: form.description.trim(),
+          description: form.clientDescription.trim(),
           whyWeNeedThis: form.whyWeNeedThis.trim(),
           required: form.required,
+          active: form.active,
           quantityInstruction: form.quantityInstruction.trim() || undefined,
           clientDescription: form.clientDescription.trim() || undefined,
           firmRequired: form.required,
