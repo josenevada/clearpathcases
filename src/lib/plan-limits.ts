@@ -32,7 +32,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     dedicatedOnboarding: false,
     courtPackets: false,
     aiFormFilling: false,
-    plaidBank: false,
+    plaidBank: true,
     meansTest: false,
     exemptionOptimizer: false,
     batchExport: true,
