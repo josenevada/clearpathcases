@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, RotateCcw, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, RotateCcw, Pencil, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
