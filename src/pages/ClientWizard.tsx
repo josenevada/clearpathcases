@@ -663,6 +663,7 @@ const ClientWizard = () => {
   const handleFileAdd = async (file: File, replaceFileId?: string, explicitLabel?: string | null) => {
     if (!currentItem) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    if (stuckTimer) { clearTimeout(stuckTimer); setStuckTimer(null); }
     setPendingDuplicate(null);
 
     // Multi-upload items: skip auto-label step
