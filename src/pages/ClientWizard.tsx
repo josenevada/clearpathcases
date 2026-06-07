@@ -262,6 +262,11 @@ const ClientWizard = () => {
   const [showMobileUploadOptions, setShowMobileUploadOptions] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alexChatOpen, setAlexChatOpen] = useState(false);
+  const [stuckTimer, setStuckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [completedCategories, setCompletedCategories] = useState<Set<string>>(new Set());
+  const [categoryCompleteMessage, setCategoryCompleteMessage] = useState<string | null>(null);
+  const [hasShown80Nudge, setHasShown80Nudge] = useState(false);
+  const [wizardStartTime] = useState(() => Date.now());
   const [counselingProviderLink, setCounselingProviderLink] = useState<string | null>(null);
   const [counselingProviderName, setCounselingProviderName] = useState<string | null>(null);
   const [counselingAttorneyCode, setCounselingAttorneyCode] = useState<string | null>(null);
