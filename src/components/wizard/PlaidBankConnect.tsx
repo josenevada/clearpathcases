@@ -1,12 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Lock, Shield, CheckCircle2, Loader2, UploadCloud, AlertTriangle, X } from 'lucide-react';
+import { Zap, Lock, Shield, CheckCircle2, Loader2, UploadCloud, AlertTriangle, X, FileText, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { getClientSession } from '@/lib/auth';
 
+export interface PlaidUploadedFile {
+  id: string;
+  name: string;
+  uploadedBy?: string;
+}
 
 interface PlaidBankConnectProps {
   caseId: string;
@@ -17,6 +22,7 @@ interface PlaidBankConnectProps {
   onManualUploadClick: () => void;
   manualUploadContent: React.ReactNode;
   onContinue?: () => void;
+  plaidFiles?: PlaidUploadedFile[];
 }
 
 export interface PlaidResult {
