@@ -582,7 +582,7 @@ const ClientWizard = () => {
     // Per-category completion
     CATEGORIES.forEach(cat => {
       if (completedCategories.has(cat)) return;
-      const catItems = caseData.checklist.filter(i => i.category === cat && i.active !== false);
+      const catItems = caseData.checklist.filter(i => i.category === cat && !i.notApplicable);
       if (catItems.length === 0) return;
       const allDone = catItems.every(i => i.completed || !i.required);
       if (!allDone) return;
@@ -591,7 +591,7 @@ const ClientWizard = () => {
 
       const remaining = CATEGORIES.filter(c => {
         if (c === cat) return false;
-        const items = caseData.checklist.filter(i => i.category === c && i.active !== false);
+        const items = caseData.checklist.filter(i => i.category === c && !i.notApplicable);
         return items.some(i => !i.completed && i.required);
       });
 
@@ -606,7 +606,7 @@ const ClientWizard = () => {
     });
 
     // 80% overall nudge (fires once)
-    const allRequired = caseData.checklist.filter(i => i.required && i.active !== false);
+    const allRequired = caseData.checklist.filter(i => i.required && !i.notApplicable);
     const completed = allRequired.filter(i => i.completed);
     if (allRequired.length === 0) return;
     const pct = completed.length / allRequired.length;
