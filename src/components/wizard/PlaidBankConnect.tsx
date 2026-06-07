@@ -17,7 +17,6 @@ interface PlaidBankConnectProps {
   onManualUploadClick: () => void;
   manualUploadContent: React.ReactNode;
   onContinue?: () => void;
-  statementMonths?: number;
 }
 
 export interface PlaidResult {
@@ -37,7 +36,6 @@ const PlaidBankConnect = ({
   onManualUploadClick,
   manualUploadContent,
   onContinue,
-  statementMonths,
 }: PlaidBankConnectProps) => {
   const [state, setState] = useState<PlaidState>('idle');
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -135,7 +133,7 @@ const PlaidBankConnect = ({
 
     try {
       const res = await supabase.functions.invoke('plaid-create-link-token', {
-        body: { case_id: caseId, client_name: clientName, portal_token: getPortalToken(), statement_months: statementMonths },
+        body: { case_id: caseId, client_name: clientName, portal_token: getPortalToken() },
       });
 
 

@@ -18,7 +18,7 @@ import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
-import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, parseMonthsFromInstruction, formatItemDisplayLabel, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
+import { CATEGORIES, STEP_MOTIVATIONS, calculateProgress, isItemEffectivelyComplete, formatItemDisplayLabel, type Case, type ChecklistItem, type TextEntry, type FileValidationResult } from '@/lib/store';
 import { getPlanLimits } from '@/lib/plan-limits';
 
 
@@ -1776,7 +1776,7 @@ const ClientWizard = () => {
                 {(() => {
                   const displayLabel = formatItemDisplayLabel(currentItem);
 
-                  const itemDescription = currentItem.clientDescription?.trim() || WARM_SUBTITLES[currentItem.label] || '';
+                  const itemDescription = currentItem.clientDescription?.trim() || currentItem.description?.trim() || WARM_SUBTITLES[currentItem.label] || '';
                   return (
                     <>
                       <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2 leading-tight">
@@ -2000,7 +2000,7 @@ const ClientWizard = () => {
                     caseCode={caseCode || caseData.caseCode}
                     clientName={caseData.clientName}
                     checklistItemId={currentItem.id}
-                    statementMonths={parseMonthsFromInstruction(currentItem.quantityInstruction)}
+                    statementMonths={6}
                     onSuccess={(_plaidResult) => {
                       // The plaid-exchange-token edge function already:
                       //  - inserts file rows for each retrieved statement
