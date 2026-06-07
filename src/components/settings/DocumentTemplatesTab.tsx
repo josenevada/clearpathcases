@@ -515,7 +515,7 @@ const QUANTITY_PRESETS = [
   'All available',
 ];
 
-const stripParenthetical = (label: string) => label.replace(/\s*\(.*?\)\s*$/, '').trim();
+const stripParenthetical = (label: string) => label.replace(/\s*\(.*?\)\s*$/, '');
 const buildLabel = (base: string, qty: string) => {
   if (!qty) return base;
   return `${base} (${qty.charAt(0).toUpperCase() + qty.slice(1)})`;
