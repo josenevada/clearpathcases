@@ -88,11 +88,10 @@ const DocumentReviewQueue = () => {
   const filteredQueue = useMemo(() => {
     return allQueued.filter(q => {
       if (caseFilter !== 'all' && q.caseRecord.id !== caseFilter) return false;
-      if (statusFilter === 'pending' && q.file.reviewStatus !== 'pending') return false;
-      if (statusFilter === 'correction-requested' && q.file.reviewStatus !== 'correction-requested') return false;
+      if (showCorrectionsOnly && q.file.reviewStatus !== 'correction-requested') return false;
       return true;
     });
-  }, [allQueued, caseFilter, statusFilter]);
+  }, [allQueued, caseFilter, showCorrectionsOnly]);
 
   // Group filtered queue by case
   const groupedByCase = useMemo(() => {
