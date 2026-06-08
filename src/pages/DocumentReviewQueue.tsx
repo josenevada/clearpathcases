@@ -310,21 +310,15 @@ const DocumentReviewQueue = () => {
                 <option key={id} value={id}>{name}</option>
               ))}
             </select>
-            <div className="flex items-center gap-1">
-              {(['all', 'pending', 'correction-requested'] as StatusFilter[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1.5 text-xs font-body rounded-md transition-colors ${
-                    statusFilter === s
-                      ? 'bg-primary/15 text-primary border border-primary/30'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.03]'
-                  }`}
-                >
-                  {s === 'all' ? 'All' : s === 'pending' ? 'Pending Review' : 'Correction Requested'}
-                </button>
-              ))}
-            </div>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCorrectionsOnly}
+                onChange={(e) => setShowCorrectionsOnly(e.target.checked)}
+                className="rounded"
+              />
+              Show correction requests only
+            </label>
           </div>
         )}
 
