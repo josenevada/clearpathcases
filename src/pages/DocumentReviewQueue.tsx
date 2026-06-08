@@ -335,7 +335,7 @@ const DocumentReviewQueue = () => {
         ) : !loading && filteredQueue.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm text-muted-foreground font-body">No documents match your filters.</p>
-            <Button variant="ghost" size="sm" className="mt-2" onClick={() => { setCaseFilter('all'); setStatusFilter('all'); }}>
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => { setCaseFilter('all'); setShowCorrectionsOnly(false); }}>
               Clear filters
             </Button>
           </div>
