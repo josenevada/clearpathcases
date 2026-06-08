@@ -16,9 +16,9 @@ import { sendCorrectionRequest } from '@/lib/notifications';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DocumentViewer from '@/components/case/DocumentViewer';
 
-type StatusFilter = 'all' | 'pending' | 'correction-requested';
 
 interface QueuedDocument {
+
   caseRecord: Case;
   item: ChecklistItem;
   file: UploadedFile;
@@ -30,7 +30,7 @@ const DocumentReviewQueue = () => {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [caseFilter, setCaseFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [showCorrectionsOnly, setShowCorrectionsOnly] = useState(false);
   const [removedFileIds, setRemovedFileIds] = useState<Set<string>>(new Set());
   const [reviewedCount, setReviewedCount] = useState(0);
   const [previewDoc, setPreviewDoc] = useState<QueuedDocument | null>(null);
@@ -88,11 +88,10 @@ const DocumentReviewQueue = () => {
   const filteredQueue = useMemo(() => {
     return allQueued.filter(q => {
       if (caseFilter !== 'all' && q.caseRecord.id !== caseFilter) return false;
-      if (statusFilter === 'pending' && q.file.reviewStatus !== 'pending') return false;
-      if (statusFilter === 'correction-requested' && q.file.reviewStatus !== 'correction-requested') return false;
+      if (showCorrectionsOnly && q.file.reviewStatus !== 'correction-requested') return false;
       return true;
     });
-  }, [allQueued, caseFilter, statusFilter]);
+  }, [allQueued, caseFilter, showCorrectionsOnly]);
 
   // Group filtered queue by case
   const groupedByCase = useMemo(() => {
@@ -311,21 +310,15 @@ const DocumentReviewQueue = () => {
                 <option key={id} value={id}>{name}</option>
               ))}
             </select>
-            <div className="flex items-center gap-1">
-              {(['all', 'pending', 'correction-requested'] as StatusFilter[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1.5 text-xs font-body rounded-md transition-colors ${
-                    statusFilter === s
-                      ? 'bg-primary/15 text-primary border border-primary/30'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.03]'
-                  }`}
-                >
-                  {s === 'all' ? 'All' : s === 'pending' ? 'Pending Review' : 'Correction Requested'}
-                </button>
-              ))}
-            </div>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCorrectionsOnly}
+                onChange={(e) => setShowCorrectionsOnly(e.target.checked)}
+                className="rounded"
+              />
+              Show correction requests only
+            </label>
           </div>
         )}
 
@@ -342,7 +335,7 @@ const DocumentReviewQueue = () => {
         ) : !loading && filteredQueue.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm text-muted-foreground font-body">No documents match your filters.</p>
-            <Button variant="ghost" size="sm" className="mt-2" onClick={() => { setCaseFilter('all'); setStatusFilter('all'); }}>
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => { setCaseFilter('all'); setShowCorrectionsOnly(false); }}>
               Clear filters
             </Button>
           </div>
