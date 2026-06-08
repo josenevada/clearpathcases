@@ -30,7 +30,7 @@ const DocumentReviewQueue = () => {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [caseFilter, setCaseFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [showCorrectionsOnly, setShowCorrectionsOnly] = useState(false);
   const [removedFileIds, setRemovedFileIds] = useState<Set<string>>(new Set());
   const [reviewedCount, setReviewedCount] = useState(0);
   const [previewDoc, setPreviewDoc] = useState<QueuedDocument | null>(null);
