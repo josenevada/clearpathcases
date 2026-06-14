@@ -95,8 +95,8 @@ const getStepIntro = (label: string, lang: 'en' | 'es'): string => {
     ? 'Hola — tu W-2 viene del mismo lugar que tus talones de pago, solo en una sección diferente. Puedo ayudarte a encontrarlo.'
     : 'Hey — your W-2 comes from the same place as your pay stubs, just a different section. I can help you find it.';
   if (/tax return/i.test(l)) return lang === 'es'
-    ? 'Hola — la mayoría de las personas presentaron con TurboTax o H&R Block. Puedo llevarte directamente a tu cuenta.'
-    : 'Hey — most people filed with TurboTax or H&R Block. I can take you straight to your account.';
+    ? 'Hola — la mayoría de las personas presentaron con TurboTax, H&R Block o un contador. Te ayudo a saber dónde encontrar tu declaración.'
+    : 'Hey — most people filed with TurboTax, H&R Block, or an accountant. I can help you figure out where to find your return.';
   if (/checking|savings|bank statement/i.test(l)) return lang === 'es'
     ? 'Hola — puedes conectar tu banco automáticamente — sin descargas ni escaneos. O sube los PDFs manualmente.'
     : 'Hey — you can connect your bank automatically — no downloading or scanning needed. Or upload PDFs manually.';
