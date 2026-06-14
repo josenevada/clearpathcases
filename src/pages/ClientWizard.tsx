@@ -1882,11 +1882,19 @@ const ClientWizard = () => {
                 })()}
               </header>
 
-              {!isBankStatements && !isDigitalWallet && (
+              {!isBankStatements && !isDigitalWallet && !isVehicle && (
                 <DocumentRetrievalLinks
                   itemLabel={currentItem.label}
                   caseId={caseData.id}
                   clientName={caseData.clientName}
+                />
+              )}
+
+              {isVehicle && (
+                <VehicleRetrievalLinks
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                  language={language}
                 />
               )}
 
