@@ -18,7 +18,7 @@ const RETRIEVAL_CONFIGS: Record<string, RetrievalConfig> = {
   'Pay Stubs (Last 2 Months)': {
     links: [
       { label: 'ADP', url: 'https://workforcenow.adp.com' },
-      { label: 'Paychex', url: 'https://mypaychex.com' },
+      { label: 'Paychex', url: 'https://login.flex.paychex.com/login_static/UsernameOnly.html?lang=en&downtime=false' },
       { label: 'Gusto', url: 'https://app.gusto.com' },
       { label: 'Workday', url: 'https://wd5.myworkday.com' },
     ],
@@ -27,7 +27,7 @@ const RETRIEVAL_CONFIGS: Record<string, RetrievalConfig> = {
   'W-2s (Last 2 Years)': {
     links: [
       { label: 'ADP', url: 'https://workforcenow.adp.com' },
-      { label: 'Paychex', url: 'https://mypaychex.com' },
+      { label: 'Paychex', url: 'https://login.flex.paychex.com/login_static/UsernameOnly.html?lang=en&downtime=false' },
       { label: 'Gusto', url: 'https://app.gusto.com' },
       { label: 'Workday', url: 'https://wd5.myworkday.com' },
       { label: 'Get from IRS directly', url: 'https://irs.gov/individuals/get-transcript' },
