@@ -768,6 +768,14 @@ const DocumentHelpChat = ({
                       {language === 'es' ? 'Tengo cuentas en varios bancos' : 'I have accounts at multiple banks'}
                     </button>
                   )}
+                  {isVehicle && (
+                    <button
+                      onClick={() => setShowStatePicker(true)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                    >
+                      Get this now ✨
+                    </button>
+                  )}
                   {quickQuestions
                     .filter((q) => {
                       const special = new Set([
@@ -786,6 +794,44 @@ const DocumentHelpChat = ({
                         {q}
                       </button>
                     ))}
+                </div>
+              )}
+
+              {/* State picker for vehicle registration */}
+              {showStatePicker && (
+                <div className="flex justify-start pl-8">
+                  <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%]">
+                    <p className="text-sm mb-2">Which state is your vehicle registered in?</p>
+                    <select
+                      onChange={(e) => {
+                        const state = stateDmvPortals[e.target.value];
+                        if (state) {
+                          window.open(state.url, '_blank');
+                          setMessages((prev) => [
+                            ...prev,
+                            { role: 'user', content: state.name, kind: 'text' },
+                            {
+                              role: 'assistant',
+                              content: `Opening ${state.name}'s DMV portal. ${state.note}.`,
+                              kind: 'text',
+                            },
+                          ]);
+                          setShowStatePicker(false);
+                        }
+                      }}
+                      defaultValue=""
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-background text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="" disabled>Select your state...</option>
+                      {Object.entries(stateDmvPortals)
+                        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+                        .map(([code, info]) => (
+                          <option key={code} value={code}>
+                            {info.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
