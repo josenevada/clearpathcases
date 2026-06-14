@@ -604,9 +604,50 @@ const DocumentHelpChat = ({
     );
   };
 
-  const quickQuestions = language === 'es'
-    ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
-    : ['What does this look like?', 'Can I use a screenshot?'];
+  const handleQuickQuestion = (q: string) => {
+    setInput(q);
+    setTimeout(() => {
+      setInput('');
+      const userMsg: ChatMessage = { role: 'user', content: q };
+      setMessages(prev => [...prev, userMsg]);
+      (async () => {
+        setLoading(true);
+        try {
+          const apiMessages = [...messages, userMsg]
+            .filter((m) => m.kind === undefined || m.kind === 'text')
+            .filter((m, i) => !(i === 0 && m.role === 'assistant'))
+            .map((m) => ({ role: m.role, content: m.content || '' }));
+          const { data, error } = await supabase.functions.invoke('document-agent-help', {
+            body: { document_category: documentLabel, chapter_type: chapterType, messages: apiMessages, language },
+          });
+          if (error) throw error;
+          const aiResponse = data?.response || "I'm having trouble right now. Please try again.";
+          pushMessages({ role: 'assistant', content: aiResponse, kind: 'text', animate: true });
+        } catch (err) {
+          console.error('Chat error:', err);
+          pushMessages({ role: 'assistant', kind: 'text', animate: true, content: "I'm having trouble right now." });
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }, 0);
+  };
+
+  const contextualSuggestions: string[] = (() => {
+    if (language === 'es') {
+      if (hasPayrollFlow) return ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Cuántos necesito?'];
+      if (isTaxReturns) return ['¿Dónde encuentro esto?', '¿Necesito todas las páginas?', 'Usé un preparador'];
+      if (isBankStatements) return ['Tengo cuentas en varios bancos', '¿Y mi cuenta de ahorros?', '¿Puedo subir capturas?'];
+      return ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura?'];
+    }
+    if (isPaystubs) return ['Where do I get this?', 'What should this look like?', 'How many months?', 'I get paid in cash'];
+    if (isW2) return ['Where do I get this?', 'What should this look like?', 'I never got mine', 'Get from IRS'];
+    if (isTaxReturns) return ['Where do I get this?', 'Do I need every page?', 'I used a tax preparer', 'I haven\'t filed recently'];
+    if (isBankStatements) return ['I have multiple banks', 'What about savings?', 'Can I upload screenshots?', 'How far back?'];
+    return ['Where do I find this?', 'What should this look like?', 'Can I use a screenshot?'];
+  })();
+
+  const quickQuestions = contextualSuggestions;
 
   return (
     <AnimatePresence>
