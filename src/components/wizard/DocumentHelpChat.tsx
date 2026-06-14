@@ -604,34 +604,6 @@ const DocumentHelpChat = ({
     );
   };
 
-  const handleQuickQuestion = (q: string) => {
-    setInput(q);
-    setTimeout(() => {
-      setInput('');
-      const userMsg: ChatMessage = { role: 'user', content: q };
-      setMessages(prev => [...prev, userMsg]);
-      (async () => {
-        setLoading(true);
-        try {
-          const apiMessages = [...messages, userMsg]
-            .filter((m) => m.kind === undefined || m.kind === 'text')
-            .filter((m, i) => !(i === 0 && m.role === 'assistant'))
-            .map((m) => ({ role: m.role, content: m.content || '' }));
-          const { data, error } = await supabase.functions.invoke('document-agent-help', {
-            body: { document_category: documentLabel, chapter_type: chapterType, messages: apiMessages, language },
-          });
-          if (error) throw error;
-          const aiResponse = data?.response || "I'm having trouble right now. Please try again.";
-          pushMessages({ role: 'assistant', content: aiResponse, kind: 'text', animate: true });
-        } catch (err) {
-          console.error('Chat error:', err);
-          pushMessages({ role: 'assistant', kind: 'text', animate: true, content: "I'm having trouble right now." });
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }, 0);
-  };
 
   const contextualSuggestions: string[] = (() => {
     if (language === 'es') {
