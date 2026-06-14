@@ -123,15 +123,6 @@ const IntakeQuestionsTab = () => {
             />
           </div>
         </div>
-        <div className="space-y-1.5 mb-4 max-w-sm">
-          <Label className="text-sm text-muted-foreground">Attorney code (optional)</Label>
-          <Input
-            value={counseling.attorneyCode}
-            onChange={e => setCounseling(prev => ({ ...prev, attorneyCode: e.target.value }))}
-            placeholder="e.g. ATT-12345"
-            className="bg-input border-border rounded-[10px]"
-          />
-        </div>
         <Button size="sm" onClick={handleSaveCounseling}>Save Provider</Button>
       </div>
 
