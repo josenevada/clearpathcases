@@ -708,6 +708,7 @@ const ClientWizard = () => {
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
   const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
+  const isVehicle = currentItem && /vehicle|car|auto|title|registration/i.test(currentItem.label);
   const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
