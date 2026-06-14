@@ -115,7 +115,7 @@ const getStepIntro = (label: string, lang: 'en' | 'es'): string => {
   if (/mortgage/i.test(l)) return lang === 'es'
     ? 'Hola — esto es el estado de cuenta mensual de tu hipoteca — no la escritura. Búscalo en el correo o en el portal en línea de tu prestamista.'
     : "Hey — this is your monthly mortgage statement — not the deed. Find it in the mail or your lender's online portal.";
-  if (/vehicle|car|auto|title|registration/i.test(l)) return lang === 'es'
+  if (/\b(vehicle|car|auto|title|registration)\b/i.test(l)) return lang === 'es'
     ? 'Hola — primero revisa la guantera o tu correo electrónico. Si todavía debes dinero por el auto, tu prestamista tiene el título — solo necesitamos tu registro, que tú sí tienes.'
     : "Hey — first check your glove compartment or email. If you're still making car payments, your lender holds the title — we just need your registration, which you do have access to.";
   return lang === 'es'
@@ -359,7 +359,7 @@ const DocumentHelpChat = ({
   const isPaystubs = documentLabel === 'Pay Stubs (Last 2 Months)';
   const isTaxReturns = /tax return/i.test(documentLabel);
   const isBankStatements = /checking\/savings statements|bank statements/i.test(documentLabel);
-  const isVehicle = /vehicle|car|auto|title|registration/i.test(documentLabel);
+  const isVehicle = /\b(vehicle|car|auto|title|registration)\b/i.test(documentLabel);
   const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
