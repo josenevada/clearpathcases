@@ -15,7 +15,6 @@ const COUNSELING_KEY = 'cp_counseling_provider';
 interface CounselingProvider {
   providerName: string;
   providerLink: string;
-  attorneyCode: string;
 }
 
 const loadCounseling = (): CounselingProvider => {
@@ -23,7 +22,7 @@ const loadCounseling = (): CounselingProvider => {
     const raw = localStorage.getItem(COUNSELING_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return { providerName: '', providerLink: '', attorneyCode: '' };
+  return { providerName: '', providerLink: '' };
 };
 
 const saveCounselingProvider = (data: CounselingProvider) => {
