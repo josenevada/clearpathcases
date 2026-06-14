@@ -604,9 +604,22 @@ const DocumentHelpChat = ({
     );
   };
 
-  const quickQuestions = language === 'es'
-    ? ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura de pantalla?']
-    : ['What does this look like?', 'Can I use a screenshot?'];
+
+  const contextualSuggestions: string[] = (() => {
+    if (language === 'es') {
+      if (hasPayrollFlow) return ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Cuántos necesito?'];
+      if (isTaxReturns) return ['¿Dónde encuentro esto?', '¿Necesito todas las páginas?', 'Usé un preparador'];
+      if (isBankStatements) return ['Tengo cuentas en varios bancos', '¿Y mi cuenta de ahorros?', '¿Puedo subir capturas?'];
+      return ['¿Dónde encuentro esto?', '¿Cómo se ve?', '¿Puedo usar una captura?'];
+    }
+    if (isPaystubs) return ['Where do I get this?', 'What should this look like?', 'How many months?', 'I get paid in cash'];
+    if (isW2) return ['Where do I get this?', 'What should this look like?', 'I never got mine', 'Get from IRS'];
+    if (isTaxReturns) return ['Where do I get this?', 'Do I need every page?', 'I used a tax preparer', 'I haven\'t filed recently'];
+    if (isBankStatements) return ['I have multiple banks', 'What about savings?', 'Can I upload screenshots?', 'How far back?'];
+    return ['Where do I find this?', 'What should this look like?', 'Can I use a screenshot?'];
+  })();
+
+  const quickQuestions = contextualSuggestions;
 
   return (
     <AnimatePresence>
@@ -726,6 +739,23 @@ const DocumentHelpChat = ({
                 </div>
               )}
             </div>
+
+            {/* Persistent suggestion chips */}
+            {!loading && (
+              <div className="px-4 pt-2 pb-1 flex-shrink-0 overflow-x-auto">
+                <div className="flex gap-2 flex-nowrap">
+                  {quickQuestions.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => handleQuickQuestion(q)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap flex-shrink-0"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Input area */}
             <div className="px-4 py-3 border-t border-border flex-shrink-0 pb-safe">
