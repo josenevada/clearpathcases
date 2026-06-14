@@ -686,7 +686,7 @@ const DocumentHelpChat = ({
               ))}
 
               {/* Quick suggestions after intro message */}
-              {messages.length === 1 && messages[0].content === ALEX_INTRO && !loading && (
+              {messages.length === 1 && messages[0].role === 'assistant' && !loading && (
                 <div className="flex flex-wrap gap-2 pl-8">
                   {(hasPayrollFlow || isTaxReturns) && (
                     <button
@@ -709,18 +709,27 @@ const DocumentHelpChat = ({
                       onClick={handleMultiBank}
                       className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors font-medium"
                     >
-                      I have accounts at multiple banks
+                      {language === 'es' ? 'Tengo cuentas en varios bancos' : 'I have accounts at multiple banks'}
                     </button>
                   )}
-                  {quickQuestions.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => handleQuickQuestion(q)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
-                    >
-                      {q}
-                    </button>
-                  ))}
+                  {quickQuestions
+                    .filter((q) => {
+                      const special = new Set([
+                        language === 'es' ? '¿Dónde encuentro esto?' : 'Where do I get this?',
+                        language === 'es' ? '¿Cómo se ve?' : 'What should this look like?',
+                        language === 'es' ? 'Tengo cuentas en varios bancos' : 'I have accounts at multiple banks',
+                      ]);
+                      return !special.has(q);
+                    })
+                    .map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => handleQuickQuestion(q)}
+                        className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+                      >
+                        {q}
+                      </button>
+                    ))}
                 </div>
               )}
 
@@ -740,22 +749,6 @@ const DocumentHelpChat = ({
               )}
             </div>
 
-            {/* Persistent suggestion chips */}
-            {!loading && (
-              <div className="px-4 pt-2 pb-1 flex-shrink-0 overflow-x-auto">
-                <div className="flex gap-2 flex-nowrap">
-                  {quickQuestions.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => handleQuickQuestion(q)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap flex-shrink-0"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Input area */}
             <div className="px-4 py-3 border-t border-border flex-shrink-0 pb-safe">
