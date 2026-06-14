@@ -740,6 +740,23 @@ const DocumentHelpChat = ({
               )}
             </div>
 
+            {/* Persistent suggestion chips */}
+            {!loading && (
+              <div className="px-4 pt-2 pb-1 flex-shrink-0 overflow-x-auto">
+                <div className="flex gap-2 flex-nowrap">
+                  {quickQuestions.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => handleQuickQuestion(q)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap flex-shrink-0"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Input area */}
             <div className="px-4 py-3 border-t border-border flex-shrink-0 pb-safe">
               <div className="flex items-center gap-2">
