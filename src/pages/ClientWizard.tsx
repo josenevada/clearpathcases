@@ -16,6 +16,7 @@ import DocumentHelpChat from '@/components/wizard/DocumentHelpChat';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
+import VehicleRetrievalLinks from '@/components/wizard/VehicleRetrievalLinks';
 import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
