@@ -115,9 +115,9 @@ const getStepIntro = (label: string, lang: 'en' | 'es'): string => {
   if (/mortgage/i.test(l)) return lang === 'es'
     ? 'Hola — esto es el estado de cuenta mensual de tu hipoteca — no la escritura. Búscalo en el correo o en el portal en línea de tu prestamista.'
     : "Hey — this is your monthly mortgage statement — not the deed. Find it in the mail or your lender's online portal.";
-  if (/vehicle|car|auto/i.test(l)) return lang === 'es'
-    ? 'Hola — necesitamos el título del vehículo o el registro más reciente para cualquier vehículo que poseas.'
-    : 'Hey — we need the vehicle title or most recent registration for any vehicle you own.';
+  if (/vehicle|car|auto|title|registration/i.test(l)) return lang === 'es'
+    ? 'Hola — primero revisa la guantera o tu correo electrónico. Si todavía debes dinero por el auto, tu prestamista tiene el título — solo necesitamos tu registro, que tú sí tienes.'
+    : "Hey — first check your glove compartment or email. If you're still making car payments, your lender holds the title — we just need your registration, which you do have access to.";
   return lang === 'es'
     ? 'Hola — ¿qué puedo ayudarte a encontrar? Puedo decirte dónde conseguir este documento o cómo debería verse.'
     : 'Hey — what can I help you find? I can tell you where to get this document or what it should look like.';
