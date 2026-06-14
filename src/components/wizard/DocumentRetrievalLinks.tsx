@@ -20,19 +20,17 @@ const RETRIEVAL_CONFIGS: Record<string, RetrievalConfig> = {
       { label: 'ADP', url: 'https://workforcenow.adp.com' },
       { label: 'Paychex', url: 'https://login.flex.paychex.com/login_static/UsernameOnly.html?lang=en&downtime=false' },
       { label: 'Gusto', url: 'https://app.gusto.com' },
-      { label: 'Workday', url: 'https://wd5.myworkday.com' },
     ],
-    helperText: 'Not sure which one your employer uses? Check your pay stub email or ask your HR department.',
+    helperText: 'Not sure which one your employer uses? Check your pay stub email or ask your HR department. If your employer uses Workday, look for a "Workday" welcome email in your inbox — your login URL is unique to your company.',
   },
   'W-2s (Last 2 Years)': {
     links: [
       { label: 'ADP', url: 'https://workforcenow.adp.com' },
       { label: 'Paychex', url: 'https://login.flex.paychex.com/login_static/UsernameOnly.html?lang=en&downtime=false' },
       { label: 'Gusto', url: 'https://app.gusto.com' },
-      { label: 'Workday', url: 'https://wd5.myworkday.com' },
       { label: 'Get from IRS directly', url: 'https://irs.gov/individuals/get-transcript' },
     ],
-    helperText: 'Most employers send W-2s in January. Check your email inbox or HR portal first.',
+    helperText: 'Most employers send W-2s in January. Check your email inbox or HR portal first. If your employer uses Workday, look for a "Workday" welcome email in your inbox — your login URL is unique to your company.',
   },
   'Checking/Savings Statements (Last 6 Months)': {
     links: [
