@@ -358,6 +358,7 @@ const DocumentHelpChat = ({
   const isPaystubs = documentLabel === 'Pay Stubs (Last 2 Months)';
   const isTaxReturns = /tax return/i.test(documentLabel);
   const isBankStatements = /checking\/savings statements|bank statements/i.test(documentLabel);
+  const isVehicle = /vehicle|car|auto|title|registration/i.test(documentLabel);
   const hasPayrollFlow = isW2 || isPaystubs;
 
   useEffect(() => {
