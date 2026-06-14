@@ -1880,6 +1880,16 @@ const ClientWizard = () => {
                 })()}
               </header>
 
+              {!isBankStatements && !isDigitalWallet && (
+                <DocumentRetrievalLinks
+                  itemLabel={currentItem.label}
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                />
+              )}
+
+
+
 
 
               {currentItem?.label === 'Credit Counseling Certificate' && (() => {
