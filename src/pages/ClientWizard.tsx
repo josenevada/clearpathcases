@@ -16,6 +16,7 @@ import DocumentHelpChat from '@/components/wizard/DocumentHelpChat';
 import PlaidBankConnect, { type PlaidResult } from '@/components/wizard/PlaidBankConnect';
 import DigitalWalletStep from '@/components/wizard/DigitalWalletStep';
 import DocumentRetrievalLinks from '@/components/wizard/DocumentRetrievalLinks';
+import VehicleRetrievalLinks from '@/components/wizard/VehicleRetrievalLinks';
 import WizardSidebar from '@/components/wizard/WizardSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChecklistItemPosition, getOpenCorrectionItem } from '@/lib/corrections';
@@ -707,6 +708,7 @@ const ClientWizard = () => {
   const isEmployerEntry = currentItem && currentItem.label === EMPLOYER_LABEL;
   const isBankStatements = currentItem && currentItem.label === 'Checking/Savings Statements (Last 6 Months)';
   const isDigitalWallet = currentItem && currentItem.label === 'Digital Wallet Statements';
+  const isVehicle = currentItem && /vehicle|car|auto|title|registration/i.test(currentItem.label);
   const isPlaidConnected = currentItem?.files.some(f => f.uploadedBy === 'plaid') ?? false;
   const currentItemHasOpenCorrection = currentItem?.correctionRequest?.status === 'open';
   const hasPendingReplacement = currentItem?.files.some(file => file.reviewStatus === 'pending') ?? false;
@@ -1880,11 +1882,19 @@ const ClientWizard = () => {
                 })()}
               </header>
 
-              {!isBankStatements && !isDigitalWallet && (
+              {!isBankStatements && !isDigitalWallet && !isVehicle && (
                 <DocumentRetrievalLinks
                   itemLabel={currentItem.label}
                   caseId={caseData.id}
                   clientName={caseData.clientName}
+                />
+              )}
+
+              {isVehicle && (
+                <VehicleRetrievalLinks
+                  caseId={caseData.id}
+                  clientName={caseData.clientName}
+                  language={language}
                 />
               )}
 
