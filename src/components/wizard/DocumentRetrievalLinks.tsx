@@ -81,7 +81,6 @@ const getConfig = (label: string): RetrievalConfig | null => {
   if (label.includes('Tax Return')) return RETRIEVAL_CONFIGS['Tax Returns (Last 2 Years)'];
   if (label.includes('Credit Card')) return RETRIEVAL_CONFIGS['Credit Card Statements (Last 3 Months)'];
   if (label.includes('Mortgage')) return RETRIEVAL_CONFIGS['Mortgage Statement or Lease'];
-  if (label.includes('Government') || label.includes('ID') || label.includes('Driver')) return RETRIEVAL_CONFIGS['Government-Issued ID'];
   return null;
 };
 
