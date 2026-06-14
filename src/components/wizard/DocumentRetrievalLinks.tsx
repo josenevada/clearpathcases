@@ -70,10 +70,6 @@ const RETRIEVAL_CONFIGS: Record<string, RetrievalConfig> = {
     ],
     helperText: 'Not sure who services your mortgage? Check your monthly payment statement or your bank account for the payee name.',
   },
-  'Government-Issued ID': {
-    links: [],
-    helperText: 'Take a clear photo of the front of your driver\'s license or state ID in good lighting. Make sure all four corners are visible and the text is readable.',
-  },
 };
 
 // Also match partial labels for variants
