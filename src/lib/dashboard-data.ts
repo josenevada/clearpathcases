@@ -23,7 +23,6 @@ interface BrandingSettings {
 interface CounselingSettings {
   providerName: string;
   providerLink: string;
-  attorneyCode: string;
 }
 
 const emptyOnboardingState: DashboardOnboardingState = {
@@ -241,7 +240,7 @@ export const saveBrandingSettings = async (firmId: string, settings: BrandingSet
 export const fetchCounselingSettings = async (firmId: string): Promise<CounselingSettings> => {
   const { data, error } = await supabase
     .from('firms')
-    .select('counseling_provider_name, counseling_provider_link, counseling_attorney_code')
+    .select('counseling_provider_name, counseling_provider_link')
     .eq('id', firmId)
     .maybeSingle();
 
@@ -250,7 +249,6 @@ export const fetchCounselingSettings = async (firmId: string): Promise<Counselin
   return {
     providerName: data?.counseling_provider_name || '',
     providerLink: data?.counseling_provider_link || '',
-    attorneyCode: data?.counseling_attorney_code || '',
   };
 };
 
@@ -260,7 +258,6 @@ export const saveCounselingSettings = async (firmId: string, settings: Counselin
     .update({
       counseling_provider_name: settings.providerName,
       counseling_provider_link: settings.providerLink,
-      counseling_attorney_code: settings.attorneyCode,
     })
     .eq('id', firmId);
 

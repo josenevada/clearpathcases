@@ -13,7 +13,6 @@ const COUNSELING_KEY = 'cp_counseling_provider';
 interface CounselingProvider {
   providerName: string;
   providerLink: string;
-  attorneyCode: string;
 }
 
 const loadCounseling = (): CounselingProvider => {
@@ -21,7 +20,7 @@ const loadCounseling = (): CounselingProvider => {
     const raw = localStorage.getItem(COUNSELING_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return { providerName: '', providerLink: '', attorneyCode: '' };
+  return { providerName: '', providerLink: '' };
 };
 
 const saveCounselingProvider = (data: CounselingProvider) => {
@@ -160,15 +159,6 @@ const FirmProfileTab = () => {
               className="bg-input border-border rounded-[10px]"
             />
           </div>
-        </div>
-        <div className="space-y-1.5 mb-4 max-w-sm">
-          <Label className="text-sm text-muted-foreground">Attorney code (optional)</Label>
-          <Input
-            value={counseling.attorneyCode}
-            onChange={e => setCounseling(prev => ({ ...prev, attorneyCode: e.target.value }))}
-            placeholder="e.g. ATT-12345"
-            className="bg-input border-border rounded-[10px]"
-          />
         </div>
         <Button size="sm" onClick={handleSaveCounseling}>Save Provider</Button>
       </div>
