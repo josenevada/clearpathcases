@@ -70,10 +70,6 @@ const RETRIEVAL_CONFIGS: Record<string, RetrievalConfig> = {
     ],
     helperText: 'Not sure who services your mortgage? Check your monthly payment statement or your bank account for the payee name.',
   },
-  'Government-Issued ID': {
-    links: [],
-    helperText: 'Take a clear photo of the front of your driver\'s license or state ID in good lighting. Make sure all four corners are visible and the text is readable.',
-  },
 };
 
 // Also match partial labels for variants
@@ -85,7 +81,6 @@ const getConfig = (label: string): RetrievalConfig | null => {
   if (label.includes('Tax Return')) return RETRIEVAL_CONFIGS['Tax Returns (Last 2 Years)'];
   if (label.includes('Credit Card')) return RETRIEVAL_CONFIGS['Credit Card Statements (Last 3 Months)'];
   if (label.includes('Mortgage')) return RETRIEVAL_CONFIGS['Mortgage Statement or Lease'];
-  if (label.includes('Government') || label.includes('ID') || label.includes('Driver')) return RETRIEVAL_CONFIGS['Government-Issued ID'];
   return null;
 };
 
