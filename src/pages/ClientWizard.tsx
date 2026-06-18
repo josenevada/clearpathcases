@@ -2448,15 +2448,6 @@ const ClientWizard = () => {
       {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-3 z-40">
           <div className="max-w-md mx-auto">
-            <div className="flex justify-center mb-2">
-              <button
-                onClick={() => setAlexChatOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Ask Alex
-              </button>
-            </div>
             {isCheckpointItem ? (
               <Button
                 onClick={handleCheckpointConfirm}
