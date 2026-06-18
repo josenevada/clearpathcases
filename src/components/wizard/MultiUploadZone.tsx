@@ -18,14 +18,20 @@ interface MultiUploadZoneProps {
   onFileAdd: (file: File) => void;
   onFileDelete: (fileId: string) => void;
   onFilePreview?: (file: UploadedFile) => void;
+  documentLabel?: string;
 }
 
-const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview }: MultiUploadZoneProps) => {
+const isCameraPreferred = (label: string): boolean => {
+  return /government.issued|driver.license|passport|social security|id card|photo id/i.test(label);
+};
+
+const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview, documentLabel }: MultiUploadZoneProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadZoneRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [showMobileOptions, setShowMobileOptions] = useState(false);
+  const allowCamera = isCameraPreferred(documentLabel || '');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     Array.from(e.target.files || []).forEach(file => onFileAdd(file));
@@ -126,22 +132,24 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png"
+          accept={allowCamera ? ".pdf,.jpg,.jpeg,.png,image/jpeg,image/png" : ".pdf,.jpg,.jpeg,.png,application/pdf"}
           multiple
           onChange={handleChange}
         />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          className="hidden"
-          accept="image/jpeg,image/png"
-          capture="environment"
-          onChange={handleChange}
-        />
+        {allowCamera && (
+          <input
+            ref={cameraInputRef}
+            type="file"
+            className="hidden"
+            accept="image/jpeg,image/png"
+            capture="environment"
+            onChange={handleChange}
+          />
+        )}
       </div>
 
       {/* Mobile helper text */}
-      {isMobile && (
+      {isMobile && allowCamera && (
         <p className="text-xs text-muted-foreground text-center">
           You can photograph physical documents directly with your camera.
         </p>
@@ -166,16 +174,18 @@ const MultiUploadZone = ({ files, config, onFileAdd, onFileDelete, onFilePreview
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
-              <button
-                onClick={() => {
-                  setShowMobileOptions(false);
-                  cameraInputRef.current?.click();
-                }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
-              >
-                <Camera className="w-5 h-5 text-primary" />
-                <span className="text-foreground font-medium">Take a Photo</span>
-              </button>
+              {allowCamera && (
+                <button
+                  onClick={() => {
+                    setShowMobileOptions(false);
+                    cameraInputRef.current?.click();
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+                >
+                  <Camera className="w-5 h-5 text-primary" />
+                  <span className="text-foreground font-medium">Take a Photo</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowMobileOptions(false);

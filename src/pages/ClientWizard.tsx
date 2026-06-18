@@ -33,6 +33,10 @@ const SSN_LABEL = 'Social Security Card';
 const SSN_LABEL_LEGACY = 'Social Security Number';
 const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address' || label === 'Employer Name (Spouse)';
 
+const isCameraPreferred = (label: string): boolean => {
+  return /government.issued|driver.license|passport|social security|id card|photo id/i.test(label);
+};
+
 // ─── i18n helpers ────────────────────────────────────────────────────
 const t = (en: string, es: string, lang: string) => lang === 'es' ? es : en;
 
@@ -1745,7 +1749,7 @@ const ClientWizard = () => {
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center px-6 lg:px-12 pb-24">
+      <div className="flex-1 flex items-start sm:items-center justify-center px-6 lg:px-12 pt-4 sm:pt-0 pb-24">
         <AnimatePresence mode="wait">
           {showStepTransition !== null ? (
             <StepTransition
@@ -1864,7 +1868,7 @@ const ClientWizard = () => {
                         {displayLabel}
                       </h2>
                       {itemDescription && (
-                        <p className="text-primary/80 text-sm font-body leading-relaxed">
+                        <p className="text-muted-foreground text-sm font-body leading-relaxed">
                           {itemDescription}
                         </p>
                       )}
@@ -2147,6 +2151,7 @@ const ClientWizard = () => {
                         <MultiUploadZone
                           files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
                           config={multiConfig}
+                          documentLabel={currentItem.label}
                           onFileAdd={(file: File) => {
                             const existing = currentItem.files.find(f => f.name === file.name);
                             if (existing) {
@@ -2168,6 +2173,7 @@ const ClientWizard = () => {
                         <MultiUploadZone
                           files={currentItem.files}
                           config={multiConfig}
+                          documentLabel={currentItem.label}
                           onFileAdd={(file: File) => {
                             const existing = currentItem.files.find(f => f.name === file.name);
                             if (existing) {
@@ -2225,6 +2231,7 @@ const ClientWizard = () => {
                   <MultiUploadZone
                     files={currentItem.files}
                     config={multiConfig}
+                    documentLabel={currentItem.label}
                     onFileAdd={(file: File) => {
                       const existing = currentItem.files.find(f => f.name === file.name);
                       if (existing) {
@@ -2282,7 +2289,7 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf"
+                      accept={isCameraPreferred(currentItem.label) ? "image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf" : ".pdf,.jpg,.jpeg,.png,application/pdf"}
                       onChange={handleSingleFileUpload}
                     />
                     <input
@@ -2290,7 +2297,7 @@ const ClientWizard = () => {
                       type="file"
                       className="hidden"
                       accept="image/*,.heic,.heif"
-                      capture="environment"
+                      capture={isCameraPreferred(currentItem.label) ? "environment" : undefined}
                       onChange={handleSingleFileUpload}
                     />
                   </div>
@@ -2376,7 +2383,7 @@ const ClientWizard = () => {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf"
+                      accept={isCameraPreferred(currentItem.label) ? "image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf" : ".pdf,.jpg,.jpeg,.png,application/pdf"}
                       onChange={handleSingleFileUpload}
                     />
                     <input
@@ -2384,7 +2391,7 @@ const ClientWizard = () => {
                       type="file"
                       className="hidden"
                       accept="image/*,.heic,.heif"
-                      capture="environment"
+                      capture={isCameraPreferred(currentItem.label) ? "environment" : undefined}
                       onChange={handleSingleFileUpload}
                     />
                   </div>
@@ -2511,7 +2518,7 @@ const ClientWizard = () => {
       {!showSuccess && !showMilestone && showStepTransition === null && currentItem && (
         <button
           onClick={() => setAlexChatOpen(true)}
-          className="fixed bottom-20 left-4 z-40 flex items-center gap-2 bg-secondary border border-border text-foreground text-sm px-4 py-2 rounded-full shadow-sm hover:border-primary/40 transition-colors"
+          className="fixed bottom-20 left-4 z-50 flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full bg-card border border-border shadow-lg text-sm font-medium text-foreground hover:border-primary/40 transition-colors sm:relative sm:bottom-auto sm:left-auto sm:z-auto sm:shadow-none sm:rounded-lg sm:bg-secondary"
         >
           <MessageCircle className="w-4 h-4" />
           Ask Alex
@@ -2535,6 +2542,7 @@ const ClientWizard = () => {
               <MultiUploadZone
                 files={currentItem.files}
                 config={multiConfig}
+                documentLabel={currentItem.label}
                 onFileAdd={(file: File) => {
                   const existing = currentItem.files.find(f => f.name === file.name);
                   if (existing) {
@@ -2551,25 +2559,27 @@ const ClientWizard = () => {
         />
       )}
       {/* Persistent hidden file inputs for mobile */}
-      <input
-        ref={(el) => { (window as any).__mobileCamera = el; }}
-        type="file"
-        className="hidden"
-        accept="image/*,.heic,.heif"
-        capture="environment"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          handleFileAdd(file);
-          e.target.value = '';
-          setShowMobileUploadOptions(false);
-        }}
-      />
+      {currentItem && isCameraPreferred(currentItem.label) && (
+        <input
+          ref={(el) => { (window as any).__mobileCamera = el; }}
+          type="file"
+          className="hidden"
+          accept="image/*,.heic,.heif"
+          capture="environment"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            handleFileAdd(file);
+            e.target.value = '';
+            setShowMobileUploadOptions(false);
+          }}
+        />
+      )}
       <input
         ref={(el) => { (window as any).__mobileLibrary = el; }}
         type="file"
         className="hidden"
-        accept="image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf"
+        accept={currentItem && isCameraPreferred(currentItem.label) ? "image/*,.heic,.heif,.pdf,.jpg,.jpeg,.png,application/pdf" : ".pdf,.jpg,.jpeg,.png,application/pdf"}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (!file) return;
@@ -2600,16 +2610,18 @@ const ClientWizard = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
-              <button
-                type="button"
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
-                onClick={() => {
-                  (window as any).__mobileCamera?.click();
-                }}
-              >
-                <Camera className="w-5 h-5 text-primary" />
-                <span className="text-foreground font-medium">Take a Photo</span>
-              </button>
+              {currentItem && isCameraPreferred(currentItem.label) && (
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
+                  onClick={() => {
+                    (window as any).__mobileCamera?.click();
+                  }}
+                >
+                  <Camera className="w-5 h-5 text-primary" />
+                  <span className="text-foreground font-medium">Take a Photo</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[hsl(var(--surface-hover))] transition-colors"
