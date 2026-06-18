@@ -2448,15 +2448,6 @@ const ClientWizard = () => {
       {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-3 z-40">
           <div className="max-w-md mx-auto">
-            <div className="flex justify-center mb-2">
-              <button
-                onClick={() => setAlexChatOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Ask Alex
-              </button>
-            </div>
             {isCheckpointItem ? (
               <Button
                 onClick={handleCheckpointConfirm}
@@ -2689,6 +2680,20 @@ const ClientWizard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Fixed Ask Alex button */}
+      {currentItem && (
+        <button
+          onClick={() => setAlexChatOpen(true)}
+          className="fixed bottom-24 right-4 z-50 sm:bottom-6 sm:right-6 flex items-center gap-2 px-4 py-3 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 active:scale-95 transition-all duration-150 font-medium text-sm"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-foreground" />
+          </span>
+          Ask Alex
+        </button>
+      )}
 
       </div>
     </div>
