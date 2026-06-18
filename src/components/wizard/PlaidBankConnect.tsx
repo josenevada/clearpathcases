@@ -23,6 +23,7 @@ interface PlaidBankConnectProps {
   manualUploadContent: React.ReactNode;
   onContinue?: () => void;
   plaidFiles?: PlaidUploadedFile[];
+  onDisconnect?: () => void;
 }
 
 export interface PlaidResult {
@@ -43,6 +44,7 @@ const PlaidBankConnect = ({
   manualUploadContent,
   onContinue,
   plaidFiles = [],
+  onDisconnect,
 }: PlaidBankConnectProps) => {
   const [state, setState] = useState<PlaidState>('idle');
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -172,6 +174,7 @@ const PlaidBankConnect = ({
       setState('idle');
       setResult(null);
       setLinkToken(null);
+      onDisconnect?.(); // notify parent to clear files
     } catch {
       setState('success'); // keep showing success on disconnect failure
     }
@@ -308,12 +311,19 @@ const PlaidBankConnect = ({
                 </div>
               ))}
             </div>
-            <button
-              onClick={handleDisconnect}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-            >
-              Disconnect and remove statements
-            </button>
+            {state === 'disconnecting' ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <div className="w-3 h-3 rounded-full border border-muted-foreground border-t-transparent animate-spin" />
+                Removing statements…
+              </div>
+            ) : (
+              <button
+                onClick={handleDisconnect}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              >
+                Disconnect and remove statements
+              </button>
+            )}
           </div>
         ) : (
           <>
