@@ -33,6 +33,10 @@ const SSN_LABEL = 'Social Security Card';
 const SSN_LABEL_LEGACY = 'Social Security Number';
 const isTextEntryItem = (label: string) => label === EMPLOYER_LABEL || label === 'Employer Name & Address' || label === 'Employer Name (Spouse)';
 
+const isCameraPreferred = (label: string): boolean => {
+  return /government.issued|driver.license|passport|social security|id card|photo id/i.test(label);
+};
+
 // ─── i18n helpers ────────────────────────────────────────────────────
 const t = (en: string, es: string, lang: string) => lang === 'es' ? es : en;
 
