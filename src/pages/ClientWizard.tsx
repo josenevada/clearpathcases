@@ -2151,6 +2151,7 @@ const ClientWizard = () => {
                         <MultiUploadZone
                           files={currentItem.files.filter(f => f.uploadedBy !== 'plaid')}
                           config={multiConfig}
+                          documentLabel={currentItem.label}
                           onFileAdd={(file: File) => {
                             const existing = currentItem.files.find(f => f.name === file.name);
                             if (existing) {
@@ -2172,6 +2173,7 @@ const ClientWizard = () => {
                         <MultiUploadZone
                           files={currentItem.files}
                           config={multiConfig}
+                          documentLabel={currentItem.label}
                           onFileAdd={(file: File) => {
                             const existing = currentItem.files.find(f => f.name === file.name);
                             if (existing) {
@@ -2229,6 +2231,7 @@ const ClientWizard = () => {
                   <MultiUploadZone
                     files={currentItem.files}
                     config={multiConfig}
+                    documentLabel={currentItem.label}
                     onFileAdd={(file: File) => {
                       const existing = currentItem.files.find(f => f.name === file.name);
                       if (existing) {
@@ -2539,6 +2542,7 @@ const ClientWizard = () => {
               <MultiUploadZone
                 files={currentItem.files}
                 config={multiConfig}
+                documentLabel={currentItem.label}
                 onFileAdd={(file: File) => {
                   const existing = currentItem.files.find(f => f.name === file.name);
                   if (existing) {
