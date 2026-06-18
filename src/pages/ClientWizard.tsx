@@ -2446,8 +2446,17 @@ const ClientWizard = () => {
 
 
       {!showSuccess && !showMilestone && !showStepTransition && currentItem && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border px-6 py-3 z-40">
           <div className="max-w-md mx-auto">
+            <div className="flex justify-center mb-2">
+              <button
+                onClick={() => setAlexChatOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Ask Alex
+              </button>
+            </div>
             {isCheckpointItem ? (
               <Button
                 onClick={handleCheckpointConfirm}
@@ -2531,16 +2540,6 @@ const ClientWizard = () => {
             )}
           </div>
         </div>
-      )}
-      {/* Floating "Ask Alex" pill — visible on document steps only */}
-      {!showSuccess && !showMilestone && showStepTransition === null && currentItem && (
-        <button
-          onClick={() => setAlexChatOpen(true)}
-          className="fixed bottom-20 left-4 z-50 inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] w-fit rounded-full bg-card border border-border shadow-lg text-sm font-medium text-foreground hover:border-primary/40 transition-colors sm:relative sm:bottom-auto sm:left-auto sm:z-auto sm:shadow-none sm:rounded-lg sm:bg-secondary"
-        >
-          <MessageCircle className="w-4 h-4" />
-          Ask Alex
-        </button>
       )}
       {/* Controlled Alex chat panel */}
       {currentItem && (
