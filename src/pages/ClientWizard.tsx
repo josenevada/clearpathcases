@@ -2146,6 +2146,24 @@ const ClientWizard = () => {
                     onManualUploadClick={() => {}}
                     onContinue={() => checkMilestoneAndAdvance(caseData)}
                     plaidFiles={currentItem.files.filter(f => f.uploadedBy === 'plaid')}
+                    onDisconnect={() => {
+                      setCaseData(prev => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          checklist: prev.checklist.map(ci => {
+                            if (ci.id !== currentItem.id) return ci;
+                            return {
+                              ...ci,
+                              completed: false,
+                              files: ci.files.filter(
+                                f => f.uploadedBy !== 'plaid'
+                              ),
+                            };
+                          }),
+                        };
+                      });
+                    }}
                     manualUploadContent={
                       multiConfig ? (
                         <MultiUploadZone

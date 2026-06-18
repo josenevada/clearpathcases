@@ -61,6 +61,39 @@ serve(async (req) => {
       description: `${client_name || 'Client'} disconnected their bank account`,
     });
 
+    // Delete Plaid files from the files table
+    const { data: plaidFiles } = await supabase
+      .from('files')
+      .select('id, storage_path')
+      .eq('case_id', case_id)
+      .eq('uploaded_by', 'plaid');
+
+    if (plaidFiles && plaidFiles.length > 0) {
+      // Delete from storage
+      const storagePaths = plaidFiles
+        .map(f => f.storage_path)
+        .filter(Boolean);
+
+      if (storagePaths.length > 0) {
+        await supabase.storage
+          .from('case-documents')
+          .remove(storagePaths);
+      }
+
+      // Delete file records from DB
+      await supabase
+        .from('files')
+        .delete()
+        .eq('case_id', case_id)
+        .eq('uploaded_by', 'plaid');
+    }
+
+    // Also delete the plaid_connection record if it exists
+    await supabase
+      .from('plaid_connections')
+      .delete()
+      .eq('case_id', case_id);
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
