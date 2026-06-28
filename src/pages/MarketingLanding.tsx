@@ -187,6 +187,7 @@ const VideoSection = () => {
   const [ref, visible] = useScrollReveal<HTMLDivElement>();
   return (
     <section
+      id="how-it-works"
       ref={ref}
       className="px-6 py-16 md:py-24 max-w-5xl mx-auto"
       style={{
@@ -551,7 +552,7 @@ const MarketingLanding = () => {
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap relative" style={heroStagger(6)}>
           <Button size="lg" onClick={() => navigate('/signup')} className="landing-btn-glow" style={{ padding: '14px 28px' }}>Start Free — No Card Needed</Button>
-          <Button size="lg" variant="ghost" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
+          <Button size="lg" variant="ghost" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="group" style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '14px 28px' }}>
             See How it Works <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
