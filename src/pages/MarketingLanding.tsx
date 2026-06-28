@@ -182,6 +182,49 @@ const StatsBar = () => {
   );
 };
 
+/* ────── Video Section ────── */
+const VideoSection = () => {
+  const [ref, visible] = useScrollReveal<HTMLDivElement>();
+  return (
+    <section
+      ref={ref}
+      className="px-6 py-16 md:py-24 max-w-5xl mx-auto"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: 'opacity 0.6s ease, transform 0.6s ease',
+      }}
+    >
+      <div className="text-center mb-10">
+        <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">
+          See It In Action
+        </p>
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          From case creation to court-ready file
+        </h2>
+        <p className="text-muted-foreground text-base max-w-xl mx-auto">
+          Watch how ClearPath eliminates document chasing for bankruptcy firms — start to finish in under 60 seconds.
+        </p>
+      </div>
+      <div
+        className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+        style={{ paddingTop: '56.25%' }}
+      >
+        <iframe
+          className="absolute inset-0 w-full h-full"
+          src="https://www.youtube.com/embed/x2JTGHZaL8s?rel=0&modestbranding=1&showinfo=0&color=white"
+          title="ClearPath — Document intake for bankruptcy firms"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          loading="lazy"
+        />
+      </div>
+      <p className="text-center text-xs text-muted-foreground mt-4">
+        No app download. No login. Clients upload from any device.
+      </p>
+    </section>
+  );
+};
 
 /* ────── Interactive Feature Showcase ────── */
 const showcaseFeatures = [
@@ -538,6 +581,8 @@ const MarketingLanding = () => {
         <DashboardMockup visible={heroLoaded} />
         <StatsBar />
       </section>
+
+      <VideoSection />
 
       <SectionDivider />
 
