@@ -192,8 +192,9 @@ const VideoSection = () => {
       className="px-6 py-16 md:py-24 max-w-5xl mx-auto"
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(24px)',
-        transition: 'opacity 0.6s ease, transform 0.6s ease',
+        transition: 'opacity 0.6s ease',
+        overflowAnchor: 'none',
+        contentVisibility: 'visible',
       }}
     >
       <div className="text-center mb-10">
@@ -208,8 +209,8 @@ const VideoSection = () => {
         </p>
       </div>
       <div
-        className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10"
-        style={{ paddingTop: '56.25%' }}
+        className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 aspect-video"
+        style={{ overflowAnchor: 'none' }}
       >
         <iframe
           className="absolute inset-0 w-full h-full"
@@ -217,9 +218,9 @@ const VideoSection = () => {
           title="ClearPath — Document intake for bankruptcy firms"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
-          loading="lazy"
         />
       </div>
+
       <p className="text-center text-xs text-muted-foreground mt-4">
         No app download. No login. Clients upload from any device.
       </p>
