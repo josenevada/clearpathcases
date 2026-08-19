@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS form_templates_auth_select ON storage.objects;
+CREATE POLICY form_templates_super_admin_select ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'form-templates' AND is_super_admin());
